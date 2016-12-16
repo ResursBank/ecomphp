@@ -1,0 +1,58 @@
+{
+  "database": {
+    "servers": {
+      "localhost": {
+        "user": "root",
+        "server": "localhost",
+        "password": "currentPassword321"
+      },
+      "production": {
+        "user": "root",
+        "server": "127.0.0.2",
+        "password": "currentProductionPassword123"
+      },
+      "OtherServer": {
+        "user": "root",
+        "server": "127.0.0.3",
+        "password": "currentOtherServerPassword",
+        "db": "OtherServerDatabase",
+        "driver": "pdo"
+      }
+    },
+    "config": {
+      "exceptions": true,
+      "forcenew": true,
+      "mysql_deprecated": false,
+      "timeout": 6,
+      "authdetails": false,
+      "mysqldriverpriority": [
+        "mysqli",
+        "pdo",
+        "deprecated"
+      ],
+      "blockoverride": []
+    }
+  },
+  "config": {
+    "PluggableAutoPath": "/usr/local/TorneLIB-Libraries",
+    "API": {
+      "locations": {
+        "TorneAPI": [
+          "/usr/local/TorneAPI-2.0"
+        ],
+        "Facebook": [
+          "/usr/local/TorneAPI-2.0/thirdparty/sources/sdk_facebook-5.1"
+        ]
+      }
+    },
+    "pluggable": {
+      "Smarty": [
+	    "./libs/smarty",
+        "/usr/local/lib/smarty"
+      ],
+      "TorneAPI": [
+        "/usr/local/TorneAPI-4.0"
+      ]
+    }
+  }
+}
