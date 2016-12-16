@@ -999,11 +999,12 @@ if (function_exists('curl_init')) {
          * Call cUrl with a GET
          *
          * @param string $url
+         * @param int $postAs
          * @return array
          */
-        public function doGet($url = '')
+        public function doGet($url = '', $postAs = CURL_POST_AS::POST_AS_NORMAL)
         {
-            $content = $this->handleUrlCall($url, array(), CURL_METHODS::METHOD_GET);
+            $content = $this->handleUrlCall($url, array(), CURL_METHODS::METHOD_GET, $postAs);
             $ResponseArray = $this->ParseResponse($content);
             return $ResponseArray;
         }
