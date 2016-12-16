@@ -341,6 +341,16 @@ if (function_exists('curl_init')) {
         public $canThrow = true;
 
         /**
+         * Defines whether, when there is an incoming SOAP-call, we should try to make the SOAP initialization twice.
+         * This is a kind of fallback when users forget to add ?wsdl or &wsdl in urls that requires this to call for SOAP.
+         * It may happen when setting CURL_POST_AS to a SOAP-call but, the URL is not defined as one.
+         * Setting this to false, may suppress important errors, since this will suppress fatal errors at first try.
+         *
+         * @var bool
+         */
+        public $SoapTryOnce = true;
+
+        /**
          * TorneLIB_CURL constructor.
          */
         public function __construct()
@@ -1065,6 +1075,7 @@ if (function_exists('curl_init')) {
                 $Soap = new Tornevall_SimpleSoap($this->CurlURL, $this->curlopt);
                 $Soap->setThrowableState($this->canThrow);
                 $Soap->setSoapAuthentication($this->AuthData);
+                $Soap->SoapTryOnce = $this->SoapTryOnce;
                 return $Soap->getSoap();
             }
 
@@ -1245,7 +1256,7 @@ class Tornevall_SimpleSoap extends Tornevall_cURL {
     protected $addSoapOptions = array(
         'exceptions' => true,
         'trace' => true,
-        'cache_wsdl' => WSDL_CACHE_BOTH
+        'cache_wsdl' => 0       // Replacing WSDL_CACHE_NONE (WSDL_CACHE_BOTH = 3)
     );
     private $soapUrl;
     private $AuthData;
@@ -1258,6 +1269,7 @@ class Tornevall_SimpleSoap extends Tornevall_cURL {
 
     public $SoapFaultString = null;
     public $SoapFaultCode = 0;
+    public $SoapTryOnce = true;
 
     function __construct($Url, $SoapOptions = array())
     {
@@ -1284,13 +1296,53 @@ class Tornevall_SimpleSoap extends Tornevall_cURL {
         $this->canThrowSoapFaults = $throwable;
     }
 
+    /**
+     * Generate the SOAP
+     *
+     * @return $this
+     * @throws \Exception
+     */
     public function getSoap()
     {
         $this->soapClient = null;
         if (gettype($this->sslopt['stream_context']) == "resource") {
             $this->soapOptions['stream_context'] = $this->sslopt['stream_context'];
         }
-        $this->soapClient = new \SoapClient($this->soapUrl, $this->soapOptions);
+
+        if ($this->SoapTryOnce) {
+            $this->soapClient = new \SoapClient($this->soapUrl, $this->soapOptions);
+        } else {
+            try {
+                /*
+                 * FailoverMethod is active per default, trying to parry SOAP-sites that requires ?wsdl in the urls
+                 */
+                $this->soapClient = @new \SoapClient($this->soapUrl, $this->soapOptions);
+            } catch (\Exception $soapException) {
+                if (isset($soapException->faultcode) && $soapException->faultcode == "WSDL") {
+                    /*
+                     * If an exception has been invoked, check if the url contains a ?wsdl or &wsdl - if not, it may be the problem.
+                     * In that case, retry the call and throw an exception if we fail twice.
+                     */
+                    if (!preg_match("/\?wsdl|\&wsdl/i", $this->soapUrl)) {
+                        /*
+                         * Try to determine how the URL is built before trying this.
+                         */
+                        if (preg_match("/\?/", $this->soapUrl)) {
+                            $this->soapUrl .= "&wsdl";
+                        } else {
+                            $this->soapUrl .= "?wsdl";
+                        }
+                        try {
+                            $this->soapClient = @new \SoapClient($this->soapUrl, $this->soapOptions);
+                        } catch (\Exception $soapException) {
+                            throw new \Exception($soapException->getMessage(), $soapException->getCode());
+                        }
+                    }
+                }
+            }
+        }
+        exit;
+
         return $this;
     }
 
