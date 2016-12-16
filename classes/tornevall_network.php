@@ -213,7 +213,7 @@ if (function_exists('curl_init')) {
         private $TorneCurlVersion = "5.0.0";
 
         /** @var string Internal release snapshot that is being used to find out if we are running the latest version of this library */
-        private $TorneCurlRelease = "20161213";
+        private $TorneCurlRelease = "20161216";
 
         /**
          * Autodetecting of SSL capabilities section
@@ -1060,7 +1060,7 @@ if (function_exists('curl_init')) {
                 $this->CurlURL = $url;
             }
 
-            if (preg_match("/\?wsdl$|\&wsdl$/i", $this->CurlURL)) {
+            if (preg_match("/\?wsdl$|\&wsdl$/i", $this->CurlURL) || $postAs == CURL_POST_AS::POST_AS_SOAP) {
                 $Soap = new Tornevall_SimpleSoap($this->CurlURL, $this->curlopt);
                 $Soap->setThrowableState($this->canThrow);
                 $Soap->setSoapAuthentication($this->AuthData);
@@ -1389,6 +1389,7 @@ abstract class CURL_POST_AS
 {
     const POST_AS_NORMAL = 0;
     const POST_AS_JSON = 1;
+    const POST_AS_SOAP = 2;
 }
 
 /**
