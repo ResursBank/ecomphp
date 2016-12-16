@@ -1341,8 +1341,6 @@ class Tornevall_SimpleSoap extends Tornevall_cURL {
                 }
             }
         }
-        exit;
-
         return $this;
     }
 
