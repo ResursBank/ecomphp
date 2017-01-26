@@ -31,7 +31,7 @@ class ResursBank
     /** @var string The version of this gateway */
     private $version = "1.0.0";
     /** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-    private $lastUpdate = "20161130";
+    private $lastUpdate = "20170116";
     private $preferredId = null;
     private $ocShopScript = null;
     private $formTemplateRuleArray = array();
@@ -57,7 +57,7 @@ class ResursBank
     var $soapOptions = array(
         'exceptions' => 1,
         'connection_timeout' => 60,
-        'login' => 'exshop',
+        'login' => '',
         'password' => '',
         'trace' => 1
     );
@@ -576,6 +576,12 @@ class ResursBank
                         $useResponseCode = $ResursResponse->status;
                     }
                     throw new Exception($ResursResponse->error, $useResponseCode);
+                }
+                /*
+                 * Must handle ecommerce errors too.
+                 */
+                if (isset($ResursResponse->errorCode) && $ResursResponse->errorCode > 0) {
+                    throw new Exception(isset($ResursResponse->description) && !empty($ResursResponse->description) ? $ResursResponse->description : "Unknown error in " . __FUNCTION__, $ResursResponse->errorCode);
                 }
             }
         } else {
@@ -1339,6 +1345,7 @@ class ResursBank
         if (strtoupper($callbackTypeString) == "FINALIZATION") {return ResursCallbackTypes::FINALIZATION; }
         if (strtoupper($callbackTypeString) == "AUTOMATIC_FRAUD_CONTROL") {return ResursCallbackTypes::AUTOMATIC_FRAUD_CONTROL; }
         if (strtoupper($callbackTypeString) == "UNFREEZE") {return ResursCallbackTypes::UNFREEZE; }
+        if (strtoupper($callbackTypeString) == "BOOKED") {return ResursCallbackTypes::BOOKED; }
         return ResursCallbackTypes::UNDEFINED;
     }
 
@@ -1354,6 +1361,7 @@ class ResursBank
         if ($callbackType == ResursCallbackTypes::TEST) { return array('param1', 'param2', 'param3', 'param4', 'param5'); }
         if ($callbackType == ResursCallbackTypes::UNFREEZE) { return array('paymentId'); }
         if ($callbackType == ResursCallbackTypes::UPDATE) { return array('paymentId'); }
+        if ($callbackType == ResursCallbackTypes::BOOKED) { return array('paymentId'); }
         return array();
     }
 
@@ -2435,8 +2443,8 @@ class ResursBank
             /* Prepare a frame for omni checkout */
             try {
                 $preOmni = $this->prepareOmniFrame($bookData, $paymentMethodId, ResursOmniCallTypes::METHOD_PAYMENTS);
-                if (isset($preOmni['parsed'])) {
-                    $this->omniFrame = $preOmni['parsed'];
+                if (isset($preOmni->html)) {
+                    $this->omniFrame = $preOmni->html;
                 }
             } catch (Exception $omniFrameException) {
                 throw new ResursException($omniFrameException->getMessage(), $omniFrameException->getCode(), "prepareOmniFrame");
@@ -2555,7 +2563,7 @@ class ResursBank
             $hostedErrNo = $this->hostedErrNo($this->simpleWebEngine);
             throw new ResursException($hostedErrorResult, $hostedErrNo);
         }
-        return $this->simpleWebEngine;
+        return $this->simpleWebEngine['parsed'];
     }
 
     public function prepareOmniFrame($bookData = array(), $orderReference = "", $omniCallType = ResursOmniCallTypes::METHOD_PAYMENTS) {
@@ -2589,30 +2597,27 @@ class ResursBank
         } catch (Exception $jsonException) {
             throw new ResursException($jsonException->getMessage(), $jsonException->getCode());
         }
-        return $this->simpleWebEngine;
+        return $this->simpleWebEngine['parsed'];
     }
 
     /**
-     * getOmniFrame: An error free omniframe-fetcher, returns the correct iframe-source if it exists.
+     * getOmniFrame: Only used to fix ocShop issues
      *
      * This can also be done directly from bookPayment by the use of booked payment result (response->html).
      *
      * @param array $omniResponse
      * @param bool $ocShopInternalHandle Make EComPHP will try to find and strip the script tag for the iframe resizer, if this is set to true
      * @return mixed|null|string
+     * @deprecated
      */
     public function getOmniFrame($omniResponse = array(), $ocShopInternalHandle = false) {
-        if (!count($omniResponse)) {
-            if (!is_null($this->omniFrame)) {
+        /*
+         * As we are using TorneLIB Curl Library, the Resurs Checkout iframe will be loaded properly without those checks.
+         */
+        if (is_string($omniResponse) && !empty($omniResponse)) {
+            if (isset($omniResponse)) {
                 /** @noinspection PhpUndefinedFieldInspection */
-                if (isset($this->omniFrame->html)) {
-                    /** @noinspection PhpUndefinedFieldInspection */
-                    return $this->clearOcShop($this->omniFrame->html, $ocShopInternalHandle);
-                }
-            }
-        } else {
-            if (isset($omniResponse->html)) {
-                return $this->clearOcShop($omniResponse->html, $ocShopInternalHandle);
+                return $this->clearOcShop($this->omniFrame, $ocShopInternalHandle);
             }
         }
         return null;
