@@ -1,6 +1,8 @@
 <?php
 
-if (!class_exists("resurs_paymentMethodType", false)) 
+namespace Resursbank\RBEcomPHP;
+
+if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_paymentMethodType", false)) 
 {
 class resurs_paymentMethodType
 {

@@ -1,6 +1,8 @@
 <?php
 
-if (!class_exists("resurs_webLink", false)) 
+namespace Resursbank\RBEcomPHP;
+
+if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_webLink", false)) 
 {
 class resurs_webLink
 {

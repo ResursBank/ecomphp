@@ -1,6 +1,8 @@
 <?php
 
-if (!class_exists("resurs_calculateResultSizeResponse", false)) 
+namespace Resursbank\RBEcomPHP;
+
+if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_calculateResultSizeResponse", false))
 {
 class resurs_calculateResultSizeResponse
 {

@@ -1,6 +1,8 @@
 <?php
 
-if (!class_exists("resurs_setInvoiceData", false)) 
+namespace Resursbank\RBEcomPHP;
+
+if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_setInvoiceData", false))
 {
 class resurs_setInvoiceData
 {

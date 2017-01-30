@@ -1,6 +1,8 @@
 <?php
 
-if (!class_exists("resurs_mapEntry", false)) 
+namespace Resursbank\RBEcomPHP;
+
+if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_mapEntry", false))
 {
 class resurs_mapEntry
 {

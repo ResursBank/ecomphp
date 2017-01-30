@@ -1,6 +1,8 @@
 <?php
 
-if (!class_exists("resurs_unregisterEventCallbackResponse", false)) 
+namespace Resursbank\RBEcomPHP;
+
+if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_unregisterEventCallbackResponse", false))
 {
 class resurs_unregisterEventCallbackResponse
 {

@@ -1,6 +1,8 @@
 <?php
 
-if (!class_exists("resurs_addMetaDataResponse", false)) 
+namespace Resursbank\RBEcomPHP;
+
+if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_addMetaDataResponse", false))
 {
 class resurs_addMetaDataResponse
 {
