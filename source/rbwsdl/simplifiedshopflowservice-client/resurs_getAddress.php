@@ -1,6 +1,8 @@
 <?php
 
-if (!class_exists("resurs_getAddress", false)) 
+namespace Resursbank\RBEcomPHP;
+
+if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_getAddress", false)) 
 {
 class resurs_getAddress
 {

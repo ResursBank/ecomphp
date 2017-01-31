@@ -1,6 +1,8 @@
 <?php
 
-if (!class_exists("resurs_invoiceDeliveryTypeEnum", false)) 
+namespace Resursbank\RBEcomPHP;
+
+if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_invoiceDeliveryTypeEnum", false)) 
 {
 class resurs_invoiceDeliveryTypeEnum
 {

@@ -1,10 +1,11 @@
 <?php
-
 /**
  * Resurs Bank Exception Extender
  * @package RBEcomPHP
  * @author Resurs Bank Ecommrece <ecommerce.support@resurs.se>
  */
+
+namespace Resursbank\RBEcomPHP;
 
 class ResursException extends \Exception {
     private $fromFunction = null;

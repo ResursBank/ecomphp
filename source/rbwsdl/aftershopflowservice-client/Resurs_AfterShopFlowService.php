@@ -1,6 +1,8 @@
 <?php
 
-if (!class_exists("Resurs_AfterShopFlowService", false)) 
+namespace Resursbank\RBEcomPHP;
+
+if (!class_exists("\\Resursbank\\RBEcomPHP\\Resurs_AfterShopFlowService", false))
 {
 include_once('resurs_customer.php');
 include_once('resurs_address.php');
@@ -61,47 +63,47 @@ class Resurs_AfterShopFlowService extends \SoapClient
      * @access private
      */
     private static $classmap = array(
-      'customer' => '\resurs_customer',
-      'address' => '\resurs_address',
-      'mapEntry' => '\resurs_mapEntry',
-      'paymentSpec' => '\resurs_paymentSpec',
-      'specLine' => '\resurs_specLine',
-      'limit' => '\resurs_limit',
-      'payment' => '\resurs_payment',
-      'paymentDiff' => '\resurs_paymentDiff',
-      'pdf' => '\resurs_pdf',
-      'searchCriteria' => '\resurs_searchCriteria',
-      'withMetaData' => '\resurs_withMetaData',
-      'sortOrder' => '\resurs_sortOrder',
-      'basicPayment' => '\resurs_basicPayment',
-      'bonus' => '\resurs_bonus',
-      'additionalDebitOfPayment' => '\resurs_additionalDebitOfPayment',
-      'additionalDebitOfPaymentResponse' => '\resurs_additionalDebitOfPaymentResponse',
-      'finalizePayment' => '\resurs_finalizePayment',
-      'finalizePaymentResponse' => '\resurs_finalizePaymentResponse',
-      'annulPayment' => '\resurs_annulPayment',
-      'annulPaymentResponse' => '\resurs_annulPaymentResponse',
-      'creditPayment' => '\resurs_creditPayment',
-      'creditPaymentResponse' => '\resurs_creditPaymentResponse',
-      'addMetaData' => '\resurs_addMetaData',
-      'addMetaDataResponse' => '\resurs_addMetaDataResponse',
-      'getPayment' => '\resurs_getPayment',
-      'getPaymentResponse' => '\resurs_getPaymentResponse',
-      'getPaymentDocumentNames' => '\resurs_getPaymentDocumentNames',
-      'getPaymentDocumentNamesResponse' => '\resurs_getPaymentDocumentNamesResponse',
-      'getPaymentDocument' => '\resurs_getPaymentDocument',
-      'getPaymentDocumentResponse' => '\resurs_getPaymentDocumentResponse',
-      'calculateResultSize' => '\resurs_calculateResultSize',
-      'calculateResultSizeResponse' => '\resurs_calculateResultSizeResponse',
-      'findPayments' => '\resurs_findPayments',
-      'findPaymentsResponse' => '\resurs_findPaymentsResponse',
-      'insertBonusPoints' => '\resurs_insertBonusPoints',
-      'insertBonusPointsResponse' => '\resurs_insertBonusPointsResponse',
-      'withdrawBonusPoints' => '\resurs_withdrawBonusPoints',
-      'withdrawBonusPointsResponse' => '\resurs_withdrawBonusPointsResponse',
-      'getCustomerBonus' => '\resurs_getCustomerBonus',
-      'getCustomerBonusResponse' => '\resurs_getCustomerBonusResponse',
-      'ECommerceError' => '\resurs_ECommerceError');
+      'customer' => 'Resursbank\RBEcomPHP\resurs_customer',
+      'address' => 'Resursbank\RBEcomPHP\resurs_address',
+      'mapEntry' => 'Resursbank\RBEcomPHP\resurs_mapEntry',
+      'paymentSpec' => 'Resursbank\RBEcomPHP\resurs_paymentSpec',
+      'specLine' => 'Resursbank\RBEcomPHP\resurs_specLine',
+      'limit' => 'Resursbank\RBEcomPHP\resurs_limit',
+      'payment' => 'Resursbank\RBEcomPHP\resurs_payment',
+      'paymentDiff' => 'Resursbank\RBEcomPHP\resurs_paymentDiff',
+      'pdf' => 'Resursbank\RBEcomPHP\resurs_pdf',
+      'searchCriteria' => 'Resursbank\RBEcomPHP\resurs_searchCriteria',
+      'withMetaData' => 'Resursbank\RBEcomPHP\resurs_withMetaData',
+      'sortOrder' => 'Resursbank\RBEcomPHP\resurs_sortOrder',
+      'basicPayment' => 'Resursbank\RBEcomPHP\resurs_basicPayment',
+      'bonus' => 'Resursbank\RBEcomPHP\resurs_bonus',
+      'additionalDebitOfPayment' => 'Resursbank\RBEcomPHP\resurs_additionalDebitOfPayment',
+      'additionalDebitOfPaymentResponse' => 'Resursbank\RBEcomPHP\resurs_additionalDebitOfPaymentResponse',
+      'finalizePayment' => 'Resursbank\RBEcomPHP\resurs_finalizePayment',
+      'finalizePaymentResponse' => 'Resursbank\RBEcomPHP\resurs_finalizePaymentResponse',
+      'annulPayment' => 'Resursbank\RBEcomPHP\resurs_annulPayment',
+      'annulPaymentResponse' => 'Resursbank\RBEcomPHP\resurs_annulPaymentResponse',
+      'creditPayment' => 'Resursbank\RBEcomPHP\resurs_creditPayment',
+      'creditPaymentResponse' => 'Resursbank\RBEcomPHP\resurs_creditPaymentResponse',
+      'addMetaData' => 'Resursbank\RBEcomPHP\resurs_addMetaData',
+      'addMetaDataResponse' => 'Resursbank\RBEcomPHP\resurs_addMetaDataResponse',
+      'getPayment' => 'Resursbank\RBEcomPHP\resurs_getPayment',
+      'getPaymentResponse' => 'Resursbank\RBEcomPHP\resurs_getPaymentResponse',
+      'getPaymentDocumentNames' => 'Resursbank\RBEcomPHP\resurs_getPaymentDocumentNames',
+      'getPaymentDocumentNamesResponse' => 'Resursbank\RBEcomPHP\resurs_getPaymentDocumentNamesResponse',
+      'getPaymentDocument' => 'Resursbank\RBEcomPHP\resurs_getPaymentDocument',
+      'getPaymentDocumentResponse' => 'Resursbank\RBEcomPHP\resurs_getPaymentDocumentResponse',
+      'calculateResultSize' => 'Resursbank\RBEcomPHP\resurs_calculateResultSize',
+      'calculateResultSizeResponse' => 'Resursbank\RBEcomPHP\resurs_calculateResultSizeResponse',
+      'findPayments' => 'Resursbank\RBEcomPHP\resurs_findPayments',
+      'findPaymentsResponse' => 'Resursbank\RBEcomPHP\resurs_findPaymentsResponse',
+      'insertBonusPoints' => 'Resursbank\RBEcomPHP\resurs_insertBonusPoints',
+      'insertBonusPointsResponse' => 'Resursbank\RBEcomPHP\resurs_insertBonusPointsResponse',
+      'withdrawBonusPoints' => 'Resursbank\RBEcomPHP\resurs_withdrawBonusPoints',
+      'withdrawBonusPointsResponse' => 'Resursbank\RBEcomPHP\resurs_withdrawBonusPointsResponse',
+      'getCustomerBonus' => 'Resursbank\RBEcomPHP\resurs_getCustomerBonus',
+      'getCustomerBonusResponse' => 'Resursbank\RBEcomPHP\resurs_getCustomerBonusResponse',
+      'ECommerceError' => 'Resursbank\RBEcomPHP\resurs_ECommerceError');
 
     /**
      * @param array $options A array of config values

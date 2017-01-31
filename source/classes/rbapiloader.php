@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Resurs Bank Passthrough API - A pretty silent ShopFlowSimplifier for Resurs Bank.
  * Last update: See the lastUpdate variable
@@ -12,12 +11,21 @@
  * @license Not set
  */
 
+namespace Resursbank\RBEcomPHP;
+
 /**
  * Location of RBEcomPHP class files.
  */
 if (!defined('RB_API_PATH')) { define('RB_API_PATH', __DIR__); }
 require_once('rbapi_exceptions.php');
 require_once('networklib.php');
+require_once('rbapiloader/ResursAfterShopRenderTypes.php');
+require_once('rbapiloader/ResursCallbackTypes.php');
+require_once('rbapiloader/ResursCurlMethods.php');
+require_once('rbapiloader/ResursEnvironments.php');
+require_once('rbapiloader/ResursExceptions.php');
+require_once('rbapiloader/ResursMethodTypes.php');
+require_once('rbapiloader/ResursOmniCallTypes.php');
 
 /**
  * Class ResursBank
@@ -551,7 +559,7 @@ class ResursBank
      * @param string $jsonData
      * @param int $curlMethod POST, GET, DELETE, etc
      * @return mixed
-     * @throws Exception
+     * @throws \Exception
      */
     private function createJsonEngine($url = '', $jsonData = "", $curlMethod = ResursCurlMethods::METHOD_POST)
     {
@@ -704,7 +712,7 @@ class ResursBank
     /**
      * Wsdl initializer - Everything communicating with RB Webservices are recommended to pass through here to generate a communication link
      * @return bool
-     * @throws Exception
+     * @throws \Exception
      */
     private function InitializeWsdl()
     {
@@ -917,19 +925,19 @@ class ResursBank
 
         $this->soapOptions = $this->sslGetOptionsStream($this->soapOptions, array('http' => array("user_agent" => $this->getVersionFull())));
         try {
-            if (class_exists('Resurs_SimplifiedShopFlowService')) {
+            if (class_exists('Resursbank\RBEcomPHP\Resurs_SimplifiedShopFlowService')) {
                 $currentService = "simplifiedShopFlowService";
                 $this->simplifiedShopFlowService = new Resurs_SimplifiedShopFlowService($this->soapOptions, $this->environment . "SimplifiedShopFlowService?wsdl");
             }
-            if (class_exists('Resurs_ConfigurationService')) {
+            if (class_exists('Resursbank\RBEcomPHP\Resurs_ConfigurationService')) {
                 $currentService = "configurationService";
                 $this->configurationService = new Resurs_ConfigurationService($this->soapOptions, $this->environment . "ConfigurationService?wsdl");
             }
-            if (class_exists('Resurs_AfterShopFlowService')) {
+            if (class_exists('Resursbank\RBEcomPHP\Resurs_AfterShopFlowService')) {
                 $currentService = "afterShopFlowService";
                 $this->afterShopFlowService = new Resurs_AfterShopFlowService($this->soapOptions, $this->environment . "AfterShopFlowService?wsdl");
             }
-            if (class_exists('Resurs_ShopFlowService')) {
+            if (class_exists('Resursbank\RBEcomPHP\Resurs_ShopFlowService')) {
                 /** @noinspection PhpUnusedLocalVariableInspection */
                 $currentService = "shopFlowService";
                 $this->shopFlowService = new Resurs_ShopFlowService($this->soapOptions, $this->environment . "ShopFlowService?wsdl");
@@ -1099,7 +1107,7 @@ class ResursBank
      * Check HTTPS-requirements, if they pass.
      *
      * Resurs Bank requires secure connection to the webservices, so your PHP-version must support SSL. Normally this is not a problem, but since there are server- and hosting providers that is actually having this disabled, the decision has been made to do this check.
-     * @throws Exception
+     * @throws \Exception
      */
     private function testWrappers()
     {
@@ -1185,7 +1193,7 @@ class ResursBank
      * @param null $func
      * @param array $args
      * @return array|null
-     * @throws Exception
+     * @throws \Exception
      *
      */
     public function __call($func = null, $args = array())
@@ -1208,27 +1216,27 @@ class ResursBank
         }
 
         try {
-            $reflection = new ReflectionClass($classfunc);
+            $reflection = new \ReflectionClass("\\Resursbank\\RBEcomPHP\\{$classfunc}");
             $instance = $reflection->newInstanceArgs($args);
             // Check availability, fetch and stop on first match
-            if (!isset($returnObject) && in_array($func, get_class_methods("Resurs_SimplifiedShopFlowService"))) {
+            if (!isset($returnObject) && in_array($func, get_class_methods("\\Resursbank\\RBEcomPHP\\Resurs_SimplifiedShopFlowService"))) {
                 $this->serviceReturn = "SimplifiedShopFlowService";
                 $returnObject = $this->simplifiedShopFlowService->$func($instance);
             }
-            if (!isset($returnObject) && in_array($func, get_class_methods("Resurs_ConfigurationService"))) {
+            if (!isset($returnObject) && in_array($func, get_class_methods("\\Resursbank\\RBEcomPHP\\Resurs_ConfigurationService"))) {
                 $this->serviceReturn = "ConfigurationService";
                 $returnObject = $this->configurationService->$func($instance);
             }
-            if (!isset($returnObject) && in_array($func, get_class_methods("Resurs_AfterShopFlowService"))) {
+            if (!isset($returnObject) && in_array($func, get_class_methods("\\Resursbank\\RBEcomPHP\\Resurs_AfterShopFlowService"))) {
                 $this->serviceReturn = "AfterShopFlowService";
                 $returnObject = $this->afterShopFlowService->$func($instance);
             }
-            if (!isset($returnObject) && in_array($func, get_class_methods("Resurs_ShopFlowService"))) {
+            if (!isset($returnObject) && in_array($func, get_class_methods("\\Resursbank\\RBEcomPHP\\Resurs_ShopFlowService"))) {
                 $this->serviceReturn = "ShopFlowService";
                 $returnObject = $this->shopFlowService->$func($instance);
             }
             //if (!isset($returnObject) && in_array($func, get_class_methods("DeveloperService"))) {$this->serviceReturn = "DeveloperService";$returnObject = $this->developerService->$func($instance);}
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             throw new ResursException($e->getMessage(), ResursExceptions::WSDL_PASSTHROUGH_EXCEPTION, __FUNCTION__ . "/" . $func . "/" . $classfunc);
         }
         try {
@@ -1257,7 +1265,7 @@ class ResursBank
                 }
             }
             return $returnContent;
-        } catch (Exception $returnObjectException) {
+        } catch (\Exception $returnObjectException) {
         }
         if ($returnAsArray) {
             return $this->parseReturn($returnObject);
@@ -1394,7 +1402,7 @@ class ResursBank
      * @param null $basicAuthUserName
      * @param null $basicAuthPassword
      * @return bool
-     * @throws Exception
+     * @throws \Exception
      */
     public function setCallback($callbackType = ResursCallbackTypes::UNDEFINED, $callbackUriTemplate = "", $callbackDigest = array(), $basicAuthUserName = null, $basicAuthPassword = null)
     {
@@ -1485,7 +1493,7 @@ class ResursBank
                 if (is_object($regCallBackResult)) {
                     $confirmCallbackResult = true;
                 }
-            } catch (Exception $rbCallbackEx) {
+            } catch (\Exception $rbCallbackEx) {
                 /* Set up a silent. failover, and return false if the callback registration failed. Set the error into the lastError-variable. */
                 $regCallBackResult = false;
                 $this->lastError = $rbCallbackEx->getMessage();
@@ -1519,7 +1527,7 @@ class ResursBank
     public function unSetCallback($callbackType = ResursCallbackTypes::UNDEFINED) {
         $renderCallback['eventType'] = $this->getCallbackTypeString($callbackType);
         if (empty($renderCallback['eventType'])) { throw new ResursException("The callback type you are trying to unregister is not supported by EComPHP", ResursExceptions::CALLBACK_TYPE_UNSUPPORTED); }
-        try { $this->unregisterEventCallback($renderCallback['eventType']); } catch (Exception $e) { return false; }
+        try { $this->unregisterEventCallback($renderCallback['eventType']); } catch (\Exception $e) { return false; }
         return true;
     }
 
@@ -1532,7 +1540,7 @@ class ResursBank
      *
      * @param array $parameters
      * @return mixed
-     * @throws Exception
+     * @throws \Exception
      */
     public function getPaymentMethods($parameters = array())
     {
@@ -1541,7 +1549,7 @@ class ResursBank
         /** @noinspection PhpUnusedLocalVariableInspection */
         $return = $this->getDataObject(array());
         /* 2016-07-13: Redmine issue #66819 - Call to a member function getPaymentMethods() on null - probably fails when session times out */
-        if (class_exists("resurs_getPaymentMethods") && isset($this->simplifiedShopFlowService) && !empty($this->simplifiedShopFlowService)) {
+        if (class_exists('Resursbank\RBEcomPHP\resurs_getPaymentMethods') && isset($this->simplifiedShopFlowService) && !empty($this->simplifiedShopFlowService)) {
             $paymentMethodParameters = new resurs_getPaymentMethods();
             if (isset($parameters['customerType'])) {
                 $paymentMethodParameters->customerType = $parameters['customerType'];
@@ -1967,7 +1975,7 @@ class ResursBank
     {
         $this->InitializeWsdl();
         $this->preferredId = $this->generatePreferredId();
-        if (!is_object($this->_paymentData) && class_exists('resurs_paymentData')) {
+        if (!is_object($this->_paymentData) && class_exists('Resursbank\RBEcomPHP\resurs_paymentData')) {
             $this->_paymentData = new resurs_paymentData($paymentMethodId);
         } else {
             // If there are no wsdl-classes loaded, we should consider a default stdClass as object
@@ -2034,7 +2042,7 @@ class ResursBank
     public function updateCart($speclineArray = array())
     {
         if (!$this->isOmniFlow && !$this->isHostedFlow) {
-            if (!class_exists('resurs_specLine')) {
+            if (!class_exists('Resursbank\RBEcomPHP\resurs_specLine')) {
                 throw new ResursException("Class specLine does not exist", ResursExceptions::UPDATECART_NOCLASS_EXCEPTION, __FUNCTION__);
             }
         }
@@ -2092,7 +2100,7 @@ class ResursBank
              * totalAmount
              */
 
-            if (class_exists('resurs_specLine')) {
+            if (class_exists('Resursbank\RBEcomPHP\resurs_specLine')) {
                 $this->_paymentSpeclines[] = new resurs_specLine(
                     $this->_specLineID,
                     $speclineArray['artNo'],
@@ -2131,7 +2139,7 @@ class ResursBank
     public function updatePaymentSpec($specLineArray = array())
     {
         $this->InitializeWsdl();
-        if (class_exists('resurs_paymentSpec')) {
+        if (class_exists('Resursbank\RBEcomPHP\resurs_paymentSpec')) {
             $totalAmount = 0;
             $totalVatAmount = 0;
             if (is_array($specLineArray) && count($specLineArray)) {
@@ -2391,7 +2399,7 @@ class ResursBank
         }
 
         /* Prepare and collect data for a bookpayment */
-        if (class_exists('resurs_bookPayment')) {
+        if (class_exists('Resursbank\RBEcomPHP\resurs_bookPayment')) {
             /* Only run this if it exists, and the plans is to go through simplified flow */
             if (!$this->isOmniFlow && !$this->isHostedFlow) {
                 /** @noinspection PhpParamsInspection */
@@ -2446,7 +2454,7 @@ class ResursBank
                 if (isset($preOmni->html)) {
                     $this->omniFrame = $preOmni->html;
                 }
-            } catch (Exception $omniFrameException) {
+            } catch (\Exception $omniFrameException) {
                 throw new ResursException($omniFrameException->getMessage(), $omniFrameException->getCode(), "prepareOmniFrame");
             }
             if (isset($this->omniFrame->faultCode)) {
@@ -2459,7 +2467,7 @@ class ResursBank
             $bookData['orderData'] = $this->objectsIntoArray($this->_paymentOrderData);
             try {
                 $hostedResult = $this->bookPaymentHosted($paymentMethodId, $bookData, $getReturnedObjectAsStd, $keepReturnObject);
-            } catch (Exception $hostedException) {
+            } catch (\Exception $hostedException) {
                 throw new ResursException($hostedException->getMessage(), $hostedException->getCode());
             }
             if (isset($hostedResult->location)) {
@@ -2474,7 +2482,7 @@ class ResursBank
 
         try {
             $bookPaymentResult = $this->simplifiedShopFlowService->bookPayment($bookPaymentInit);
-        } catch (Exception $bookPaymentException) {
+        } catch (\Exception $bookPaymentException) {
             if (isset($bookPaymentException->faultstring)) {
                 throw new ResursException($bookPaymentException->faultstring);
             }
@@ -2594,7 +2602,7 @@ class ResursBank
                 $omniErrNo = $this->omniErrNo($this->simpleWebEngine);
                 throw new ResursException($omniErrorResult, $omniErrNo);
             }
-        } catch (Exception $jsonException) {
+        } catch (\Exception $jsonException) {
             throw new ResursException($jsonException->getMessage(), $jsonException->getCode());
         }
         return $this->simpleWebEngine['parsed'];
@@ -2928,7 +2936,7 @@ class ResursBank
      * @param bool $quantityMatch (Optional) Match quantity. If false, quantity will be ignored during finalization and all client specified paymentspecs will match
      * @param bool $useSpecifiedQuantity If set to true, the quantity set clientside will be used rather than the exact quantity from the spec in getPayment (This requires that $quantityMatch is set to false)
      * @return bool True if successful
-     * @throws Exception
+     * @throws \Exception
      * @throws ResursException
      */
     public function finalizePayment($paymentId = "", $clientPaymentSpec = array(), $finalizeParams = array(), $quantityMatch = true, $useSpecifiedQuantity = false)
@@ -2939,7 +2947,7 @@ class ResursBank
             $metaSetup = new resurs_addMetaData($paymentId, "CustomerId");
             $metaSetup->value = $this->customerId;
             $this->afterShopFlowService->addMetaData($metaSetup);
-        } catch (Exception $metaResponseException) {}
+        } catch (\Exception $metaResponseException) {}
 
         $clientPaymentSpec = $this->handleClientPaymentSpec($clientPaymentSpec);
         $finalizeResult = false;
@@ -2968,7 +2976,7 @@ class ResursBank
      * @param bool $quantityMatch
      * @param bool $useSpecifiedQuantity
      * @return bool
-     * @throws Exception
+     * @throws \Exception
      * @throws ResursException
      *
      */
@@ -2980,7 +2988,7 @@ class ResursBank
             $metaSetup = new resurs_addMetaData($paymentId, "CustomerId");
             $metaSetup->value = $this->customerId;
             $this->afterShopFlowService->addMetaData($metaSetup);
-        } catch (Exception $metaResponseException) {}
+        } catch (\Exception $metaResponseException) {}
 
         $clientPaymentSpec = $this->handleClientPaymentSpec($clientPaymentSpec);
         $creditResult = false;
@@ -3009,20 +3017,20 @@ class ResursBank
      * @param bool $quantityMatch
      * @param bool $useSpecifiedQuantity If set to true, the quantity set clientside will be used rather than the exact quantity from the spec in getPayment (This requires that $quantityMatch is set to false)
      * @return bool
-     * @throws Exception
+     * @throws \Exception
      * @throws ResursException
      */
     public function annulPayment($paymentId = "", $clientPaymentSpec = array(), $annulParams = array(), $quantityMatch = true, $useSpecifiedQuantity = false)
     {
         try {
             if (empty($this->customerId)) {$this->customerId = "-";}
-            if (class_exists('resurs_addMetaData')) {
+            if (class_exists('Resursbank\RBEcomPHP\resurs_addMetaData')) {
                 /** @noinspection PhpParamsInspection */
                 $metaSetup = new resurs_addMetaData($paymentId, "CustomerId");
                 $metaSetup->value = $this->customerId;
                 $this->afterShopFlowService->addMetaData($metaSetup);
             }
-        } catch (Exception $metaResponseException) {}
+        } catch (\Exception $metaResponseException) {}
 
         $clientPaymentSpec = $this->handleClientPaymentSpec($clientPaymentSpec);
         $annulResult = false;
@@ -3076,7 +3084,7 @@ class ResursBank
             $metaSetup = new resurs_addMetaData($paymentId, "CustomerId");
             $metaSetup->value = $this->customerId;
             $this->afterShopFlowService->addMetaData($metaSetup);
-        } catch (Exception $metaResponseException) {}
+        } catch (\Exception $metaResponseException) {}
         $clientPaymentSpec = $this->handleClientPaymentSpec($clientPaymentSpec);
         $creditStateSuccess = false;
         $annulStateSuccess = false;
@@ -3094,12 +3102,12 @@ class ResursBank
         if (is_array($clientPaymentSpec) && !count($clientPaymentSpec)) {
             try {
                 $creditSpecLines = $this->stripPaymentSpec($this->renderSpecLine($creditSpecLines, ResursAfterShopRenderTypes::CREDIT, $cancelParams));
-            } catch (Exception $ignoreCredit) {
+            } catch (\Exception $ignoreCredit) {
                 $creditSpecLines = array();
             }
             try {
                 $annulSpecLines = $this->stripPaymentSpec($this->renderSpecLine($annulSpecLines, ResursAfterShopRenderTypes::ANNUL, $cancelParams));
-            } catch (Exception $ignoreAnnul) {
+            } catch (\Exception $ignoreAnnul) {
                 $annulSpecLines = array();
             }
         }
@@ -3113,7 +3121,7 @@ class ResursBank
             }
             $this->afterShopFlowService->creditPayment($creditPaymentContainer);
             $creditStateSuccess = true;
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             $creditStateSuccess = false;
             $lastErrorMessage = $e->getMessage();
         }
@@ -3129,7 +3137,7 @@ class ResursBank
                 $this->afterShopFlowService->annulPayment($annulPaymentContainer);
                 $annulStateSuccess = true;
             }
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             $annulStateSuccess = false;
             $lastErrorMessage = $e->getMessage();
         }
@@ -3459,7 +3467,7 @@ class ResursBank
      * @param string $callCss Your own css url
      * @param string $hrefTarget Point opening target somewhere else (i.e. _blank opens in a new window)
      * @return string
-     * @throws Exception
+     * @throws \Exception
      * @link https://test.resurs.com/docs/x/_QBV
      */
     public function getCostOfPurchase($paymentMethod = '', $amount = 0, $returnBody = false, $callCss = 'costofpurchase.css', $hrefTarget="_blank") {
@@ -3546,7 +3554,7 @@ class ResursBank
      * @param int $renderType
      * @param array $finalizeParams
      * @return array
-     * @throws Exception
+     * @throws \Exception
      */
     private function renderSpecLine($paymentArray = array(), $renderType = ResursAfterShopRenderTypes::NONE, $finalizeParams = array())
     {
@@ -3617,172 +3625,4 @@ class ResursBank
     {
         // Implement __callStatic() method.
     }
-}
-
-/**
- * Class ResursCallbackTypes: Callbacks that can be registered with Resurs Bank.
- */
-abstract class ResursCallbackTypes {
-
-    /**
-     * Resurs Callback Types. Callback types available from Resurs Ecommerce.
-     *
-     * @subpackage ResursCallbackTypes
-     */
-
-    /**
-     * Callbacktype not defined
-     */
-    const UNDEFINED = 0;
-
-    /**
-     * Callback UNFREEZE
-     *
-     * Informs when an payment is unfrozen after manual fraud screening. This means that the payment may be debited (captured) and the goods can be delivered.
-     * @link https://test.resurs.com/docs/display/ecom/UNFREEZE
-     */
-    const UNFREEZE = 1;
-    /**
-     * Callback ANNULMENT
-     *
-     * Will be sent once a payment is fully annulled at Resurs Bank, for example when manual fraud screening implies fraudulent usage. Annulling part of the payment will not trigger this event.
-     * If the representative is not listening to this callback orders might be orphaned (i e without connected payment) and products bound to these orders never released.
-     * @link https://test.resurs.com/docs/display/ecom/ANNULMENT
-     */
-    const ANNULMENT = 2;
-    /**
-     * Callback AUTOMATIC_FRAUD_CONTROL
-     *
-     * Will be sent once a payment is fully annulled at Resurs Bank, for example when manual fraud screening implies fraudulent usage. Annulling part of the payment will not trigger this event.
-     * @link https://test.resurs.com/docs/display/ecom/AUTOMATIC_FRAUD_CONTROL
-     */
-    const AUTOMATIC_FRAUD_CONTROL = 3;
-    /**
-     * Callback FINALIZATION
-     *
-     * Once a payment is finalized automatically at Resurs Bank, for this will trigger this event, when the parameter finalizeIfBooked parmeter is set to true in paymentData. This callback will only be called if you are implementing the paymentData method with finilizedIfBooked parameter set to true, in the Simplified Shop Flow Service.
-     * @link https://test.resurs.com/docs/display/ecom/FINALIZATION
-     */
-    const FINALIZATION = 4;
-    /**
-     * Callback TEST
-     *
-     * To test the callback mechanism. Can be used in integration testing to assure that communication works. A call is made to DeveloperService (triggerTestEvent) and Resurs Bank immediately does a callback. Note that TEST callback must be registered in the same way as all the other callbacks before it can be used.
-     * @link https://test.resurs.com/docs/display/ecom/TEST
-     */
-    const TEST = 5;
-    /**
-     * Callback UPDATE
-     *
-     * Will be sent when a payment is updated. Resurs Bank will do a HTTP/POST call with parameter paymentId and the xml for paymentDiff to the registered URL.
-     * @link https://test.resurs.com/docs/display/ecom/UPDATE
-     */
-    const UPDATE = 6;
-
-    /**
-     * Callback BOOKED
-     *
-     * Trigger: The order is in Resurs Bank system and ready for finalization
-     * @link https://test.resurs.com/docs/display/ecom/BOOKED
-     */
-    const BOOKED = 7;
-}
-
-/**
- * Class ResursAfterShopRenderTypes
- */
-abstract class ResursAfterShopRenderTypes {
-    const NONE = 0;
-    const FINALIZE = 1;
-    const CREDIT = 2;
-    const ANNUL = 3;
-    const UPDATE = 4;
-}
-
-/**
- * Class ResursEnvironments
- */
-abstract class ResursEnvironments {
-    const ENVIRONMENT_PRODUCTION = 0;
-    const ENVIRONMENT_TEST = 1;
-    const ENVIRONMENT_NOT_SET = 2;
-}
-
-abstract class ResursExceptions {
-    /**
-     * Miscellaneous exceptions
-     */
-    const NOT_IMPLEMENTED = 1000;
-    const CLASS_REFLECTION_MISSING = 1001;
-    const WSDL_APILOAD_EXCEPTION = 1002;
-    const WSDL_PASSTHROUGH_EXCEPTION = 1003;
-    const REGEX_COUNTRYCODE_MISSING = 1004;
-    const REGEX_CUSTOMERTYPE_MISSING = 1004;
-    const FORMFIELD_CANHIDE_EXCEPTION = 1005;
-
-    /*
-     * SSL/HTTP Exceptions
-     */
-    const SSL_PRODUCTION_CERTIFICATE_MISSING = 1500;
-    const SSL_WRAPPER_MISSING = 1501;
-
-    /*
-     * Services related
-     */
-    const NO_SERVICE_CLASSES_LOADED = 2000;
-    const NO_SERVICE_API_HANDLED = 2001;
-
-    /*
-     * API and callbacks
-     */
-    const CALLBACK_UNSUFFICIENT_DATA = 6000;
-    const CALLBACK_TYPE_UNSUPPORTED = 6001;
-    const CALLBACK_URL_MISMATCH = 6002;
-    const CALLBACK_SALTDIGEST_MISSING = 6003;
-
-    /*
-     * API and bookings
-     */
-    const BOOKPAYMENT_NO_BOOKDATA = 7000;
-    const PAYMENTSPEC_EMPTY = 7001;
-    const BOOKPAYMENT_NO_BOOKPAYMENT_CLASS = 7002;
-    const PAYMENT_METHODS_CACHE_DISABLED = 7003;
-    const ANNUITY_FACTORS_CACHE_DISABLED = 7004;
-    const ANNUITY_FACTORS_METHOD_UNAVAILABLE = 7005;
-    const UPDATECART_NOCLASS_EXCEPTION = 7006;
-    const UPDATECARD_DOUBLE_DATA_EXCEPTION = 7006;
-    const PREPARECARD_NUMERIC_EXCEPTION = 7007;
-}
-
-/**
- * Class ResursCurlMethods
- *
- * How CURL should handle calls
- */
-abstract class ResursCurlMethods {
-    const METHOD_GET = 0;
-    const METHOD_POST = 1;
-    const METHOD_PUT = 2;
-    const METHOD_DELETE = 3;
-}
-
-/**
- * Class ResursOmniCallTypes
- * Omnicheckout callback types
- */
-abstract class ResursOmniCallTypes {
-    const METHOD_PAYMENTS = 0;
-    const METHOD_CALLBACK = 1;
-}
-
-/**
- * Class ResursMethodTypes
- * Preferred payment method types if called.
- */
-abstract class ResursMethodTypes {
-    /** Default method */
-    const METHOD_UNDEFINED = 0;
-    const METHOD_SIMPLIFIED = 1;
-    const METHOD_HOSTED = 2;
-    const METHOD_OMNI = 3;
 }
