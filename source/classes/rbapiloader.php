@@ -542,7 +542,7 @@ class ResursBank
     }
 
     public function getBookedJsonObject($method = ResursMethodTypes::METHOD_UNDEFINED) {
-        $returnObject = new stdClass();
+        $returnObject = new \stdClass();
         if ($method == ResursMethodTypes::METHOD_SIMPLIFIED) {
             return $returnObject;
         } elseif ($method == ResursMethodTypes::METHOD_HOSTED) {
@@ -1979,7 +1979,7 @@ class ResursBank
             $this->_paymentData = new resurs_paymentData($paymentMethodId);
         } else {
             // If there are no wsdl-classes loaded, we should consider a default stdClass as object
-            $this->_paymentData = new stdClass();
+            $this->_paymentData = new \stdClass();
         }
 
         $this->_paymentData->preferredId = isset($paymentDataArray['preferredId']) && !empty($paymentDataArray['preferredId']) ? $paymentDataArray['preferredId'] : $this->preferredId;
@@ -2345,7 +2345,7 @@ class ResursBank
      * @throws ResursException
      */
     private function bookPaymentBulk($paymentMethodId = '', $bookData = array(), $getReturnedObjectAsStd = true, $keepReturnObject = false, $externalParameters = array()) {
-        if (empty($paymentMethodId)) { return new stdClass(); }
+        if (empty($paymentMethodId)) { return new \stdClass(); }
         if ($this->enforceService == ResursMethodTypes::METHOD_OMNI) {
             $bookData['type'] = "omni";
         } else {
