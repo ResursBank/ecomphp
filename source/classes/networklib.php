@@ -856,10 +856,12 @@ if (function_exists('curl_init')) {
             }
             $parsedContent = null;
             $testJson = @json_decode($content);
+            $testSerialization = null;
             if (gettype($testJson) === "object") {
                 $parsedContent = $testJson;
+            } else {
+                $testSerialization = @unserialize($content); 
             }
-            $testSerialization = @unserialize($content);
             if (gettype($testSerialization) === "object" || gettype($testSerialization) === "array") {
                 $parsedContent = $testSerialization;
             }
