@@ -124,7 +124,10 @@ class TorneLIB_Network
      */
     public function getArpaFromIpv6($ip = '::')
     {
-        $unpack = @unpack('H*hex', inet_pton($ip));
+        if (empty($ip)) {
+            return;
+        }
+        $unpack = unpack('H*hex', inet_pton($ip));
         $hex = $unpack['hex'];
         return implode('.', array_reverse(str_split($hex)));
     }
@@ -864,7 +867,8 @@ if (function_exists('curl_init')) {
                 $parsedContent = $testSerialization;
             }
             if (is_null($parsedContent) && (preg_match("/xml version/", $content) || preg_match("/rss version/", $content) || preg_match("/xml/i", $contentType))) {
-                if (!empty(trim($content))) {
+                $trimmedContent = trim($content); // PHP 5.3: Can't use function return value in write context
+                if (!empty($trimmedContent)) {
                     $simpleXML = new \SimpleXMLElement($content);
                     if (isset($simpleXML) && is_object($simpleXML)) {
                         return $simpleXML;
@@ -1219,7 +1223,7 @@ if (function_exists('curl_init')) {
             if (curl_errno($this->CurlSession)) {
                 $errorCode = curl_errno($this->CurlSession);
                 if ($this->CurlResolveForced && $this->CurlResolveRetry >= 2) {
-                    throw new xception(__FUNCTION__ . ": Could not fetch url after internal retries", 1004);
+                    throw new \Exception(__FUNCTION__ . ": Could not fetch url after internal retries", 1004);
                 }
                 if ($errorCode == CURLE_COULDNT_RESOLVE_HOST || $errorCode === 45) {
                     $this->CurlResolveRetry++;
