@@ -858,13 +858,17 @@ if (function_exists('curl_init')) {
                 $contentType = isset($newContent['header']['info']['Content-Type']) ? $newContent['header']['info']['Content-Type'] : null;
             }
             $parsedContent = null;
+            $testSerialization = null;
             $testJson = @json_decode($content);
             if (gettype($testJson) === "object") {
                 $parsedContent = $testJson;
-            }
-            $testSerialization = @unserialize($content);
-            if (gettype($testSerialization) === "object" || gettype($testSerialization) === "array") {
-                $parsedContent = $testSerialization;
+            } else {
+                if (is_string($content)) {
+                    $testSerialization = @unserialize($content);
+                    if (gettype($testSerialization) == "object" || gettype($testSerialization) === "array") {
+                        $parsedContent = $testSerialization;
+                    }
+                }
             }
             if (is_null($parsedContent) && (preg_match("/xml version/", $content) || preg_match("/rss version/", $content) || preg_match("/xml/i", $contentType))) {
                 $trimmedContent = trim($content); // PHP 5.3: Can't use function return value in write context
