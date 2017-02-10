@@ -203,7 +203,15 @@ if (function_exists('curl_init')) {
         private $TorneCurlVersion = "5.0.0";
 
         /** @var string Internal release snapshot that is being used to find out if we are running the latest version of this library */
-        private $TorneCurlRelease = "20170209";
+        private $TorneCurlRelease = "20170210";
+
+        /**
+         * Target environment (if target is production some debugging values will be skipped)
+         *
+         * @since 5.0.0-20170210
+         * @var int
+         */
+        private $TargetEnvironment = TORNELIB_CURL_ENVIRONMENT::ENVIRONMENT_PRODUCTION;
 
         /**
          * Autodetecting of SSL capabilities section
@@ -226,6 +234,13 @@ if (function_exists('curl_init')) {
         private $testssldeprecated = false;
         /** @var bool If there are problems with certificates bound to a host/peer, set this to false if necessary. Default is to always try to verify them */
         private $sslVerify = true;
+        /**
+         * Allow https calls to unverified peers/hosts
+         *
+         * @since 5.0.0-20170210
+         * @var bool
+         */
+        private $allowSslUnverified = false;
 
         /** @var array Default paths to the certificates we are looking for */
         public $sslPemLocations = array('/etc/ssl/certs/cacert.pem', '/etc/ssl/certs/ca-certificates.crt');
@@ -246,8 +261,8 @@ if (function_exists('curl_init')) {
         public $curlopt = array(
             CURLOPT_CONNECTTIMEOUT => 5,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => 0,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => true,
             CURLOPT_ENCODING => 1,
             CURLOPT_TIMEOUT => 10,
             CURLOPT_USERAGENT => 'TorneLIB-PHPcURL',
@@ -375,6 +390,18 @@ if (function_exists('curl_init')) {
          */
         public function setLocalCookies($enabled = false) {
             $this->useLocalCookies = $enabled;
+        }
+
+        /**
+         * Switch over to forced debugging
+         *
+         * To not break production environments by setting for example _DEBUG_TCURL_UNSET_PEM_LOCATION, switching over to test mode is required
+         * to use those variables.
+         *
+         * @since 5.0.0-20170210
+         */
+        public function setTestEnabled() {
+            $this->TargetEnvironment = TORNELIB_CURL_ENVIRONMENT::ENVIRONMENT_TEST;
         }
 
         /**
@@ -611,11 +638,11 @@ if (function_exists('curl_init')) {
          */
         private function openssl_guess($forceTesting = false)
         {
-            $pemLocation = "";
             if ($this->testssl || $forceTesting) {
                 $this->openSslGuessed = true;
                 if (version_compare(PHP_VERSION, "5.6.0", ">=") && function_exists("openssl_get_cert_locations")) {
                     $locations = openssl_get_cert_locations();
+
                     if (is_array($locations)) {
                         if (isset($locations['default_cert_file'])) {
                             /* If it exists don't bother */
@@ -627,37 +654,51 @@ if (function_exists('curl_init')) {
                             if (file_exists($locations['default_cert_dir'])) {
                                 $this->hasCertDir = true;
                             }
-                            /* Sometimes certificates are located in a default location, which is /etc/ssl/certs - this part scans through such directories for a proper cert-file */
-                            if (!$this->hasCertFile && is_array($this->sslPemLocations) && count($this->sslPemLocations)) {
-                                /* Loop through suggested locations and set a cafile if found */
-                                foreach ($this->sslPemLocations as $pemLocation) {
-                                    if (file_exists($pemLocation)) {
-                                        ini_set('openssl.cafile', $pemLocation);
-                                        $this->useCertFile = $pemLocation;
-                                        $this->hasCertFile = true;
-                                    }
+                            if ($this->TargetEnvironment == TORNELIB_CURL_ENVIRONMENT::ENVIRONMENT_TEST && isset($this->_DEBUG_TCURL_UNSET_PEM_LOCATION)) {
+                                $this->hasCertFile = false;
+                                $this->useCertFile = null;
+                            }
+                        }
+
+                        if (!$this->hasCertFile && is_array($this->sslPemLocations) && count($this->sslPemLocations)) {
+                            /*
+                             * Loop through suggested locations and set the cafile in a variable if the defaults has not been found. This will be used by the curl engine
+                             * later on, to make the proper call with proper peer- and host validation (using ini_set at this level will not work).
+                             * It has to be done through php.ini, .htaccess, httpd.conf or .user.ini
+                             */
+                            foreach ($this->sslPemLocations as $pemLocation) {
+                                if (file_exists($pemLocation)) {
+                                    $this->useCertFile = $pemLocation;
+                                    $this->hasCertFile = true;
                                 }
                             }
                         }
                     }
                     /* On guess, disable verification if failed */
-                    if (!$this->hasCertFile) {
+                    if (!$this->hasCertFile && $this->allowSslUnverified) {
                         $this->setSslVerify(false);
                     }
                 } else {
                     /* If we run on other PHP versions than 5.6.0 or higher, try to fall back into a known directory */
                     if ($this->testssldeprecated) {
                         if (!$this->hasCertFile && is_array($this->sslPemLocations) && count($this->sslPemLocations)) {
-                            /* Loop through suggested locations and set a cafile if found */
+                            /*
+                             * Loop through suggested locations and set the cafile in a variable if it's found. This will be used by the curl engine
+                             * later on, to make the proper call with proper peer- and host validation (using ini_set at this level will not work).
+                             * It has to be done through php.ini, .htaccess, httpd.conf or .user.ini
+                             */
                             foreach ($this->sslPemLocations as $pemLocation) {
                                 if (file_exists($pemLocation)) {
-                                    ini_set('openssl.cafile', $pemLocation);
                                     $this->useCertFile = $pemLocation;
                                     $this->hasCertFile = true;
                                 }
                             }
+                            if ($this->TargetEnvironment == TORNELIB_CURL_ENVIRONMENT::ENVIRONMENT_TEST && isset($this->_DEBUG_TCURL_UNSET_PEM_LOCATION)) {
+                                $this->hasCertFile = false;
+                                $this->useCertFile = null;
+                            }
                         }
-                        if (!$this->hasCertFile) {
+                        if (!$this->hasCertFile && $this->allowSslUnverified) {
                             $this->setSslVerify(false);
                         }
                     }
@@ -684,11 +725,30 @@ if (function_exists('curl_init')) {
         /**
          * Enable/disable SSL Peer/Host verification, if problems occur with certificates. If setCertAuto is enabled, this function will use best practice.
          *
-         * @param bool|true $enabledFlag
+         * @param bool $enabledFlag
+         * @throws \Exception
          */
         public function setSslVerify($enabledFlag = true)
         {
-            $this->sslVerify = $enabledFlag;
+            if ($this->allowSslUnverified) {
+                $this->sslVerify = $enabledFlag;
+            } else {
+                throw new \Exception("setSslUnverified(true) has not been set.");
+            }
+        }
+
+        /**
+         * While doing SSL calls, and SSL certificate verifications is failing, enable the ability to skip SSL verifications.
+         *
+         * Normally, we want a valid SSL certificate while doing https-requests, but sometimes the verifications must be disabled. One reason of this is
+         * in cases, when crt-files are missing and PHP can not under very specific circumstances verify the peer. To allow this behaviour, the client
+         * MUST use this function.
+         *
+         * @since 5.0.0-20170210
+         * @param bool $enabledFlag
+         */
+        public function setSslUnverified($enabledFlag = false) {
+            $this->allowSslUnverified = $enabledFlag;
         }
 
 
@@ -1144,10 +1204,21 @@ if (function_exists('curl_init')) {
             // If certificates missing
             if (!$this->TestCerts()) {
                 // And we're allowed to run without them
-                if (!$this->sslVerify) {
+                if (!$this->sslVerify && $this->allowSslUnverified) {
                     // Then disable the checking here
-                    curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYHOST, 0);
-                    curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYPEER, 0);
+                    curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYHOST, false);
+                    curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYPEER, false);
+                } else {
+                    curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYHOST, true);
+                    curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYPEER, true);
+                }
+            } else {
+                if ($this->useCertFile != "" && file_exists($this->useCertFile)) {
+                    try {
+                        curl_setopt($this->CurlSession, CURLOPT_CAINFO, $this->useCertFile);
+                        curl_setopt($this->CurlSession, CURLOPT_CAPATH, dirname($this->useCertFile));
+                    } catch (\Exception $e) {
+                    }
                 }
             }
             curl_setopt($this->CurlSession, CURLOPT_VERBOSE, false);
@@ -1211,6 +1282,7 @@ if (function_exists('curl_init')) {
             curl_setopt($this->CurlSession, CURLINFO_HEADER_OUT, true);
 
             $returnContent = curl_exec($this->CurlSession);
+
             if (curl_errno($this->CurlSession)) {
                 $errorCode = curl_errno($this->CurlSession);
                 if ($this->CurlResolveForced && $this->CurlResolveRetry >= 2) {
@@ -1448,4 +1520,9 @@ abstract class CURL_POST_AS
 abstract class CURL_AUTH_TYPES {
     const AUTHTYPE_NONE = 0;
     const AUTHTYPE_BASIC = 1;
+}
+
+abstract class TORNELIB_CURL_ENVIRONMENT {
+    const ENVIRONMENT_PRODUCTION = 0;
+    const ENVIRONMENT_TEST = 1;
 }
