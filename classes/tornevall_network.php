@@ -623,21 +623,25 @@ if (function_exists('curl_init')) {
          * problems with finding certificates, in case for example where they are not placed in standard locations. When running the testing, we will also try to set up
          * a correct location for the certificates, if any are found somewhere else.
          *
-         * The default configuration for this method is to not run any test, since there should be no problems of running in properly installed environments.
-         * If there are known problems in the environment that is being used, you can try to set $testssl to true.
-         *
-         * At first, the variable $testssl is used to automatically try to find out if there is valid certificate bundles installed on the running system. In PHP 5.6.0 and higher
+         * The default configuration of this method is to run tests, but only for PHP 5.6.0 or higher.
+         * If you know that you're running something older you may want to consider enabling testssldeprecated.
+         * 
+         * At first, the variable $testssl is used to automatically try to find out if there is valid certificate bundle installed on the running system. In PHP 5.6.0 and higher
          * this procedure is simplified with the help of openssl_get_cert_locations(), which gives us a default path to installed certificates. In this case we will first look there
          * for the certificate bundle. If we do fail there, or if your system is running something older, the testing are running in guessing mode.
          *
          * The method is untested in Windows server environments when using OpenSSL.
          *
          * @param bool $forceTesting Force testing even if $testssl is disabled
-         * @link http://developer.tornevall.net/apigen/TorneLIB-5.0/class-TorneLIB.Tornevall_cURL.html openssl_guess() is a part of TorneLIB 5.0, described here
+         * @link https://docs.tornevall.net/x/KwCy#TheNetworkandcURLclass(tornevall_network.php)-SSLCertificatesandverification
          * @return bool
          */
         private function openssl_guess($forceTesting = false)
         {
+            /*
+             * The certificate location here will be set up for the curl engine later on, during preparation of the connection.
+             * NOTE: ini_set() does not work for setting up the cafile, this has to be done through php.ini, .htaccess, httpd.conf or .user.ini
+             */
             if ($this->testssl || $forceTesting) {
                 $this->openSslGuessed = true;
                 if (version_compare(PHP_VERSION, "5.6.0", ">=") && function_exists("openssl_get_cert_locations")) {
@@ -645,7 +649,7 @@ if (function_exists('curl_init')) {
 
                     if (is_array($locations)) {
                         if (isset($locations['default_cert_file'])) {
-                            /* If it exists don't bother */
+                            // If it exists, we don't have to bother anymore
                             if (file_exists($locations['default_cert_file'])) {
                                 $this->hasCertFile = true;
                                 $this->useCertFile = $locations['default_cert_file'];
@@ -654,18 +658,16 @@ if (function_exists('curl_init')) {
                             if (file_exists($locations['default_cert_dir'])) {
                                 $this->hasCertDir = true;
                             }
+                            // For unit testing
                             if ($this->TargetEnvironment == TORNELIB_CURL_ENVIRONMENT::ENVIRONMENT_TEST && isset($this->_DEBUG_TCURL_UNSET_PEM_LOCATION)) {
                                 $this->hasCertFile = false;
                                 $this->useCertFile = null;
                             }
                         }
 
+                        // Check if the above control was successful - switch over to pemlocations if not.
                         if (!$this->hasCertFile && is_array($this->sslPemLocations) && count($this->sslPemLocations)) {
-                            /*
-                             * Loop through suggested locations and set the cafile in a variable if the defaults has not been found. This will be used by the curl engine
-                             * later on, to make the proper call with proper peer- and host validation (using ini_set at this level will not work).
-                             * It has to be done through php.ini, .htaccess, httpd.conf or .user.ini
-                             */
+                            // Loop through suggested locations and set the cafile in a variable if it's found.
                             foreach ($this->sslPemLocations as $pemLocation) {
                                 if (file_exists($pemLocation)) {
                                     $this->useCertFile = $pemLocation;
@@ -674,30 +676,29 @@ if (function_exists('curl_init')) {
                             }
                         }
                     }
-                    /* On guess, disable verification if failed */
+                    // On guess, disable verification if failed (if allowed)
                     if (!$this->hasCertFile && $this->allowSslUnverified) {
                         $this->setSslVerify(false);
                     }
                 } else {
-                    /* If we run on other PHP versions than 5.6.0 or higher, try to fall back into a known directory */
+                    // If we run on other PHP versions than 5.6.0 or higher, try to fall back into a known directory
                     if ($this->testssldeprecated) {
                         if (!$this->hasCertFile && is_array($this->sslPemLocations) && count($this->sslPemLocations)) {
-                            /*
-                             * Loop through suggested locations and set the cafile in a variable if it's found. This will be used by the curl engine
-                             * later on, to make the proper call with proper peer- and host validation (using ini_set at this level will not work).
-                             * It has to be done through php.ini, .htaccess, httpd.conf or .user.ini
-                             */
+                            // Loop through suggested locations and set the cafile in a variable if it's found.
                             foreach ($this->sslPemLocations as $pemLocation) {
                                 if (file_exists($pemLocation)) {
                                     $this->useCertFile = $pemLocation;
                                     $this->hasCertFile = true;
                                 }
                             }
+                            // For unit testing
                             if ($this->TargetEnvironment == TORNELIB_CURL_ENVIRONMENT::ENVIRONMENT_TEST && isset($this->_DEBUG_TCURL_UNSET_PEM_LOCATION)) {
                                 $this->hasCertFile = false;
                                 $this->useCertFile = null;
                             }
                         }
+
+                        // Check if the above control was successful - switch over to pemlocations if not.
                         if (!$this->hasCertFile && $this->allowSslUnverified) {
                             $this->setSslVerify(false);
                         }
@@ -1213,6 +1214,7 @@ if (function_exists('curl_init')) {
                     curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYPEER, true);
                 }
             } else {
+                // Silently configure for https-connections, if exists
                 if ($this->useCertFile != "" && file_exists($this->useCertFile)) {
                     try {
                         curl_setopt($this->CurlSession, CURLOPT_CAINFO, $this->useCertFile);
@@ -1522,6 +1524,13 @@ abstract class CURL_AUTH_TYPES {
     const AUTHTYPE_BASIC = 1;
 }
 
+/**
+ * Class TORNELIB_CURL_ENVIRONMENT
+ * 
+ * The unit testing helper. To not collide with production environments, somet settings should only be available while unit testing.
+ * 
+ * @package TorneLIB
+ */
 abstract class TORNELIB_CURL_ENVIRONMENT {
     const ENVIRONMENT_PRODUCTION = 0;
     const ENVIRONMENT_TEST = 1;
