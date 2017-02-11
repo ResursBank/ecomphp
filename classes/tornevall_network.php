@@ -7,9 +7,9 @@ namespace TorneLIB;
  * As this library may run as stand alone code, exceptions are thrown as regular \Exception instead of a TorneLIB_Exception.
  *
  * Class TorneLIB_Network
- * @link https://docs.tornevall.net/x/KQCy Complete usage documentation (not automated)
- * @link https://developer.tornevall.net/apigen/TorneLIB-5.0/class-TorneLIB.TorneLIB_Network.html This document (APIGen automation)
- * @link https://developer.tornevall.net/download/TorneLIB-5.0/raw/tornevall_network.php Downloadable snapshot
+ * @link https://phpdoc.tornevall.net/TorneLIBv5/class-TorneLIB.TorneLIB_Network.html PHPDoc/Staging - TorneLIB_Network
+ * @link https://docs.tornevall.net/x/KQCy TorneLIB (PHP) Landing documentation
+ * @link https://bitbucket.tornevall.net/projects/LIB/repos/tornelib-php/browse Sources of TorneLIB
  * @package TorneLIB
  */
 class TorneLIB_Network
@@ -183,25 +183,12 @@ if (function_exists('curl_init')) {
      *
      * Versioning are based on TorneLIB v5, but follows its own standards in the chain.
      *
-     * Library for handling calls with cURL. It works with high level of verbosity so parsing can be made easier. When using
-     * the methods for GET, POST, PUT or DELETE we will always return a fully parsed response as an array in the following format
-     *
-     * <pre>
-     * array(
-     *  "header" => array("info", "full")
-     *  "body" => '-body content-',
-     *  "code" => numericResponseCodeFromPage,
-     *  "parsed" => detectedParsedResponse
-     * )
-     * </pre>
-     *
-     * If we for example get a json-string as a response from a webpage, the parsed field will containg a parsed object for the result.
-     *
-     * Currently TorneLIB contains the TorneAPI-package, so the TorneAPI package should also have this version since it's the most updated
-     * and proper version.
-     *
      * @package TorneLIB
-     * @link http://docs.tornevall.net/x/FoBU TorneLIB
+     * @link https://phpdoc.tornevall.net/TorneLIBv5/source-class-TorneLIB.Tornevall_cURL.html PHPDoc/Staging - Tornevall_cURL
+     * @link https://docs.tornevall.net/x/KQCy TorneLIB (PHP) Landing documentation
+     * @link https://bitbucket.tornevall.net/projects/LIB/repos/tornelib-php/browse Sources of TorneLIB
+     * @link https://docs.tornevall.net/x/KwCy Network & Curl Library usage
+     * @link https://docs.tornevall.net/x/FoBU TorneLIB Full documentation
      */
     class Tornevall_cURL
     {
@@ -543,7 +530,7 @@ if (function_exists('curl_init')) {
          * Recommendation of Usage: Do not copy only those functions, use the full version of tornevall_network.php since there may be dependencies in it.
          *
          * @return array
-         * @link http://developer.tornevall.net/apigen/TorneLIB-5.0/class-TorneLIB.Tornevall_cURL.html sslStreamContextCorrection() is a part of TorneLIB 5.0, described here
+         * @link https://phpdoc.tornevall.net/TorneLIBv5/source-class-TorneLIB.Tornevall_cURL.html sslStreamContextCorrection() is a part of TorneLIB 5.0, described here
          */
         public function sslStreamContextCorrection()
         {
