@@ -127,7 +127,7 @@ class TorneLIB_Network
         if (empty($ip)) {
             return;
         }
-        $unpack = unpack('H*hex', inet_pton($ip));
+        $unpack = @unpack('H*hex', inet_pton($ip));
         $hex = $unpack['hex'];
         return implode('.', array_reverse(str_split($hex)));
     }
