@@ -25,19 +25,31 @@ class Tornevall_cURLTest extends \PHPUnit_Framework_TestCase
          */
         $this->Urls = array(
             'simple' => 'http://identifier.tornevall.net/',
-            'tests' => 'developer.tornevall.net/tests/tornevall_network/index.php'
+            'tests' => 'developer.tornevall.net/tests/tornevall_network/'
         );
     }
 
     private function simpleGet() {
         return $this->CURL->doGet($this->Urls['simple']);
     }
-    private function urlGet($parameters = '', $protocol = "http") {
-        $theUrl = $protocol . "://" . $this->Urls['tests'] . "?" . $parameters;
+
+    /**
+     * Make sure we always get a protocol
+     * @param string $protocol
+     * @return string
+     */
+    private function getProtocol($protocol = 'http') {
+        if (empty($protocol)) {
+            $protocol = "http";
+        }
+        return $protocol;
+    }
+    private function urlGet($parameters = '', $protocol = "http", $indexFile = 'index.php') {
+        $theUrl = $this->getProtocol($protocol) . "://" . $this->Urls['tests'] . $indexFile . "?" . $parameters;
         return $this->CURL->doGet($theUrl);
     }
-    private function urlPost($parameters = array(), $protocol = "http") {
-        $theUrl = $protocol . "://" . $this->Urls['tests'];
+    private function urlPost($parameters = array(), $protocol = "http", $indexFile = 'index.php') {
+        $theUrl = $this->getProtocol($protocol) . "://" . $this->Urls['tests'] . $indexFile;
         return $this->CURL->doPost($theUrl, $parameters);
     }
     private function hasBody($container) {
@@ -107,6 +119,18 @@ class Tornevall_cURLTest extends \PHPUnit_Framework_TestCase
         $container = $this->getParsed($this->urlGet("ssl&bool&o=xml&method=get&using=SimpleXMLElement"));
         $this->assertTrue(is_object($container->using) && $container->using == "SimpleXMLElement");
     }
+    function testGetSimpleDom() {
+        $this->pemDefault();
+        $this->CURL->setParseHtml(true);
+        $container = $this->getParsed($this->urlGet("ssl&bool&o=xml&method=get&using=SimpleXMLElement", null, "simple.html"));
+        // ByNodes, ByClosestTag, ById
+        $this->assertTrue(count($container['ById']) > 0);
+    }
+
+
+    /***************
+     *  SSL TESTS  *
+     **************/
 
     /**
      * Test: SSL Certificates at custom location
