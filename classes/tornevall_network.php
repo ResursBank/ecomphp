@@ -917,7 +917,7 @@ if (function_exists('curl_init')) {
             $parsedContent = null;
             $testSerialization = null;
             $testJson = @json_decode($content);
-            if (gettype($testJson) === "object") {
+            if (gettype($testJson) === "object" || (!empty($testJson) && is_array($testJson))) {
                 $parsedContent = $testJson;
             } else {
                 if (is_string($content)) {
