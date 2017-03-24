@@ -18,7 +18,7 @@ namespace Resursbank\RBEcomPHP;
  */
 if (!defined('RB_API_PATH')) { define('RB_API_PATH', __DIR__); }
 require_once('rbapi_exceptions.php');
-require_once('networklib.php');
+require_once('thirdparty/network.php');
 require_once('rbapiloader/ResursAfterShopRenderTypes.php');
 require_once('rbapiloader/ResursCallbackTypes.php');
 require_once('rbapiloader/ResursCurlMethods.php');
