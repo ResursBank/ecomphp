@@ -1,8 +1,6 @@
 <?php
 
-namespace Resursbank\RBEcomPHP;
-
-if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_removePasswordResponse", false))
+if (!class_exists("resurs_removePasswordResponse", false)) 
 {
 class resurs_removePasswordResponse
 {

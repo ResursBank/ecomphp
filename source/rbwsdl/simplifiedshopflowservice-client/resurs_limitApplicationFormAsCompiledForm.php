@@ -1,8 +1,6 @@
 <?php
 
-namespace Resursbank\RBEcomPHP;
-
-if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_limitApplicationFormAsCompiledForm", false)) 
+if (!class_exists("resurs_limitApplicationFormAsCompiledForm", false)) 
 {
 class resurs_limitApplicationFormAsCompiledForm
 {

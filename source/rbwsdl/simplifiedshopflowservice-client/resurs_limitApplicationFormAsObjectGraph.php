@@ -1,8 +1,6 @@
 <?php
 
-namespace Resursbank\RBEcomPHP;
-
-if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_limitApplicationFormAsObjectGraph", false)) 
+if (!class_exists("resurs_limitApplicationFormAsObjectGraph", false)) 
 {
 class resurs_limitApplicationFormAsObjectGraph
 {

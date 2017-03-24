@@ -1,8 +1,6 @@
 <?php
 
-namespace Resursbank\RBEcomPHP;
-
-if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_peekInvoiceSequenceResponse", false))
+if (!class_exists("resurs_peekInvoiceSequenceResponse", false)) 
 {
 class resurs_peekInvoiceSequenceResponse
 {

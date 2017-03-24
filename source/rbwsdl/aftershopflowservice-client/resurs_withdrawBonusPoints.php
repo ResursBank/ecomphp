@@ -1,8 +1,6 @@
 <?php
 
-namespace Resursbank\RBEcomPHP;
-
-if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_withdrawBonusPoints", false))
+if (!class_exists("resurs_withdrawBonusPoints", false)) 
 {
 class resurs_withdrawBonusPoints
 {

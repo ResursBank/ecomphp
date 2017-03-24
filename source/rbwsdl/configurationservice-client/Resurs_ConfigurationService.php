@@ -1,8 +1,6 @@
 <?php
 
-namespace Resursbank\RBEcomPHP;
-
-if (!class_exists("\\Resursbank\\RBEcomPHP\\Resurs_ConfigurationService", false))
+if (!class_exists("Resurs_ConfigurationService", false)) 
 {
 include_once('resurs_customer.php');
 include_once('resurs_address.php');
@@ -50,35 +48,35 @@ class Resurs_ConfigurationService extends \SoapClient
      * @access private
      */
     private static $classmap = array(
-      'customer' => 'Resursbank\RBEcomPHP\resurs_customer',
-      'address' => 'Resursbank\RBEcomPHP\resurs_address',
-      'mapEntry' => 'Resursbank\RBEcomPHP\resurs_mapEntry',
-      'paymentSpec' => 'Resursbank\RBEcomPHP\resurs_paymentSpec',
-      'specLine' => 'Resursbank\RBEcomPHP\resurs_specLine',
-      'limit' => 'Resursbank\RBEcomPHP\resurs_limit',
-      'digestConfiguration' => 'Resursbank\RBEcomPHP\resurs_digestConfiguration',
-      'invoiceData' => 'Resursbank\RBEcomPHP\resurs_invoiceData',
-      'changePassword' => 'Resursbank\RBEcomPHP\resurs_changePassword',
-      'changePasswordResponse' => 'Resursbank\RBEcomPHP\resurs_changePasswordResponse',
-      'addPassword' => 'Resursbank\RBEcomPHP\resurs_addPassword',
-      'addPasswordResponse' => 'Resursbank\RBEcomPHP\resurs_addPasswordResponse',
-      'removePassword' => 'Resursbank\RBEcomPHP\resurs_removePassword',
-      'removePasswordResponse' => 'Resursbank\RBEcomPHP\resurs_removePasswordResponse',
-      'registerEventCallback' => 'Resursbank\RBEcomPHP\resurs_registerEventCallback',
-      'registerEventCallbackResponse' => 'Resursbank\RBEcomPHP\resurs_registerEventCallbackResponse',
-      'getRegisteredEventCallback' => 'Resursbank\RBEcomPHP\resurs_getRegisteredEventCallback',
-      'getRegisteredEventCallbackResponse' => 'Resursbank\RBEcomPHP\resurs_getRegisteredEventCallbackResponse',
-      'unregisterEventCallback' => 'Resursbank\RBEcomPHP\resurs_unregisterEventCallback',
-      'unregisterEventCallbackResponse' => 'Resursbank\RBEcomPHP\resurs_unregisterEventCallbackResponse',
-      'peekInvoiceSequence' => 'Resursbank\RBEcomPHP\resurs_peekInvoiceSequence',
-      'peekInvoiceSequenceResponse' => 'Resursbank\RBEcomPHP\resurs_peekInvoiceSequenceResponse',
-      'setInvoiceSequence' => 'Resursbank\RBEcomPHP\resurs_setInvoiceSequence',
-      'setInvoiceSequenceResponse' => 'Resursbank\RBEcomPHP\resurs_setInvoiceSequenceResponse',
-      'setInvoiceDataResponse' => 'Resursbank\RBEcomPHP\resurs_setInvoiceDataResponse',
-      'setInvoiceData' => 'Resursbank\RBEcomPHP\resurs_setInvoiceData',
-      'getInvoiceData' => 'Resursbank\RBEcomPHP\resurs_getInvoiceData',
-      'getInvoiceDataResponse' => 'Resursbank\RBEcomPHP\resurs_getInvoiceDataResponse',
-      'ECommerceError' => 'Resursbank\RBEcomPHP\resurs_ECommerceError');
+      'customer' => '\resurs_customer',
+      'address' => '\resurs_address',
+      'mapEntry' => '\resurs_mapEntry',
+      'paymentSpec' => '\resurs_paymentSpec',
+      'specLine' => '\resurs_specLine',
+      'limit' => '\resurs_limit',
+      'digestConfiguration' => '\resurs_digestConfiguration',
+      'invoiceData' => '\resurs_invoiceData',
+      'changePassword' => '\resurs_changePassword',
+      'changePasswordResponse' => '\resurs_changePasswordResponse',
+      'addPassword' => '\resurs_addPassword',
+      'addPasswordResponse' => '\resurs_addPasswordResponse',
+      'removePassword' => '\resurs_removePassword',
+      'removePasswordResponse' => '\resurs_removePasswordResponse',
+      'registerEventCallback' => '\resurs_registerEventCallback',
+      'registerEventCallbackResponse' => '\resurs_registerEventCallbackResponse',
+      'getRegisteredEventCallback' => '\resurs_getRegisteredEventCallback',
+      'getRegisteredEventCallbackResponse' => '\resurs_getRegisteredEventCallbackResponse',
+      'unregisterEventCallback' => '\resurs_unregisterEventCallback',
+      'unregisterEventCallbackResponse' => '\resurs_unregisterEventCallbackResponse',
+      'peekInvoiceSequence' => '\resurs_peekInvoiceSequence',
+      'peekInvoiceSequenceResponse' => '\resurs_peekInvoiceSequenceResponse',
+      'setInvoiceSequence' => '\resurs_setInvoiceSequence',
+      'setInvoiceSequenceResponse' => '\resurs_setInvoiceSequenceResponse',
+      'setInvoiceDataResponse' => '\resurs_setInvoiceDataResponse',
+      'setInvoiceData' => '\resurs_setInvoiceData',
+      'getInvoiceData' => '\resurs_getInvoiceData',
+      'getInvoiceDataResponse' => '\resurs_getInvoiceDataResponse',
+      'ECommerceError' => '\resurs_ECommerceError');
 
     /**
      * @param array $options A array of config values

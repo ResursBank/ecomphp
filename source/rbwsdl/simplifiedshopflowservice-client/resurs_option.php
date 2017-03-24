@@ -1,8 +1,6 @@
 <?php
 
-namespace Resursbank\RBEcomPHP;
-
-if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_option", false)) 
+if (!class_exists("resurs_option", false)) 
 {
 class resurs_option
 {

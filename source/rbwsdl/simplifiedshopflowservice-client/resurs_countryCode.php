@@ -1,8 +1,6 @@
 <?php
 
-namespace Resursbank\RBEcomPHP;
-
-if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_countryCode", false)) 
+if (!class_exists("resurs_countryCode", false)) 
 {
 class resurs_countryCode
 {

@@ -1,8 +1,6 @@
 <?php
 
-namespace Resursbank\RBEcomPHP;
-
-if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_getCustomerBonus", false))
+if (!class_exists("resurs_getCustomerBonus", false)) 
 {
 class resurs_getCustomerBonus
 {

@@ -1,8 +1,6 @@
 <?php
 
-namespace Resursbank\RBEcomPHP;
-
-if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_invalidateCustomerIdentificationToken", false)) 
+if (!class_exists("resurs_invalidateCustomerIdentificationToken", false)) 
 {
 class resurs_invalidateCustomerIdentificationToken
 {

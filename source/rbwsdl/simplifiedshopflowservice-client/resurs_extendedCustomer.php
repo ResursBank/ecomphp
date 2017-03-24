@@ -1,8 +1,6 @@
 <?php
 
-namespace Resursbank\RBEcomPHP;
-
-if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_extendedCustomer", false)) 
+if (!class_exists("resurs_extendedCustomer", false)) 
 {
 include_once('resurs_customer.php');
 

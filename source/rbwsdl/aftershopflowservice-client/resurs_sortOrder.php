@@ -1,8 +1,6 @@
 <?php
 
-namespace Resursbank\RBEcomPHP;
-
-if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_sortOrder", false))
+if (!class_exists("resurs_sortOrder", false)) 
 {
 class resurs_sortOrder
 {

@@ -1,8 +1,6 @@
 <?php
 
-namespace Resursbank\RBEcomPHP;
-
-if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_getAnnuityFactorsResponse", false)) 
+if (!class_exists("resurs_getAnnuityFactorsResponse", false)) 
 {
 class resurs_getAnnuityFactorsResponse
 {

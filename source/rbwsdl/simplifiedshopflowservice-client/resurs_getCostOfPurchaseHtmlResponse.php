@@ -1,8 +1,6 @@
 <?php
 
-namespace Resursbank\RBEcomPHP;
-
-if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_getCostOfPurchaseHtmlResponse", false)) 
+if (!class_exists("resurs_getCostOfPurchaseHtmlResponse", false)) 
 {
 class resurs_getCostOfPurchaseHtmlResponse
 {

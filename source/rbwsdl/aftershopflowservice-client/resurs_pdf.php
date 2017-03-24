@@ -1,8 +1,6 @@
 <?php
 
-namespace Resursbank\RBEcomPHP;
-
-if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_pdf", false))
+if (!class_exists("resurs_pdf", false)) 
 {
 class resurs_pdf
 {

@@ -1,8 +1,6 @@
 <?php
 
-namespace Resursbank\RBEcomPHP;
-
-if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_issueCustomerIdentificationToken", false)) 
+if (!class_exists("resurs_issueCustomerIdentificationToken", false)) 
 {
 class resurs_issueCustomerIdentificationToken
 {

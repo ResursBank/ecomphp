@@ -1,8 +1,6 @@
 <?php
 
-namespace Resursbank\RBEcomPHP;
-
-if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_digestAlgorithm", false))
+if (!class_exists("resurs_digestAlgorithm", false)) 
 {
 class resurs_digestAlgorithm
 {
