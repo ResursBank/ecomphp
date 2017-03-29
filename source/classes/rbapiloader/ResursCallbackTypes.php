@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Resurs Bank Passthrough API - A pretty silent ShopFlowSimplifier for Resurs Bank.
  * Compatible with simplifiedFlow, hostedFlow and Resurs Checkout.
@@ -15,7 +14,6 @@
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @license Apache License
  */
-
 
 /**
  * Class ResursCallbackTypes: Callbacks that can be registered with Resurs Bank.
