@@ -19,5 +19,7 @@
     "invoice_natural": "invoice_natural",
     "card": "card",
     "card_new": "card_new"
-  }
+  },
+  "callbackUrl": "http://myurl.test.com/",
+  "signUrl": "http://myurl.test.com/signlandingpage.php"
 }

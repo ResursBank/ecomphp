@@ -36,30 +36,30 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
     private $alwaysUseExtendedCustomer = true;
 
     /** @var string Username to web services */
-    public $username = "";
+    private $username = "";
     /** @var string Similar username, but for nonmock */
-    public $usernameNonmock = "";
+    private $usernameNonmock = "";
 
     /** @var string Password to web services */
-    public $password = "";
+    private $password = "";
     /** @var string Similar password, but for nonmock */
-    public $passwordNonmock = "";
+    private $passwordNonmock = "";
 
     /** @var string Used as callback urls */
-    public $callbackUrl = "http://mock.phpapi.cte.loc/";
+    private $callbackUrl = "";
 
     /** @var string Where to redirect signings, when done */
-    public $signUrl = "http://mock.phpapi.cte.loc/signdummy.php";
+    private $signUrl = "";
 
     /** @var string Default username for tests (SE) */
-    public $usernameSweden = "";
+    private $usernameSweden = "";
     /** @var string Default password for tests (SE) */
-    public $passwordSweden = "";
+    private $passwordSweden = "";
 
     /** @var string Default username for tests (NO) */
-    public $usernameNorway = "";
+    private $usernameNorway = "";
     /** @var string Default password for tests (NO) */
-    public $passwordNorway = "";
+    private $passwordNorway = "";
 
     /** @var string Test with natural government id */
     public $govIdNatural = "198305147715";
@@ -126,7 +126,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
     /** @var null Ignore this */
     public $alertMessage = null;
     /** @var string Defines what environment should be running */
-    public $environmentName = "mock";
+    private $environmentName = "mock";
     /** @var array Expected payment method count (SE) */
     public $paymentMethodCount = array(
         'mock' => 5,
@@ -136,9 +136,6 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
     public $paymentMethodCountNorway = array(
         'mock' => 3
     );
-
-    // This password is for cte/nonmock but works perfectly if you need to test failures
-    //public $password = "cz84Hl6DxQ";
 
     /** @var null|ResursBank API Connector */
     private $rb = null;
@@ -214,6 +211,12 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
                 foreach ($config->availableMethodsNorway as $methodId => $methodObject) {
                     $this->availableMethodsNorway[$methodId] = $methodObject;
                 }
+            }
+            if (isset($config->callbackUrl)) {
+                $this->callbackUrl = $config->callbackUrl;
+            }
+            if (isset($config->signUrl)) {
+                $this->signUrl = $config->signUrl;
             }
         }
     }
