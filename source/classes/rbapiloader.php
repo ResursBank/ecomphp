@@ -924,6 +924,15 @@ class ResursBank
             if ($this->classes($this->classPath . "/../rbwsdl")) {
                 $this->classPath = realpath($this->classPath . "/../rbwsdl");
             }
+            /*
+             * Fail down to unsafer path.
+             */
+            if ($this->classes($this->classPath . "/wsdl")) {
+                $this->classPath = $this->classPath . "/wsdl";
+            }
+            if ($this->classes($this->classPath . "/../wsdl")) {
+                $this->classPath = realpath($this->classPath . "/../rbwsdl");
+            }
         }
 
         if (in_array('simplifiedshopflowservice', array_map("strtolower", $this->Include)) && file_exists($this->classPath . '/simplifiedshopflowservice-client/Resurs_SimplifiedShopFlowService.php')) {
