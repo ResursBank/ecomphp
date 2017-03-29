@@ -2,7 +2,7 @@
 
 namespace Resursbank\RBEcomPHP;
 
-if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_digestConfiguration", false))
+if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_digestConfiguration", false)) 
 {
 class resurs_digestConfiguration
 {
