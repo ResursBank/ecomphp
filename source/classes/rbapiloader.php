@@ -255,6 +255,8 @@ class ResursBank
     private $useCertFile = "";
     private $hasDefaultCertFile = false;
     private $openSslGuessed = false;
+    private $obsoletePHP = false;
+    private $allowObsoletePHP = false;
 
     /** @var bool During tests this will be set to true if certificate directory is found */
     private $hasCertDir = false;
@@ -294,6 +296,15 @@ class ResursBank
      */
     private $templateFieldsByMethodResponse = array();
 
+    /**
+     * Allow older/obsolete PHP Versions (Follows the obsolete php versions rules - see the link for more information).
+     *
+     * @param bool $activate
+     * @link https://test.resurs.com/docs/x/TYNM#ECommercePHPLibrary-ObsoletePHPversions
+     */
+    public function setObsoletePhp($activate = false) {
+        $this->allowObsoletePHP = $activate;
+    }
 
     //private $_paymentCart = null;
 
@@ -312,7 +323,6 @@ class ResursBank
         if (defined('RB_API_PATH')) {
             $this->classPath = RB_API_PATH;
         }
-
         if (!class_exists('ReflectionClass')) {
             throw new ResursException("ReflectionClass can not be found", ResursExceptions::CLASS_REFLECTION_MISSING, __FUNCTION__);
         }
@@ -650,9 +660,16 @@ class ResursBank
     /**
      * Find out if we have internal configuration enabled. The config file supports serialized (php) data and json-encoded content, but saves all data serialized.
      * @return bool
+     * @throws ResursException
      */
     private function hasConfiguration()
     {
+        if (version_compare(PHP_VERSION, '5.3.0', "<")) {
+            if (!$this->allowObsoletePHP) {
+                throw new ResursException("PHP 5.3 or later are required for this module to work. If you feel safe with running this with an older version, please see ");
+            }
+        }
+
         /* Internally stored configuration - has to be activated on use */
         if ($this->configurationInternal) {
             if (defined('RB_API_CONFIG') && file_exists(RB_API_CONFIG . "/" . $this->configurationSystem)) {

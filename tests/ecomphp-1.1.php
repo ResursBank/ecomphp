@@ -22,18 +22,26 @@ require_once('../source/classes/rbapiloader.php');
  */
 class ResursBankTest extends PHPUnit_Framework_TestCase
 {
-
     /**
      * Resurs Bank API Gateway, PHPUnit Test Client
      *
      * @subpackage EcomPHPClient
      */
 
+    /**
+     * The heart of this unit. To make tests "nicely" compatible with 1.0, this should be placed on top of this class as it looks different there.
+     */
+    private function initServices() {
+        $this->rb = new \ResursBank\RBEcomPHP\ResursBank($this->username, $this->password);
+        $this->rb->alwaysUseExtendedCustomer = $this->alwaysUseExtendedCustomer;
+    }
+
     public $ignoreDefaultTests = false;
     public $ignoreBookingTests = false;
     public $ignoreSEKKItests = false;
 
     private $alwaysUseExtendedCustomer = true;
+    private $allowObsoletePHP = false;
 
     /** @var string Username to web services */
     private $username = "";
@@ -145,12 +153,18 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
     /** After each test, invoke this */
     public function tearDown() {}
 
-
     /**
      * Prepare by initializing API Loader and stubs
      *
      */
     public function __construct() {
+
+        if (version_compare(PHP_VERSION, '5.3.0', "<")) {
+            if (!$this->allowObsoletePHP) {
+                throw new ResursException("PHP 5.3 or later are required for this module to work. If you feel safe with running this with an older version, please see ");
+            }
+        }
+
         register_shutdown_function(array($this, 'shutdownSuite'));
         if ($this->environmentName === "nonmock") {
             $this->username = $this->usernameNonmock;
@@ -164,6 +178,18 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
         $this->testGovIdNorway = $this->govIdNaturalNorway;
         $this->initServices();
     }
+
+    /**
+     * Allow older/obsolete PHP Versions (Follows the obsolete php versions rules - see the link for more information). This check is clonsed from the rbapiloader.php
+     * to follow standards and prevent tests in older php versions.
+     *
+     * @param bool $activate
+     * @link https://test.resurs.com/docs/x/TYNM#ECommercePHPLibrary-ObsoletePHPversions
+     */
+    public function setObsoletePhp($activate = false) {
+        $this->allowObsoletePHP = $activate;
+    }
+
 
     private function setupConfig() {
         if (file_exists('test.json')) {
@@ -221,11 +247,6 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
         }
     }
 
-    private function initServices() {
-        $this->rb = new \ResursBank\RBEcomPHP\ResursBank($this->username, $this->password);
-        $this->rb->alwaysUseExtendedCustomer = $this->alwaysUseExtendedCustomer;
-    }
-
     /** Switchover abilities for unit */
     private function checkEnvironment() {
         if ($this->environmentName === "nonmock") { $this->rb->setNonMock(); }
@@ -244,16 +265,14 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
      * @return bool If everything works, we get our payment methods and returns true. All exceptions says environment is down.
      */
     private function isUp() {
-        $hasError = true;
         try {
             $paymentMethods = $this->rb->getPaymentMethods();
         } catch (Exception $e) {
-            $hasError = false;
+            return false;
         }
         if (count($paymentMethods) > 0) {
             return true;
         }
-        return $hasError;
     }
 
     /**
@@ -493,57 +512,6 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * Testing of callbacks
-     */
-    public function testCallbacks() {
-        if ($this->ignoreDefaultTests) { $this->markTestIncomplete(); }
-        /* If disabled */
-        if ($this->disableCallbackRegMock || ($this->disableCallbackRegNonMock && $this->environmentName === "nonmock")) {
-            $this->assertTrue(1==1);
-            return;
-        }
-        $this->checkEnvironment();
-
-        $parameter = array(
-            'ANNULMENT' => array('paymentId'),
-            'AUTOMATIC_FRAUD_CONTROL' => array('paymentId', 'result'),
-            'FINALIZATION' => array('paymentId'),
-            'UNFREEZE' => array('paymentId')
-        );
-
-        foreach ($parameter as $callbackType => $parameterArray) {
-            $digestSaltString = $this->mkpass();
-            $digestArray = array(
-                'digestSalt' => $digestSaltString,
-                'digestParameters' => $parameterArray
-            );
-
-            if ($callbackType == "ANNULMENT") {$setCallbackType = \Resursbank\RBEcomPHP\ResursCallbackTypes::ANNULMENT;}
-            if ($callbackType == "AUTOMATIC_FRAUD_CONTROL") {$setCallbackType = \Resursbank\RBEcomPHP\ResursCallbackTypes::AUTOMATIC_FRAUD_CONTROL;}
-            if ($callbackType == "FINALIZATION") {$setCallbackType = \Resursbank\RBEcomPHP\ResursCallbackTypes::FINALIZATION;}
-            if ($callbackType == "UNFREEZE") {$setCallbackType = \Resursbank\RBEcomPHP\ResursCallbackTypes::UNFREEZE;}
-            $renderArray = array();
-            if (is_array($parameterArray)) {
-                foreach ($parameterArray as $parameterName) {
-                    $renderArray[] = $parameterName . "={".$parameterName."}";
-                }
-            }
-            $callbackURL = $this->callbackUrl . "?event=".$callbackType."&digest={digest}&" . implode("&", $renderArray);
-            try {
-                $callbackSetResult = $this->rb->setCallback($setCallbackType, $callbackURL, $digestArray);
-                if (!empty($this->rb->lastError)) { continue; }
-                if ($callbackSetResult) { $callbackSaveData[$callbackType] = array('salt' => $digestSaltString); }
-            }
-            catch (Exception $regCallbackException)
-            {
-
-            }
-        }
-        // Registered callbacks must be as many as the above parameters (preferrably 4)
-        $this->assertTrue(count($callbackSaveData) == count($parameter));
-    }
-
-    /**
      * Test if payment methods works properly
      */
     public function testGetPaymentMethods()
@@ -673,7 +641,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 
     /*
      * Test booking with zero amount
-     * Expected result: Unable to take a payment with zero amount.
+     * Expected result: Fail.
      */
     public function testBookPaymentZeroInvoiceNatural() {
         if ($this->ignoreBookingTests) { $this->markTestIncomplete(); }
@@ -834,6 +802,61 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
         $URL = "https://test.resurs.com/customurl/index.html?content=true&secondparameter=true";
         $customURL = $this->rb->getSekkiUrls($amount, null, $URL);
         $this->assertTrue((preg_match("/amount=$amount/i", $customURL)? true:false));
+    }
+
+
+    /***
+     * VERSION 1.0-1.1 DEPENDENT TESTS
+     */
+
+    /**
+     * Testing of callbacks
+     */
+    public function testCallbacks() {
+        if ($this->ignoreDefaultTests) { $this->markTestIncomplete(); }
+        /* If disabled */
+        if ($this->disableCallbackRegMock || ($this->disableCallbackRegNonMock && $this->environmentName === "nonmock")) {
+            $this->assertTrue(1==1);
+            return;
+        }
+        $this->checkEnvironment();
+
+        $parameter = array(
+            'ANNULMENT' => array('paymentId'),
+            'AUTOMATIC_FRAUD_CONTROL' => array('paymentId', 'result'),
+            'FINALIZATION' => array('paymentId'),
+            'UNFREEZE' => array('paymentId')
+        );
+
+        foreach ($parameter as $callbackType => $parameterArray) {
+            $digestSaltString = $this->mkpass();
+            $digestArray = array(
+                'digestSalt' => $digestSaltString,
+                'digestParameters' => $parameterArray
+            );
+            if ($callbackType == "ANNULMENT") {$setCallbackType = \Resursbank\RBEcomPHP\ResursCallbackTypes::ANNULMENT;}
+            if ($callbackType == "AUTOMATIC_FRAUD_CONTROL") {$setCallbackType = \Resursbank\RBEcomPHP\ResursCallbackTypes::AUTOMATIC_FRAUD_CONTROL;}
+            if ($callbackType == "FINALIZATION") {$setCallbackType = \Resursbank\RBEcomPHP\ResursCallbackTypes::FINALIZATION;}
+            if ($callbackType == "UNFREEZE") {$setCallbackType = \Resursbank\RBEcomPHP\ResursCallbackTypes::UNFREEZE;}
+            $renderArray = array();
+            if (is_array($parameterArray)) {
+                foreach ($parameterArray as $parameterName) {
+                    $renderArray[] = $parameterName . "={".$parameterName."}";
+                }
+            }
+            $callbackURL = $this->callbackUrl . "?event=".$callbackType."&digest={digest}&" . implode("&", $renderArray);
+            try {
+                $callbackSetResult = $this->rb->setCallback($setCallbackType, $callbackURL, $digestArray);
+                if (!empty($this->rb->lastError)) { continue; }
+                if ($callbackSetResult) { $callbackSaveData[$callbackType] = array('salt' => $digestSaltString); }
+            }
+            catch (Exception $regCallbackException)
+            {
+
+            }
+        }
+        // Registered callbacks must be as many as the above parameters (preferrably 4)
+        $this->assertTrue(count($callbackSaveData) == count($parameter));
     }
 }
 
