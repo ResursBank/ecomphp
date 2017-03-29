@@ -1,6 +1,11 @@
 <?php
+
 /**
  * Resurs Bank Passthrough API - A pretty silent ShopFlowSimplifier for Resurs Bank.
+ * Compatible with simplifiedFlow, hostedFlow and Resurs Checkout.
+ * Requirements: WSDL stubs from WSDL2PHPGenerator (deprecated edition)
+ * Important notes: As the WSDL files are generated, it is highly important to run tests before release.
+ *
  * Last update: See the lastUpdate variable
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
@@ -8,12 +13,13 @@
  * @branch 1.0
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
- * @license Not set
+ * @license Apache License
  */
 
 namespace Resursbank\RBEcomPHP;
 
-abstract class ResursExceptions {
+abstract class ResursExceptions
+{
     /**
      * Miscellaneous exceptions
      */
@@ -57,4 +63,27 @@ abstract class ResursExceptions {
     const UPDATECART_NOCLASS_EXCEPTION = 7006;
     const UPDATECARD_DOUBLE_DATA_EXCEPTION = 7006;
     const PREPARECARD_NUMERIC_EXCEPTION = 7007;
+}
+
+
+class ResursException extends \Exception {
+    private $fromFunction = null;
+    public function __construct($message = 'Unknown exception', $code = 0, $fromFunction = '', \Exception $previous = null) {
+        $this->fromFunction = $fromFunction;
+        parent::__construct($message, $code, $previous);
+    }
+    public function __toString() {
+        if (null === $this->fromFunction) {
+            return "RBEcomPHP Exception: [{$this->code}]: {$this->message}";
+        } else {
+            return "RBEcomPHP {$this->fromFunction}Exception {$this->code}: {$this->message}";
+        }
+    }
+    public function getFromFunction()
+    {
+        if (empty($this->fromFunction)) {
+            return "NaN";
+        }
+        return $this->fromFunction;
+    }
 }
