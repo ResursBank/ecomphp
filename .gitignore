@@ -1,4 +1,8 @@
 .idea
 .DS_Store
+<<<<<<< HEAD
 .svn
 /tests/test.json
+=======
+docs
+>>>>>>> ced31424a1bf0b84c903914b43432593dd2fb1f2
