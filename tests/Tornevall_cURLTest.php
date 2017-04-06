@@ -14,6 +14,7 @@ class Tornevall_cURLTest extends \PHPUnit_Framework_TestCase
     function __construct()
     {
         $this->CURL = new \TorneLIB\Tornevall_cURL();
+        $this->NET = new \TorneLIB\TorneLIB_Network();
 
         /*
          * Enable test mode
@@ -224,6 +225,58 @@ class Tornevall_cURLTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue(count($container['ById']) > 0);
     }
 
+    function testGetArpaLocalhost4() {
+        $this->assertTrue($this->NET->getArpaFromIpv4("127.0.0.1") === "1.0.0.127");
+    }
+    function testGetArpaLocalhost6() {
+        $this->assertTrue($this->NET->getArpaFromIpv6("::1") === "1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0");
+    }
+    function testGetArpaLocalhost4Second() {
+        $this->assertTrue($this->NET->getArpaFromIpv4("192.168.12.36") === "36.12.168.192");
+    }
+    function testGetArpaLocalhost6Second() {
+        $this->assertTrue($this->NET->getArpaFromIpv6("2a01:299:a0:ff:10:128:255:2") === "2.0.0.0.5.5.2.0.8.2.1.0.0.1.0.0.f.f.0.0.0.a.0.0.9.9.2.0.1.0.a.2");
+    }
+    function testGetArpaLocalhost4Nulled() {
+        $this->assertEmpty($this->NET->getArpaFromIpv4(null));
+    }
+    function testGetArpaLocalhost6Nulled() {
+        $this->assertEmpty($this->NET->getArpaFromIpv6(null));
+    }
+    function testGetArpaLocalhost4String() {
+        $this->assertEmpty($this->NET->getArpaFromIpv4("fail here"));
+    }
+    function testGetArpaLocalhost6String() {
+        $this->assertEmpty($this->NET->getArpaFromIpv6("fail here"));
+    }
+    function testGetArpaLocalhost6CorruptString1() {
+        $this->assertEmpty($this->NET->getArpaFromIpv6("a : b \\"));
+    }
+    function testGetArpaLocalhost6CorruptString2() {
+        $badString = "";
+        for ($i = 0 ; $i < 255 ; $i++) {
+            $badString .= chr($i);
+        }
+        $this->assertEmpty($this->NET->getArpaFromIpv6($badString));
+    }
+    function testOctetV6() {
+        $this->assertTrue($this->NET->getIpv6FromOctets("2.0.0.0.5.5.2.0.8.2.1.0.0.1.0.0.f.f.0.0.0.a.0.0.9.9.2.0.1.0.a.2") === "2a01:299:a0:ff:10:128:255:2");
+    }
+    function testGetArpaAuto4() {
+        $this->assertTrue($this->NET->getArpaFromAddr("172.16.12.3") === "3.12.16.172");
+    }
+    function testGetArpaAuto6() {
+        $this->assertTrue($this->NET->getArpaFromAddr("2a00:1450:400f:802::200e") === "e.0.0.2.0.0.0.0.0.0.0.0.0.0.0.0.2.0.8.0.f.0.0.4.0.5.4.1.0.0.a.2");
+    }
+    function testGetIpType4() {
+        $this->assertTrue($this->NET->getArpaFromAddr("172.22.1.83", true) === 4);
+    }
+    function testGetIpType6() {
+        $this->assertTrue($this->NET->getArpaFromAddr("2a03:2880:f113:83:face:b00c:0:25de", true) === 6);
+    }
+    function testGetIpTypeFail() {
+        $this->assertTrue($this->NET->getArpaFromAddr("This.Aint.An.Address", true) === TorneLIB_Network_IP::IPTYPE_NONE);
+    }
 
     /***************
      *  SSL TESTS  *
