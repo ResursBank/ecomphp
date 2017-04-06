@@ -62,7 +62,7 @@ class TorneLIB_Network
      */
     public function getArpaFromAddr($ipAddr = '', $returnIpType = false)
     {
-        if (!empty(filter_var($ipAddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6))) {
+        if (filter_var($ipAddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
             if ($returnIpType === true) {
                 $vArpaTest = $this->getArpaFromIpv6($ipAddr);    // PHP 5.3
                 if (!empty($vArpaTest)) {
@@ -73,14 +73,18 @@ class TorneLIB_Network
             } else {
                 return $this->getArpaFromIpv6($ipAddr);
             }
-        } else if (!empty(filter_var($ipAddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4))) {
+        } else if (filter_var($ipAddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
             if ($returnIpType) {
                 return TorneLIB_Network_IP::IPTYPE_V4;
             } else {
                 return $this->getArpaFromIpv4($ipAddr);
             }
+        } else {
+            if ($returnIpType) {
+                return TorneLIB_Network_IP::IPTYPE_NONE;
+            }
         }
-        return null;
+        return "";
     }
 
     /**
@@ -125,11 +129,11 @@ class TorneLIB_Network
      */
     public function getArpaFromIpv6($ipAddr = '::')
     {
-        if (empty(filter_var($ipAddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6))) {
+        if (filter_var($ipAddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) === false) {
             return null;
         }
-        $unpack = @unpack('H*hex', inet_pton($ipAddr));
-        $hex = $unpack['hex'];
+        $unpackedAddr = @unpack('H*hex', inet_pton($ipAddr));
+        $hex = $unpackedAddr['hex'];
         return implode('.', array_reverse(str_split($hex)));
     }
 
@@ -141,7 +145,7 @@ class TorneLIB_Network
      */
     public function getArpaFromIpv4($ipAddr = '127.0.0.1')
     {
-        if (!empty(filter_var($ipAddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4))) {
+        if (filter_var($ipAddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
             return implode(".", array_reverse(explode(".", $ipAddr)));
         }
         return null;
@@ -207,7 +211,7 @@ if (function_exists('curl_init')) {
         private $TorneCurlVersion = "5.0.0";
 
         /** @var string Internal release snapshot that is being used to find out if we are running the latest version of this library */
-        private $TorneCurlRelease = "20170405";
+        private $TorneCurlRelease = "20170406";
 
         /**
          * Target environment (if target is production some debugging values will be skipped)
@@ -1271,7 +1275,7 @@ if (function_exists('curl_init')) {
         }
 
         /**
-         * Fix problematic header data
+         * Fix problematic header data by converting them to proper outputs.
          *
          * @param array $headerList
          * @return array
@@ -1319,6 +1323,10 @@ if (function_exists('curl_init')) {
 
             $this->initCookiePath();
             $this->init();
+
+            /*
+             * Picking up externally select outgoing ip if any
+             */
             $myIp = $this->handleIpList();
             curl_setopt($this->CurlSession, CURLOPT_URL, $this->CurlURL);
 
