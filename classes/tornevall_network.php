@@ -203,7 +203,7 @@ if (function_exists('curl_init')) {
         private $TorneCurlVersion = "5.0.0";
 
         /** @var string Internal release snapshot that is being used to find out if we are running the latest version of this library */
-        private $TorneCurlRelease = "20170322";
+        private $TorneCurlRelease = "20170405";
 
         /**
          * Target environment (if target is production some debugging values will be skipped)
@@ -256,6 +256,7 @@ if (function_exists('curl_init')) {
         private $CurlSession = null;
         /** @var null URL to communicate with */
         private $CurlURL = null;
+        private $TemporaryResponse = null;
 
         /** @var array Default settings when initializing our curlsession */
         public $curlopt = array(
@@ -1042,6 +1043,82 @@ if (function_exists('curl_init')) {
         }
 
         /**
+         * Extract a parsed response from a webrequest
+         * @param null $ResponseContent
+         * @return null
+         */
+        public function getParsedResponse($ResponseContent = null) {
+            if (is_null($ResponseContent) && !empty($this->TemporaryResponse)) {
+                return $this->TemporaryResponse['parsed'];
+            } else if (isset($ResponseContent['parsed'])) {
+                return $ResponseContent['parsed'];
+            }
+            return null;
+        }
+
+        /**
+         * Extract a specific key from a parsed webrequest
+         *
+         * @param $KeyName
+         * @param null $ResponseContent
+         * @return mixed|null
+         * @throws \Exception
+         */
+        public function getParsedValue($KeyName = null, $ResponseContent = null) {
+            if (is_string($KeyName)) {
+                $ParsedValue = $this->getParsedResponse($ResponseContent);
+                if (is_array($ParsedValue) && isset($ParsedValue[$KeyName])) {
+                    return $ParsedValue[$KeyName];
+                }
+                if (is_object($ParsedValue) && isset($ParsedValue->$KeyName)) {
+                    return $ParsedValue->$KeyName;
+                }
+            } else {
+                if (is_null($ResponseContent) && !empty($this->TemporaryResponse)) {
+                    $ResponseContent = $this->TemporaryResponse;
+                }
+                $Parsed = $this->getParsedResponse($ResponseContent);
+                $hasRecursion = false;
+                if (is_array($KeyName)) {
+                    $TheKeys = array_reverse($KeyName);
+                    $Eternity = 0;
+                    while (count($TheKeys) || $Eternity++ <= 20) {
+                        $hasRecursion = false;
+                        $CurrentKey = array_pop($TheKeys);
+                        if (is_array($Parsed)) {
+                            if (isset($Parsed[$CurrentKey])) {
+                                $hasRecursion = true;
+                            }
+                        } else if (is_object($Parsed)) {
+                            if (isset($Parsed->$CurrentKey)) {
+                                $hasRecursion = true;
+                            }
+                        } else {
+                            // If there are still keys to scan, all tests above has failed
+                            if (count($TheKeys)) {
+                                $hasRecursion = false;
+                            }
+                            break;
+                        }
+                        if ($hasRecursion) {
+                            $Parsed = $this->getParsedValue($CurrentKey, array('parsed' => $Parsed));
+                            // Break if this was the last one
+                            if (!count($TheKeys)) {
+                                break;
+                            }
+                        }
+                    }
+                    if ($hasRecursion) {
+                        return $Parsed;
+                    } else {
+                        throw new \Exception("Requested key was not found in parsed response");
+                    }
+                }
+            }
+            return null;
+        }
+
+        /**
          * Parse response, in case of there is any followed traces from the curl engine, so we'll always land on the right ending stream
          *
          * @param string $content
@@ -1083,6 +1160,8 @@ if (function_exists('curl_init')) {
                 $parsedContent = $this->ParseContent($returnResponse['body'], false, $contentType);
                 $returnResponse['parsed'] = (!empty($parsedContent) ? $parsedContent : null);
             }
+            $returnResponse['URL'] = $this->CurlURL;
+            $this->TemporaryResponse = $returnResponse;
             return $returnResponse;
         }
 

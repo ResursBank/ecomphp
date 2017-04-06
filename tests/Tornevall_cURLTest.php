@@ -81,44 +81,141 @@ class Tornevall_cURLTest extends \PHPUnit_Framework_TestCase
         $container = $this->simpleGet();
         $this->assertTrue($this->hasBody($container));
     }
+
+    /**
+     * Fetch a response and immediately pick up the parsed response, from the internally stored last response
+     */
+    function testGetParsedSelf() {
+        $this->pemDefault();
+        $this->urlGet("ssl&bool&o=json&method=get");
+        $ParsedResponse = $this->CURL->getParsedResponse();
+        $this->assertTrue(is_object($ParsedResponse));
+    }
+
+    /**
+     * Fetch a response and immediately pick up the parsed response, from own content
+     */
+    function testGetParsedFromResponse() {
+        $this->pemDefault();
+        $container = $this->urlGet("ssl&bool&o=json&method=get");
+        $ParsedResponse = $this->CURL->getParsedResponse($container);
+        $this->assertTrue(is_object($ParsedResponse));
+    }
+
+    /**
+     * Request a specific value from a parsed response
+     */
+    function testGetParsedValue() {
+        $this->pemDefault();
+        $this->urlGet("ssl&bool&o=json&method=get");
+        $this->CURL->getParsedResponse();
+        $ValueFrom = $this->CURL->getParsedValue('methods');
+        $this->assertTrue(is_object($ValueFrom->_REQUEST));
+    }
+
+    /**
+     * Request a nested value from a parsed response
+     */
+    function testGetParsedSubValue() {
+        $this->pemDefault();
+        $this->urlGet("ssl&bool&o=json&method=get");
+        $ValueFrom = $this->CURL->getParsedValue(array('nesting', 'subarr4', 'child4'));
+        $this->assertTrue(count($ValueFrom) === 3);
+    }
+
+    /**
+     * Request a value by sending wrong value into the parser (crash test)
+     */
+    function testGetParsedSubValueNoArray() {
+        $this->pemDefault();
+        $this->urlGet("ssl&bool&o=json&method=get");
+        $ValueFrom = $this->CURL->getParsedValue(new \stdClass());
+        $this->assertTrue(empty($ValueFrom));
+    }
+
+    /**
+     * Request a value that does not exist in a parsed response (Receive an exception)
+     */
+    function testGetParsedSubValueFail() {
+        $this->pemDefault();
+        $this->urlGet("ssl&bool&o=json&method=get");
+        $ExpectFailure = false;
+        try {
+            $this->CURL->getParsedValue(array('nesting', 'subarrfail'));
+        } catch (\Exception $parseException) {
+            $ExpectFailure = true;
+        }
+        $this->assertTrue($ExpectFailure);
+    }
+
+    /**
+     * Test if a web request has a valid body
+     */
     function testValidBody() {
         $this->pemDefault();
         $container = $this->simpleGet();
         $this->assertTrue(!empty($this->getBody($container)));
     }
+
+    /**
+     * Receive a standard 200 code
+     */
     function testSimple200() {
         $this->pemDefault();
         $simpleContent = $this->simpleGet();
         $this->assertTrue(is_array($simpleContent) && isset($simpleContent['code']) && $simpleContent['code'] == 200);
     }
+
+    /**
+     * Test SSL based web request
+     */
     function testSslUrl() {
         $this->pemDefault();
         $container = $this->urlGet("ssl&bool", "https");
         $this->assertTrue($this->getBody($container) && !empty($this->getBody($container)));
     }
 
+    /**
+     * Test parsed json response
+     */
     function testGetJson() {
         $this->pemDefault();
         $container = $this->urlGet("ssl&bool&o=json&method=get");
         $this->assertTrue(is_object($container['parsed']->methods->_GET));
     }
+
+    /**
+     * Check if we can parse a serialized response
+     */
     function testGetSerialize() {
         $this->pemDefault();
         $container = $this->urlGet("ssl&bool&o=serialize&method=get");
         $this->assertTrue(is_array($container['parsed']['methods']['_GET']));
     }
+
+    /**
+     * Test if XML/Serializer are parsed correctly
+     */
     function testGetXmlSerializer() {
         $this->pemDefault();
         // XML_Serializer
         $container = $this->getParsed($this->urlGet("ssl&bool&o=xml&method=get"));
         $this->assertTrue(is_object($container->using) && $container->using['0'] == "XML/Serializer");
     }
+
+    /**
+     * Test if SimpleXml are parsed correctly
+     */
     function testGetSimpleXml() {
         $this->pemDefault();
         // SimpleXMLElement
         $container = $this->getParsed($this->urlGet("ssl&bool&o=xml&method=get&using=SimpleXMLElement"));
         $this->assertTrue(is_object($container->using) && $container->using == "SimpleXMLElement");
     }
+
+    /**
+     * Test if a html response are converted to a proper array
+     */
     function testGetSimpleDom() {
         $this->pemDefault();
         $this->CURL->setParseHtml(true);
