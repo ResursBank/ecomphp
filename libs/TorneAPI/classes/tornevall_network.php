@@ -7,9 +7,9 @@ namespace TorneLIB;
  * As this library may run as stand alone code, exceptions are thrown as regular \Exception instead of a TorneLIB_Exception.
  *
  * Class TorneLIB_Network
- * @link https://docs.tornevall.net/x/KQCy Complete usage documentation (not automated)
- * @link https://developer.tornevall.net/apigen/TorneLIB-5.0/class-TorneLIB.TorneLIB_Network.html This document (APIGen automation)
- * @link https://developer.tornevall.net/download/TorneLIB-5.0/raw/tornevall_network.php Downloadable snapshot
+ * @link https://phpdoc.tornevall.net/TorneLIBv5/class-TorneLIB.TorneLIB_Network.html PHPDoc/Staging - TorneLIB_Network
+ * @link https://docs.tornevall.net/x/KQCy TorneLIB (PHP) Landing documentation
+ * @link https://bitbucket.tornevall.net/projects/LIB/repos/tornelib-php/browse Sources of TorneLIB
  * @package TorneLIB
  */
 class TorneLIB_Network
@@ -62,7 +62,7 @@ class TorneLIB_Network
      */
     public function getArpaFromAddr($ipAddr = '', $returnIpType = false)
     {
-        if (long2ip(ip2long($ipAddr)) == "0.0.0.0") {
+        if (!empty(filter_var($ipAddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6))) {
             if ($returnIpType === true) {
                 $vArpaTest = $this->getArpaFromIpv6($ipAddr);    // PHP 5.3
                 if (!empty($vArpaTest)) {
@@ -73,13 +73,14 @@ class TorneLIB_Network
             } else {
                 return $this->getArpaFromIpv6($ipAddr);
             }
-        } else {
+        } else if (!empty(filter_var($ipAddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4))) {
             if ($returnIpType) {
                 return TorneLIB_Network_IP::IPTYPE_V4;
             } else {
                 return $this->getArpaFromIpv4($ipAddr);
             }
         }
+        return null;
     }
 
     /**
@@ -122,9 +123,12 @@ class TorneLIB_Network
      * @param string $ip
      * @return string
      */
-    public function getArpaFromIpv6($ip = '::')
+    public function getArpaFromIpv6($ipAddr = '::')
     {
-        $unpack = @unpack('H*hex', inet_pton($ip));
+        if (empty(filter_var($ipAddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6))) {
+            return null;
+        }
+        $unpack = @unpack('H*hex', inet_pton($ipAddr));
         $hex = $unpack['hex'];
         return implode('.', array_reverse(str_split($hex)));
     }
@@ -137,7 +141,10 @@ class TorneLIB_Network
      */
     public function getArpaFromIpv4($ipAddr = '127.0.0.1')
     {
-        return implode(".", array_reverse(explode(".", $ipAddr)));
+        if (!empty(filter_var($ipAddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4))) {
+            return implode(".", array_reverse(explode(".", $ipAddr)));
+        }
+        return null;
     }
 
     /**
@@ -180,25 +187,12 @@ if (function_exists('curl_init')) {
      *
      * Versioning are based on TorneLIB v5, but follows its own standards in the chain.
      *
-     * Library for handling calls with cURL. It works with high level of verbosity so parsing can be made easier. When using
-     * the methods for GET, POST, PUT or DELETE we will always return a fully parsed response as an array in the following format
-     *
-     * <pre>
-     * array(
-     *  "header" => array("info", "full")
-     *  "body" => '-body content-',
-     *  "code" => numericResponseCodeFromPage,
-     *  "parsed" => detectedParsedResponse
-     * )
-     * </pre>
-     *
-     * If we for example get a json-string as a response from a webpage, the parsed field will containg a parsed object for the result.
-     *
-     * Currently TorneLIB contains the TorneAPI-package, so the TorneAPI package should also have this version since it's the most updated
-     * and proper version.
-     *
      * @package TorneLIB
-     * @link http://docs.tornevall.net/x/FoBU TorneLIB
+     * @link https://phpdoc.tornevall.net/TorneLIBv5/source-class-TorneLIB.Tornevall_cURL.html PHPDoc/Staging - Tornevall_cURL
+     * @link https://docs.tornevall.net/x/KQCy TorneLIB (PHP) Landing documentation
+     * @link https://bitbucket.tornevall.net/projects/LIB/repos/tornelib-php/browse Sources of TorneLIB
+     * @link https://docs.tornevall.net/x/KwCy Network & Curl Library usage
+     * @link https://docs.tornevall.net/x/FoBU TorneLIB Full documentation
      */
     class Tornevall_cURL
     {
@@ -213,7 +207,15 @@ if (function_exists('curl_init')) {
         private $TorneCurlVersion = "5.0.0";
 
         /** @var string Internal release snapshot that is being used to find out if we are running the latest version of this library */
-        private $TorneCurlRelease = "20161129";
+        private $TorneCurlRelease = "20170405";
+
+        /**
+         * Target environment (if target is production some debugging values will be skipped)
+         *
+         * @since 5.0.0-20170210
+         * @var int
+         */
+        private $TargetEnvironment = TORNELIB_CURL_ENVIRONMENT::ENVIRONMENT_PRODUCTION;
 
         /**
          * Autodetecting of SSL capabilities section
@@ -236,6 +238,13 @@ if (function_exists('curl_init')) {
         private $testssldeprecated = false;
         /** @var bool If there are problems with certificates bound to a host/peer, set this to false if necessary. Default is to always try to verify them */
         private $sslVerify = true;
+        /**
+         * Allow https calls to unverified peers/hosts
+         *
+         * @since 5.0.0-20170210
+         * @var bool
+         */
+        private $allowSslUnverified = false;
 
         /** @var array Default paths to the certificates we are looking for */
         public $sslPemLocations = array('/etc/ssl/certs/cacert.pem', '/etc/ssl/certs/ca-certificates.crt');
@@ -251,13 +260,14 @@ if (function_exists('curl_init')) {
         private $CurlSession = null;
         /** @var null URL to communicate with */
         private $CurlURL = null;
+        private $TemporaryResponse = null;
 
         /** @var array Default settings when initializing our curlsession */
         public $curlopt = array(
             CURLOPT_CONNECTTIMEOUT => 5,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => 0,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => true,
             CURLOPT_ENCODING => 1,
             CURLOPT_TIMEOUT => 10,
             CURLOPT_USERAGENT => 'TorneLIB-PHPcURL',
@@ -275,10 +285,12 @@ if (function_exists('curl_init')) {
         private $CurlIp = null;
         private $CurlIpType = null;
 
+        private $useLocalCookies = false;
         private $CookiePath = null;
         private $SaveCookies = false;
         private $CookieFile = null;
         private $CookiePathCreated = false;
+        private $UseCookieExceptions = false;
         public $AllowTempAsCookiePath = false;
 
         /** @var null Sets a HTTP_REFERER to the http call */
@@ -320,6 +332,8 @@ if (function_exists('curl_init')) {
 
         /** @var bool Try to automatically parse the retrieved body content. Supports, amongst others json, serialization, etc */
         public $CurlAutoParse = true;
+        /** @var bool Allow parsing of content bodies (tags) */
+        private $allowParseHtml = false;
 
         /**
          * Authentication
@@ -337,6 +351,16 @@ if (function_exists('curl_init')) {
          * @var bool
          */
         public $canThrow = true;
+
+        /**
+         * Defines whether, when there is an incoming SOAP-call, we should try to make the SOAP initialization twice.
+         * This is a kind of fallback when users forget to add ?wsdl or &wsdl in urls that requires this to call for SOAP.
+         * It may happen when setting CURL_POST_AS to a SOAP-call but, the URL is not defined as one.
+         * Setting this to false, may suppress important errors, since this will suppress fatal errors at first try.
+         *
+         * @var bool
+         */
+        public $SoapTryOnce = true;
 
         /**
          * TorneLIB_CURL constructor.
@@ -362,6 +386,44 @@ if (function_exists('curl_init')) {
             if (!count(glob($this->CookiePath . "/*")) && $this->CookiePathCreated) {
                 @rmdir($this->CookiePath);
             }
+        }
+
+        /**
+         * Enable the use of local cookie storage
+         *
+         * Use this only if necessary and if you are planning to cookies locally while, for example, needs to set a logged in state more permanent during get/post/etc
+         *
+         * @param bool $enabled
+         */
+        public function setLocalCookies($enabled = false) {
+            $this->useLocalCookies = $enabled;
+        }
+
+        /**
+         * Switch over to forced debugging
+         *
+         * To not break production environments by setting for example _DEBUG_TCURL_UNSET_PEM_LOCATION, switching over to test mode is required
+         * to use those variables.
+         *
+         * @since 5.0.0-20170210
+         */
+        public function setTestEnabled() {
+            $this->TargetEnvironment = TORNELIB_CURL_ENVIRONMENT::ENVIRONMENT_TEST;
+        }
+
+        /**
+         * Allow the initCookie-function to throw exceptions if the local cookie store can not be created properly
+         *
+         * Exceptions are invoked, normally when the function for initializing cookies can not create the storage directory. This is something you should consider disabled in a production environment.
+         *
+         * @param bool $enabled
+         */
+        public function setCookieExceptions($enabled = false) {
+            $this->UseCookieExceptions = $enabled;
+        }
+
+        public function setParseHtml($enabled = false) {
+            $this->allowParseHtml = $enabled;
         }
 
         /**
@@ -447,6 +509,10 @@ if (function_exists('curl_init')) {
          */
         private function initCookiePath()
         {
+            if (defined('TORNELIB_DISABLE_CURL_COOKIES') || !$this->useLocalCookies) {
+                return;
+            }
+
             /**
              * TORNEAPI_COOKIES has priority over TORNEAPI_PATH that is the default path
              */
@@ -476,7 +542,7 @@ if (function_exists('curl_init')) {
                     } else {
                         $this->CookiePath = realpath(__DIR__ . "/../cookies");
                     }
-                    if (empty($this->CookiePath) || !is_dir($this->CookiePath)) {
+                    if ($this->UseCookieExceptions && (empty($this->CookiePath) || !is_dir($this->CookiePath))) {
                         throw new \Exception(__FUNCTION__ . ": Could not set up a proper cookiepath [To override this, use AllowTempAsCookiePath (not recommended)]", 1002);
                     }
                 }
@@ -502,7 +568,7 @@ if (function_exists('curl_init')) {
          * Recommendation of Usage: Do not copy only those functions, use the full version of tornevall_network.php since there may be dependencies in it.
          *
          * @return array
-         * @link http://developer.tornevall.net/apigen/TorneLIB-5.0/class-TorneLIB.Tornevall_cURL.html sslStreamContextCorrection() is a part of TorneLIB 5.0, described here
+         * @link https://phpdoc.tornevall.net/TorneLIBv5/source-class-TorneLIB.Tornevall_cURL.html sslStreamContextCorrection() is a part of TorneLIB 5.0, described here
          */
         public function sslStreamContextCorrection()
         {
@@ -568,29 +634,33 @@ if (function_exists('curl_init')) {
          * problems with finding certificates, in case for example where they are not placed in standard locations. When running the testing, we will also try to set up
          * a correct location for the certificates, if any are found somewhere else.
          *
-         * The default configuration for this method is to not run any test, since there should be no problems of running in properly installed environments.
-         * If there are known problems in the environment that is being used, you can try to set $testssl to true.
+         * The default configuration of this method is to run tests, but only for PHP 5.6.0 or higher.
+         * If you know that you're running something older you may want to consider enabling testssldeprecated.
          *
-         * At first, the variable $testssl is used to automatically try to find out if there is valid certificate bundles installed on the running system. In PHP 5.6.0 and higher
+         * At first, the variable $testssl is used to automatically try to find out if there is valid certificate bundle installed on the running system. In PHP 5.6.0 and higher
          * this procedure is simplified with the help of openssl_get_cert_locations(), which gives us a default path to installed certificates. In this case we will first look there
          * for the certificate bundle. If we do fail there, or if your system is running something older, the testing are running in guessing mode.
          *
          * The method is untested in Windows server environments when using OpenSSL.
          *
          * @param bool $forceTesting Force testing even if $testssl is disabled
-         * @link http://developer.tornevall.net/apigen/TorneLIB-5.0/class-TorneLIB.Tornevall_cURL.html openssl_guess() is a part of TorneLIB 5.0, described here
+         * @link https://docs.tornevall.net/x/KwCy#TheNetworkandcURLclass(tornevall_network.php)-SSLCertificatesandverification
          * @return bool
          */
         private function openssl_guess($forceTesting = false)
         {
-            $pemLocation = "";
+            /*
+             * The certificate location here will be set up for the curl engine later on, during preparation of the connection.
+             * NOTE: ini_set() does not work for setting up the cafile, this has to be done through php.ini, .htaccess, httpd.conf or .user.ini
+             */
             if ($this->testssl || $forceTesting) {
                 $this->openSslGuessed = true;
                 if (version_compare(PHP_VERSION, "5.6.0", ">=") && function_exists("openssl_get_cert_locations")) {
                     $locations = openssl_get_cert_locations();
+
                     if (is_array($locations)) {
                         if (isset($locations['default_cert_file'])) {
-                            /* If it exists don't bother */
+                            // If it exists, we don't have to bother anymore
                             if (file_exists($locations['default_cert_file'])) {
                                 $this->hasCertFile = true;
                                 $this->useCertFile = $locations['default_cert_file'];
@@ -599,37 +669,48 @@ if (function_exists('curl_init')) {
                             if (file_exists($locations['default_cert_dir'])) {
                                 $this->hasCertDir = true;
                             }
-                            /* Sometimes certificates are located in a default location, which is /etc/ssl/certs - this part scans through such directories for a proper cert-file */
-                            if (!$this->hasCertFile && is_array($this->sslPemLocations) && count($this->sslPemLocations)) {
-                                /* Loop through suggested locations and set a cafile if found */
-                                foreach ($this->sslPemLocations as $pemLocation) {
-                                    if (file_exists($pemLocation)) {
-                                        ini_set('openssl.cafile', $pemLocation);
-                                        $this->useCertFile = $pemLocation;
-                                        $this->hasCertFile = true;
-                                    }
-                                }
+                            // For unit testing
+                            if ($this->TargetEnvironment == TORNELIB_CURL_ENVIRONMENT::ENVIRONMENT_TEST && isset($this->_DEBUG_TCURL_UNSET_PEM_LOCATION)) {
+                                $this->hasCertFile = false;
+                                $this->useCertFile = null;
                             }
                         }
-                    }
-                    /* On guess, disable verification if failed */
-                    if (!$this->hasCertFile) {
-                        $this->setSslVerify(false);
-                    }
-                } else {
-                    /* If we run on other PHP versions than 5.6.0 or higher, try to fall back into a known directory */
-                    if ($this->testssldeprecated) {
+
+                        // Check if the above control was successful - switch over to pemlocations if not.
                         if (!$this->hasCertFile && is_array($this->sslPemLocations) && count($this->sslPemLocations)) {
-                            /* Loop through suggested locations and set a cafile if found */
+                            // Loop through suggested locations and set the cafile in a variable if it's found.
                             foreach ($this->sslPemLocations as $pemLocation) {
                                 if (file_exists($pemLocation)) {
-                                    ini_set('openssl.cafile', $pemLocation);
                                     $this->useCertFile = $pemLocation;
                                     $this->hasCertFile = true;
                                 }
                             }
                         }
-                        if (!$this->hasCertFile) {
+                    }
+                    // On guess, disable verification if failed (if allowed)
+                    if (!$this->hasCertFile && $this->allowSslUnverified) {
+                        $this->setSslVerify(false);
+                    }
+                } else {
+                    // If we run on other PHP versions than 5.6.0 or higher, try to fall back into a known directory
+                    if ($this->testssldeprecated) {
+                        if (!$this->hasCertFile && is_array($this->sslPemLocations) && count($this->sslPemLocations)) {
+                            // Loop through suggested locations and set the cafile in a variable if it's found.
+                            foreach ($this->sslPemLocations as $pemLocation) {
+                                if (file_exists($pemLocation)) {
+                                    $this->useCertFile = $pemLocation;
+                                    $this->hasCertFile = true;
+                                }
+                            }
+                            // For unit testing
+                            if ($this->TargetEnvironment == TORNELIB_CURL_ENVIRONMENT::ENVIRONMENT_TEST && isset($this->_DEBUG_TCURL_UNSET_PEM_LOCATION)) {
+                                $this->hasCertFile = false;
+                                $this->useCertFile = null;
+                            }
+                        }
+
+                        // Check if the above control was successful - switch over to pemlocations if not.
+                        if (!$this->hasCertFile && $this->allowSslUnverified) {
                             $this->setSslVerify(false);
                         }
                     }
@@ -656,11 +737,30 @@ if (function_exists('curl_init')) {
         /**
          * Enable/disable SSL Peer/Host verification, if problems occur with certificates. If setCertAuto is enabled, this function will use best practice.
          *
-         * @param bool|true $enabledFlag
+         * @param bool $enabledFlag
+         * @throws \Exception
          */
         public function setSslVerify($enabledFlag = true)
         {
-            $this->sslVerify = $enabledFlag;
+            if ($this->allowSslUnverified) {
+                $this->sslVerify = $enabledFlag;
+            } else {
+                throw new \Exception("setSslUnverified(true) has not been set.");
+            }
+        }
+
+        /**
+         * While doing SSL calls, and SSL certificate verifications is failing, enable the ability to skip SSL verifications.
+         *
+         * Normally, we want a valid SSL certificate while doing https-requests, but sometimes the verifications must be disabled. One reason of this is
+         * in cases, when crt-files are missing and PHP can not under very specific circumstances verify the peer. To allow this behaviour, the client
+         * MUST use this function.
+         *
+         * @since 5.0.0-20170210
+         * @param bool $enabledFlag
+         */
+        public function setSslUnverified($enabledFlag = false) {
+            $this->allowSslUnverified = $enabledFlag;
         }
 
 
@@ -807,7 +907,10 @@ if (function_exists('curl_init')) {
          * If this functions receives a json string or any other special content (as PHP-serializations), it will try to convert that string automatically to a readable array.
          *
          * @param string $content
-         * @return mixed|null
+         * @param bool $isFullRequest
+         * @param null $contentType
+         * @return array|mixed|null
+         * @throws \Exception
          */
         public function ParseContent($content = '', $isFullRequest = false, $contentType = null)
         {
@@ -817,16 +920,21 @@ if (function_exists('curl_init')) {
                 $contentType = isset($newContent['header']['info']['Content-Type']) ? $newContent['header']['info']['Content-Type'] : null;
             }
             $parsedContent = null;
+            $testSerialization = null;
             $testJson = @json_decode($content);
-            if (gettype($testJson) === "object") {
+            if (gettype($testJson) === "object" || (!empty($testJson) && is_array($testJson))) {
                 $parsedContent = $testJson;
-            }
-            $testSerialization = @unserialize($content);
-            if (gettype($testSerialization) === "object" || gettype($testSerialization) === "array") {
-                $parsedContent = $testSerialization;
+            } else {
+                if (is_string($content)) {
+                    $testSerialization = @unserialize($content);
+                    if (gettype($testSerialization) == "object" || gettype($testSerialization) === "array") {
+                        $parsedContent = $testSerialization;
+                    }
+                }
             }
             if (is_null($parsedContent) && (preg_match("/xml version/", $content) || preg_match("/rss version/", $content) || preg_match("/xml/i", $contentType))) {
-                if (!empty(trim($content))) {
+                $trimmedContent = trim($content); // PHP 5.3: Can't use function return value in write context
+                if (!empty($trimmedContent)) {
                     $simpleXML = new \SimpleXMLElement($content);
                     if (isset($simpleXML) && is_object($simpleXML)) {
                         return $simpleXML;
@@ -835,7 +943,97 @@ if (function_exists('curl_init')) {
                     return null;
                 }
             }
+            if ($this->allowParseHtml && empty($parsedContent)) {
+                if (class_exists('DOMDocument')) {
+                    $DOM = new \DOMDocument();
+                    $DOM->loadHTML($content);
+                    if (isset($DOM->childNodes->length) && $DOM->childNodes->length > 0) {
+                        $elementsByTagName = $DOM->getElementsByTagName('*');
+                        $childNodeArray = $this->getChildNodes($elementsByTagName);
+                        $childTagArray = $this->getChildNodes($elementsByTagName, 'tagnames');
+                        $childIdArray = $this->getChildNodes($elementsByTagName, 'id');
+                        $parsedContent = array(
+                            'ByNodes' => array(),
+                            'ByClosestTag' => array(),
+                            'ById' => array()
+                        );
+                        if (is_array($childNodeArray) && count($childNodeArray)) {
+                            $parsedContent['ByNodes'] = $childNodeArray;
+                        }
+                        if (is_array($childTagArray) && count($childTagArray)) {
+                            $parsedContent['ByClosestTag'] = $childTagArray;
+                        }
+                        if (is_array($childIdArray) && count($childIdArray)) {
+                            $parsedContent['ById'] = $childIdArray;
+                        }
+                    }
+                } else {
+                    throw new \Exception("Can not parse DOMDocuments without the DOMDocuments class");
+                }
+            }
             return $parsedContent;
+        }
+
+        /**
+         * Experimental: Convert DOMDocument to an array
+         *
+         * @param array $childNode
+         * @param string $getAs
+         * @param bool $hasParent
+         * @return array
+         */
+        private function getChildNodes($childNode = array(), $getAs = '', $hasParent = false) {
+            $childNodeArray = array();
+            $childAttributeArray = array();
+            $childIdArray = array();
+            if (is_object($childNode)) {
+                foreach ($childNode as $nodeItem) {
+                    if (is_object($nodeItem)) {
+                        if (isset($nodeItem->tagName)) {
+                            if (strtolower($nodeItem->tagName) == "title") {
+                                $elementData['pageTitle'] = $nodeItem->nodeValue;
+                            }
+                            $elementData = array('tagName' => $nodeItem->tagName);
+                            $elementData['id'] = $nodeItem->getAttribute('id');
+                            $elementData['name'] = $nodeItem->getAttribute('name');
+                            $elementData['context'] = $nodeItem->nodeValue;
+                            if ($nodeItem->hasChildNodes()) {
+                                $elementData['childElement'] = $this->getChildNodes($nodeItem->childNodes, $getAs, true);
+                            }
+                            $identificationName = $nodeItem->tagName;
+                            if (empty($identificationName) && !empty($elementData['name'])) {
+                                $identificationName = $elementData['name'];
+                            }
+                            if (empty($identificationName) && !empty($elementData['id'])) {
+                                $identificationName = $elementData['id'];
+                            }
+                            $childNodeArray[] = $elementData;
+                            if (!isset($childAttributeArray[$identificationName])) {
+                                $childAttributeArray[$identificationName] = $elementData;
+                            } else {
+                                $childAttributeArray[$identificationName][] = $elementData;
+                            }
+                            if (!empty($elementData['id'])) {
+                                if (!isset($childIdArray[$elementData['id']])) {
+                                    $childIdArray[$elementData['id']] = $elementData;
+                                } else {
+                                    $childIdArray[$elementData['id']][] = $elementData;
+                                }
+                            }
+
+
+                        }
+                    }
+                }
+            }
+            if (empty($getAs) || $getAs== "domnodes") {
+                $returnContext = $childNodeArray;
+            } else if ($getAs == "tagnames") {
+                $returnContext = $childAttributeArray;
+            } else if ($getAs == "id") {
+                $returnContext = $childIdArray;
+            }
+            return $returnContext;
         }
 
         /**
@@ -846,6 +1044,82 @@ if (function_exists('curl_init')) {
          */
         public function getHeader($content = "") {
             return $this->ParseResponse($content . "\r\n\r\n", null);
+        }
+
+        /**
+         * Extract a parsed response from a webrequest
+         * @param null $ResponseContent
+         * @return null
+         */
+        public function getParsedResponse($ResponseContent = null) {
+            if (is_null($ResponseContent) && !empty($this->TemporaryResponse)) {
+                return $this->TemporaryResponse['parsed'];
+            } else if (isset($ResponseContent['parsed'])) {
+                return $ResponseContent['parsed'];
+            }
+            return null;
+        }
+
+        /**
+         * Extract a specific key from a parsed webrequest
+         *
+         * @param $KeyName
+         * @param null $ResponseContent
+         * @return mixed|null
+         * @throws \Exception
+         */
+        public function getParsedValue($KeyName = null, $ResponseContent = null) {
+            if (is_string($KeyName)) {
+                $ParsedValue = $this->getParsedResponse($ResponseContent);
+                if (is_array($ParsedValue) && isset($ParsedValue[$KeyName])) {
+                    return $ParsedValue[$KeyName];
+                }
+                if (is_object($ParsedValue) && isset($ParsedValue->$KeyName)) {
+                    return $ParsedValue->$KeyName;
+                }
+            } else {
+                if (is_null($ResponseContent) && !empty($this->TemporaryResponse)) {
+                    $ResponseContent = $this->TemporaryResponse;
+                }
+                $Parsed = $this->getParsedResponse($ResponseContent);
+                $hasRecursion = false;
+                if (is_array($KeyName)) {
+                    $TheKeys = array_reverse($KeyName);
+                    $Eternity = 0;
+                    while (count($TheKeys) || $Eternity++ <= 20) {
+                        $hasRecursion = false;
+                        $CurrentKey = array_pop($TheKeys);
+                        if (is_array($Parsed)) {
+                            if (isset($Parsed[$CurrentKey])) {
+                                $hasRecursion = true;
+                            }
+                        } else if (is_object($Parsed)) {
+                            if (isset($Parsed->$CurrentKey)) {
+                                $hasRecursion = true;
+                            }
+                        } else {
+                            // If there are still keys to scan, all tests above has failed
+                            if (count($TheKeys)) {
+                                $hasRecursion = false;
+                            }
+                            break;
+                        }
+                        if ($hasRecursion) {
+                            $Parsed = $this->getParsedValue($CurrentKey, array('parsed' => $Parsed));
+                            // Break if this was the last one
+                            if (!count($TheKeys)) {
+                                break;
+                            }
+                        }
+                    }
+                    if ($hasRecursion) {
+                        return $Parsed;
+                    } else {
+                        throw new \Exception("Requested key was not found in parsed response");
+                    }
+                }
+            }
+            return null;
         }
 
         /**
@@ -890,6 +1164,8 @@ if (function_exists('curl_init')) {
                 $parsedContent = $this->ParseContent($returnResponse['body'], false, $contentType);
                 $returnResponse['parsed'] = (!empty($parsedContent) ? $parsedContent : null);
             }
+            $returnResponse['URL'] = $this->CurlURL;
+            $this->TemporaryResponse = $returnResponse;
             return $returnResponse;
         }
 
@@ -971,11 +1247,12 @@ if (function_exists('curl_init')) {
          * Call cUrl with a GET
          *
          * @param string $url
+         * @param int $postAs
          * @return array
          */
-        public function doGet($url = '')
+        public function doGet($url = '', $postAs = CURL_POST_AS::POST_AS_NORMAL)
         {
-            $content = $this->handleUrlCall($url, array(), CURL_METHODS::METHOD_GET);
+            $content = $this->handleUrlCall($url, array(), CURL_METHODS::METHOD_GET, $postAs);
             $ResponseArray = $this->ParseResponse($content);
             return $ResponseArray;
         }
@@ -1032,10 +1309,11 @@ if (function_exists('curl_init')) {
                 $this->CurlURL = $url;
             }
 
-            if (preg_match("/\?wsdl$|\&wsdl$/i", $this->CurlURL)) {
+            if (preg_match("/\?wsdl$|\&wsdl$/i", $this->CurlURL) || $postAs == CURL_POST_AS::POST_AS_SOAP) {
                 $Soap = new Tornevall_SimpleSoap($this->CurlURL, $this->curlopt);
                 $Soap->setThrowableState($this->canThrow);
                 $Soap->setSoapAuthentication($this->AuthData);
+                $Soap->SoapTryOnce = $this->SoapTryOnce;
                 return $Soap->getSoap();
             }
 
@@ -1109,10 +1387,22 @@ if (function_exists('curl_init')) {
             // If certificates missing
             if (!$this->TestCerts()) {
                 // And we're allowed to run without them
-                if (!$this->sslVerify) {
+                if (!$this->sslVerify && $this->allowSslUnverified) {
                     // Then disable the checking here
-                    curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYHOST, 0);
-                    curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYPEER, 0);
+                    curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYHOST, false);
+                    curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYPEER, false);
+                } else {
+                    curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYHOST, true);
+                    curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYPEER, true);
+                }
+            } else {
+                // Silently configure for https-connections, if exists
+                if ($this->useCertFile != "" && file_exists($this->useCertFile)) {
+                    try {
+                        curl_setopt($this->CurlSession, CURLOPT_CAINFO, $this->useCertFile);
+                        curl_setopt($this->CurlSession, CURLOPT_CAPATH, dirname($this->useCertFile));
+                    } catch (\Exception $e) {
+                    }
                 }
             }
             curl_setopt($this->CurlSession, CURLOPT_VERBOSE, false);
@@ -1176,10 +1466,11 @@ if (function_exists('curl_init')) {
             curl_setopt($this->CurlSession, CURLINFO_HEADER_OUT, true);
 
             $returnContent = curl_exec($this->CurlSession);
+
             if (curl_errno($this->CurlSession)) {
                 $errorCode = curl_errno($this->CurlSession);
                 if ($this->CurlResolveForced && $this->CurlResolveRetry >= 2) {
-                    throw new xception(__FUNCTION__ . ": Could not fetch url after internal retries", 1004);
+                    throw new \Exception(__FUNCTION__ . ": Could not fetch url after internal retries", 1004);
                 }
                 if ($errorCode == CURLE_COULDNT_RESOLVE_HOST || $errorCode === 45) {
                     $this->CurlResolveRetry++;
@@ -1216,7 +1507,7 @@ class Tornevall_SimpleSoap extends Tornevall_cURL {
     protected $addSoapOptions = array(
         'exceptions' => true,
         'trace' => true,
-        'cache_wsdl' => WSDL_CACHE_BOTH
+        'cache_wsdl' => 0       // Replacing WSDL_CACHE_NONE (WSDL_CACHE_BOTH = 3)
     );
     private $soapUrl;
     private $AuthData;
@@ -1229,6 +1520,7 @@ class Tornevall_SimpleSoap extends Tornevall_cURL {
 
     public $SoapFaultString = null;
     public $SoapFaultCode = 0;
+    public $SoapTryOnce = true;
 
     function __construct($Url, $SoapOptions = array())
     {
@@ -1255,13 +1547,51 @@ class Tornevall_SimpleSoap extends Tornevall_cURL {
         $this->canThrowSoapFaults = $throwable;
     }
 
+    /**
+     * Generate the SOAP
+     *
+     * @return $this
+     * @throws \Exception
+     */
     public function getSoap()
     {
         $this->soapClient = null;
         if (gettype($this->sslopt['stream_context']) == "resource") {
             $this->soapOptions['stream_context'] = $this->sslopt['stream_context'];
         }
-        $this->soapClient = new \SoapClient($this->soapUrl, $this->soapOptions);
+
+        if ($this->SoapTryOnce) {
+            $this->soapClient = new \SoapClient($this->soapUrl, $this->soapOptions);
+        } else {
+            try {
+                /*
+                 * FailoverMethod is active per default, trying to parry SOAP-sites that requires ?wsdl in the urls
+                 */
+                $this->soapClient = @new \SoapClient($this->soapUrl, $this->soapOptions);
+            } catch (\Exception $soapException) {
+                if (isset($soapException->faultcode) && $soapException->faultcode == "WSDL") {
+                    /*
+                     * If an exception has been invoked, check if the url contains a ?wsdl or &wsdl - if not, it may be the problem.
+                     * In that case, retry the call and throw an exception if we fail twice.
+                     */
+                    if (!preg_match("/\?wsdl|\&wsdl/i", $this->soapUrl)) {
+                        /*
+                         * Try to determine how the URL is built before trying this.
+                         */
+                        if (preg_match("/\?/", $this->soapUrl)) {
+                            $this->soapUrl .= "&wsdl";
+                        } else {
+                            $this->soapUrl .= "?wsdl";
+                        }
+                        try {
+                            $this->soapClient = @new \SoapClient($this->soapUrl, $this->soapOptions);
+                        } catch (\Exception $soapException) {
+                            throw new \Exception($soapException->getMessage(), $soapException->getCode());
+                        }
+                    }
+                }
+            }
+        }
         return $this;
     }
 
@@ -1361,6 +1691,7 @@ abstract class CURL_POST_AS
 {
     const POST_AS_NORMAL = 0;
     const POST_AS_JSON = 1;
+    const POST_AS_SOAP = 2;
 }
 
 /**
@@ -1373,4 +1704,16 @@ abstract class CURL_POST_AS
 abstract class CURL_AUTH_TYPES {
     const AUTHTYPE_NONE = 0;
     const AUTHTYPE_BASIC = 1;
+}
+
+/**
+ * Class TORNELIB_CURL_ENVIRONMENT
+ *
+ * The unit testing helper. To not collide with production environments, somet settings should only be available while unit testing.
+ *
+ * @package TorneLIB
+ */
+abstract class TORNELIB_CURL_ENVIRONMENT {
+    const ENVIRONMENT_PRODUCTION = 0;
+    const ENVIRONMENT_TEST = 1;
 }
