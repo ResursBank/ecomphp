@@ -62,7 +62,7 @@ class TorneLIB_Network
      */
     public function getArpaFromAddr($ipAddr = '', $returnIpType = false)
     {
-        if (long2ip(ip2long($ipAddr)) == "0.0.0.0") {
+        if (filter_var($ipAddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
             if ($returnIpType === true) {
                 $vArpaTest = $this->getArpaFromIpv6($ipAddr);    // PHP 5.3
                 if (!empty($vArpaTest)) {
@@ -73,13 +73,18 @@ class TorneLIB_Network
             } else {
                 return $this->getArpaFromIpv6($ipAddr);
             }
-        } else {
+        } else if (filter_var($ipAddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
             if ($returnIpType) {
                 return TorneLIB_Network_IP::IPTYPE_V4;
             } else {
                 return $this->getArpaFromIpv4($ipAddr);
             }
+        } else {
+            if ($returnIpType) {
+                return TorneLIB_Network_IP::IPTYPE_NONE;
+            }
         }
+        return "";
     }
 
     /**
@@ -122,13 +127,13 @@ class TorneLIB_Network
      * @param string $ip
      * @return string
      */
-    public function getArpaFromIpv6($ip = '::')
+    public function getArpaFromIpv6($ipAddr = '::')
     {
-        if (empty($ip)) {
-            return;
+        if (filter_var($ipAddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) === false) {
+            return null;
         }
-        $unpack = @unpack('H*hex', inet_pton($ip));
-        $hex = $unpack['hex'];
+        $unpackedAddr = @unpack('H*hex', inet_pton($ipAddr));
+        $hex = $unpackedAddr['hex'];
         return implode('.', array_reverse(str_split($hex)));
     }
 
@@ -140,7 +145,10 @@ class TorneLIB_Network
      */
     public function getArpaFromIpv4($ipAddr = '127.0.0.1')
     {
-        return implode(".", array_reverse(explode(".", $ipAddr)));
+        if (filter_var($ipAddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
+            return implode(".", array_reverse(explode(".", $ipAddr)));
+        }
+        return null;
     }
 
     /**
@@ -203,7 +211,7 @@ if (function_exists('curl_init')) {
         private $TorneCurlVersion = "5.0.0";
 
         /** @var string Internal release snapshot that is being used to find out if we are running the latest version of this library */
-        private $TorneCurlRelease = "20170322";
+        private $TorneCurlRelease = "20170406";
 
         /**
          * Target environment (if target is production some debugging values will be skipped)
@@ -256,6 +264,7 @@ if (function_exists('curl_init')) {
         private $CurlSession = null;
         /** @var null URL to communicate with */
         private $CurlURL = null;
+        private $TemporaryResponse = null;
 
         /** @var array Default settings when initializing our curlsession */
         public $curlopt = array(
@@ -1042,6 +1051,82 @@ if (function_exists('curl_init')) {
         }
 
         /**
+         * Extract a parsed response from a webrequest
+         * @param null $ResponseContent
+         * @return null
+         */
+        public function getParsedResponse($ResponseContent = null) {
+            if (is_null($ResponseContent) && !empty($this->TemporaryResponse)) {
+                return $this->TemporaryResponse['parsed'];
+            } else if (isset($ResponseContent['parsed'])) {
+                return $ResponseContent['parsed'];
+            }
+            return null;
+        }
+
+        /**
+         * Extract a specific key from a parsed webrequest
+         *
+         * @param $KeyName
+         * @param null $ResponseContent
+         * @return mixed|null
+         * @throws \Exception
+         */
+        public function getParsedValue($KeyName = null, $ResponseContent = null) {
+            if (is_string($KeyName)) {
+                $ParsedValue = $this->getParsedResponse($ResponseContent);
+                if (is_array($ParsedValue) && isset($ParsedValue[$KeyName])) {
+                    return $ParsedValue[$KeyName];
+                }
+                if (is_object($ParsedValue) && isset($ParsedValue->$KeyName)) {
+                    return $ParsedValue->$KeyName;
+                }
+            } else {
+                if (is_null($ResponseContent) && !empty($this->TemporaryResponse)) {
+                    $ResponseContent = $this->TemporaryResponse;
+                }
+                $Parsed = $this->getParsedResponse($ResponseContent);
+                $hasRecursion = false;
+                if (is_array($KeyName)) {
+                    $TheKeys = array_reverse($KeyName);
+                    $Eternity = 0;
+                    while (count($TheKeys) || $Eternity++ <= 20) {
+                        $hasRecursion = false;
+                        $CurrentKey = array_pop($TheKeys);
+                        if (is_array($Parsed)) {
+                            if (isset($Parsed[$CurrentKey])) {
+                                $hasRecursion = true;
+                            }
+                        } else if (is_object($Parsed)) {
+                            if (isset($Parsed->$CurrentKey)) {
+                                $hasRecursion = true;
+                            }
+                        } else {
+                            // If there are still keys to scan, all tests above has failed
+                            if (count($TheKeys)) {
+                                $hasRecursion = false;
+                            }
+                            break;
+                        }
+                        if ($hasRecursion) {
+                            $Parsed = $this->getParsedValue($CurrentKey, array('parsed' => $Parsed));
+                            // Break if this was the last one
+                            if (!count($TheKeys)) {
+                                break;
+                            }
+                        }
+                    }
+                    if ($hasRecursion) {
+                        return $Parsed;
+                    } else {
+                        throw new \Exception("Requested key was not found in parsed response");
+                    }
+                }
+            }
+            return null;
+        }
+
+        /**
          * Parse response, in case of there is any followed traces from the curl engine, so we'll always land on the right ending stream
          *
          * @param string $content
@@ -1083,6 +1168,8 @@ if (function_exists('curl_init')) {
                 $parsedContent = $this->ParseContent($returnResponse['body'], false, $contentType);
                 $returnResponse['parsed'] = (!empty($parsedContent) ? $parsedContent : null);
             }
+            $returnResponse['URL'] = $this->CurlURL;
+            $this->TemporaryResponse = $returnResponse;
             return $returnResponse;
         }
 
@@ -1188,7 +1275,7 @@ if (function_exists('curl_init')) {
         }
 
         /**
-         * Fix problematic header data
+         * Fix problematic header data by converting them to proper outputs.
          *
          * @param array $headerList
          * @return array
@@ -1236,6 +1323,10 @@ if (function_exists('curl_init')) {
 
             $this->initCookiePath();
             $this->init();
+
+            /*
+             * Picking up externally select outgoing ip if any
+             */
             $myIp = $this->handleIpList();
             curl_setopt($this->CurlSession, CURLOPT_URL, $this->CurlURL);
 

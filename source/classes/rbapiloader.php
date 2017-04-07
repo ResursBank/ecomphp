@@ -21,7 +21,9 @@ namespace Resursbank\RBEcomPHP;
 /**
  * Location of RBEcomPHP class files.
  */
-if (!defined('RB_API_PATH')) { define('RB_API_PATH', __DIR__); }
+if (!defined('RB_API_PATH')) {
+    define('RB_API_PATH', __DIR__);
+}
 require_once(RB_API_PATH . '/thirdparty/network.php');
 require_once(RB_API_PATH . '/rbapiloader/ResursAfterShopRenderTypes.php');
 require_once(RB_API_PATH . '/rbapiloader/ResursCallbackTypes.php');
@@ -302,7 +304,8 @@ class ResursBank
      * @param bool $activate
      * @link https://test.resurs.com/docs/x/TYNM#ECommercePHPLibrary-ObsoletePHPversions
      */
-    public function setObsoletePhp($activate = false) {
+    public function setObsoletePhp($activate = false)
+    {
         $this->allowObsoletePHP = $activate;
     }
 
@@ -352,8 +355,7 @@ class ResursBank
      */
     public function setTestUrl($newUrl = '', $FlowType = ResursMethodTypes::METHOD_UNDEFINED)
     {
-        if (!preg_match("/^http/i", $newUrl))
-        {
+        if (!preg_match("/^http/i", $newUrl)) {
             /*
              * Automatically base64-decode if encoded
              */
@@ -432,7 +434,8 @@ class ResursBank
      * @param bool $updateCart Defines if this a cart upgrade only
      * @return array|mixed|string|void
      */
-    public function toJsonByType($dataContainer = array(), $paymentMethodType = ResursMethodTypes::METHOD_SIMPLIFIED, $updateCart = false) {
+    public function toJsonByType($dataContainer = array(), $paymentMethodType = ResursMethodTypes::METHOD_SIMPLIFIED, $updateCart = false)
+    {
         // We need the content as is at this point since this part normally should be received as arrays
         $newDataContainer = $this->getDataObject($dataContainer, false, true);
         if (!isset($newDataContainer['type']) || empty($newDataContainer['type'])) {
@@ -528,13 +531,26 @@ class ResursBank
                  */
                 if (isset($newDataContainer['orderLines']) && is_array($newDataContainer['orderLines'])) {
                     $orderLineClean = array();
+                    /*
+                     * Single Orderline Compatibility: When an order line is not properly sent to the handler, it has to be converted to an indexed array first,
+                     */
+                    if ($newDataContainer['type'] == "omni") {
+                        unset($newDataContainer['paymentData'], $newDataContainer['customer']);
+                    }
+                    if (isset($newDataContainer['orderLines']['artNo'])) {
+                        $singleOrderLine = $newDataContainer['orderLines'];
+                        $newDataContainer['orderLines'] = array($singleOrderLine);
+                    }
+                    unset($newDataContainer['customer'], $newDataContainer['paymentData']);
                     foreach ($newDataContainer['orderLines'] as $orderLineId => $orderLineArray) {
-                        foreach ($orderLineArray as $orderLineArrayKey => $orderLineArrayValue) {
-                            if (!in_array($orderLineArrayKey, $orderlineProps)) {
-                                unset($orderLineArray[$orderLineArrayKey]);
+                        if (is_array($orderLineArray)) {
+                            foreach ($orderLineArray as $orderLineArrayKey => $orderLineArrayValue) {
+                                if (!in_array($orderLineArrayKey, $orderlineProps)) {
+                                    unset($orderLineArray[$orderLineArrayKey]);
+                                }
                             }
+                            $orderLineClean[] = $orderLineArray;
                         }
-                        $orderLineClean[] = $orderLineArray;
                     }
                     $newDataContainer['orderLines'] = $orderLineClean;
                 }
@@ -580,7 +596,8 @@ class ResursBank
         return $returnJson;
     }
 
-    public function getBookedJsonObject($method = ResursMethodTypes::METHOD_UNDEFINED) {
+    public function getBookedJsonObject($method = ResursMethodTypes::METHOD_UNDEFINED)
+    {
         $returnObject = new \stdClass();
         if ($method == ResursMethodTypes::METHOD_SIMPLIFIED) {
             return $returnObject;
@@ -652,7 +669,8 @@ class ResursBank
      * Define current environment
      * @param int $environmentType
      */
-    public function setEnvironment($environmentType = ResursEnvironments::ENVIRONMENT_TEST) {
+    public function setEnvironment($environmentType = ResursEnvironments::ENVIRONMENT_TEST)
+    {
         $this->current_environment = $environmentType;
         $this->current_environment_updated = true;
     }
@@ -714,7 +732,8 @@ class ResursBank
      * TestCerts - Test if your webclient has certificates available (make sure the $testssldeprecated are enabled if you want to test older PHP-versions - meaning older than 5.6.0)
      * @return bool
      */
-    public function TestCerts() {
+    public function TestCerts()
+    {
         return $this->openssl_guess();
     }
 
@@ -725,8 +744,11 @@ class ResursBank
      * @param bool $preventConversion
      * @return array|mixed|null
      */
-    private function getDataObject($d = array(), $forceConversion = false, $preventConversion = false) {
-        if ($preventConversion) {return $d;}
+    private function getDataObject($d = array(), $forceConversion = false, $preventConversion = false)
+    {
+        if ($preventConversion) {
+            return $d;
+        }
         if ($this->convertObjects || $forceConversion) {
             /**
              * If json_decode and json_encode exists as function, do it the simple way.
@@ -1322,8 +1344,7 @@ class ResursBank
             $returnAsArray = true;
         }
         $useNameSpace = "";
-        foreach (get_declared_classes() as $className)
-        {
+        foreach (get_declared_classes() as $className) {
             if (preg_match("/rbecomphp/i", $className) && preg_match("/resursbank/i", $className)) {
                 $useNameSpace = "\\Resursbank\\RBEcomPHP\\";
                 break;
@@ -2651,7 +2672,10 @@ class ResursBank
         }
 
         /* Prepare for a simplified flow */
-        $this->InitializeWsdl();
+        if (!$this->isOmniFlow && !$this->isHostedFlow) {
+            // Do not use wsdl stubs if we are targeting rest services
+            $this->InitializeWsdl();
+        }
         $this->updatePaymentdata($paymentMethodId, isset($bookData['paymentData']) && is_array($bookData['paymentData']) && count($bookData['paymentData']) ? $bookData['paymentData'] : array());
         if (isset($bookData['specLine']) && is_array($bookData['specLine'])) {
             $this->updateCart(isset($bookData['specLine']) ? $bookData['specLine'] : array());
@@ -2662,7 +2686,6 @@ class ResursBank
             }
         }
         $this->updatePaymentSpec($this->_paymentSpeclines);
-
         /* Prepare address data for hosted flow and simplified, ignore if we're on omni, where this data is not required */
         if (!isset($skipSteps['address'])) {
             if (isset($bookData['deliveryAddress'])) {
@@ -2676,13 +2699,11 @@ class ResursBank
             }
         }
 
-        /* Prepare and collect data for a bookpayment */
-        if (class_exists('Resursbank\RBEcomPHP\resurs_bookPayment') || class_exists('resurs_bookPayment')) {
+        /* Prepare and collect data for a bookpayment - if the flow is simple */
+        if ((!$this->isOmniFlow && !$this->isHostedFlow) && (class_exists('Resursbank\RBEcomPHP\resurs_bookPayment') || class_exists('resurs_bookPayment'))) {
             /* Only run this if it exists, and the plans is to go through simplified flow */
-            if (!$this->isOmniFlow && !$this->isHostedFlow) {
-                /** @noinspection PhpParamsInspection */
-                $bookPaymentInit = new resurs_bookPayment($this->_paymentData, $this->_paymentOrderData, $this->_paymentCustomer, $this->_bookedCallbackUrl);
-            }
+            /** @noinspection PhpParamsInspection */
+            $bookPaymentInit = new resurs_bookPayment($this->_paymentData, $this->_paymentOrderData, $this->_paymentCustomer, $this->_bookedCallbackUrl);
         } else {
             /*
              * If no "new flow" are detected during the handle of payment here, and the class also exists so no booking will be possible, we should
@@ -2759,7 +2780,6 @@ class ResursBank
                 throw new ResursException("Can not find location in hosted flow", 404, "bookPaymentHosted");
             }
         }
-
         /* If this request was not about an omni flow, let's continue prepare the signing data */
         if (isset($bookData['signing'])) {
             $bookPaymentInit->signing = $bookData['signing'];
@@ -2809,6 +2829,14 @@ class ResursBank
             $this->isHostedFlow = false;
             $this->isOmniFlow = false;
         }
+    }
+
+    /**
+     * Return the current set "preferred payment service" (hosted, checkout, simplified)
+     * @return null
+     */
+    public function getPreferredPaymentService() {
+        return $this->enforceService;
     }
 
     /**
@@ -2954,6 +2982,15 @@ class ResursBank
             $htmlString = preg_replace("/\<script(.*?)\/script>/", '', $htmlString);
         }
         return $htmlString;
+    }
+    public function getIframeSrc($iframeString = "") {
+        if (is_string($iframeString) && preg_match("//i", $iframeString)) {
+            preg_match_all("/iframe src=\"(.*?)\"/", $iframeString, $iframeData);
+            if (isset($iframeData[1]) && isset($iframeData[1][0])) {
+                return $iframeData[1][0];
+            }
+        }
+        return null;
     }
 
     /**
@@ -3147,7 +3184,8 @@ class ResursBank
         try {
             $peek = $this->configurationService->peekInvoiceSequence(array('nextInvoiceNumber' => null));
             $invoiceNumber = $peek->nextInvoiceNumber;
-        } catch (\Exception $e) { }
+        } catch (\Exception $e) {
+        }
         if (empty($invoiceNumber) && $initInvoice) {
             $this->configurationService->setInvoiceSequence(array('nextInvoiceNumber' => $firstInvoiceNumber));
             $invoiceNumber = $firstInvoiceNumber;
@@ -3593,7 +3631,6 @@ class ResursBank
 
         if (is_array($paymentSpecLine) && count($paymentSpecLine)) {
             /* Calculate totalAmount to finalize */
-
             foreach ($paymentSpecLine as $row) {
                 if (is_array($clientPaymentSpec) && count($clientPaymentSpec)) {
                     /**
@@ -3613,7 +3650,7 @@ class ResursBank
                             foreach ($clientPaymentSpec as $item) {
                                 if (isset($item['artNo']) && !empty($item['artNo']) && $item['artNo'] == $row->artNo && isset($item['quantity']) && intval($item['quantity']) > 0) {
                                     /* Recalculate the new totalVatAmount */
-                                    $newTotalVatAmount = ($row->unitAmountWithoutVat * ($row->vatPct/100)) * $item['quantity'];
+                                    $newTotalVatAmount = ($row->unitAmountWithoutVat * ($row->vatPct / 100)) * $item['quantity'];
                                     /* Recalculate the new totalAmount */
                                     $newTotalAmount = ($row->unitAmountWithoutVat * $item['quantity']) + $newTotalVatAmount;
                                     /* Change the new values in the current row */
