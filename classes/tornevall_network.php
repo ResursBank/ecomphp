@@ -301,7 +301,8 @@ if (function_exists('curl_init')) {
         public $CurlReferer = null;
 
         /** @var string Use proxy */
-        public $CurlProxy = '';
+        private $CurlProxy = null;
+        private $CurlProxyType = null;
 
         /** @var bool Enable tunneling mode */
         public $CurlTunnel = false;
@@ -879,9 +880,12 @@ if (function_exists('curl_init')) {
                         $UseIp = $this->IpAddr[$IpAddrNum];
                     }
                 }
+            } else if (!empty($this->IpAddr)) {
+                $UseIp = $this->IpAddr;
             }
 
             $ipType = $this->NETWORK->getArpaFromAddr($UseIp, true);
+
             /*
              * Bind interface to specific ip only if any are found
              */
@@ -1169,6 +1173,7 @@ if (function_exists('curl_init')) {
                 $returnResponse['parsed'] = (!empty($parsedContent) ? $parsedContent : null);
             }
             $returnResponse['URL'] = $this->CurlURL;
+            $returnResponse['ip'] = isset($this->CurlIp) ? $this->CurlIp : null;  // Will only be filled if there is custom address set.
             $this->TemporaryResponse = $returnResponse;
             return $returnResponse;
         }
@@ -1274,6 +1279,11 @@ if (function_exists('curl_init')) {
             $this->AuthData['Type'] = $AuthType;
         }
 
+        public function setProxy($ProxyAddr, $ProxyType = CURLPROXY_HTTP) {
+            $this->CurlProxy = $ProxyAddr;
+            $this->CurlProxyType = $ProxyType;
+        }
+
         /**
          * Fix problematic header data by converting them to proper outputs.
          *
@@ -1327,7 +1337,7 @@ if (function_exists('curl_init')) {
             /*
              * Picking up externally select outgoing ip if any
              */
-            $myIp = $this->handleIpList();
+            $this->handleIpList();
             curl_setopt($this->CurlSession, CURLOPT_URL, $this->CurlURL);
 
             if (is_array($postData)) {
@@ -1414,13 +1424,16 @@ if (function_exists('curl_init')) {
                 }
             }
             curl_setopt($this->CurlSession, CURLOPT_VERBOSE, false);
-            // Run from proxy
-            if (isset($this->CurlProxy)) {
+            if (isset($this->CurlProxy) && !empty($this->CurlProxy)) {
+                // Run from proxy
                 curl_setopt($this->CurlSession, CURLOPT_PROXY, $this->CurlProxy);
+                if (isset($this->CurlProxyType) && !empty($this->CurlProxyType)) {
+                    curl_setopt($this->CurlSession, CURLOPT_PROXYTYPE, $this->CurlProxyType);
+                }
                 unset($this->CurlIp);
             }
-            // Run in tunneling mode
-            if (isset($this->CurlTunnel)) {
+            if (isset($this->CurlTunnel) && !empty($this->CurlTunnel)) {
+                // Run in tunneling mode
                 curl_setopt($this->CurlSession, CURLOPT_HTTPPROXYTUNNEL, true);
                 unset($this->CurlIp);
             }
