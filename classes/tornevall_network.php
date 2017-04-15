@@ -211,7 +211,7 @@ if (function_exists('curl_init')) {
         private $TorneCurlVersion = "5.0.0";
 
         /** @var string Internal release snapshot that is being used to find out if we are running the latest version of this library */
-        private $TorneCurlRelease = "20170406";
+        private $TorneCurlRelease = "20170415";
 
         /**
          * Target environment (if target is production some debugging values will be skipped)
@@ -300,8 +300,9 @@ if (function_exists('curl_init')) {
         /** @var null Sets a HTTP_REFERER to the http call */
         public $CurlReferer = null;
 
-        /** @var string Use proxy */
+        /** @var null CurlProxy, if set, we will try to proxify the traffic */
         private $CurlProxy = null;
+        /** @var null, if not set, but CurlProxy is, we will use HTTP as proxy (See CURLPROXY_* for more information) */
         private $CurlProxyType = null;
 
         /** @var bool Enable tunneling mode */
@@ -874,6 +875,9 @@ if (function_exists('curl_init')) {
                     $UseIp = (isset($this->IpAddr[0]) && !empty($this->IpAddr[0]) ? $this->IpAddr[0] : null);
                 } elseif (count($this->IpAddr) > 1) {
                     if (!$this->IpAddrRandom) {
+                        /*
+                         * If we have multiple ip addresses in the list, but the randomizer is not active, always use the first address in the list.
+                         */
                         $UseIp = (isset($this->IpAddr[0]) && !empty($this->IpAddr[0]) ? $this->IpAddr[0] : null);
                     } else {
                         $IpAddrNum = rand(0, count($this->IpAddr) - 1);

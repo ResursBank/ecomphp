@@ -8,8 +8,9 @@ require_once("../classes/tornevall_network.php");
 class Tornevall_cURLTest extends \PHPUnit_Framework_TestCase
 {
     private $CURL;
-
     private $Urls;
+    private $TorSetupAddress = "127.0.0.1:9050";
+    private $TorSetupType = CURLPROXY_SOCKS4;
 
     function __construct()
     {
@@ -26,6 +27,7 @@ class Tornevall_cURLTest extends \PHPUnit_Framework_TestCase
          */
         $this->Urls = array(
             'simple' => 'http://identifier.tornevall.net/',
+            'simplejson' => 'http://identifier.tornevall.net/?json',
             'tests' => 'developer.tornevall.net/tests/tornevall_network/'
         );
     }
@@ -345,5 +347,90 @@ class Tornevall_cURLTest extends \PHPUnit_Framework_TestCase
         } catch (\Exception $e) {
         }
         $this->assertTrue($successfulVerification);
+    }
+
+    private function getIpListByIpRoute() {
+        // Don't fetch 127.0.0.1
+        exec("ip addr|grep \"inet \"|sed 's/\// /'|awk '{print $2}'|grep -v ^127", $returnedExecResponse);
+        return $returnedExecResponse;
+    }
+
+    /**
+     * Test the customized ip address
+     */
+    function testCustomIpAddrSimple() {
+        $this->pemDefault();
+        $returnedExecResponse = $this->getIpListByIpRoute();
+        // Probably a bad shortcut for some systems, but it works for us in tests
+        if (!empty($returnedExecResponse) && is_array($returnedExecResponse)) {
+            $NETWORK = new TorneLIB_Network();
+            $ipArray = array();
+            foreach ($returnedExecResponse as $ip) {
+                if ($NETWORK->getArpaFromAddr($ip, true) > 0) {
+                    $ipArray[] = $ip;
+                }
+            }
+            $this->CURL->IpAddr = $ipArray;
+            $CurlJson = $this->CURL->doGet($this->Urls['simplejson']);
+            $this->assertNotEmpty($CurlJson['parsed']->ip);
+        }
+    }
+
+    /**
+     * Test custom ip address setup (if more than one ip is set on the interface)
+     */
+    function testCustomIpAddrAllString() {
+        $this->pemDefault();
+        $ipArray = array();
+        $responses = array();
+        $returnedExecResponse = $this->getIpListByIpRoute();
+        if (!empty($returnedExecResponse) && is_array($returnedExecResponse)) {
+            $NETWORK = new TorneLIB_Network();
+            foreach ($returnedExecResponse as $ip) {
+                if ($NETWORK->getArpaFromAddr($ip, true) > 0) {
+                    $ipArray[] = $ip;
+                }
+            }
+            if (is_array($ipArray) && count($ipArray) > 1) {
+                foreach ($ipArray as $ip) {
+                    $this->CURL->IpAddr = $ip;
+                    try {
+                        $CurlJson = $this->CURL->doGet($this->Urls['simplejson']);
+                    } catch (\Exception $e) {
+
+                    }
+                    if (isset($CurlJson['parsed']->ip) && $this->NET->getArpaFromAddr($CurlJson['parsed']->ip, true) > 0) {
+                        $responses[$ip] = $CurlJson['parsed']->ip;
+                    }
+                }
+            } else {
+                $this->markTestIncomplete("ip address array is too short to be tested (".print_R($ipArray, true).")");
+            }
+        }
+        $this->assertTrue(count($responses) === count($ipArray));
+    }
+
+    /**
+     * Test proxy by using Tor Network (Requires Tor)
+     * @link https://www.torproject.org/ Required application
+     */
+    function testTorNetwork() {
+        $this->pemDefault();
+        exec("service tor status", $ubuntuService);
+        $serviceFound = false;
+        foreach ($ubuntuService as $row) {
+            // Unsafe control
+            if (preg_match("/loaded: loaded/i", $row)) {
+                $serviceFound = true;
+            }
+        }
+        if (!$serviceFound) {
+            $this->markTestIncomplete("Service not found in the current control");
+        } else {
+            $this->CURL->setProxy($this->TorSetupAddress, $this->TorSetupType);
+            $CurlJson = $this->CURL->doGet($this->Urls['simplejson']);
+            $parsedIp = $this->NET->getArpaFromAddr($CurlJson['parsed']->ip, true);
+            $this->assertTrue($parsedIp > 0);
+        }
     }
 }
