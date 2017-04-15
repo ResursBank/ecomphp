@@ -340,6 +340,7 @@ if (function_exists('curl_init')) {
         public $CurlAutoParse = true;
         /** @var bool Allow parsing of content bodies (tags) */
         private $allowParseHtml = false;
+        private $ResponseType = TORNELIB_CURL_RESPONSETYPE::RESPONSETYPE_ARRAY;
 
         /**
          * Authentication
@@ -403,6 +404,10 @@ if (function_exists('curl_init')) {
          */
         public function setLocalCookies($enabled = false) {
             $this->useLocalCookies = $enabled;
+        }
+
+        public function setResponseType($ResponseType = TORNELIB_CURl_RESPONSETYPE::RESPONSETYPE_ARRAY) {
+            $this->ResponseType = $ResponseType;
         }
 
         /**
@@ -1178,6 +1183,19 @@ if (function_exists('curl_init')) {
             }
             $returnResponse['URL'] = $this->CurlURL;
             $returnResponse['ip'] = isset($this->CurlIp) ? $this->CurlIp : null;  // Will only be filled if there is custom address set.
+
+            if ($this->ResponseType == TORNELIB_CURl_RESPONSETYPE::RESPONSETYPE_OBJECT) {
+                // This is probably not necessary and will not be the default setup after all.
+                $returnResponseObject = new TORNELIB_CURLOBJECT();
+                $returnResponseObject->header = $returnResponse['header'];
+                $returnResponseObject->body = $returnResponse['body'];
+                $returnResponseObject->code = $returnResponse['code'];
+                $returnResponseObject->parsed = $returnResponse['parsed'];
+                $returnResponseObject->url = $returnResponse['URL'];
+                $returnResponseObject->ip = $returnResponse['ip'];
+                return $returnResponseObject;
+            }
+
             $this->TemporaryResponse = $returnResponse;
             return $returnResponse;
         }
@@ -1741,4 +1759,16 @@ abstract class CURL_AUTH_TYPES {
 abstract class TORNELIB_CURL_ENVIRONMENT {
     const ENVIRONMENT_PRODUCTION = 0;
     const ENVIRONMENT_TEST = 1;
+}
+abstract class TORNELIB_CURL_RESPONSETYPE {
+    const RESPONSETYPE_ARRAY = 0;
+    const RESPONSETYPE_OBJECT = 1;
+}
+class TORNELIB_CURLOBJECT {
+    public $header;
+    public $body;
+    public $code;
+    public $parsed;
+    public $url;
+    public $ip;
 }
