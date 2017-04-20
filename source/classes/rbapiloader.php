@@ -1598,7 +1598,7 @@ class ResursBank
      *
      * @param int $callbackType
      * @param string $callbackUriTemplate
-     * @param array $callbackDigest If empty or null, this is automatically handled
+     * @param array $callbackDigest If no parameters are set, this will be handled automatically.
      * @param null $basicAuthUserName
      * @param null $basicAuthPassword
      * @return bool
@@ -1616,6 +1616,8 @@ class ResursBank
             throw new ResursException("The callback type you are trying to register is not supported by EComPHP", ResursExceptions::CALLBACK_TYPE_UNSUPPORTED, __FUNCTION__);
         }
         $confirmCallbackResult = false;
+
+        if (isset($callbackDigest) && !is_array($callbackDigest)) { $callbackDigest = array(); }
 
         if (count($renderCallback) && $renderCallback['eventType'] != "" && !empty($callbackUriTemplate)) {
             /** @noinspection PhpParamsInspection */
