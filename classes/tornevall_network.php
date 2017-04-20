@@ -212,7 +212,7 @@ if (function_exists('curl_init')) {
         private $CurlVersion = null;
 
         /** @var string Internal release snapshot that is being used to find out if we are running the latest version of this library */
-        private $TorneCurlRelease = "20170415";
+        private $TorneCurlRelease = "20170420";
 
         /**
          * Target environment (if target is production some debugging values will be skipped)
