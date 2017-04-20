@@ -2,7 +2,7 @@
 
 namespace Resursbank\RBEcomPHP;
 
-if (!class_exists("\\Resursbank\\RBEcomPHP\\Resurs_SimplifiedShopFlowService", false))
+if (!class_exists("\\Resursbank\\RBEcomPHP\\Resurs_SimplifiedShopFlowService", false)) 
 {
 include_once('resurs_customer.php');
 include_once('resurs_address.php');
@@ -122,6 +122,10 @@ class Resurs_SimplifiedShopFlowService extends \SoapClient
         }
       }
       
+      if (isset($options['features']) == false) {
+        $options['features'] = SOAP_USE_XSI_ARRAY_TYPE;
+      }
+    
       parent::__construct($wsdl, $options);
     }
 

@@ -2,7 +2,7 @@
 
 namespace Resursbank\RBEcomPHP;
 
-if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_sortAlternative", false))
+if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_sortAlternative", false)) 
 {
 class resurs_sortAlternative
 {

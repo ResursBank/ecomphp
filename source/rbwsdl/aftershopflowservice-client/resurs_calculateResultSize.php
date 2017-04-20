@@ -2,7 +2,7 @@
 
 namespace Resursbank\RBEcomPHP;
 
-if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_calculateResultSize", false))
+if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_calculateResultSize", false)) 
 {
 class resurs_calculateResultSize
 {

@@ -2,7 +2,7 @@
 
 namespace Resursbank\RBEcomPHP;
 
-if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_searchCriteria", false))
+if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_searchCriteria", false)) 
 {
 class resurs_searchCriteria
 {

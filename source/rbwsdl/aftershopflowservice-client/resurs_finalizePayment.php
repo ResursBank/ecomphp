@@ -2,7 +2,7 @@
 
 namespace Resursbank\RBEcomPHP;
 
-if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_finalizePayment", false))
+if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_finalizePayment", false)) 
 {
 class resurs_finalizePayment
 {

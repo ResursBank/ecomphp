@@ -1,3 +1,5 @@
 .idea
 .DS_Store
+.svn
+/tests/test.json
 docs

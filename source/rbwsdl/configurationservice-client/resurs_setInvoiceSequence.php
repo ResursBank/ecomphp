@@ -2,7 +2,7 @@
 
 namespace Resursbank\RBEcomPHP;
 
-if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_setInvoiceSequence", false))
+if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_setInvoiceSequence", false)) 
 {
 class resurs_setInvoiceSequence
 {

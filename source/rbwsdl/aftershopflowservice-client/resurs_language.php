@@ -2,7 +2,7 @@
 
 namespace Resursbank\RBEcomPHP;
 
-if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_language", false))
+if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_language", false)) 
 {
 class resurs_language
 {

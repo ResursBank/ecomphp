@@ -2,7 +2,7 @@
 
 namespace Resursbank\RBEcomPHP;
 
-if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_ECommerceError", false))
+if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_ECommerceError", false)) 
 {
 class resurs_ECommerceError
 {

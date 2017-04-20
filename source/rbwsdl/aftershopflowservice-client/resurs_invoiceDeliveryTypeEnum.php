@@ -2,7 +2,7 @@
 
 namespace Resursbank\RBEcomPHP;
 
-if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_invoiceDeliveryTypeEnum", false))
+if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_invoiceDeliveryTypeEnum", false)) 
 {
 class resurs_invoiceDeliveryTypeEnum
 {

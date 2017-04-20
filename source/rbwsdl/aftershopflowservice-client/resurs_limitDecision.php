@@ -2,7 +2,7 @@
 
 namespace Resursbank\RBEcomPHP;
 
-if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_limitDecision", false))
+if (!class_exists("\\Resursbank\\RBEcomPHP\\resurs_limitDecision", false)) 
 {
 class resurs_limitDecision
 {

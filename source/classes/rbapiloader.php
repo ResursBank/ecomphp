@@ -1,14 +1,19 @@
 <?php
 /**
  * Resurs Bank Passthrough API - A pretty silent ShopFlowSimplifier for Resurs Bank.
+ * Compatible with simplifiedFlow, hostedFlow and Resurs Checkout.
+ * Requirements: WSDL stubs from WSDL2PHPGenerator (deprecated edition)
+ * Important notes: As the WSDL files are generated, it is highly important to run tests before release.
+ * Differences between 1.0 and 1.1 is primarily the namespacing, to be compatible with Magento Marketplace.
+ *
  * Last update: See the lastUpdate variable
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
- * @version 1.0-beta
- * @branch 1.0
+ * @branch 1.1
+ * @version 1.1.0
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
- * @license Not set
+ * @license Apache License
  */
 
 namespace Resursbank\RBEcomPHP;
@@ -16,16 +21,17 @@ namespace Resursbank\RBEcomPHP;
 /**
  * Location of RBEcomPHP class files.
  */
-if (!defined('RB_API_PATH')) { define('RB_API_PATH', __DIR__); }
-require_once('rbapi_exceptions.php');
-require_once('networklib.php');
-require_once('rbapiloader/ResursAfterShopRenderTypes.php');
-require_once('rbapiloader/ResursCallbackTypes.php');
-require_once('rbapiloader/ResursCurlMethods.php');
-require_once('rbapiloader/ResursEnvironments.php');
-require_once('rbapiloader/ResursExceptions.php');
-require_once('rbapiloader/ResursMethodTypes.php');
-require_once('rbapiloader/ResursOmniCallTypes.php');
+if (!defined('RB_API_PATH')) {
+    define('RB_API_PATH', __DIR__);
+}
+require_once(RB_API_PATH . '/thirdparty/network.php');
+require_once(RB_API_PATH . '/rbapiloader/ResursAfterShopRenderTypes.php');
+require_once(RB_API_PATH . '/rbapiloader/ResursCallbackTypes.php');
+require_once(RB_API_PATH . '/rbapiloader/ResursCheckoutCallTypes.php');
+require_once(RB_API_PATH . '/rbapiloader/ResursCurlMethods.php');
+require_once(RB_API_PATH . '/rbapiloader/ResursEnvironments.php');
+require_once(RB_API_PATH . '/rbapiloader/ResursException.php');
+require_once(RB_API_PATH . '/rbapiloader/ResursMethodTypes.php');
 
 /**
  * Class ResursBank
@@ -39,10 +45,12 @@ class ResursBank
     /** @var string The version of this gateway */
     private $version = "1.0.0";
     /** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-    private $lastUpdate = "20170116";
+    private $lastUpdate = "20170323";
     private $preferredId = null;
     private $ocShopScript = null;
     private $formTemplateRuleArray = array();
+    private $hasNameSpace = false;
+    public $alwaysUseExtendedCustomer = true;
 
     /**
      * Resurs Bank API Client Gateway. Works with dynamic data arrays. By default, the API-gateway will connect to Resurs Bank test environment, so to use production mode this must be configured at runtime.
@@ -129,11 +137,11 @@ class ResursBank
     public $configurationService = null;
     /** @var null Object developerWebService */
     public $developerWebService = null;
-    /** @var null Object simplifiedShowFlowService (this is what is primary used by this gateway) */
+    /** @var null Object simplifiedShopFlowService (this is what is primary used by this gateway) */
     public $simplifiedShopFlowService = null;
     /** @var null Object afterShopFlowService */
     public $afterShopFlowService = null;
-    /** @var null Object shopwFlowService (Deprecated "long flow") */
+    /** @var null Object shopFlowService (Deprecated) */
     public $shopFlowService = null;
     /** @var null What the service has returned (debug) */
     public $serviceReturn = null;
@@ -225,7 +233,7 @@ class ResursBank
     /** @var null Card data object: If set, you can set up your own amount to apply for */
     private $cardDataOwnAmount = null;
 
-    /** @var string Customer id used at afterShowFlow */
+    /** @var string Customer id used at afterShopFlow */
     public $customerId = "";
 
     /**
@@ -249,6 +257,8 @@ class ResursBank
     private $useCertFile = "";
     private $hasDefaultCertFile = false;
     private $openSslGuessed = false;
+    private $obsoletePHP = false;
+    private $allowObsoletePHP = false;
 
     /** @var bool During tests this will be set to true if certificate directory is found */
     private $hasCertDir = false;
@@ -288,6 +298,16 @@ class ResursBank
      */
     private $templateFieldsByMethodResponse = array();
 
+    /**
+     * Allow older/obsolete PHP Versions (Follows the obsolete php versions rules - see the link for more information).
+     *
+     * @param bool $activate
+     * @link https://test.resurs.com/docs/x/TYNM#ECommercePHPLibrary-ObsoletePHPversions
+     */
+    public function setObsoletePhp($activate = false)
+    {
+        $this->allowObsoletePHP = $activate;
+    }
 
     //private $_paymentCart = null;
 
@@ -303,8 +323,9 @@ class ResursBank
      */
     function __construct($login = '', $password = '', $targetEnvironment = ResursEnvironments::ENVIRONMENT_NOT_SET)
     {
-        if (defined('RB_API_PATH')) { $this->classPath = RB_API_PATH; }
-
+        if (defined('RB_API_PATH')) {
+            $this->classPath = RB_API_PATH;
+        }
         if (!class_exists('ReflectionClass')) {
             throw new ResursException("ReflectionClass can not be found", ResursExceptions::CLASS_REFLECTION_MISSING, __FUNCTION__);
         }
@@ -319,7 +340,9 @@ class ResursBank
             $this->password = $password; // For use with initwsdl
         }
         // PreSelect environment when creating the class
-        if ($targetEnvironment != ResursEnvironments::ENVIRONMENT_NOT_SET) { $this->setEnvironment($targetEnvironment); }
+        if ($targetEnvironment != ResursEnvironments::ENVIRONMENT_NOT_SET) {
+            $this->setEnvironment($targetEnvironment);
+        }
     }
 
 
@@ -332,8 +355,7 @@ class ResursBank
      */
     public function setTestUrl($newUrl = '', $FlowType = ResursMethodTypes::METHOD_UNDEFINED)
     {
-        if (!preg_match("/^http/i", $newUrl))
-        {
+        if (!preg_match("/^http/i", $newUrl)) {
             /*
              * Automatically base64-decode if encoded
              */
@@ -389,7 +411,8 @@ class ResursBank
      * @return array|mixed|string|void
      * @throws ResursException
      */
-    private function toJson($jsonData = array()) {
+    private function toJson($jsonData = array())
+    {
         if (is_array($jsonData) || is_object($jsonData)) {
             $jsonData = json_encode($jsonData);
             if (json_last_error()) {
@@ -411,7 +434,8 @@ class ResursBank
      * @param bool $updateCart Defines if this a cart upgrade only
      * @return array|mixed|string|void
      */
-    public function toJsonByType($dataContainer = array(), $paymentMethodType = ResursMethodTypes::METHOD_SIMPLIFIED, $updateCart = false) {
+    public function toJsonByType($dataContainer = array(), $paymentMethodType = ResursMethodTypes::METHOD_SIMPLIFIED, $updateCart = false)
+    {
         // We need the content as is at this point since this part normally should be received as arrays
         $newDataContainer = $this->getDataObject($dataContainer, false, true);
         if (!isset($newDataContainer['type']) || empty($newDataContainer['type'])) {
@@ -467,9 +491,15 @@ class ResursBank
                 }
 
                 if (isset($newDataContainer['signing'])) {
-                    if (!isset($newDataContainer['successUrl']) && isset($newDataContainer['signing']['successUrl'])) { $newDataContainer['successUrl'] = $newDataContainer['signing']['successUrl']; }
-                    if (!isset($newDataContainer['failUrl']) && isset($newDataContainer['signing']['failUrl'])) { $newDataContainer['failUrl'] = $newDataContainer['signing']['failUrl']; }
-                    if (!isset($newDataContainer['forceSigning']) && isset($newDataContainer['signing']['forceSigning'])) { $newDataContainer['forceSigning'] = $newDataContainer['signing']['forceSigning']; }
+                    if (!isset($newDataContainer['successUrl']) && isset($newDataContainer['signing']['successUrl'])) {
+                        $newDataContainer['successUrl'] = $newDataContainer['signing']['successUrl'];
+                    }
+                    if (!isset($newDataContainer['failUrl']) && isset($newDataContainer['signing']['failUrl'])) {
+                        $newDataContainer['failUrl'] = $newDataContainer['signing']['failUrl'];
+                    }
+                    if (!isset($newDataContainer['forceSigning']) && isset($newDataContainer['signing']['forceSigning'])) {
+                        $newDataContainer['forceSigning'] = $newDataContainer['signing']['forceSigning'];
+                    }
                     unset($newDataContainer['signing']);
                 }
                 $this->jsonHosted = $this->getDataObject($newDataContainer, true);
@@ -491,7 +521,7 @@ class ResursBank
                  * OmniFrameJS helper.
                  */
                 if (!isset($newDataContainer['shopUrl'])) {
-                    $newDataContainer['shopUrl'] = "http" . (isset($_SERVER['HTTPS']) ? "s" : "") . "://" . $_SERVER['HTTP_HOST'];
+                    $newDataContainer['shopUrl'] = "http" . (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === true ? "s" : "") . "://" . $_SERVER['HTTP_HOST'];
                 }
 
 
@@ -501,21 +531,42 @@ class ResursBank
                  */
                 if (isset($newDataContainer['orderLines']) && is_array($newDataContainer['orderLines'])) {
                     $orderLineClean = array();
+                    /*
+                     * Single Orderline Compatibility: When an order line is not properly sent to the handler, it has to be converted to an indexed array first,
+                     */
+                    if ($newDataContainer['type'] == "omni") {
+                        unset($newDataContainer['paymentData'], $newDataContainer['customer']);
+                    }
+                    if (isset($newDataContainer['orderLines']['artNo'])) {
+                        $singleOrderLine = $newDataContainer['orderLines'];
+                        $newDataContainer['orderLines'] = array($singleOrderLine);
+                    }
+                    unset($newDataContainer['customer'], $newDataContainer['paymentData']);
                     foreach ($newDataContainer['orderLines'] as $orderLineId => $orderLineArray) {
-                        foreach ($orderLineArray as $orderLineArrayKey => $orderLineArrayValue) {
-                            if (!in_array($orderLineArrayKey, $orderlineProps)) {
-                                unset($orderLineArray[$orderLineArrayKey]);
+                        if (is_array($orderLineArray)) {
+                            foreach ($orderLineArray as $orderLineArrayKey => $orderLineArrayValue) {
+                                if (!in_array($orderLineArrayKey, $orderlineProps)) {
+                                    unset($orderLineArray[$orderLineArrayKey]);
+                                }
                             }
+                            $orderLineClean[] = $orderLineArray;
                         }
-                        $orderLineClean[] = $orderLineArray;
                     }
                     $newDataContainer['orderLines'] = $orderLineClean;
                 }
-                if (isset($newDataContainer['address'])) {unset($newDataContainer['address']);}
-                if (isset($newDataContainer['uniqueId'])) {unset($newDataContainer['uniqueId']);}
+                if (isset($newDataContainer['address'])) {
+                    unset($newDataContainer['address']);
+                }
+                if (isset($newDataContainer['uniqueId'])) {
+                    unset($newDataContainer['uniqueId']);
+                }
                 if (isset($newDataContainer['signing'])) {
-                    if (!isset($newDataContainer['successUrl']) && isset($newDataContainer['signing']['successUrl'])) { $newDataContainer['successUrl'] = $newDataContainer['signing']['successUrl']; }
-                    if (!isset($newDataContainer['backUrl']) && isset($newDataContainer['signing']['failUrl'])) { $newDataContainer['backUrl'] = $newDataContainer['signing']['failUrl']; }
+                    if (!isset($newDataContainer['successUrl']) && isset($newDataContainer['signing']['successUrl'])) {
+                        $newDataContainer['successUrl'] = $newDataContainer['signing']['successUrl'];
+                    }
+                    if (!isset($newDataContainer['backUrl']) && isset($newDataContainer['signing']['failUrl'])) {
+                        $newDataContainer['backUrl'] = $newDataContainer['signing']['failUrl'];
+                    }
                     unset($newDataContainer['signing']);
                 }
                 if (isset($newDataContainer['customer']['phone'])) {
@@ -535,13 +586,18 @@ class ResursBank
                 $this->jsonOmni = $newDataContainer;
             }
         }
-        if (isset($newDataContainer['type'])) {unset($newDataContainer['type']);}
-        if (isset($newDataContainer['uniqueId'])) {unset($newDataContainer['uniqueId']);}
+        if (isset($newDataContainer['type'])) {
+            unset($newDataContainer['type']);
+        }
+        if (isset($newDataContainer['uniqueId'])) {
+            unset($newDataContainer['uniqueId']);
+        }
         $returnJson = $this->toJson($newDataContainer);
         return $returnJson;
     }
 
-    public function getBookedJsonObject($method = ResursMethodTypes::METHOD_UNDEFINED) {
+    public function getBookedJsonObject($method = ResursMethodTypes::METHOD_UNDEFINED)
+    {
         $returnObject = new \stdClass();
         if ($method == ResursMethodTypes::METHOD_SIMPLIFIED) {
             return $returnObject;
@@ -574,8 +630,7 @@ class ResursBank
         } else {
             $CurlLibResponse = $CURL->doGet($url, \TorneLIB\CURL_POST_AS::POST_AS_JSON);
         }
-        if ($CurlLibResponse['code'] >= 400)
-        {
+        if ($CurlLibResponse['code'] >= 400) {
             $useResponseCode = $CurlLibResponse['code'];
             if (is_object($CurlLibResponse['parsed'])) {
                 $ResursResponse = $CurlLibResponse['parsed'];
@@ -583,13 +638,13 @@ class ResursBank
                     if (isset($ResursResponse->status)) {
                         $useResponseCode = $ResursResponse->status;
                     }
-                    throw new Exception($ResursResponse->error, $useResponseCode);
+                    throw new \Exception($ResursResponse->error, $useResponseCode);
                 }
                 /*
                  * Must handle ecommerce errors too.
                  */
                 if (isset($ResursResponse->errorCode) && $ResursResponse->errorCode > 0) {
-                    throw new Exception(isset($ResursResponse->description) && !empty($ResursResponse->description) ? $ResursResponse->description : "Unknown error in " . __FUNCTION__, $ResursResponse->errorCode);
+                    throw new \Exception(isset($ResursResponse->description) && !empty($ResursResponse->description) ? $ResursResponse->description : "Unknown error in " . __FUNCTION__, $ResursResponse->errorCode);
                 }
             }
         } else {
@@ -614,7 +669,8 @@ class ResursBank
      * Define current environment
      * @param int $environmentType
      */
-    public function setEnvironment($environmentType = ResursEnvironments::ENVIRONMENT_TEST) {
+    public function setEnvironment($environmentType = ResursEnvironments::ENVIRONMENT_TEST)
+    {
         $this->current_environment = $environmentType;
         $this->current_environment_updated = true;
     }
@@ -622,9 +678,16 @@ class ResursBank
     /**
      * Find out if we have internal configuration enabled. The config file supports serialized (php) data and json-encoded content, but saves all data serialized.
      * @return bool
+     * @throws ResursException
      */
     private function hasConfiguration()
     {
+        if (version_compare(PHP_VERSION, '5.3.0', "<")) {
+            if (!$this->allowObsoletePHP) {
+                throw new ResursException("PHP 5.3 or later are required for this module to work. If you feel safe with running this with an older version, please see ");
+            }
+        }
+
         /* Internally stored configuration - has to be activated on use */
         if ($this->configurationInternal) {
             if (defined('RB_API_CONFIG') && file_exists(RB_API_CONFIG . "/" . $this->configurationSystem)) {
@@ -669,7 +732,8 @@ class ResursBank
      * TestCerts - Test if your webclient has certificates available (make sure the $testssldeprecated are enabled if you want to test older PHP-versions - meaning older than 5.6.0)
      * @return bool
      */
-    public function TestCerts() {
+    public function TestCerts()
+    {
         return $this->openssl_guess();
     }
 
@@ -680,8 +744,11 @@ class ResursBank
      * @param bool $preventConversion
      * @return array|mixed|null
      */
-    private function getDataObject($d = array(), $forceConversion = false, $preventConversion = false) {
-        if ($preventConversion) {return $d;}
+    private function getDataObject($d = array(), $forceConversion = false, $preventConversion = false)
+    {
+        if ($preventConversion) {
+            return $d;
+        }
         if ($this->convertObjects || $forceConversion) {
             /**
              * If json_decode and json_encode exists as function, do it the simple way.
@@ -746,7 +813,9 @@ class ResursBank
              * we should consider the exception as unthrowable. This exception guard is placed here if some exceptions slipped through the above
              * check of Include. If throws are breaking new flows there is however a toggler that disables throws completely on initialization.
              */
-            if (($initWsdlException->getCode() == ResursExceptions::NO_SERVICE_CLASSES_LOADED || $initWsdlException->getCode() == ResursExceptions::NO_SERVICE_API_HANDLED) && !count($this->Include)) { $throwable = false; }
+            if (($initWsdlException->getCode() == ResursExceptions::NO_SERVICE_CLASSES_LOADED || $initWsdlException->getCode() == ResursExceptions::NO_SERVICE_API_HANDLED) && !count($this->Include)) {
+                $throwable = false;
+            }
             if ($this->throwOnInit && $throwable) {
                 throw new ResursException($initWsdlException->getMessage(), $initWsdlException->getCode(), __FUNCTION__);
             }
@@ -832,7 +901,8 @@ class ResursBank
      * @param bool $getDecimals
      * @return string
      */
-    protected function getVersionNumber($getDecimals = false) {
+    protected function getVersionNumber($getDecimals = false)
+    {
         if (!$getDecimals) {
             return $this->version . "-" . $this->lastUpdate;
         } else {
@@ -844,7 +914,8 @@ class ResursBank
      * Get "Created by" if set (used by aftershop)
      * @return string
      */
-    protected function getCreatedBy() {
+    protected function getCreatedBy()
+    {
         $createdBy = $this->realClientName . "_" . $this->getVersionNumber(true);
         if (!empty($this->loggedInuser)) {
             $createdBy .= "/" . $this->loggedInuser;
@@ -856,7 +927,8 @@ class ResursBank
      * Adds your client name to the current client name string which is used as User-Agent when communicating with ecommerce.
      * @param string $clientNameString
      */
-    public function setClientName($clientNameString = "") {
+    public function setClientName($clientNameString = "")
+    {
         $this->clientName = $clientNameString . "/" . $this->realClientName;
     }
 
@@ -879,10 +951,27 @@ class ResursBank
 
         /* Try to autodetect wsdl location and set up new path for where they can be loaded */
         if (!$this->classes($this->classPath)) {
-            if ($this->classes($this->classPath . "/classes")) { $this->classPath = $this->classPath . "/classes"; }
-            if ($this->classes($this->classPath . "/classes/rbwsdl")) { $this->classPath = $this->classPath . "/classes/rbwsdl"; }
-            if ($this->classes($this->classPath . "/rbwsdl")) { $this->classPath = $this->classPath . "/rbwsdl"; }
-            if ($this->classes($this->classPath . "/../rbwsdl")) { $this->classPath = realpath($this->classPath . "/../rbwsdl");}
+            if ($this->classes($this->classPath . "/classes")) {
+                $this->classPath = $this->classPath . "/classes";
+            }
+            if ($this->classes($this->classPath . "/classes/rbwsdl")) {
+                $this->classPath = $this->classPath . "/classes/rbwsdl";
+            }
+            if ($this->classes($this->classPath . "/rbwsdl")) {
+                $this->classPath = $this->classPath . "/rbwsdl";
+            }
+            if ($this->classes($this->classPath . "/../rbwsdl")) {
+                $this->classPath = realpath($this->classPath . "/../rbwsdl");
+            }
+            /*
+             * Fail down to unsafer path.
+             */
+            if ($this->classes($this->classPath . "/wsdl")) {
+                $this->classPath = $this->classPath . "/wsdl";
+            }
+            if ($this->classes($this->classPath . "/../wsdl")) {
+                $this->classPath = realpath($this->classPath . "/../rbwsdl");
+            }
         }
 
         if (in_array('simplifiedshopflowservice', array_map("strtolower", $this->Include)) && file_exists($this->classPath . '/simplifiedshopflowservice-client/Resurs_SimplifiedShopFlowService.php')) {
@@ -924,25 +1013,58 @@ class ResursBank
         $this->hasCertFile = false;
 
         $this->soapOptions = $this->sslGetOptionsStream($this->soapOptions, array('http' => array("user_agent" => $this->getVersionFull())));
+        /*
+         * 1.0 vs 1.1: Keeping backwards compatibility in the major version of rbapiloader by looking for namespaced classes.
+         */
         try {
-            if (class_exists('Resursbank\RBEcomPHP\Resurs_SimplifiedShopFlowService')) {
+            // 1.0
+            if (class_exists('Resurs_SimplifiedShopFlowService')) {
                 $currentService = "simplifiedShopFlowService";
                 $this->simplifiedShopFlowService = new Resurs_SimplifiedShopFlowService($this->soapOptions, $this->environment . "SimplifiedShopFlowService?wsdl");
             }
-            if (class_exists('Resursbank\RBEcomPHP\Resurs_ConfigurationService')) {
+            // 1.1
+            if (class_exists('\Resursbank\RBEcomPHP\Resurs_SimplifiedShopFlowService')) {
+                $this->hasNameSpace = true;
+                $currentService = "simplifiedShopFlowService";
+                $this->simplifiedShopFlowService = new Resurs_SimplifiedShopFlowService($this->soapOptions, $this->environment . "SimplifiedShopFlowService?wsdl");
+            }
+            // 1.0
+            if (class_exists('Resurs_ConfigurationService')) {
                 $currentService = "configurationService";
                 $this->configurationService = new Resurs_ConfigurationService($this->soapOptions, $this->environment . "ConfigurationService?wsdl");
             }
-            if (class_exists('Resursbank\RBEcomPHP\Resurs_AfterShopFlowService')) {
+            // 1.1
+            if (class_exists('\Resursbank\RBEcomPHP\Resurs_ConfigurationService')) {
+                $this->hasNameSpace = true;
+                $currentService = "configurationService";
+                $this->configurationService = new Resurs_ConfigurationService($this->soapOptions, $this->environment . "ConfigurationService?wsdl");
+            }
+
+            // 1.0
+            if (class_exists('Resurs_AfterShopFlowService')) {
                 $currentService = "afterShopFlowService";
                 $this->afterShopFlowService = new Resurs_AfterShopFlowService($this->soapOptions, $this->environment . "AfterShopFlowService?wsdl");
             }
-            if (class_exists('Resursbank\RBEcomPHP\Resurs_ShopFlowService')) {
+            // 1.1
+            if (class_exists('\Resursbank\RBEcomPHP\Resurs_AfterShopFlowService')) {
+                $this->hasNameSpace = true;
+                $currentService = "afterShopFlowService";
+                $this->afterShopFlowService = new Resurs_AfterShopFlowService($this->soapOptions, $this->environment . "AfterShopFlowService?wsdl");
+            }
+
+            // 1.0
+            if (class_exists('Resurs_ShopFlowService')) {
                 /** @noinspection PhpUnusedLocalVariableInspection */
                 $currentService = "shopFlowService";
                 $this->shopFlowService = new Resurs_ShopFlowService($this->soapOptions, $this->environment . "ShopFlowService?wsdl");
             }
-            //if (class_exists('DeveloperWebService')) {$this->developerWebService = new DeveloperWebService($this->soapOptions, $this->environment . "DeveloperWebService?wsdl");}
+            // 1.1
+            if (class_exists('\Resursbank\RBEcomPHP\Resurs_ShopFlowService')) {
+                $this->hasNameSpace = true;
+                /** @noinspection PhpUnusedLocalVariableInspection */
+                $currentService = "shopFlowService";
+                $this->shopFlowService = new Resurs_ShopFlowService($this->soapOptions, $this->environment . "ShopFlowService?wsdl");
+            }
         } catch (\Exception $e) {
             /** Adds the $currentService to the message, to show which service that failed */
             throw new ResursException($e->getMessage() . "\nStuck on service: " . $currentService, ResursExceptions::WSDL_APILOAD_EXCEPTION, __FUNCTION__, $e);
@@ -965,14 +1087,17 @@ class ResursBank
      * @return array
      * @link http://developer.tornevall.net/apigen/TorneLIB-5.0/class-TorneLIB.Tornevall_cURL.html sslStreamContextCorrection() is a part of TorneLIB 5.0, described here
      */
-    public function sslStreamContextCorrection() {
+    public function sslStreamContextCorrection()
+    {
         if (!$this->openSslGuessed) {
             $this->openssl_guess(true);
         }
         $caCert = $this->getCertFile();
         $sslVerify = true;
         $sslSetup = array();
-        if (isset($this->sslVerify)) { $sslVerify = $this->sslVerify; }
+        if (isset($this->sslVerify)) {
+            $sslVerify = $this->sslVerify;
+        }
         if (!empty($caCert)) {
             $sslSetup = array(
                 'cafile' => $caCert,
@@ -997,100 +1122,104 @@ class ResursBank
      * @return array
      * @link http://developer.tornevall.net/apigen/TorneLIB-5.0/class-TorneLIB.Tornevall_cURL.html sslGetOptionsStream() is a part of TorneLIB 5.0, described here
      */
-    public function sslGetOptionsStream($optionsArray = array(), $selfContext = array()) {
+    public function sslGetOptionsStream($optionsArray = array(), $selfContext = array())
+    {
         $streamContextOptions = array();
         $sslCorrection = $this->sslStreamContextCorrection();
         if (count($sslCorrection)) {
             $streamContextOptions['ssl'] = $this->sslStreamContextCorrection();
         }
-        foreach ($selfContext as $contextKey => $contextValue) {$streamContextOptions[$contextKey] = $contextValue;}
+        foreach ($selfContext as $contextKey => $contextValue) {
+            $streamContextOptions[$contextKey] = $contextValue;
+        }
         $optionsArray['stream_context'] = stream_context_create($streamContextOptions);
         return $optionsArray;
     }
 
 
-	/**
-	 * SSL Cerificate Handler
-	 *
-	 * This method tries to handle SSL Certification locations where PHP can't handle that part itself. In some environments (normally customized), PHP sometimes have
-	 * problems with finding certificates, in case for example where they are not placed in standard locations. When running the testing, we will also try to set up
-	 * a correct location for the certificates, if any are found somewhere else.
-	 *
-	 * The default configuration for this method is to not run any test, since there should be no problems of running in properly installed environments.
-	 * If there are known problems in the environment that is being used, you can try to set $testssl to true.
-	 *
-	 * At first, the variable $testssl is used to automatically try to find out if there is valid certificate bundles installed on the running system. In PHP 5.6.0 and higher
-	 * this procedure is simplified with the help of openssl_get_cert_locations(), which gives us a default path to installed certificates. In this case we will first look there
-	 * for the certificate bundle. If we do fail there, or if your system is running something older, the testing are running in guessing mode.
-	 *
-	 * The method is untested in Windows server environments when using OpenSSL.
-	 *
-	 * @param bool $forceTesting Force testing even if $testssl is disabled
-	 * @link http://developer.tornevall.net/apigen/TorneLIB-5.0/class-TorneLIB.Tornevall_cURL.html openssl_guess() is a part of TorneLIB 5.0, described here
-	 * @return bool
-	 */
-	private function openssl_guess($forceTesting = false)
-	{
-		$pemLocation = "";
-		if ($this->testssl || $forceTesting) {
-			$this->openSslGuessed = true;
-			if (version_compare(PHP_VERSION, "5.6.0", ">=") && function_exists("openssl_get_cert_locations")) {
-				$locations = openssl_get_cert_locations();
-				if (is_array($locations)) {
-					if (isset($locations['default_cert_file'])) {
-						/* If it exists don't bother */
-						if (file_exists($locations['default_cert_file'])) {
-							$this->hasCertFile = true;
-							$this->useCertFile = $locations['default_cert_file'];
-							$this->hasDefaultCertFile = true;
-						}
-						if (file_exists($locations['default_cert_dir'])) {
-							$this->hasCertDir = true;
-						}
-						/* Sometimes certificates are located in a default location, which is /etc/ssl/certs - this part scans through such directories for a proper cert-file */
-						if (!$this->hasCertFile && is_array($this->sslPemLocations) && count($this->sslPemLocations)) {
-							/* Loop through suggested locations and set a cafile if found */
-							foreach ($this->sslPemLocations as $pemLocation) {
-								if (file_exists($pemLocation)) {
-									ini_set('openssl.cafile', $pemLocation);
-									$this->useCertFile = $pemLocation;
-									$this->hasCertFile = true;
-								}
-							}
-						}
-					}
-				}
-				/* On guess, disable verification if failed */
-				if (!$this->hasCertFile) {
-					$this->setSslVerify(false);
-				}
-			} else {
-				/* If we run on other PHP versions than 5.6.0 or higher, try to fall back into a known directory */
-				if ($this->testssldeprecated) {
-					if (!$this->hasCertFile && is_array($this->sslPemLocations) && count($this->sslPemLocations)) {
-						/* Loop through suggested locations and set a cafile if found */
-						foreach ($this->sslPemLocations as $pemLocation) {
-							if (file_exists($pemLocation)) {
-								ini_set('openssl.cafile', $pemLocation);
-								$this->useCertFile = $pemLocation;
-								$this->hasCertFile = true;
-							}
-						}
-					}
-					if (!$this->hasCertFile) {
-						$this->setSslVerify(false);
-					}
-				}
-			}
-		}
-		return $this->hasCertFile;
-	}
+    /**
+     * SSL Cerificate Handler
+     *
+     * This method tries to handle SSL Certification locations where PHP can't handle that part itself. In some environments (normally customized), PHP sometimes have
+     * problems with finding certificates, in case for example where they are not placed in standard locations. When running the testing, we will also try to set up
+     * a correct location for the certificates, if any are found somewhere else.
+     *
+     * The default configuration for this method is to not run any test, since there should be no problems of running in properly installed environments.
+     * If there are known problems in the environment that is being used, you can try to set $testssl to true.
+     *
+     * At first, the variable $testssl is used to automatically try to find out if there is valid certificate bundles installed on the running system. In PHP 5.6.0 and higher
+     * this procedure is simplified with the help of openssl_get_cert_locations(), which gives us a default path to installed certificates. In this case we will first look there
+     * for the certificate bundle. If we do fail there, or if your system is running something older, the testing are running in guessing mode.
+     *
+     * The method is untested in Windows server environments when using OpenSSL.
+     *
+     * @param bool $forceTesting Force testing even if $testssl is disabled
+     * @link https://phpdoc.tornevall.net/TorneLIBv5/class-TorneLIB.Tornevall_cURL.html openssl_guess() is a part of TorneLIB 5.0, described here
+     * @return bool
+     */
+    private function openssl_guess($forceTesting = false)
+    {
+        $pemLocation = "";
+        if ($this->testssl || $forceTesting) {
+            $this->openSslGuessed = true;
+            if (version_compare(PHP_VERSION, "5.6.0", ">=") && function_exists("openssl_get_cert_locations")) {
+                $locations = openssl_get_cert_locations();
+                if (is_array($locations)) {
+                    if (isset($locations['default_cert_file'])) {
+                        /* If it exists don't bother */
+                        if (file_exists($locations['default_cert_file'])) {
+                            $this->hasCertFile = true;
+                            $this->useCertFile = $locations['default_cert_file'];
+                            $this->hasDefaultCertFile = true;
+                        }
+                        if (file_exists($locations['default_cert_dir'])) {
+                            $this->hasCertDir = true;
+                        }
+                        /* Sometimes certificates are located in a default location, which is /etc/ssl/certs - this part scans through such directories for a proper cert-file */
+                        if (!$this->hasCertFile && is_array($this->sslPemLocations) && count($this->sslPemLocations)) {
+                            /* Loop through suggested locations and set a cafile if found */
+                            foreach ($this->sslPemLocations as $pemLocation) {
+                                if (file_exists($pemLocation)) {
+                                    ini_set('openssl.cafile', $pemLocation);
+                                    $this->useCertFile = $pemLocation;
+                                    $this->hasCertFile = true;
+                                }
+                            }
+                        }
+                    }
+                }
+                /* On guess, disable verification if failed */
+                if (!$this->hasCertFile) {
+                    $this->setSslVerify(false);
+                }
+            } else {
+                /* If we run on other PHP versions than 5.6.0 or higher, try to fall back into a known directory */
+                if ($this->testssldeprecated) {
+                    if (!$this->hasCertFile && is_array($this->sslPemLocations) && count($this->sslPemLocations)) {
+                        /* Loop through suggested locations and set a cafile if found */
+                        foreach ($this->sslPemLocations as $pemLocation) {
+                            if (file_exists($pemLocation)) {
+                                ini_set('openssl.cafile', $pemLocation);
+                                $this->useCertFile = $pemLocation;
+                                $this->hasCertFile = true;
+                            }
+                        }
+                    }
+                    if (!$this->hasCertFile) {
+                        $this->setSslVerify(false);
+                    }
+                }
+            }
+        }
+        return $this->hasCertFile;
+    }
 
     /**
      * Return the current certificate bundle file, chosen by autodetection
      * @return string
      */
-    public function getCertFile() {
+    public function getCertFile()
+    {
         return $this->useCertFile;
     }
 
@@ -1214,24 +1343,31 @@ class ResursBank
             $classfunc = preg_replace("/Array$/", '', $classfunc);
             $returnAsArray = true;
         }
-
+        $useNameSpace = "";
+        foreach (get_declared_classes() as $className) {
+            if (preg_match("/rbecomphp/i", $className) && preg_match("/resursbank/i", $className)) {
+                $useNameSpace = "\\Resursbank\\RBEcomPHP\\";
+                break;
+            }
+        }
         try {
-            $reflection = new \ReflectionClass("\\Resursbank\\RBEcomPHP\\{$classfunc}");
+            $reflectionClassName = "{$useNameSpace}{$classfunc}";
+            $reflection = new \ReflectionClass($reflectionClassName);
             $instance = $reflection->newInstanceArgs($args);
             // Check availability, fetch and stop on first match
-            if (!isset($returnObject) && in_array($func, get_class_methods("\\Resursbank\\RBEcomPHP\\Resurs_SimplifiedShopFlowService"))) {
+            if (!isset($returnObject) && in_array($func, get_class_methods("{$useNameSpace}Resurs_SimplifiedShopFlowService"))) {
                 $this->serviceReturn = "SimplifiedShopFlowService";
                 $returnObject = $this->simplifiedShopFlowService->$func($instance);
             }
-            if (!isset($returnObject) && in_array($func, get_class_methods("\\Resursbank\\RBEcomPHP\\Resurs_ConfigurationService"))) {
+            if (!isset($returnObject) && in_array($func, get_class_methods("{$useNameSpace}Resurs_ConfigurationService"))) {
                 $this->serviceReturn = "ConfigurationService";
                 $returnObject = $this->configurationService->$func($instance);
             }
-            if (!isset($returnObject) && in_array($func, get_class_methods("\\Resursbank\\RBEcomPHP\\Resurs_AfterShopFlowService"))) {
+            if (!isset($returnObject) && in_array($func, get_class_methods("{$useNameSpace}Resurs_AfterShopFlowService"))) {
                 $this->serviceReturn = "AfterShopFlowService";
                 $returnObject = $this->afterShopFlowService->$func($instance);
             }
-            if (!isset($returnObject) && in_array($func, get_class_methods("\\Resursbank\\RBEcomPHP\\Resurs_ShopFlowService"))) {
+            if (!isset($returnObject) && in_array($func, get_class_methods("{$useNameSpace}Resurs_ShopFlowService"))) {
                 $this->serviceReturn = "ShopFlowService";
                 $returnObject = $this->shopFlowService->$func($instance);
             }
@@ -1286,7 +1422,7 @@ class ResursBank
      * @param null $setmax
      * @return string
      */
-    private function getSaltKey ($complexity = 1, $setmax = null)
+    private function getSaltKey($complexity = 1, $setmax = null)
     {
         $retp = null;
         $characterListArray = array(
@@ -1297,26 +1433,38 @@ class ResursBank
         );
 
         // Set complexity to no limit if type 5 is requested
-        if ($complexity == 5)
-        {
+        if ($complexity == 5) {
             $characterListArray = array();
-            for ($unlim = 0; $unlim <= 255 ; $unlim++) {$characterListArray[0] .= chr($unlim);}
-            if ($setmax == null) {$setmax = 15;}
+            for ($unlim = 0; $unlim <= 255; $unlim++) {
+                $characterListArray[0] .= chr($unlim);
+            }
+            if ($setmax == null) {
+                $setmax = 15;
+            }
         }
 
         // Backward-compatibility in the complexity will still give us captcha-capabilities for simpler users
-        $max = 8;	// Longest complexity
-        if ($complexity == 1) {unset($characterListArray[1], $characterListArray[2], $characterListArray[3]);$max = 6;}
-        if ($complexity == 2) {unset($characterListArray[2], $characterListArray[3]); $max = 10;}
-        if ($complexity == 3) {unset($characterListArray[3]); $max = 10;}
-        if ($setmax > 0) {$max = $setmax;}
+        $max = 8;    // Longest complexity
+        if ($complexity == 1) {
+            unset($characterListArray[1], $characterListArray[2], $characterListArray[3]);
+            $max = 6;
+        }
+        if ($complexity == 2) {
+            unset($characterListArray[2], $characterListArray[3]);
+            $max = 10;
+        }
+        if ($complexity == 3) {
+            unset($characterListArray[3]);
+            $max = 10;
+        }
+        if ($setmax > 0) {
+            $max = $setmax;
+        }
         $chars = array();
         $numchars = array();
-        //$equalityPart = ceil($max / count($characterListArray));
-        for ($i = 0 ; $i < $max ; $i++)
-        {
-            $charListId = rand(0, count($characterListArray)-1);
-            $numchars[$charListId] ++;
+        for ($i = 0; $i < $max; $i++) {
+            $charListId = rand(0, count($characterListArray) - 1);
+            $numchars[$charListId]++;
             $chars[] = $characterListArray[$charListId]{mt_rand(0, (strlen($characterListArray[$charListId]) - 1))};
         }
         shuffle($chars);
@@ -1330,15 +1478,32 @@ class ResursBank
      * @param int $callbackType
      * @return null|string
      */
-    private function getCallbackTypeString($callbackType = ResursCallbackTypes::UNDEFINED) {
-        if ($callbackType == ResursCallbackTypes::UNDEFINED) { return null; }
-        if ($callbackType == ResursCallbackTypes::ANNULMENT) { return "ANNULMENT"; }
-        if ($callbackType == ResursCallbackTypes::AUTOMATIC_FRAUD_CONTROL) { return "AUTOMATIC_FRAUD_CONTROL"; }
-        if ($callbackType == ResursCallbackTypes::FINALIZATION) { return "FINALIZATION"; }
-        if ($callbackType == ResursCallbackTypes::TEST) { return "TEST"; }
-        if ($callbackType == ResursCallbackTypes::UNFREEZE) { return "UNFREEZE"; }
-        if ($callbackType == ResursCallbackTypes::UPDATE) { return "UPDATE"; }
-        if ($callbackType == ResursCallbackTypes::BOOKED) { return "BOOKED"; }
+    private function getCallbackTypeString($callbackType = ResursCallbackTypes::UNDEFINED)
+    {
+        if ($callbackType == ResursCallbackTypes::UNDEFINED) {
+            return null;
+        }
+        if ($callbackType == ResursCallbackTypes::ANNULMENT) {
+            return "ANNULMENT";
+        }
+        if ($callbackType == ResursCallbackTypes::AUTOMATIC_FRAUD_CONTROL) {
+            return "AUTOMATIC_FRAUD_CONTROL";
+        }
+        if ($callbackType == ResursCallbackTypes::FINALIZATION) {
+            return "FINALIZATION";
+        }
+        if ($callbackType == ResursCallbackTypes::TEST) {
+            return "TEST";
+        }
+        if ($callbackType == ResursCallbackTypes::UNFREEZE) {
+            return "UNFREEZE";
+        }
+        if ($callbackType == ResursCallbackTypes::UPDATE) {
+            return "UPDATE";
+        }
+        if ($callbackType == ResursCallbackTypes::BOOKED) {
+            return "BOOKED";
+        }
         return null;
     }
 
@@ -1346,14 +1511,29 @@ class ResursBank
      * @param string $callbackTypeString
      * @return int
      */
-    public function getCallbackTypeByString($callbackTypeString = "") {
-        if (strtoupper($callbackTypeString) == "ANNULMENT") {return ResursCallbackTypes::ANNULMENT; }
-        if (strtoupper($callbackTypeString) == "UPDATE") {return ResursCallbackTypes::UPDATE; }
-        if (strtoupper($callbackTypeString) == "TEST") {return ResursCallbackTypes::TEST; }
-        if (strtoupper($callbackTypeString) == "FINALIZATION") {return ResursCallbackTypes::FINALIZATION; }
-        if (strtoupper($callbackTypeString) == "AUTOMATIC_FRAUD_CONTROL") {return ResursCallbackTypes::AUTOMATIC_FRAUD_CONTROL; }
-        if (strtoupper($callbackTypeString) == "UNFREEZE") {return ResursCallbackTypes::UNFREEZE; }
-        if (strtoupper($callbackTypeString) == "BOOKED") {return ResursCallbackTypes::BOOKED; }
+    public function getCallbackTypeByString($callbackTypeString = "")
+    {
+        if (strtoupper($callbackTypeString) == "ANNULMENT") {
+            return ResursCallbackTypes::ANNULMENT;
+        }
+        if (strtoupper($callbackTypeString) == "UPDATE") {
+            return ResursCallbackTypes::UPDATE;
+        }
+        if (strtoupper($callbackTypeString) == "TEST") {
+            return ResursCallbackTypes::TEST;
+        }
+        if (strtoupper($callbackTypeString) == "FINALIZATION") {
+            return ResursCallbackTypes::FINALIZATION;
+        }
+        if (strtoupper($callbackTypeString) == "AUTOMATIC_FRAUD_CONTROL") {
+            return ResursCallbackTypes::AUTOMATIC_FRAUD_CONTROL;
+        }
+        if (strtoupper($callbackTypeString) == "UNFREEZE") {
+            return ResursCallbackTypes::UNFREEZE;
+        }
+        if (strtoupper($callbackTypeString) == "BOOKED") {
+            return ResursCallbackTypes::BOOKED;
+        }
         return ResursCallbackTypes::UNDEFINED;
     }
 
@@ -1362,27 +1542,47 @@ class ResursBank
      * @param int $callbackType
      * @return array
      */
-    private function getCallbackTypeParameters($callbackType = ResursCallbackTypes::UNDEFINED) {
-        if ($callbackType == ResursCallbackTypes::ANNULMENT) { return array('paymentId'); }
-        if ($callbackType == ResursCallbackTypes::AUTOMATIC_FRAUD_CONTROL) { return array('paymentId', 'result'); }
-        if ($callbackType == ResursCallbackTypes::FINALIZATION) { return array('paymentId'); }
-        if ($callbackType == ResursCallbackTypes::TEST) { return array('param1', 'param2', 'param3', 'param4', 'param5'); }
-        if ($callbackType == ResursCallbackTypes::UNFREEZE) { return array('paymentId'); }
-        if ($callbackType == ResursCallbackTypes::UPDATE) { return array('paymentId'); }
-        if ($callbackType == ResursCallbackTypes::BOOKED) { return array('paymentId'); }
+    private function getCallbackTypeParameters($callbackType = ResursCallbackTypes::UNDEFINED)
+    {
+        if ($callbackType == ResursCallbackTypes::ANNULMENT) {
+            return array('paymentId');
+        }
+        if ($callbackType == ResursCallbackTypes::AUTOMATIC_FRAUD_CONTROL) {
+            return array('paymentId', 'result');
+        }
+        if ($callbackType == ResursCallbackTypes::FINALIZATION) {
+            return array('paymentId');
+        }
+        if ($callbackType == ResursCallbackTypes::TEST) {
+            return array('param1', 'param2', 'param3', 'param4', 'param5');
+        }
+        if ($callbackType == ResursCallbackTypes::UNFREEZE) {
+            return array('paymentId');
+        }
+        if ($callbackType == ResursCallbackTypes::UPDATE) {
+            return array('paymentId');
+        }
+        if ($callbackType == ResursCallbackTypes::BOOKED) {
+            return array('paymentId');
+        }
         return array();
     }
 
     /**
      * Callback digest helper - sets a simple digest key before calling setCallback
-
+     *
      * @param string $digestSaltString If empty, $digestSaltString is randomized
      * @param int $callbackType
      * @return string
      */
-    public function setCallbackDigest($digestSaltString = '', $callbackType = ResursCallbackTypes::UNDEFINED) {
+    public function setCallbackDigest($digestSaltString = '', $callbackType = ResursCallbackTypes::UNDEFINED)
+    {
         /* Make sure the digestSaltString is never empty */
-        if (!empty($digestSaltString)) { $currentDigest = $digestSaltString; } else { $currentDigest = $this->getSaltKey(4, 10); }
+        if (!empty($digestSaltString)) {
+            $currentDigest = $digestSaltString;
+        } else {
+            $currentDigest = $this->getSaltKey(4, 10);
+        }
         if ($callbackType !== ResursCallbackTypes::UNDEFINED) {
             $callbackTypeString = $this->getCallbackTypeString(!is_null($callbackType) ? $callbackType : ResursCallbackTypes::UNDEFINED);
             $this->digestKey[$callbackTypeString] = $currentDigest;
@@ -1398,7 +1598,7 @@ class ResursBank
      *
      * @param int $callbackType
      * @param string $callbackUriTemplate
-     * @param array $callbackDigest If empty or null, this is automatically handled
+     * @param array $callbackDigest If no parameters are set, this will be handled automatically.
      * @param null $basicAuthUserName
      * @param null $basicAuthPassword
      * @return bool
@@ -1416,6 +1616,8 @@ class ResursBank
             throw new ResursException("The callback type you are trying to register is not supported by EComPHP", ResursExceptions::CALLBACK_TYPE_UNSUPPORTED, __FUNCTION__);
         }
         $confirmCallbackResult = false;
+
+        if (isset($callbackDigest) && !is_array($callbackDigest)) { $callbackDigest = array(); }
 
         if (count($renderCallback) && $renderCallback['eventType'] != "" && !empty($callbackUriTemplate)) {
             /** @noinspection PhpParamsInspection */
@@ -1440,7 +1642,17 @@ class ResursBank
                 /* Start collect the parameters needed for the callback (manually if necessary - otherwise, we'll catch the parameters from our defaults as described at https://test.resurs.com/docs/x/LAAF) */
                 $parameterArray = array();
 
-                if ((is_array($callbackDigest['digestParameters']) && !count($callbackDigest['digestParameters'])) || empty($callbackDigest['digestParameters'])) {
+                /*
+                 * Make sure the digest parameters exists, and fill them in if the array exists but is empty
+                 */
+                if (isset($callbackDigest['digestParameters'])) {
+                    if (((is_array($callbackDigest['digestParameters']) && !count($callbackDigest['digestParameters'])) || empty($callbackDigest['digestParameters']))) {
+                        $callbackDigest['digestParameters'] = $this->getCallbackTypeParameters($callbackType);
+                    }
+                } else {
+                    /*
+                     * Make sure that the parameter array is set if it does not exist at all
+                     */
                     $callbackDigest['digestParameters'] = $this->getCallbackTypeParameters($callbackType);
                 }
 
@@ -1482,8 +1694,12 @@ class ResursBank
             $this->unSetCallback($callbackType);
 
             /* If your site needs authentication to reach callbacks, this sets up a basic authentication for it */
-            if (!empty($basicAuthUserName)) { $registerCallbackClass->setBasicAuthUserName($basicAuthUserName); }
-            if (!empty($basicAuthPassword)) { $registerCallbackClass->setBasicAuthPassword($basicAuthPassword); }
+            if (!empty($basicAuthUserName)) {
+                $registerCallbackClass->setBasicAuthUserName($basicAuthUserName);
+            }
+            if (!empty($basicAuthPassword)) {
+                $registerCallbackClass->setBasicAuthPassword($basicAuthPassword);
+            }
 
             /* Prepare for the primary digestive data. */
             $registerCallbackClass->digestConfiguration = $digestConfiguration;
@@ -1524,10 +1740,47 @@ class ResursBank
      * @return bool
      * @throws ResursException
      */
-    public function unSetCallback($callbackType = ResursCallbackTypes::UNDEFINED) {
+    public function unSetCallback($callbackType = ResursCallbackTypes::UNDEFINED)
+    {
         $renderCallback['eventType'] = $this->getCallbackTypeString($callbackType);
-        if (empty($renderCallback['eventType'])) { throw new ResursException("The callback type you are trying to unregister is not supported by EComPHP", ResursExceptions::CALLBACK_TYPE_UNSUPPORTED); }
-        try { $this->unregisterEventCallback($renderCallback['eventType']); } catch (\Exception $e) { return false; }
+        if (empty($renderCallback['eventType'])) {
+            throw new ResursException("The callback type you are trying to unregister is not supported by EComPHP", ResursExceptions::CALLBACK_TYPE_UNSUPPORTED);
+        }
+        try {
+            $this->unregisterEventCallback($renderCallback['eventType']);
+        } catch (\Exception $e) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Trigger the registered callback event TEST if set. Returns true if trigger call was successful, otherwise false (Observe that this not necessarily is a successful completion of the callback)
+     *
+     * @return bool
+     */
+    public function testCallback()
+    {
+        $serviceUrl = $this->env_test . "DeveloperWebService?wsdl";
+        $CURL = new \TorneLIB\Tornevall_cURL();
+        $CURL->setAuthentication($this->username, $this->password);
+        $CURL->setUserAgent("EComPHP " . $this->version);
+        $eventRequest = $CURL->doGet($serviceUrl);
+        $eventParameters = array(
+            'eventType' => 'TEST',
+            'param' => array(
+                rand(10000, 30000),
+                rand(10000, 30000),
+                rand(10000, 30000),
+                rand(10000, 30000),
+                rand(10000, 30000)
+            )
+        );
+        try {
+            $eventRequest->triggerEvent($eventParameters);
+        } catch (\Exception $e) {
+            return false;
+        }
         return true;
     }
 
@@ -1548,8 +1801,7 @@ class ResursBank
 
         /** @noinspection PhpUnusedLocalVariableInspection */
         $return = $this->getDataObject(array());
-        /* 2016-07-13: Redmine issue #66819 - Call to a member function getPaymentMethods() on null - probably fails when session times out */
-        if (class_exists('Resursbank\RBEcomPHP\resurs_getPaymentMethods') && isset($this->simplifiedShopFlowService) && !empty($this->simplifiedShopFlowService)) {
+        if ((class_exists('Resursbank\RBEcomPHP\resurs_getPaymentMethods') || class_exists("resurs_getPaymentMethods")) && isset($this->simplifiedShopFlowService) && !empty($this->simplifiedShopFlowService)) {
             $paymentMethodParameters = new resurs_getPaymentMethods();
             if (isset($parameters['customerType'])) {
                 $paymentMethodParameters->customerType = $parameters['customerType'];
@@ -1608,7 +1860,8 @@ class ResursBank
      * Get a list of current available payment methods, in the form of an arraylist with id's
      * @return array
      */
-    public function getPaymentMethodNames() {
+    public function getPaymentMethodNames()
+    {
         $methods = $this->getPaymentMethods();
         if (is_array($methods)) {
             $this->paymentMethodNames = array();
@@ -1626,7 +1879,8 @@ class ResursBank
      * @param string $specificMethodName
      * @return array If not found, array will be empty
      */
-    public function getPaymentMethodSpecific($specificMethodName = '') {
+    public function getPaymentMethodSpecific($specificMethodName = '')
+    {
         $methods = $this->getPaymentMethods();
         $methodArray = array();
         if (is_array($methods)) {
@@ -1716,7 +1970,8 @@ class ResursBank
      * @param $fieldArray
      * @return array
      */
-    public function setFormTemplateRules($customerType, $methodType, $fieldArray) {
+    public function setFormTemplateRules($customerType, $methodType, $fieldArray)
+    {
         $this->formTemplateRuleArray = array(
             $customerType => array(
                 'fields' => array(
@@ -1732,7 +1987,8 @@ class ResursBank
      *
      * @return array
      */
-    private function getFormTemplateRules() {
+    private function getFormTemplateRules()
+    {
         $formTemplateRules = array(
             'NATURAL' => array(
                 'fields' => array(
@@ -1853,10 +2109,23 @@ class ResursBank
 
         if (!empty($countryCode) && isset($returnRegEx[strtoupper($countryCode)])) {
             $returnRegEx = $returnRegEx[strtoupper($countryCode)];
-            if (!empty($customerType) && isset($returnRegEx[strtoupper($customerType)])) {
-                $returnRegEx = $returnRegEx[strtoupper($customerType)];
-                if (isset($returnRegEx[strtolower($formFieldName)])) {
-                    $returnRegEx = $returnRegEx[strtolower($formFieldName)];
+            if (!empty($customerType)) {
+                if (!is_array($customerType)) {
+                    if (isset($returnRegEx[strtoupper($customerType)])) {
+                        $returnRegEx = $returnRegEx[strtoupper($customerType)];
+                        if (isset($returnRegEx[strtolower($formFieldName)])) {
+                            $returnRegEx = $returnRegEx[strtolower($formFieldName)];
+                        }
+                    }
+                } else {
+                    foreach ($customerType as $cType) {
+                        if (isset($returnRegEx[strtoupper($cType)])) {
+                            $returnRegEx = $returnRegEx[strtoupper($cType)];
+                            if (isset($returnRegEx[strtolower($formFieldName)])) {
+                                $returnRegEx = $returnRegEx[strtolower($formFieldName)];
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -1874,12 +2143,17 @@ class ResursBank
      * @return bool Returns false if you should NOT hide the field
      * @throws ResursException
      */
-    public function canHideFormField($formField = "", $canThrow = false) {
+    public function canHideFormField($formField = "", $canThrow = false)
+    {
         $canHideSet = false;
 
         if (is_array($this->templateFieldsByMethodResponse) && count($this->templateFieldsByMethodResponse) && isset($this->templateFieldsByMethodResponse['fields']) && isset($this->templateFieldsByMethodResponse['display'])) {
             $currentDisplay = $this->templateFieldsByMethodResponse['display'];
-            if (in_array($formField, $currentDisplay)) { $canHideSet = false; } else { $canHideSet = true; }
+            if (in_array($formField, $currentDisplay)) {
+                $canHideSet = false;
+            } else {
+                $canHideSet = true;
+            }
         } else {
             /* Make sure that we don't hide things that does not exists in our configuration */
             $canHideSet = false;
@@ -1910,7 +2184,8 @@ class ResursBank
      * @param string $specificType
      * @return array
      */
-    public function getTemplateFieldsByMethodType($paymentMethodName = "", $customerType = "", $specificType = "") {
+    public function getTemplateFieldsByMethodType($paymentMethodName = "", $customerType = "", $specificType = "")
+    {
         $templateRules = $this->getFormTemplateRules();
         $returnedRules = array();
         $returnedRuleArray = array();
@@ -1945,7 +2220,8 @@ class ResursBank
      * @param string $paymentMethodName
      * @return array
      */
-    public function getTemplateFieldsByMethod($paymentMethodName = "") {
+    public function getTemplateFieldsByMethod($paymentMethodName = "")
+    {
         return $this->getTemplateFieldsByMethodType($this->getPaymentMethodSpecific($paymentMethodName));
     }
 
@@ -1955,10 +2231,10 @@ class ResursBank
      * @param string $paymentMethodName
      * @return array
      */
-    public function getFormFieldsByMethod($paymentMethodName = "") {
+    public function getFormFieldsByMethod($paymentMethodName = "")
+    {
         return $this->getTemplateFieldsByMethod($paymentMethodName);
     }
-
 
 
     /**
@@ -1975,7 +2251,7 @@ class ResursBank
     {
         $this->InitializeWsdl();
         $this->preferredId = $this->generatePreferredId();
-        if (!is_object($this->_paymentData) && class_exists('Resursbank\RBEcomPHP\resurs_paymentData')) {
+        if (!is_object($this->_paymentData) && (class_exists('Resursbank\RBEcomPHP\resurs_paymentData') || class_exists('resurs_paymentData'))) {
             $this->_paymentData = new resurs_paymentData($paymentMethodId);
         } else {
             // If there are no wsdl-classes loaded, we should consider a default stdClass as object
@@ -1998,10 +2274,13 @@ class ResursBank
      * @param bool $dualUniq Be paranoid and sha1-encrypt the first random uniq id first.
      * @return string
      */
-    public function getPreferredId($maxLength = 25, $prefix = "", $dualUniq = true) {
+    public function getPreferredId($maxLength = 25, $prefix = "", $dualUniq = true)
+    {
         return $this->generatePreferredId($maxLength, $prefix, $dualUniq);
     }
-    public function getPreferredPaymentId() {
+
+    public function getPreferredPaymentId()
+    {
         return $this->preferredId;
     }
 
@@ -2013,7 +2292,8 @@ class ResursBank
      * @param bool $dualUniq Be paranoid and sha1-encrypt the first random uniq id first.
      * @return string
      */
-    public function generatePreferredId($maxLength = 25, $prefix = "", $dualUniq = true) {
+    public function generatePreferredId($maxLength = 25, $prefix = "", $dualUniq = true)
+    {
         $timestamp = strftime("%Y%m%d%H%M%S", time());
         if ($dualUniq) {
             $uniq = uniqid(sha1(uniqid(rand(), true)), true);
@@ -2042,7 +2322,7 @@ class ResursBank
     public function updateCart($speclineArray = array())
     {
         if (!$this->isOmniFlow && !$this->isHostedFlow) {
-            if (!class_exists('Resursbank\RBEcomPHP\resurs_specLine')) {
+            if (!class_exists('Resursbank\RBEcomPHP\resurs_specLine') && !class_exists('resurs_specLine')) {
                 throw new ResursException("Class specLine does not exist", ResursExceptions::UPDATECART_NOCLASS_EXCEPTION, __FUNCTION__);
             }
         }
@@ -2100,7 +2380,7 @@ class ResursBank
              * totalAmount
              */
 
-            if (class_exists('Resursbank\RBEcomPHP\resurs_specLine')) {
+            if (class_exists('Resursbank\RBEcomPHP\resurs_specLine') || class_exists('resurs_specLine')) {
                 $this->_paymentSpeclines[] = new resurs_specLine(
                     $this->_specLineID,
                     $speclineArray['artNo'],
@@ -2126,7 +2406,8 @@ class ResursBank
      *
      * @return bool
      */
-    public function isCartFixed() {
+    public function isCartFixed()
+    {
         return $this->bookPaymentCartFixed;
     }
 
@@ -2139,7 +2420,7 @@ class ResursBank
     public function updatePaymentSpec($specLineArray = array())
     {
         $this->InitializeWsdl();
-        if (class_exists('Resursbank\RBEcomPHP\resurs_paymentSpec')) {
+        if (class_exists('Resursbank\RBEcomPHP\resurs_paymentSpec') || class_exists('resurs_paymentSpec')) {
             $totalAmount = 0;
             $totalVatAmount = 0;
             if (is_array($specLineArray) && count($specLineArray)) {
@@ -2167,6 +2448,9 @@ class ResursBank
         $this->InitializeWsdl();
         $address = null;
         $resursDeliveryAddress = null;
+        $customerGovId = isset($customerArray['governmentId']) && !empty($customerArray['governmentId']) ? $customerArray['governmentId'] : "";
+        $customerContactGovId = isset($customerArray['contactGovernmentId']) && !empty($customerArray['contactGovernmentId']) ? $customerArray['contactGovernmentId'] : "";
+        $customerType = isset($customerArray['type']) && !empty($customerArray['type']) ? $customerArray['type'] : "NATURAL";
         if (count($addressArray)) {
             if (isset($addressArray['address'])) {
                 $address = new resurs_address($addressArray['address']['fullName'], $addressArray['address']['firstName'], $addressArray['address']['lastName'], (isset($addressArray['address']['addressRow1']) ? $addressArray['address']['addressRow1'] : null), (isset($addressArray['address']['addressRow2']) ? $addressArray['address']['addressRow2'] : null), $addressArray['address']['postalArea'], $addressArray['address']['postalCode'], $addressArray['address']['country']);
@@ -2178,14 +2462,20 @@ class ResursBank
             }
         }
         if (count($customerArray)) {
-            $customer = new resurs_customer($customerArray['governmentId'], $address, $customerArray['phone'], $customerArray['email'], $customerArray['type']);
+            $customer = new resurs_customer($address, $customerArray['phone'], $customerArray['email'], $customerArray['type']);
             $this->_paymentAddress = $address;
-            if (!empty($resursDeliveryAddress) || $customerArray['type'] == "LEGAL") {
+            if (!empty($customerGovId)) {
+                $customer->governmentId = $customerGovId;
+            } else if (!empty($customerContactGovId)) {
+                $customer->governmentId = $customerContactGovId;
+            }
+            $customer->type = $customerType;
+            if (!empty($resursDeliveryAddress) || $customerArray['type'] == "LEGAL" || $this->alwaysUseExtendedCustomer === true) {
                 if (isset($resursDeliveryAddress) && is_array($resursDeliveryAddress)) {
                     $this->_paymentDeliveryAddress = $resursDeliveryAddress;
                 }
                 /** @noinspection PhpParamsInspection */
-                $extendedCustomer = new resurs_extendedCustomer($customerArray['governmentId'], $resursDeliveryAddress, $customerArray['phone'], $customerArray['email'], $customerArray['type']);
+                $extendedCustomer = new resurs_extendedCustomer($resursDeliveryAddress, $customerArray['phone'], $customerArray['email'], $customerArray['type']);
                 $this->_paymentExtendedCustomer = $extendedCustomer;
                 /* #59042 => #59046 (Additionaldata should be empty) */
                 if (empty($this->_paymentExtendedCustomer->additionalData)) {
@@ -2200,6 +2490,13 @@ class ResursBank
             }
             $this->_paymentCustomer = $customer;
             if (isset($extendedCustomer)) {
+                if (!empty($customerGovId)) {
+                    $extendedCustomer->governmentId = $customerGovId;
+                } else if (!empty($customerContactGovId)) {
+                    $extendedCustomer->governmentId = $customerContactGovId;
+                }
+                $extendedCustomer->phone = $customerArray['phone'];
+                $extendedCustomer->type = $customerType;
                 $extendedCustomer->address = $address;
                 $this->_paymentCustomer = $extendedCustomer;
             }
@@ -2261,7 +2558,8 @@ class ResursBank
      * Prepare bookedCallbackUrl (Omni)
      * @param string $bookedCallbackUrl
      */
-    public function setBookedCallbackUrl($bookedCallbackUrl = "") {
+    public function setBookedCallbackUrl($bookedCallbackUrl = "")
+    {
         if (!empty($bookedCallbackUrl)) {
             $this->_bookedCallbackUrl = $bookedCallbackUrl;
         }
@@ -2284,7 +2582,8 @@ class ResursBank
      * @link https://test.resurs.com/docs/x/cIZM bookPayment EComPHP Reference
      * @link https://test.resurs.com/docs/display/ecom/bookPayment bookPayment reference
      */
-    public function bookPayment($paymentMethodId = '', $bookData = array(), $getReturnedObjectAsStd = true, $keepReturnObject = false, $externalParameters = array()) {
+    public function bookPayment($paymentMethodId = '', $bookData = array(), $getReturnedObjectAsStd = true, $keepReturnObject = false, $externalParameters = array())
+    {
         /* If the bookData-array seems empty, we'll try to import the internally set bookData */
         if (is_array($bookData) && !count($bookData)) {
             if (is_array($this->bookData) && count($this->bookData)) {
@@ -2303,7 +2602,8 @@ class ResursBank
      * @param bool $getValue
      * @return bool|null
      */
-    private function bookHasParameter($parameter = '', $externalParameters = array(), $getValue = false) {
+    private function bookHasParameter($parameter = '', $externalParameters = array(), $getValue = false)
+    {
         if (is_array($externalParameters)) {
             if (isset($externalParameters[$parameter])) {
                 if ($getValue) {
@@ -2313,7 +2613,9 @@ class ResursBank
                 }
             }
         }
-        if ($getValue) { return null; }
+        if ($getValue) {
+            return null;
+        }
         return false;
     }
 
@@ -2323,7 +2625,8 @@ class ResursBank
      * @param array $externalParameters
      * @return bool|null
      */
-    private function getBookParameter($parameter = '', $externalParameters = array()) {
+    private function getBookParameter($parameter = '', $externalParameters = array())
+    {
         return $this->bookHasParameter($parameter, $externalParameters);
     }
 
@@ -2344,8 +2647,11 @@ class ResursBank
      * @return array|mixed|null This normally returns an object depending on your platform request
      * @throws ResursException
      */
-    private function bookPaymentBulk($paymentMethodId = '', $bookData = array(), $getReturnedObjectAsStd = true, $keepReturnObject = false, $externalParameters = array()) {
-        if (empty($paymentMethodId)) { return new \stdClass(); }
+    private function bookPaymentBulk($paymentMethodId = '', $bookData = array(), $getReturnedObjectAsStd = true, $keepReturnObject = false, $externalParameters = array())
+    {
+        if (empty($paymentMethodId)) {
+            return new \stdClass();
+        }
         if ($this->enforceService == ResursMethodTypes::METHOD_OMNI) {
             $bookData['type'] = "omni";
         } else {
@@ -2356,8 +2662,7 @@ class ResursBank
         }
         if ($this->enforceService == ResursMethodTypes::METHOD_HOSTED) {
             $bookData['type'] = "hosted";
-        }
-        else {
+        } else {
             if (isset($bookData['type']) == "hosted") {
                 $this->enforceService = ResursMethodTypes::METHOD_HOSTED;
                 $this->isHostedFlow = true;
@@ -2366,14 +2671,23 @@ class ResursBank
 
         $skipSteps = array();
         /* Special rule preparation for Resurs Bank hosted flow */
-        if ($this->getBookParameter('type', $externalParameters) == "hosted" || (isset($bookData['type']) && $bookData['type'] == "hosted")) { $this->isHostedFlow = true; }
+        if ($this->getBookParameter('type', $externalParameters) == "hosted" || (isset($bookData['type']) && $bookData['type'] == "hosted")) {
+            $this->isHostedFlow = true;
+        }
         /* Special rule preparation for Resurs Bank Omnicheckout */
-        if ($this->getBookParameter('type', $externalParameters) == "omni" || (isset($bookData['type']) && $bookData['type'] == "omni")) { $this->isOmniFlow = true; }
+        if ($this->getBookParameter('type', $externalParameters) == "omni" || (isset($bookData['type']) && $bookData['type'] == "omni")) {
+            $this->isOmniFlow = true;
+        }
         /* Make EComPHP ignore some steps that is not required in an omni checkout */
-        if ($this->isOmniFlow) { $skipSteps['address'] = true; }
+        if ($this->isOmniFlow) {
+            $skipSteps['address'] = true;
+        }
 
         /* Prepare for a simplified flow */
-        $this->InitializeWsdl();
+        if (!$this->isOmniFlow && !$this->isHostedFlow) {
+            // Do not use wsdl stubs if we are targeting rest services
+            $this->InitializeWsdl();
+        }
         $this->updatePaymentdata($paymentMethodId, isset($bookData['paymentData']) && is_array($bookData['paymentData']) && count($bookData['paymentData']) ? $bookData['paymentData'] : array());
         if (isset($bookData['specLine']) && is_array($bookData['specLine'])) {
             $this->updateCart(isset($bookData['specLine']) ? $bookData['specLine'] : array());
@@ -2384,7 +2698,6 @@ class ResursBank
             }
         }
         $this->updatePaymentSpec($this->_paymentSpeclines);
-
         /* Prepare address data for hosted flow and simplified, ignore if we're on omni, where this data is not required */
         if (!isset($skipSteps['address'])) {
             if (isset($bookData['deliveryAddress'])) {
@@ -2398,13 +2711,11 @@ class ResursBank
             }
         }
 
-        /* Prepare and collect data for a bookpayment */
-        if (class_exists('Resursbank\RBEcomPHP\resurs_bookPayment')) {
+        /* Prepare and collect data for a bookpayment - if the flow is simple */
+        if ((!$this->isOmniFlow && !$this->isHostedFlow) && (class_exists('Resursbank\RBEcomPHP\resurs_bookPayment') || class_exists('resurs_bookPayment'))) {
             /* Only run this if it exists, and the plans is to go through simplified flow */
-            if (!$this->isOmniFlow && !$this->isHostedFlow) {
-                /** @noinspection PhpParamsInspection */
-                $bookPaymentInit = new resurs_bookPayment($this->_paymentData, $this->_paymentOrderData, $this->_paymentCustomer, $this->_bookedCallbackUrl);
-            }
+            /** @noinspection PhpParamsInspection */
+            $bookPaymentInit = new resurs_bookPayment($this->_paymentData, $this->_paymentOrderData, $this->_paymentCustomer, $this->_bookedCallbackUrl);
         } else {
             /*
              * If no "new flow" are detected during the handle of payment here, and the class also exists so no booking will be possible, we should
@@ -2414,16 +2725,21 @@ class ResursBank
                 throw new ResursException("bookPaymentClass not found, and this is neither an omni nor hosted flow", ResursExceptions::BOOKPAYMENT_NO_BOOKPAYMENT_CLASS, __FUNCTION__);
             }
         }
-        if (!empty($this->cardDataCardNumber) || $this->cardDataUseAmount) { $bookPaymentInit->card = $this->updateCardData(); }
+        if (!empty($this->cardDataCardNumber) || $this->cardDataUseAmount) {
+            $bookPaymentInit->card = $this->updateCardData();
+        }
         if (!empty($this->_paymentDeliveryAddress) && is_object($this->_paymentDeliveryAddress)) {
             /** @noinspection PhpUndefinedFieldInspection */
-            $bookPaymentInit->customer->deliveryAddress = $this->_paymentDeliveryAddress; }
+            $bookPaymentInit->customer->deliveryAddress = $this->_paymentDeliveryAddress;
+        }
 
         /* If the preferredId is set, check if there is a request for this varaible in the signing urls */
         /** @noinspection PhpUndefinedFieldInspection */
         if (isset($this->_paymentData->preferredId)) {
             // Make sure that the search and replace really works for unique id's
-            if (!isset($bookData['uniqueId'])) { $bookData['uniqueId'] = ""; }
+            if (!isset($bookData['uniqueId'])) {
+                $bookData['uniqueId'] = "";
+            }
             if (isset($bookData['signing']['successUrl'])) {
                 /** @noinspection PhpUndefinedFieldInspection */
                 $bookData['signing']['successUrl'] = str_replace('$preferredId', $this->_paymentData->preferredId, $bookData['signing']['successUrl']);
@@ -2450,7 +2766,7 @@ class ResursBank
         if ($this->isOmniFlow) {
             /* Prepare a frame for omni checkout */
             try {
-                $preOmni = $this->prepareOmniFrame($bookData, $paymentMethodId, ResursOmniCallTypes::METHOD_PAYMENTS);
+                $preOmni = $this->prepareOmniFrame($bookData, $paymentMethodId, ResursCheckoutCallTypes::METHOD_PAYMENTS);
                 if (isset($preOmni->html)) {
                     $this->omniFrame = $preOmni->html;
                 }
@@ -2476,9 +2792,10 @@ class ResursBank
                 throw new ResursException("Can not find location in hosted flow", 404, "bookPaymentHosted");
             }
         }
-
         /* If this request was not about an omni flow, let's continue prepare the signing data */
-        if (isset($bookData['signing'])) {$bookPaymentInit->signing = $bookData['signing'];}
+        if (isset($bookData['signing'])) {
+            $bookPaymentInit->signing = $bookData['signing'];
+        }
 
         try {
             $bookPaymentResult = $this->simplifiedShopFlowService->bookPayment($bookPaymentInit);
@@ -2508,7 +2825,8 @@ class ResursBank
      * Enforce another method than the simplified flow
      * @param int $methodType
      */
-    public function setPreferredPaymentService($methodType = ResursMethodTypes::METHOD_UNDEFINED) {
+    public function setPreferredPaymentService($methodType = ResursMethodTypes::METHOD_UNDEFINED)
+    {
         $this->enforceService = $methodType;
         if ($methodType == ResursMethodTypes::METHOD_HOSTED) {
             $this->isHostedFlow = true;
@@ -2526,6 +2844,14 @@ class ResursBank
     }
 
     /**
+     * Return the current set "preferred payment service" (hosted, checkout, simplified)
+     * @return null
+     */
+    public function getPreferredPaymentService() {
+        return $this->enforceService;
+    }
+
+    /**
      * Book payment through hosted flow
      *
      * A bookPayment method that utilizes the data we get from a regular bookPayment and converts it to hostedFlow looking data.
@@ -2539,7 +2865,8 @@ class ResursBank
      * @throws ResursException
      */
 
-    private function bookPaymentHosted($paymentMethodId = '', $bookData = array(), $getReturnedObjectAsStd = true, $keepReturnObject = false) {
+    private function bookPaymentHosted($paymentMethodId = '', $bookData = array(), $getReturnedObjectAsStd = true, $keepReturnObject = false)
+    {
         if ($this->current_environment == ResursEnvironments::ENVIRONMENT_TEST) {
             $this->env_hosted_current = $this->env_hosted_test;
         } else {
@@ -2551,7 +2878,9 @@ class ResursBank
         if (empty($this->preferredId)) {
             $this->preferredId = $this->generatePreferredId();
         }
-        if (!isset($bookData['paymentData']['paymentMethodId'])) { $bookData['paymentData']['paymentMethodId'] = $paymentMethodId; }
+        if (!isset($bookData['paymentData']['paymentMethodId'])) {
+            $bookData['paymentData']['paymentMethodId'] = $paymentMethodId;
+        }
         if (!isset($bookData['paymentData']['preferredId']) || (isset($bookData['paymentData']['preferredId']) && empty($bookData['paymentData']['preferredId']))) {
             $this->preferredId = $this->generatePreferredId(25, "hosted");
             $bookData['paymentData']['preferredId'] = $this->preferredId;
@@ -2559,9 +2888,15 @@ class ResursBank
         /**
          * Some of the paymentData are not located in the same place as simplifiedShopFlow. This part takes care of that part.
          */
-        if (isset($bookData['paymentData']['waitForFraudControl'])) { $bookData['waitForFraudControl'] = $bookData['paymentData']['waitForFraudControl']; }
-        if (isset($bookData['paymentData']['annulIfFrozen'])) { $bookData['annulIfFrozen'] = $bookData['paymentData']['annulIfFrozen']; }
-        if (isset($bookData['paymentData']['finalizeIfBooked'])) { $bookData['finalizeIfBooked'] = $bookData['paymentData']['finalizeIfBooked']; }
+        if (isset($bookData['paymentData']['waitForFraudControl'])) {
+            $bookData['waitForFraudControl'] = $bookData['paymentData']['waitForFraudControl'];
+        }
+        if (isset($bookData['paymentData']['annulIfFrozen'])) {
+            $bookData['annulIfFrozen'] = $bookData['paymentData']['annulIfFrozen'];
+        }
+        if (isset($bookData['paymentData']['finalizeIfBooked'])) {
+            $bookData['finalizeIfBooked'] = $bookData['paymentData']['finalizeIfBooked'];
+        }
 
         $jsonBookData = $this->toJsonByType($bookData, ResursMethodTypes::METHOD_HOSTED);
         $this->simpleWebEngine = $this->createJsonEngine($this->env_hosted_current, $jsonBookData);
@@ -2574,7 +2909,8 @@ class ResursBank
         return $this->simpleWebEngine['parsed'];
     }
 
-    public function prepareOmniFrame($bookData = array(), $orderReference = "", $omniCallType = ResursOmniCallTypes::METHOD_PAYMENTS) {
+    public function prepareOmniFrame($bookData = array(), $orderReference = "", $omniCallType = ResursCheckoutCallTypes::METHOD_PAYMENTS)
+    {
         if ($this->current_environment == ResursEnvironments::ENVIRONMENT_TEST) {
             $this->env_omni_current = $this->env_omni_test;
         } else {
@@ -2583,12 +2919,13 @@ class ResursBank
         if (empty($orderReference) && !isset($bookData['orderReference'])) {
             throw new ResursException("You must proved omnicheckout with a orderReference", 500);
         }
-        if (empty($orderReference) && isset($bookData['orderReference'])) { $orderReference = $bookData['orderReference']; }
-        if ($omniCallType == ResursOmniCallTypes::METHOD_PAYMENTS) {
+        if (empty($orderReference) && isset($bookData['orderReference'])) {
+            $orderReference = $bookData['orderReference'];
+        }
+        if ($omniCallType == ResursCheckoutCallTypes::METHOD_PAYMENTS) {
             $omniSubPath = "/checkout/payments/" . $orderReference;
         }
-        if ($omniCallType == ResursOmniCallTypes::METHOD_CALLBACK) {
-            // TODO: OmniCallbacks
+        if ($omniCallType == ResursCheckoutCallTypes::METHOD_CALLBACK) {
             $omniSubPath = "/callbacks/";
             throw new ResursException("METHOD_CALLBACK for OmniCheckout is not yet implemented");
         }
@@ -2618,7 +2955,8 @@ class ResursBank
      * @return mixed|null|string
      * @deprecated
      */
-    public function getOmniFrame($omniResponse = array(), $ocShopInternalHandle = false) {
+    public function getOmniFrame($omniResponse = array(), $ocShopInternalHandle = false)
+    {
         /*
          * As we are using TorneLIB Curl Library, the Resurs Checkout iframe will be loaded properly without those checks.
          */
@@ -2642,7 +2980,8 @@ class ResursBank
      * @param bool $ocShopInternalHandle
      * @return mixed|string
      */
-    private function clearOcShop($htmlString = "", $ocShopInternalHandle = false) {
+    private function clearOcShop($htmlString = "", $ocShopInternalHandle = false)
+    {
         if ($ocShopInternalHandle) {
             preg_match_all("/\<script(.*?)\/script>/", $htmlString, $scriptStringArray);
             if (is_array($scriptStringArray) && isset($scriptStringArray[0][0]) && !empty($scriptStringArray[0][0])) {
@@ -2656,12 +2995,23 @@ class ResursBank
         }
         return $htmlString;
     }
+    public function getIframeSrc($iframeString = "") {
+        if (is_string($iframeString) && preg_match("//i", $iframeString)) {
+            preg_match_all("/iframe src=\"(.*?)\"/", $iframeString, $iframeData);
+            if (isset($iframeData[1]) && isset($iframeData[1][0])) {
+                return $iframeData[1][0];
+            }
+        }
+        return null;
+    }
+
     /**
      * Get the iframe resizer URL if requested from a site
      *
      * @return string
      */
-    public function getIframeResizerUrl() {
+    public function getIframeResizerUrl()
+    {
         if (!empty($this->ocShopScript)) {
             return trim($this->ocShopScript);
         }
@@ -2673,7 +3023,8 @@ class ResursBank
      * @param bool $getCurrentIfSet Always return "current" if it has been set first
      * @return string
      */
-    public function getOmniUrl($EnvironmentRequest = ResursEnvironments::ENVIRONMENT_TEST, $getCurrentIfSet = true) {
+    public function getOmniUrl($EnvironmentRequest = ResursEnvironments::ENVIRONMENT_TEST, $getCurrentIfSet = true)
+    {
         /*
          * If current_environment is set, override incoming variable
          */
@@ -2696,7 +3047,8 @@ class ResursBank
      * @param array $omniObject
      * @return string
      */
-    private function omniError($omniObject = array()) {
+    private function omniError($omniObject = array())
+    {
         if (isset($omniObject) && isset($omniObject->exception) && isset($omniObject->message)) {
             return $omniObject->message;
         } else if (isset($omniObject) && isset($omniObject->error) && !empty($omniObject->error)) {
@@ -2709,7 +3061,8 @@ class ResursBank
      * @param array $omniObject
      * @return string
      */
-    private function omniErrNo($omniObject = array()) {
+    private function omniErrNo($omniObject = array())
+    {
         if (isset($omniObject) && isset($omniObject->exception) && isset($omniObject->status)) {
             return $omniObject->status;
         } else if (isset($omniObject) && isset($omniObject->error) && !empty($omniObject->error)) {
@@ -2719,9 +3072,11 @@ class ResursBank
         }
         return "";
     }
-    public function omniUpdateOrder($jsonData, $paymentId = '') {
+
+    public function omniUpdateOrder($jsonData, $paymentId = '')
+    {
         if (empty($paymentId)) {
-            throw new Exception("Payment id not set");
+            throw new \Exception("Payment id not set");
         }
         $omniUrl = $this->getOmniUrl();
         $omniRefUrl = $omniUrl . "/checkout/payments/" . $paymentId;
@@ -2735,17 +3090,20 @@ class ResursBank
      * @param array $hostedObject
      * @return string
      */
-    private function hostedError($hostedObject = array()) {
+    private function hostedError($hostedObject = array())
+    {
         if (isset($hostedObject) && isset($hostedObject->exception) && isset($hostedObject->message)) {
             return $hostedObject->message;
         }
         return "";
     }
+
     /**
      * @param array $hostedObject
      * @return string
      */
-    private function hostedErrNo($hostedObject = array()) {
+    private function hostedErrNo($hostedObject = array())
+    {
         if (isset($hostedObject) && isset($hostedObject->exception) && isset($hostedObject->status)) {
             return $hostedObject->status;
         }
@@ -2753,9 +3111,14 @@ class ResursBank
     }
 
 
-    private function getBookedParameter($parameter = '', $object = null) {
-        if (is_null($object) && is_object($this->lastBookPayment)) { $object = $this->lastBookPayment; }
-        if (isset($object->return)) { $object = $object->return; }
+    private function getBookedParameter($parameter = '', $object = null)
+    {
+        if (is_null($object) && is_object($this->lastBookPayment)) {
+            $object = $this->lastBookPayment;
+        }
+        if (isset($object->return)) {
+            $object = $object->return;
+        }
         if (is_object($object) || is_array($object)) {
             if (isset($object->$parameter)) {
                 return $object->$parameter;
@@ -2769,7 +3132,8 @@ class ResursBank
      * @param null $lastBookPayment
      * @return null
      */
-    public function getBookedStatus($lastBookPayment = null) {
+    public function getBookedStatus($lastBookPayment = null)
+    {
         $bookStatus = $this->getBookedParameter('bookPaymentStatus', $lastBookPayment);
         if (!empty($bookStatus)) {
             return $bookStatus;
@@ -2782,7 +3146,8 @@ class ResursBank
      * @param null $lastBookPayment
      * @return null
      */
-    public function getBookedPaymentId($lastBookPayment = null) {
+    public function getBookedPaymentId($lastBookPayment = null)
+    {
         $paymentId = $this->getBookedParameter('paymentId', $lastBookPayment);
         if (!empty($paymentId)) {
             return $paymentId;
@@ -2794,7 +3159,9 @@ class ResursBank
         }
         return null;
     }
-    public function getBookedSigningUrl($lastBookPayment = null) {
+
+    public function getBookedSigningUrl($lastBookPayment = null)
+    {
         return $this->getBookedParameter('signingUrl', $lastBookPayment);
     }
 
@@ -2805,11 +3172,12 @@ class ResursBank
      */
 
     /**
-     * Set a logged in username (will be merged with the client name at aftershowFlow-level)
+     * Set a logged in username (will be merged with the client name at aftershopFlow-level)
      *
      * @param string $currentUsername
      */
-    public function setLoggedInUser($currentUsername = "") {
+    public function setLoggedInUser($currentUsername = "")
+    {
         $this->loggedInuser = $currentUsername;
     }
 
@@ -2820,14 +3188,16 @@ class ResursBank
      * @return int Returns
      * @throws ResursException
      */
-    public function getNextInvoiceNumber($initInvoice = true, $firstInvoiceNumber = 1) {
+    public function getNextInvoiceNumber($initInvoice = true, $firstInvoiceNumber = 1)
+    {
         $this->InitializeWsdl();
         $invoiceNumber = null;
         $peek = null;
         try {
             $peek = $this->configurationService->peekInvoiceSequence(array('nextInvoiceNumber' => null));
             $invoiceNumber = $peek->nextInvoiceNumber;
-        } catch (\Exception $e) { }
+        } catch (\Exception $e) {
+        }
         if (empty($invoiceNumber) && $initInvoice) {
             $this->configurationService->setInvoiceSequence(array('nextInvoiceNumber' => $firstInvoiceNumber));
             $invoiceNumber = $firstInvoiceNumber;
@@ -2839,7 +3209,8 @@ class ResursBank
      * Convert version number to decimals
      * @return string
      */
-    private function versionToDecimals() {
+    private function versionToDecimals()
+    {
         $splitVersion = explode(".", $this->version);
         $decVersion = "";
         foreach ($splitVersion as $ver) {
@@ -2865,8 +3236,7 @@ class ResursBank
             if (isset($row['artNo'])) {
                 if ($row['artNo'] == $artNo) {
                     // If quantity match is true, quantity must match the request to return a true value
-                    if ($quantityMatch)
-                    {
+                    if ($quantityMatch) {
                         // Consider full quantity if no quantity is set
                         if (!isset($row['quantity'])) {
                             $foundArt = true;
@@ -2878,7 +3248,7 @@ class ResursBank
                             // Eventually set this to false, unless the float controll is successful
                             $foundArt = false;
                             // If the float control fails, also try check against integers
-                            if (isset($row['quantity']) && intval($row['quantity']) > 0 && intval($quantity)> 0 && intval($row['quantity']) === intval($quantity)) {
+                            if (isset($row['quantity']) && intval($row['quantity']) > 0 && intval($quantity) > 0 && intval($row['quantity']) === intval($quantity)) {
                                 return true;
                             }
                         }
@@ -2893,7 +3263,8 @@ class ResursBank
         return $foundArt;
     }
 
-    private function handleClientPaymentSpec($clientPaymentSpec = array()) {
+    private function handleClientPaymentSpec($clientPaymentSpec = array())
+    {
         /**
          * Make sure we are pushing in this spec in the correct format, which is:
          * array(
@@ -2942,16 +3313,22 @@ class ResursBank
     public function finalizePayment($paymentId = "", $clientPaymentSpec = array(), $finalizeParams = array(), $quantityMatch = true, $useSpecifiedQuantity = false)
     {
         try {
-            if (empty($this->customerId)) {$this->customerId = "-";}
+            if (empty($this->customerId)) {
+                $this->customerId = "-";
+            }
             /** @noinspection PhpParamsInspection */
             $metaSetup = new resurs_addMetaData($paymentId, "CustomerId");
             $metaSetup->value = $this->customerId;
             $this->afterShopFlowService->addMetaData($metaSetup);
-        } catch (\Exception $metaResponseException) {}
+        } catch (\Exception $metaResponseException) {
+
+        }
 
         $clientPaymentSpec = $this->handleClientPaymentSpec($clientPaymentSpec);
         $finalizeResult = false;
-        if (null === $paymentId) { throw new \Exception("Payment ID must be ID"); }
+        if (null === $paymentId) {
+            throw new \Exception("Payment ID must be ID");
+        }
         $paymentArray = $this->getPayment($paymentId);
         $finalizePaymentContainer = $this->renderPaymentSpecContainer($paymentId, ResursAfterShopRenderTypes::FINALIZE, $paymentArray, $clientPaymentSpec, $finalizeParams, $quantityMatch, $useSpecifiedQuantity);
         if (isset($paymentArray->id)) {
@@ -2983,16 +3360,22 @@ class ResursBank
     public function creditPayment($paymentId = "", $clientPaymentSpec = array(), $creditParams = array(), $quantityMatch = true, $useSpecifiedQuantity = false)
     {
         try {
-            if (empty($this->customerId)) {$this->customerId = "-";}
+            if (empty($this->customerId)) {
+                $this->customerId = "-";
+            }
             /** @noinspection PhpParamsInspection */
             $metaSetup = new resurs_addMetaData($paymentId, "CustomerId");
             $metaSetup->value = $this->customerId;
             $this->afterShopFlowService->addMetaData($metaSetup);
-        } catch (\Exception $metaResponseException) {}
+        } catch (\Exception $metaResponseException) {
+
+        }
 
         $clientPaymentSpec = $this->handleClientPaymentSpec($clientPaymentSpec);
         $creditResult = false;
-        if (null === $paymentId) { throw new \Exception("Payment ID must be ID"); }
+        if (null === $paymentId) {
+            throw new \Exception("Payment ID must be ID");
+        }
         $paymentArray = $this->getPayment($paymentId);
         $creditPaymentContainer = $this->renderPaymentSpecContainer($paymentId, ResursAfterShopRenderTypes::CREDIT, $paymentArray, $clientPaymentSpec, $creditParams, $quantityMatch, $useSpecifiedQuantity);
         if (isset($paymentArray->id)) {
@@ -3023,18 +3406,24 @@ class ResursBank
     public function annulPayment($paymentId = "", $clientPaymentSpec = array(), $annulParams = array(), $quantityMatch = true, $useSpecifiedQuantity = false)
     {
         try {
-            if (empty($this->customerId)) {$this->customerId = "-";}
-            if (class_exists('Resursbank\RBEcomPHP\resurs_addMetaData')) {
+            if (empty($this->customerId)) {
+                $this->customerId = "-";
+            }
+            if (class_exists('resurs_addMetaData')) {
                 /** @noinspection PhpParamsInspection */
                 $metaSetup = new resurs_addMetaData($paymentId, "CustomerId");
                 $metaSetup->value = $this->customerId;
                 $this->afterShopFlowService->addMetaData($metaSetup);
             }
-        } catch (\Exception $metaResponseException) {}
+        } catch (\Exception $metaResponseException) {
+
+        }
 
         $clientPaymentSpec = $this->handleClientPaymentSpec($clientPaymentSpec);
         $annulResult = false;
-        if (null === $paymentId) { throw new \Exception("Payment ID must be ID"); }
+        if (null === $paymentId) {
+            throw new \Exception("Payment ID must be ID");
+        }
         $paymentArray = $this->getPayment($paymentId);
         $annulPaymentContainer = $this->renderPaymentSpecContainer($paymentId, ResursAfterShopRenderTypes::ANNUL, $paymentArray, $clientPaymentSpec, $annulParams, $quantityMatch, $useSpecifiedQuantity);
         if (isset($paymentArray->id)) {
@@ -3048,7 +3437,8 @@ class ResursBank
         return $annulResult;
     }
 
-    private function stripPaymentSpec($specLines = array()) {
+    private function stripPaymentSpec($specLines = array())
+    {
         $newSpec = array();
         if (is_array($specLines) && count($specLines)) {
             foreach ($specLines as $specRow) {
@@ -3079,12 +3469,16 @@ class ResursBank
     public function cancelPayment($paymentId = "", $clientPaymentSpec = array(), $cancelParams = array(), $quantityMatch = true, $useSpecifiedQuantity = false)
     {
         try {
-            if (empty($this->customerId)) {$this->customerId = "-";}
+            if (empty($this->customerId)) {
+                $this->customerId = "-";
+            }
             /** @noinspection PhpParamsInspection */
             $metaSetup = new resurs_addMetaData($paymentId, "CustomerId");
             $metaSetup->value = $this->customerId;
             $this->afterShopFlowService->addMetaData($metaSetup);
-        } catch (\Exception $metaResponseException) {}
+        } catch (\Exception $metaResponseException) {
+
+        }
         $clientPaymentSpec = $this->handleClientPaymentSpec($clientPaymentSpec);
         $creditStateSuccess = false;
         $annulStateSuccess = false;
@@ -3143,11 +3537,17 @@ class ResursBank
         }
 
         /* Check if one of the above statuses is true and set the cancel as successful. If none of them are true, the cancellation has failed completely. */
-        if ($creditStateSuccess) {$cancelStateSuccess=true;}
-        if ($annulStateSuccess) {$cancelStateSuccess=true;}
+        if ($creditStateSuccess) {
+            $cancelStateSuccess = true;
+        }
+        if ($annulStateSuccess) {
+            $cancelStateSuccess = true;
+        }
 
         /* On total fail, throw the last error */
-        if (!$cancelStateSuccess) { throw new ResursException($lastErrorMessage); }
+        if (!$cancelStateSuccess) {
+            throw new ResursException($lastErrorMessage);
+        }
 
         return $cancelStateSuccess;
     }
@@ -3158,7 +3558,8 @@ class ResursBank
      * @param array $paymentArrayOrPaymentId The current payment if already requested. If this variable is sent as a string, the function will first make a getPayment automatically.
      * @return bool
      */
-    public function canCredit($paymentArrayOrPaymentId = array()) {
+    public function canCredit($paymentArrayOrPaymentId = array())
+    {
         if ((!is_array($paymentArrayOrPaymentId) && !is_object($paymentArrayOrPaymentId)) && !empty($paymentArrayOrPaymentId)) {
             $paymentArrayOrPaymentId = $this->getPayment($paymentArrayOrPaymentId);
         }
@@ -3181,7 +3582,8 @@ class ResursBank
      * @param array $paymentArrayOrPaymentId The current payment if already requested. If this variable is sent as a string, the function will first make a getPayment automatically.
      * @return bool
      */
-    public function canDebit($paymentArrayOrPaymentId = array()) {
+    public function canDebit($paymentArrayOrPaymentId = array())
+    {
         if ((!is_array($paymentArrayOrPaymentId) && !is_object($paymentArrayOrPaymentId)) && !empty($paymentArrayOrPaymentId)) {
             $paymentArrayOrPaymentId = $this->getPayment($paymentArrayOrPaymentId);
         }
@@ -3230,7 +3632,9 @@ class ResursBank
         $paymentContainer = array();
         $paymentMethodType = isset($paymentArray->paymentMethodType) ? $paymentArray->paymentMethodType : "";
         $isInvoice = false;
-        if (strtoupper($paymentMethodType)==="INVOICE") {$isInvoice = true; }
+        if (strtoupper($paymentMethodType) === "INVOICE") {
+            $isInvoice = true;
+        }
 
         if (!count($paymentSpecLine)) {
             /* Should occur when you for example try to annul an order that is already debited or credited */
@@ -3239,7 +3643,6 @@ class ResursBank
 
         if (is_array($paymentSpecLine) && count($paymentSpecLine)) {
             /* Calculate totalAmount to finalize */
-
             foreach ($paymentSpecLine as $row) {
                 if (is_array($clientPaymentSpec) && count($clientPaymentSpec)) {
                     /**
@@ -3259,7 +3662,7 @@ class ResursBank
                             foreach ($clientPaymentSpec as $item) {
                                 if (isset($item['artNo']) && !empty($item['artNo']) && $item['artNo'] == $row->artNo && isset($item['quantity']) && intval($item['quantity']) > 0) {
                                     /* Recalculate the new totalVatAmount */
-                                    $newTotalVatAmount = ($row->unitAmountWithoutVat * ($row->vatPct/100)) * $item['quantity'];
+                                    $newTotalVatAmount = ($row->unitAmountWithoutVat * ($row->vatPct / 100)) * $item['quantity'];
                                     /* Recalculate the new totalAmount */
                                     $newTotalAmount = ($row->unitAmountWithoutVat * $item['quantity']) + $newTotalVatAmount;
                                     /* Change the new values in the current row */
@@ -3379,11 +3782,16 @@ class ResursBank
      * @param string $Parameter
      * @return string
      */
-    private function priceAppender($URL = '', $Amount = 0, $Parameter = 'amount') {
+    private function priceAppender($URL = '', $Amount = 0, $Parameter = 'amount')
+    {
         if (isset($this->priceAppenderParameter) && !empty($this->priceAppenderParameter)) {
             $Parameter = $this->priceAppenderParameter;
         }
-        if (preg_match("/=$/", $URL)) { return $URL . $Amount; } else { return $URL . "&" . $Parameter . "=" . $Amount; }
+        if (preg_match("/=$/", $URL)) {
+            return $URL . $Amount;
+        } else {
+            return $URL . "&" . $Parameter . "=" . $Amount;
+        }
     }
 
     /**
@@ -3470,7 +3878,8 @@ class ResursBank
      * @throws \Exception
      * @link https://test.resurs.com/docs/x/_QBV
      */
-    public function getCostOfPurchase($paymentMethod = '', $amount = 0, $returnBody = false, $callCss = 'costofpurchase.css', $hrefTarget="_blank") {
+    public function getCostOfPurchase($paymentMethod = '', $amount = 0, $returnBody = false, $callCss = 'costofpurchase.css', $hrefTarget = "_blank")
+    {
         $returnHtml = $this->getCostOfPurchaseHtml($paymentMethod, $amount);
 
         /*
@@ -3482,7 +3891,9 @@ class ResursBank
             /*
              * Check if we get an embedded return and fix it.
              */
-            if (isset($returnHtml->return)) { $returnHtml = $returnHtml->return; }
+            if (isset($returnHtml->return)) {
+                $returnHtml = $returnHtml->return;
+            }
 
             /*
              * Check if there are any target set, somewhere in the returned html.
@@ -3503,7 +3914,9 @@ class ResursBank
                     <title>' . $methodDescription . '</title>
             ';
 
-            if (is_null($callCss)) { $callCss = "costofpurchase.css"; }
+            if (is_null($callCss)) {
+                $callCss = "costofpurchase.css";
+            }
             if (!empty($callCss)) {
                 if (!is_array($callCss)) {
                     $returnBodyHtml .= '<link rel="stylesheet" media="all" type="text/css" href="' . $callCss . '">' . "\n";
@@ -3535,7 +3948,8 @@ class ResursBank
      * While generating a getCostOfPurchase where $returnBody is true, this function adds custom html before the returned html-code from Resurs Bank
      * @param string $htmlData
      */
-    public function setCostOfPurcaseHtmlBefore($htmlData = '') {
+    public function setCostOfPurcaseHtmlBefore($htmlData = '')
+    {
         $this->getcost_html_before = $htmlData;
     }
 
@@ -3543,7 +3957,8 @@ class ResursBank
      * While generating a getCostOfPurchase where $returnBody is true, this function adds custom html after the returned html-code from Resurs Bank
      * @param string $htmlData
      */
-    public function setCostOfPurcaseHtmlAfter($htmlData = '') {
+    public function setCostOfPurcaseHtmlAfter($htmlData = '')
+    {
         $this->getcost_html_after = $htmlData;
     }
 
@@ -3554,7 +3969,7 @@ class ResursBank
      * @param int $renderType
      * @param array $finalizeParams
      * @return array
-     * @throws \Exception
+     * @throws ResursException
      */
     private function renderSpecLine($paymentArray = array(), $renderType = ResursAfterShopRenderTypes::NONE, $finalizeParams = array())
     {
@@ -3583,7 +3998,9 @@ class ResursBank
             /** @noinspection PhpUndefinedFieldInspection */
             $specLineArray = $paymentArray->paymentDiffs->paymentSpec->specLines;
             if (is_array($specLineArray)) {
-                foreach ($specLineArray as $subObjects) { array_push($currentSpecs[$specType], $subObjects); }
+                foreach ($specLineArray as $subObjects) {
+                    array_push($currentSpecs[$specType], $subObjects);
+                }
             } else {
                 array_push($currentSpecs[$specType], $specLineArray);
             }
@@ -3597,7 +4014,9 @@ class ResursBank
                     $specLineArray = $specsObject->paymentSpec->specLines;
                     if (isset($specsObject->paymentSpec->specLines)) {
                         if (is_array($specLineArray)) {
-                            foreach ($specLineArray as $subObjects) { array_push($currentSpecs[$specType], $subObjects); }
+                            foreach ($specLineArray as $subObjects) {
+                                array_push($currentSpecs[$specType], $subObjects);
+                            }
                         } else {
                             array_push($currentSpecs[$specType], $specLineArray);
                         }
@@ -3607,12 +4026,20 @@ class ResursBank
         }
 
         /* Finalization is being done on all authorized rows that is not already finalized (debit), annulled or crediter*/
-        if ($renderType == ResursAfterShopRenderTypes::FINALIZE) { $returnSpecObject = $this->removeFromArray($currentSpecs['AUTHORIZE'], array_merge($currentSpecs['DEBIT'], $currentSpecs['ANNUL'], $currentSpecs['CREDIT'])); }
+        if ($renderType == ResursAfterShopRenderTypes::FINALIZE) {
+            $returnSpecObject = $this->removeFromArray($currentSpecs['AUTHORIZE'], array_merge($currentSpecs['DEBIT'], $currentSpecs['ANNUL'], $currentSpecs['CREDIT']));
+        }
         /* Credit is being done on all authorized rows that is not annuled or already credited */
-        if ($renderType == ResursAfterShopRenderTypes::CREDIT) { $returnSpecObject = $this->removeFromArray($currentSpecs['DEBIT'], array_merge($currentSpecs['ANNUL'], $currentSpecs['CREDIT'])); }
+        if ($renderType == ResursAfterShopRenderTypes::CREDIT) {
+            $returnSpecObject = $this->removeFromArray($currentSpecs['DEBIT'], array_merge($currentSpecs['ANNUL'], $currentSpecs['CREDIT']));
+        }
         /* Annul is being done on all authorized rows that is not already annulled, debited or credited */
-        if ($renderType == ResursAfterShopRenderTypes::ANNUL) { $returnSpecObject = $this->removeFromArray($currentSpecs['AUTHORIZE'], array_merge($currentSpecs['DEBIT'], $currentSpecs['ANNUL'], $currentSpecs['CREDIT'])); }
-        if ($renderType == ResursAfterShopRenderTypes::UPDATE) { $returnSpecObject = $currentSpecs['AUTHORIZE']; }
+        if ($renderType == ResursAfterShopRenderTypes::ANNUL) {
+            $returnSpecObject = $this->removeFromArray($currentSpecs['AUTHORIZE'], array_merge($currentSpecs['DEBIT'], $currentSpecs['ANNUL'], $currentSpecs['CREDIT']));
+        }
+        if ($renderType == ResursAfterShopRenderTypes::UPDATE) {
+            $returnSpecObject = $currentSpecs['AUTHORIZE'];
+        }
 
         return $returnSpecObject;
     }
