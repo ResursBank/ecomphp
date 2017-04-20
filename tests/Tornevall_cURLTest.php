@@ -11,11 +11,21 @@ class Tornevall_cURLTest extends \PHPUnit_Framework_TestCase
     private $Urls;
     private $TorSetupAddress = "127.0.0.1:9050";
     private $TorSetupType = CURLPROXY_SOCKS4;
+    private $StartErrorReporting;
+    private $CurlVersion = null;
 
     function __construct()
     {
+        //$this->setDebug(true);
+
         $this->CURL = new \TorneLIB\Tornevall_cURL();
         $this->NET = new \TorneLIB\TorneLIB_Network();
+        $this->StartErrorReporting = error_reporting();
+
+        if (function_exists('curl_version')) {
+            $CurlVersionRequest = curl_version();
+            $this->CurlVersion = $CurlVersionRequest['version'];
+        }
 
         /*
          * Enable test mode
@@ -30,6 +40,14 @@ class Tornevall_cURLTest extends \PHPUnit_Framework_TestCase
             'simplejson' => 'http://identifier.tornevall.net/?json',
             'tests' => 'developer.tornevall.net/tests/tornevall_network/'
         );
+    }
+
+    private function setDebug($setActive = false) {
+        if (!$setActive) {
+            error_reporting(E_ALL);
+        } else {
+            error_reporting($this->StartErrorReporting);
+        }
     }
 
     private function simpleGet() {
@@ -72,9 +90,10 @@ class Tornevall_cURLTest extends \PHPUnit_Framework_TestCase
         return null;
     }
     private function pemDefault() {
-        $this->CURL->_DEBUG_TCURL_UNSET_PEM_LOCATION = false;
+        $this->CURL->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION = false;
+        $this->CURL->setSslUnverified(true);
+        $this->CURL->setSslVerify(true);
     }
-
 
     /**
      * Runs a simple test to see if there is a container as it should
@@ -289,7 +308,7 @@ class Tornevall_cURLTest extends \PHPUnit_Framework_TestCase
      * Expected Result: Successful lookup with verified peer
      */
     function testSslCertLocation() {
-        $this->CURL->_DEBUG_TCURL_UNSET_PEM_LOCATION = true;
+        $this->CURL->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION = true;
         $successfulVerification = false;
         try {
             $this->CURL->sslPemLocations = array(__DIR__ . "/ca-certificates.crt");
@@ -321,10 +340,11 @@ class Tornevall_cURLTest extends \PHPUnit_Framework_TestCase
      * Expected Result: Failing the url call
      */
     function testFailingSsl() {
-        $this->CURL->_DEBUG_TCURL_UNSET_PEM_LOCATION = true;
+        $this->CURL->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION = true;
         $successfulVerification = true;
         try {
-            $this->CURL->sslPemLocations = array("NULL");
+            $this->CURL->setSslVerify(false);
+            $this->CURL->setSslUnverified(true);
             $container = $this->getParsed($this->urlGet("ssl&bool&o=json", "https"));
         } catch (\Exception $e) {
             $successfulVerification = false;
@@ -337,11 +357,11 @@ class Tornevall_cURLTest extends \PHPUnit_Framework_TestCase
      * Expected Result: Successful lookup with unverified peer
      */
     function testUnverifiedSsl() {
-        $this->CURL->_DEBUG_TCURL_UNSET_PEM_LOCATION = true;
+        $this->CURL->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION = true;
         $successfulVerification = false;
+        $this->CURL->sslPemLocations = array("non-existent-file");
         try {
             $this->CURL->setSslUnverified(true);
-            $this->CURL->sslPemLocations = array("NULL");
             $container = $this->getParsed($this->urlGet("ssl&bool&o=json", "https"));
             $successfulVerification = true;
         } catch (\Exception $e) {
@@ -387,7 +407,7 @@ class Tornevall_cURLTest extends \PHPUnit_Framework_TestCase
         if (!empty($returnedExecResponse) && is_array($returnedExecResponse)) {
             $NETWORK = new TorneLIB_Network();
             foreach ($returnedExecResponse as $ip) {
-                if ($NETWORK->getArpaFromAddr($ip, true) > 0) {
+                if ($NETWORK->getArpaFromAddr($ip, true) > 0 && !in_array($ip, $ipArray)) {
                     $ipArray[] = $ip;
                 }
             }

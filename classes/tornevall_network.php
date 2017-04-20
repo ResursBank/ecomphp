@@ -209,6 +209,7 @@ if (function_exists('curl_init')) {
 
         /** @var string Internal version that is being used to find out if we are running the latest version of this library */
         private $TorneCurlVersion = "5.0.0";
+        private $CurlVersion = null;
 
         /** @var string Internal release snapshot that is being used to find out if we are running the latest version of this library */
         private $TorneCurlRelease = "20170415";
@@ -252,6 +253,7 @@ if (function_exists('curl_init')) {
 
         /** @var array Default paths to the certificates we are looking for */
         public $sslPemLocations = array('/etc/ssl/certs/cacert.pem', '/etc/ssl/certs/ca-certificates.crt');
+        public $_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION = false;
         /** @var bool During tests this will be set to true if certificate files is found */
         private $hasCertFile = false;
         private $useCertFile = "";
@@ -270,8 +272,8 @@ if (function_exists('curl_init')) {
         public $curlopt = array(
             CURLOPT_CONNECTTIMEOUT => 5,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_SSL_VERIFYPEER => true,
-            CURLOPT_SSL_VERIFYHOST => true,
+            CURLOPT_SSL_VERIFYPEER => 1,
+            CURLOPT_SSL_VERIFYHOST => 2,
             CURLOPT_ENCODING => 1,
             CURLOPT_TIMEOUT => 10,
             CURLOPT_USERAGENT => 'TorneLIB-PHPcURL',
@@ -374,6 +376,10 @@ if (function_exists('curl_init')) {
          */
         public function __construct()
         {
+            if (function_exists('curl_version')) {
+                $CurlVersionRequest = curl_version();
+                $this->CurlVersion = $CurlVersionRequest['version'];
+            }
             $this->CurlResolve = CURL_RESOLVER::RESOLVER_DEFAULT;
             $this->CurlUserAgent = 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; .NET CLR 1.0.3705; .NET CLR 1.1.4322; Media Center PC 4.0; TorneLIB+cUrl '.$this->TorneCurlVersion.'/'.$this->TorneCurlRelease.')';
             if (class_exists('TorneLIB\TorneLIB_Network')) {
@@ -413,7 +419,7 @@ if (function_exists('curl_init')) {
         /**
          * Switch over to forced debugging
          *
-         * To not break production environments by setting for example _DEBUG_TCURL_UNSET_PEM_LOCATION, switching over to test mode is required
+         * To not break production environments by setting for example _DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION, switching over to test mode is required
          * to use those variables.
          *
          * @since 5.0.0-20170210
@@ -681,7 +687,8 @@ if (function_exists('curl_init')) {
                                 $this->hasCertDir = true;
                             }
                             // For unit testing
-                            if ($this->TargetEnvironment == TORNELIB_CURL_ENVIRONMENT::ENVIRONMENT_TEST && isset($this->_DEBUG_TCURL_UNSET_PEM_LOCATION)) {
+                            if ($this->TargetEnvironment == TORNELIB_CURL_ENVIRONMENT::ENVIRONMENT_TEST && isset($this->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION) && $this->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION === true) {
+                                // Enforce wrong certificate location
                                 $this->hasCertFile = false;
                                 $this->useCertFile = null;
                             }
@@ -714,7 +721,8 @@ if (function_exists('curl_init')) {
                                 }
                             }
                             // For unit testing
-                            if ($this->TargetEnvironment == TORNELIB_CURL_ENVIRONMENT::ENVIRONMENT_TEST && isset($this->_DEBUG_TCURL_UNSET_PEM_LOCATION)) {
+                            if ($this->TargetEnvironment == TORNELIB_CURL_ENVIRONMENT::ENVIRONMENT_TEST && isset($this->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION) && $this->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION === true) {
+                                // Enforce wrong certificate location
                                 $this->hasCertFile = false;
                                 $this->useCertFile = null;
                             }
@@ -1240,8 +1248,8 @@ if (function_exists('curl_init')) {
          *
          * @param string $url
          * @param array $postData
+         * @param int $postAs
          * @return array
-         * @throws \Exception
          */
         public function doPost($url = '', $postData = array(), $postAs = CURL_POST_AS::POST_AS_NORMAL)
         {
@@ -1253,6 +1261,7 @@ if (function_exists('curl_init')) {
         /**
          * @param string $url
          * @param array $postData
+         * @param int $postAs
          * @return array
          */
         public function doPut($url = '', $postData = array(), $postAs = CURL_POST_AS::POST_AS_NORMAL)
@@ -1265,6 +1274,7 @@ if (function_exists('curl_init')) {
         /**
          * @param string $url
          * @param array $postData
+         * @param int $postAs
          * @return array
          */
         public function doDelete($url = '', $postData = array(), $postAs = CURL_POST_AS::POST_AS_NORMAL)
@@ -1429,11 +1439,18 @@ if (function_exists('curl_init')) {
                 // And we're allowed to run without them
                 if (!$this->sslVerify && $this->allowSslUnverified) {
                     // Then disable the checking here
-                    curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYHOST, false);
-                    curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYPEER, false);
+                    curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYHOST, 0);
+                    curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYPEER, 0);
                 } else {
-                    curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYHOST, true);
-                    curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYPEER, true);
+                    /*
+                     * Keeping compatibility by running with 1 before curl 7.28.1 as we don't know when this option was really changed.
+                     */
+                    if (version_compare($this->CurlVersion, '7.28.1', '>=')) {
+                        curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYHOST, 2);
+                    } else {
+                        curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYHOST, 1);
+                    }
+                    curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYPEER, 1);
                 }
             } else {
                 // Silently configure for https-connections, if exists
