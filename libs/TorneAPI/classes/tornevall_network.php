@@ -209,9 +209,10 @@ if (function_exists('curl_init')) {
 
         /** @var string Internal version that is being used to find out if we are running the latest version of this library */
         private $TorneCurlVersion = "5.0.0";
+        private $CurlVersion = null;
 
         /** @var string Internal release snapshot that is being used to find out if we are running the latest version of this library */
-        private $TorneCurlRelease = "20170406";
+        private $TorneCurlRelease = "20170415";
 
         /**
          * Target environment (if target is production some debugging values will be skipped)
@@ -252,6 +253,7 @@ if (function_exists('curl_init')) {
 
         /** @var array Default paths to the certificates we are looking for */
         public $sslPemLocations = array('/etc/ssl/certs/cacert.pem', '/etc/ssl/certs/ca-certificates.crt');
+        public $_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION = false;
         /** @var bool During tests this will be set to true if certificate files is found */
         private $hasCertFile = false;
         private $useCertFile = "";
@@ -270,8 +272,8 @@ if (function_exists('curl_init')) {
         public $curlopt = array(
             CURLOPT_CONNECTTIMEOUT => 5,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_SSL_VERIFYPEER => true,
-            CURLOPT_SSL_VERIFYHOST => true,
+            CURLOPT_SSL_VERIFYPEER => 1,
+            CURLOPT_SSL_VERIFYHOST => 2,
             CURLOPT_ENCODING => 1,
             CURLOPT_TIMEOUT => 10,
             CURLOPT_USERAGENT => 'TorneLIB-PHPcURL',
@@ -300,8 +302,10 @@ if (function_exists('curl_init')) {
         /** @var null Sets a HTTP_REFERER to the http call */
         public $CurlReferer = null;
 
-        /** @var string Use proxy */
-        public $CurlProxy = '';
+        /** @var null CurlProxy, if set, we will try to proxify the traffic */
+        private $CurlProxy = null;
+        /** @var null, if not set, but CurlProxy is, we will use HTTP as proxy (See CURLPROXY_* for more information) */
+        private $CurlProxyType = null;
 
         /** @var bool Enable tunneling mode */
         public $CurlTunnel = false;
@@ -338,6 +342,7 @@ if (function_exists('curl_init')) {
         public $CurlAutoParse = true;
         /** @var bool Allow parsing of content bodies (tags) */
         private $allowParseHtml = false;
+        private $ResponseType = TORNELIB_CURL_RESPONSETYPE::RESPONSETYPE_ARRAY;
 
         /**
          * Authentication
@@ -371,6 +376,10 @@ if (function_exists('curl_init')) {
          */
         public function __construct()
         {
+            if (function_exists('curl_version')) {
+                $CurlVersionRequest = curl_version();
+                $this->CurlVersion = $CurlVersionRequest['version'];
+            }
             $this->CurlResolve = CURL_RESOLVER::RESOLVER_DEFAULT;
             $this->CurlUserAgent = 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; .NET CLR 1.0.3705; .NET CLR 1.1.4322; Media Center PC 4.0; TorneLIB+cUrl '.$this->TorneCurlVersion.'/'.$this->TorneCurlRelease.')';
             if (class_exists('TorneLIB\TorneLIB_Network')) {
@@ -403,10 +412,14 @@ if (function_exists('curl_init')) {
             $this->useLocalCookies = $enabled;
         }
 
+        public function setResponseType($ResponseType = TORNELIB_CURl_RESPONSETYPE::RESPONSETYPE_ARRAY) {
+            $this->ResponseType = $ResponseType;
+        }
+
         /**
          * Switch over to forced debugging
          *
-         * To not break production environments by setting for example _DEBUG_TCURL_UNSET_PEM_LOCATION, switching over to test mode is required
+         * To not break production environments by setting for example _DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION, switching over to test mode is required
          * to use those variables.
          *
          * @since 5.0.0-20170210
@@ -674,7 +687,8 @@ if (function_exists('curl_init')) {
                                 $this->hasCertDir = true;
                             }
                             // For unit testing
-                            if ($this->TargetEnvironment == TORNELIB_CURL_ENVIRONMENT::ENVIRONMENT_TEST && isset($this->_DEBUG_TCURL_UNSET_PEM_LOCATION)) {
+                            if ($this->TargetEnvironment == TORNELIB_CURL_ENVIRONMENT::ENVIRONMENT_TEST && isset($this->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION) && $this->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION === true) {
+                                // Enforce wrong certificate location
                                 $this->hasCertFile = false;
                                 $this->useCertFile = null;
                             }
@@ -707,7 +721,8 @@ if (function_exists('curl_init')) {
                                 }
                             }
                             // For unit testing
-                            if ($this->TargetEnvironment == TORNELIB_CURL_ENVIRONMENT::ENVIRONMENT_TEST && isset($this->_DEBUG_TCURL_UNSET_PEM_LOCATION)) {
+                            if ($this->TargetEnvironment == TORNELIB_CURL_ENVIRONMENT::ENVIRONMENT_TEST && isset($this->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION) && $this->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION === true) {
+                                // Enforce wrong certificate location
                                 $this->hasCertFile = false;
                                 $this->useCertFile = null;
                             }
@@ -873,15 +888,21 @@ if (function_exists('curl_init')) {
                     $UseIp = (isset($this->IpAddr[0]) && !empty($this->IpAddr[0]) ? $this->IpAddr[0] : null);
                 } elseif (count($this->IpAddr) > 1) {
                     if (!$this->IpAddrRandom) {
+                        /*
+                         * If we have multiple ip addresses in the list, but the randomizer is not active, always use the first address in the list.
+                         */
                         $UseIp = (isset($this->IpAddr[0]) && !empty($this->IpAddr[0]) ? $this->IpAddr[0] : null);
                     } else {
                         $IpAddrNum = rand(0, count($this->IpAddr) - 1);
                         $UseIp = $this->IpAddr[$IpAddrNum];
                     }
                 }
+            } else if (!empty($this->IpAddr)) {
+                $UseIp = $this->IpAddr;
             }
 
             $ipType = $this->NETWORK->getArpaFromAddr($UseIp, true);
+
             /*
              * Bind interface to specific ip only if any are found
              */
@@ -1169,6 +1190,20 @@ if (function_exists('curl_init')) {
                 $returnResponse['parsed'] = (!empty($parsedContent) ? $parsedContent : null);
             }
             $returnResponse['URL'] = $this->CurlURL;
+            $returnResponse['ip'] = isset($this->CurlIp) ? $this->CurlIp : null;  // Will only be filled if there is custom address set.
+
+            if ($this->ResponseType == TORNELIB_CURl_RESPONSETYPE::RESPONSETYPE_OBJECT) {
+                // This is probably not necessary and will not be the default setup after all.
+                $returnResponseObject = new TORNELIB_CURLOBJECT();
+                $returnResponseObject->header = $returnResponse['header'];
+                $returnResponseObject->body = $returnResponse['body'];
+                $returnResponseObject->code = $returnResponse['code'];
+                $returnResponseObject->parsed = $returnResponse['parsed'];
+                $returnResponseObject->url = $returnResponse['URL'];
+                $returnResponseObject->ip = $returnResponse['ip'];
+                return $returnResponseObject;
+            }
+
             $this->TemporaryResponse = $returnResponse;
             return $returnResponse;
         }
@@ -1213,8 +1248,8 @@ if (function_exists('curl_init')) {
          *
          * @param string $url
          * @param array $postData
+         * @param int $postAs
          * @return array
-         * @throws \Exception
          */
         public function doPost($url = '', $postData = array(), $postAs = CURL_POST_AS::POST_AS_NORMAL)
         {
@@ -1226,6 +1261,7 @@ if (function_exists('curl_init')) {
         /**
          * @param string $url
          * @param array $postData
+         * @param int $postAs
          * @return array
          */
         public function doPut($url = '', $postData = array(), $postAs = CURL_POST_AS::POST_AS_NORMAL)
@@ -1238,6 +1274,7 @@ if (function_exists('curl_init')) {
         /**
          * @param string $url
          * @param array $postData
+         * @param int $postAs
          * @return array
          */
         public function doDelete($url = '', $postData = array(), $postAs = CURL_POST_AS::POST_AS_NORMAL)
@@ -1272,6 +1309,11 @@ if (function_exists('curl_init')) {
             $this->AuthData['Username'] = $Username;
             $this->AuthData['Password'] = $Password;
             $this->AuthData['Type'] = $AuthType;
+        }
+
+        public function setProxy($ProxyAddr, $ProxyType = CURLPROXY_HTTP) {
+            $this->CurlProxy = $ProxyAddr;
+            $this->CurlProxyType = $ProxyType;
         }
 
         /**
@@ -1327,7 +1369,7 @@ if (function_exists('curl_init')) {
             /*
              * Picking up externally select outgoing ip if any
              */
-            $myIp = $this->handleIpList();
+            $this->handleIpList();
             curl_setopt($this->CurlSession, CURLOPT_URL, $this->CurlURL);
 
             if (is_array($postData)) {
@@ -1397,11 +1439,18 @@ if (function_exists('curl_init')) {
                 // And we're allowed to run without them
                 if (!$this->sslVerify && $this->allowSslUnverified) {
                     // Then disable the checking here
-                    curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYHOST, false);
-                    curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYPEER, false);
+                    curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYHOST, 0);
+                    curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYPEER, 0);
                 } else {
-                    curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYHOST, true);
-                    curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYPEER, true);
+                    /*
+                     * Keeping compatibility by running with 1 before curl 7.28.1 as we don't know when this option was really changed.
+                     */
+                    if (version_compare($this->CurlVersion, '7.28.1', '>=')) {
+                        curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYHOST, 2);
+                    } else {
+                        curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYHOST, 1);
+                    }
+                    curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYPEER, 1);
                 }
             } else {
                 // Silently configure for https-connections, if exists
@@ -1414,13 +1463,16 @@ if (function_exists('curl_init')) {
                 }
             }
             curl_setopt($this->CurlSession, CURLOPT_VERBOSE, false);
-            // Run from proxy
-            if (isset($this->CurlProxy)) {
+            if (isset($this->CurlProxy) && !empty($this->CurlProxy)) {
+                // Run from proxy
                 curl_setopt($this->CurlSession, CURLOPT_PROXY, $this->CurlProxy);
+                if (isset($this->CurlProxyType) && !empty($this->CurlProxyType)) {
+                    curl_setopt($this->CurlSession, CURLOPT_PROXYTYPE, $this->CurlProxyType);
+                }
                 unset($this->CurlIp);
             }
-            // Run in tunneling mode
-            if (isset($this->CurlTunnel)) {
+            if (isset($this->CurlTunnel) && !empty($this->CurlTunnel)) {
+                // Run in tunneling mode
                 curl_setopt($this->CurlSession, CURLOPT_HTTPPROXYTUNNEL, true);
                 unset($this->CurlIp);
             }
@@ -1724,4 +1776,16 @@ abstract class CURL_AUTH_TYPES {
 abstract class TORNELIB_CURL_ENVIRONMENT {
     const ENVIRONMENT_PRODUCTION = 0;
     const ENVIRONMENT_TEST = 1;
+}
+abstract class TORNELIB_CURL_RESPONSETYPE {
+    const RESPONSETYPE_ARRAY = 0;
+    const RESPONSETYPE_OBJECT = 1;
+}
+class TORNELIB_CURLOBJECT {
+    public $header;
+    public $body;
+    public $code;
+    public $parsed;
+    public $url;
+    public $ip;
 }
