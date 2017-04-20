@@ -2189,22 +2189,30 @@ class ResursBank
         $templateRules = $this->getFormTemplateRules();
         $returnedRules = array();
         $returnedRuleArray = array();
-
-        /* If the client is requesting a getPaymentMethod-object we'll try to handle that information instead */
+        /* If the client is requesting a getPaymentMethod-object we'll try to handle that information instead (but not if it is empty) */
         if (is_object($paymentMethodName) || is_array($paymentMethodName)) {
-            /** @noinspection PhpUndefinedFieldInspection */
-            if (isset($templateRules[strtoupper($customerType)]) && isset($templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName->specificType)])) {
-                //$returnedRuleArray = $templateRules[strtoupper($paymentMethodType->customerType)]['fields'][strtoupper($paymentMethodType->specificType)];
+            if (is_object($paymentMethodName)) {
                 /** @noinspection PhpUndefinedFieldInspection */
-                $returnedRuleArray = $templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName->specificType)];
+                if (isset($templateRules[strtoupper($customerType)]) && isset($templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName->specificType)])) {
+                    /** @noinspection PhpUndefinedFieldInspection */
+                    $returnedRuleArray = $templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName->specificType)];
+                }
+            } else if (is_array($paymentMethodName)) {
+                /*
+                 * This should probably not happen and the developers should probably also stick to objects as above.
+                 */
+                if (count($paymentMethodName)) {
+                    if (isset($templateRules[strtoupper($customerType)]) && isset($templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName['specificType'])])) {
+                        /** @noinspection PhpUndefinedFieldInspection */
+                        $returnedRuleArray = $templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName['specificType'])];
+                    }
+                }
             }
         } else {
             if (isset($templateRules[strtoupper($customerType)]) && isset($templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName)])) {
-                //$returnedRuleArray = $templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodType)];
                 $returnedRuleArray = $templateRules[strtoupper($customerType)]['fields'][strtoupper($specificType)];
             }
         }
-
         $returnedRules = array(
             'fields' => $returnedRuleArray,
             'display' => $templateRules['display'],
