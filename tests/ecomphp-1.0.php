@@ -830,6 +830,8 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * This test is incomplete.
+     *
      * @param bool $returnTheFrame
      * @return bool|null
      */
