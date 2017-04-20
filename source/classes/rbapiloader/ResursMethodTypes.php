@@ -26,5 +26,9 @@ abstract class ResursMethodTypes
     const METHOD_UNDEFINED = 0;
     const METHOD_SIMPLIFIED = 1;
     const METHOD_HOSTED = 2;
+    const METHOD_CHECKOUT = 3;
+
+    /** Deprecated */
     const METHOD_OMNI = 3;
+    const METHOD_RESURSCHECKOUT = 3;
 }

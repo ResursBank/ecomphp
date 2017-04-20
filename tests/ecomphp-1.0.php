@@ -34,6 +34,12 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
     private function initServices() {
         $this->rb = new \ResursBank($this->username, $this->password);
         $this->rb->alwaysUseExtendedCustomer = $this->alwaysUseExtendedCustomer;
+        /*
+         * If HTTP_HOST is not set, Resurs Checkout will not run properly, since the iFrame requires a valid internet connection (actually browser vs http server).
+         */
+        if (!isset($_SERVER['HTTP_HOST'])) {
+            $_SERVER['HTTP_HOST'] = "localhost";
+        }
     }
 
     public $ignoreDefaultTests = false;
@@ -370,6 +376,17 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    public function testNoWsdl() {
+        $wsdlPath = __DIR__ . "/../source/rbwsdl/";
+        $hasFrame = false;
+        if (!empty($this->getCheckoutFrame(true))) {
+            $hasFrame = true;
+        }
+        if (file_exists(realpath($wsdlPath))) {
+            $this->markTestIncomplete();
+        }
+    }
+
     /**
      * Book a payment, internal function
      *
@@ -379,13 +396,17 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
      * @param bool|true $signSuccess True=Successful signing, False=Failed signing
      * @return bool Returning true if booking went as you expected
      */
-    private function doBookPayment($setMethod = '', $bookSuccess = true, $forceSigning = false, $signSuccess = true, $country = 'SE', $ownSpecline = array()) {
+    private function doBookPayment($setMethod = '', $bookSuccess = true, $forceSigning = false, $signSuccess = true, $country = 'SE', $ownSpecline = array())
+    {
         $this->setCountry($country);
         $this->checkEnvironment();
+        $paymentServiceSet = $this->rb->getPreferredPaymentService();
+
         $useMethodList = $this->availableMethods;
         $useGovIdLegalCivic = $this->govIdLegalCivic;
         $useGovId = $this->testGovId;
         $usePhoneNumber = "0101010101";
+        $bookStatus = null;
 
         if ($country == "NO") {
             if (count($this->availableMethodsNorway) && !empty($this->usernameNorway)) {
@@ -448,16 +469,20 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
             'forceSigning' => $forceSigning
         );
 
-        /* keepReturnObject is false by default */
-        //$bookStatus = $res->return->bookPaymentStatus;
-
         $res = $this->rb->bookPayment($setMethod, $bookData);
-        $bookStatus = $res->bookPaymentStatus;
+        /*
+         * bookPaymentStatus is for simplified flows only
+         */
+        if (isset($res->bookPaymentStatus)) {
+            $bookStatus = $res->bookPaymentStatus;
+        }
+
+        if ($paymentServiceSet == ResursMethodTypes::METHOD_CHECKOUT) {
+            return $res;
+        }
 
         if ($bookStatus == "SIGNING") {
-
             if ($this->environmentName === "mock") {
-
                 /* Pick up the signing url */
                 $signUrl = $res->signingUrl;
                 $getSigningPage = file_get_contents($signUrl);
@@ -619,7 +644,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
      * Payment Method: Invoice
      * Customer Type: NATURAL, GRANTED
      */
-    public function testBookPaymentInvoiceExternalNatural() {
+    public function testBookPaymentInvoiceExtendedNatural() {
         if ($this->ignoreBookingTests) { $this->markTestIncomplete(); }
         $this->checkEnvironment();
         $this->rb->alwaysUseExtendedCustomer = true;
@@ -804,6 +829,40 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
         $this->assertTrue((preg_match("/amount=$amount/i", $customURL)? true:false));
     }
 
+    /**
+     * @param bool $returnTheFrame
+     * @return bool|null
+     */
+    private function getCheckoutFrame($returnTheFrame = false) {
+        $assumeThis = false;
+        if ($this->ignoreBookingTests) { $this->markTestIncomplete(); }
+        $this->checkEnvironment();
+        $this->rb->alwaysUseExtendedCustomer = true;
+        $this->rb->setPreferredPaymentService(ResursMethodTypes::METHOD_OMNI);
+        $bookResult = $this->doBookPayment($this->availableMethods['invoice_natural'], true, false, true);
+        print_r($bookResult);
+        if (is_string($bookResult) && preg_match("/iframe src/i", $bookResult)) {
+            $iFrameUrl = $this->rb->getIframeSrc($bookResult);
+            $CURL = new \TorneLIB\Tornevall_cURL();
+            $iframeContent = $CURL->doGet($iFrameUrl);
+            if (!empty($iframeContent['body'])) {
+                $assumeThis = true;
+            }
+        }
+        if (!$returnTheFrame) {
+            return $assumeThis;
+        } else {
+            return $iFrameUrl;
+        }
+    }
+
+    /**
+     *
+     */
+    public function testGetCheckoutFrame() {
+        $this->assertTrue($this->getCheckoutFrame());
+    }
+
     /***
      * VERSION 1.0-1.1 DEPENDENT TESTS
      */
@@ -843,7 +902,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
                     $renderArray[] = $parameterName . "={".$parameterName."}";
                 }
             }
-            $callbackURL = $this->callbackUrl . "?event=".$callbackType."&digest={digest}&" . implode("&", $renderArray);
+            $callbackURL = $this->callbackUrl . "?event=".$callbackType."&digest={digest}&" . implode("&", $renderArray) . "&lastReg=" . strftime("%y%m%d%H%M%S", time());
             try {
                 $callbackSetResult = $this->rb->setCallback($setCallbackType, $callbackURL, $digestArray);
                 if (!empty($this->rb->lastError)) { continue; }
