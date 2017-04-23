@@ -208,7 +208,7 @@ if (function_exists('curl_init')) {
         private $NETWORK;
 
         /** @var string Internal version that is being used to find out if we are running the latest version of this library */
-        private $TorneCurlVersion = "5.0.0";
+        private $TorneCurlVersion = "5.0.0/2017.4";
         private $CurlVersion = null;
 
         /** @var string Internal release snapshot that is being used to find out if we are running the latest version of this library */
@@ -243,6 +243,11 @@ if (function_exists('curl_init')) {
         private $testssldeprecated = false;
         /** @var bool If there are problems with certificates bound to a host/peer, set this to false if necessary. Default is to always try to verify them */
         private $sslVerify = true;
+
+        private $sslDriver = false;
+        private $sslDriverError = array();
+        private $sslCurlDriver = false;
+
         /**
          * Allow https calls to unverified peers/hosts
          *
@@ -376,9 +381,19 @@ if (function_exists('curl_init')) {
          */
         public function __construct()
         {
+            if (!in_array('https', @stream_get_wrappers()))
+            {
+                $this->sslDriverError = "SSL Failure: HTTPS wrapper can not be found";
+            }
+            if(!extension_loaded('openssl')) {
+                $this->sslDriverError = "SSL Failure: HTTPS extension can not be found";
+            }
             if (function_exists('curl_version')) {
                 $CurlVersionRequest = curl_version();
                 $this->CurlVersion = $CurlVersionRequest['version'];
+                if (defined('CURL_VERSION_SSL') && isset($this->CurlVersion['features'])) {
+                    $this->sslCurlDriver = ($this->CurlVersion['features'] & CURL_VERSION_SSL ? true : false);
+                }
             }
             $this->CurlResolve = CURL_RESOLVER::RESOLVER_DEFAULT;
             $this->CurlUserAgent = 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; .NET CLR 1.0.3705; .NET CLR 1.1.4322; Media Center PC 4.0; TorneLIB+cUrl '.$this->TorneCurlVersion.'/'.$this->TorneCurlRelease.')';
