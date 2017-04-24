@@ -28,7 +28,14 @@ abstract class ResursMethodTypes
     const METHOD_HOSTED = 2;
     const METHOD_CHECKOUT = 3;
 
-    /** Deprecated */
+	/**
+	 * @deprecated Use METHOD_CHECKOUT instead
+	 * @since 20170420
+	 */
     const METHOD_OMNI = 3;
+	/**
+	 * @deprecated Use METHOD_CHECKOUT instead
+	 * @since 20170420
+	 */
     const METHOD_RESURSCHECKOUT = 3;
 }

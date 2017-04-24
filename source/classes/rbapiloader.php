@@ -45,7 +45,7 @@ class ResursBank
     /** @var string The version of this gateway */
     private $version = "1.0.0";
     /** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-    private $lastUpdate = "20170323";
+    private $lastUpdate = "20170420";
     private $preferredId = null;
     private $ocShopScript = null;
     private $formTemplateRuleArray = array();
