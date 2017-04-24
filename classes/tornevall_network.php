@@ -380,16 +380,9 @@ class Tornevall_cURL
      */
     public function __construct()
     {
-        if (!function_exists('curl_init')) {
-            throw new \Exception("curl library not found");
-        }
-
-        if (!in_array('https', @stream_get_wrappers())) {
-            $this->sslDriverError = "SSL Failure: HTTPS wrapper can not be found";
-        }
-        if (!extension_loaded('openssl')) {
-            $this->sslDriverError = "SSL Failure: HTTPS extension can not be found";
-        }
+        if (!function_exists('curl_init')) { throw new \Exception("curl library not found"); }
+        if (!in_array('https', @stream_get_wrappers())) { $this->sslDriverError[] = "SSL Failure: HTTPS wrapper can not be found"; }
+        if (!extension_loaded('openssl')) { $this->sslDriverError[] = "SSL Failure: HTTPS extension can not be found"; }
         if (function_exists('curl_version')) {
             $CurlVersionRequest = curl_version();
             $this->CurlVersion = $CurlVersionRequest['version'];
