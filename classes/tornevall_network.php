@@ -188,6 +188,10 @@ abstract class TorneLIB_Network_IP
 /**
  * Class Tornevall_cURL
  *
+ * Requirements: curl
+ * Recommended: php-xml (For SOAP etc)
+ * Installation of the above could be done with apt-get install php-curl php-xml on moste instances.
+ *
  * Versioning are based on TorneLIB v5, but follows its own standards in the chain.
  *
  * @package TorneLIB
@@ -989,13 +993,20 @@ class Tornevall_cURL
         }
         if (is_null($parsedContent) && (preg_match("/xml version/", $content) || preg_match("/rss version/", $content) || preg_match("/xml/i", $contentType))) {
             $trimmedContent = trim($content); // PHP 5.3: Can't use function return value in write context
-            if (!empty($trimmedContent)) {
-                $simpleXML = new \SimpleXMLElement($content);
-                if (isset($simpleXML) && is_object($simpleXML)) {
-                    return $simpleXML;
+            if (class_exists('SimpleXMLElement')) {
+                if (!empty($trimmedContent)) {
+                    $simpleXML = new \SimpleXMLElement($content);
+                    if (isset($simpleXML) && is_object($simpleXML)) {
+                        return $simpleXML;
+                    }
+                } else {
+                    return null;
                 }
             } else {
-                return null;
+                /*
+                 * Returns empty class if the SimpleXMLElement is missing.
+                 */
+                return new \stdClass();
             }
         }
         if ($this->allowParseHtml && empty($parsedContent)) {
