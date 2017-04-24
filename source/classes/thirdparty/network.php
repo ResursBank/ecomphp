@@ -412,7 +412,7 @@ if (function_exists('curl_init')) {
             $this->useLocalCookies = $enabled;
         }
 
-        public function setResponseType($ResponseType = TORNELIB_CURl_RESPONSETYPE::RESPONSETYPE_ARRAY) {
+        public function setResponseType($ResponseType = TORNELIB_CURL_RESPONSETYPE::RESPONSETYPE_ARRAY) {
             $this->ResponseType = $ResponseType;
         }
 
@@ -1192,7 +1192,7 @@ if (function_exists('curl_init')) {
             $returnResponse['URL'] = $this->CurlURL;
             $returnResponse['ip'] = isset($this->CurlIp) ? $this->CurlIp : null;  // Will only be filled if there is custom address set.
 
-            if ($this->ResponseType == TORNELIB_CURl_RESPONSETYPE::RESPONSETYPE_OBJECT) {
+            if ($this->ResponseType == TORNELIB_CURL_RESPONSETYPE::RESPONSETYPE_OBJECT) {
                 // This is probably not necessary and will not be the default setup after all.
                 $returnResponseObject = new TORNELIB_CURLOBJECT();
                 $returnResponseObject->header = $returnResponse['header'];
