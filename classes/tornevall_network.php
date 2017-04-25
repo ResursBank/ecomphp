@@ -385,14 +385,31 @@ class Tornevall_cURL
     public function __construct()
     {
         if (!function_exists('curl_init')) { throw new \Exception("curl library not found"); }
+
+        // Common ssl checkers (if they fail, there is a sslDriverError to recall
         if (!in_array('https', @stream_get_wrappers())) { $this->sslDriverError[] = "SSL Failure: HTTPS wrapper can not be found"; }
         if (!extension_loaded('openssl')) { $this->sslDriverError[] = "SSL Failure: HTTPS extension can not be found"; }
         if (function_exists('curl_version')) {
             $CurlVersionRequest = curl_version();
             $this->CurlVersion = $CurlVersionRequest['version'];
-            if (defined('CURL_VERSION_SSL') && isset($this->CurlVersion['features'])) {
-                $this->sslCurlDriver = ($this->CurlVersion['features'] & CURL_VERSION_SSL ? true : false);
+            if (defined('CURL_VERSION_SSL')) {
+                if (isset($CurlVersionRequest['features'])) {
+                    $this->sslCurlDriver = ($CurlVersionRequest['features'] & CURL_VERSION_SSL ? true : false);
+                    if (!$this->sslCurlDriver) {
+                        $this->sslDriverError[] = 'SSL Failure: Protocol "https" not supported or disabled in libcurl';
+                    }
+                } else {
+                    $this->sslDriverError[] = "SSL Failure: CurlVersionFeaturesList does not return any feature (this should not be happen)";
+                }
             }
+        }
+        // If any of the above triggered an error, set curlDriver to false, as there may be problems during the
+        // urlCall anyway. This library does not throw any error itself in those erros, since most of this kind of problems
+        // are handled by curl itself. However, this opens for self checking in an early state through the hasSsl() function
+        // and could be triggered long before the url calls are sent (and by means warn the developer that implements this solution
+        // that there are an upcoming problem with the SSL support).
+        if (count($this->sslDriverError)) {
+            $this->sslCurlDriver = false;
         }
         $this->CurlResolve = CURL_RESOLVER::RESOLVER_DEFAULT;
         $this->CurlUserAgent = 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; .NET CLR 1.0.3705; .NET CLR 1.1.4322; Media Center PC 4.0; TorneLIB+cUrl ' . $this->TorneCurlVersion . '/' . $this->TorneCurlRelease . ')';
@@ -602,7 +619,6 @@ class Tornevall_cURL
         return $this->CurlSession;
     }
 
-
     /**
      * Generate a correctified stream context depending on what happened in openssl_guess(), which also is running in this operation.
      *
@@ -809,7 +825,6 @@ class Tornevall_cURL
         $this->allowSslUnverified = $enabledFlag;
     }
 
-
     /**
      * TestCerts - Test if your webclient has certificates available (make sure the $testssldeprecated are enabled if you want to test older PHP-versions - meaning older than 5.6.0)
      *
@@ -839,6 +854,10 @@ class Tornevall_cURL
     public function hasCertDefault()
     {
         return $this->hasDefaultCertFile;
+    }
+
+    public function hasSsl() {
+        return $this->sslCurlDriver;
     }
 
     /**
@@ -1395,7 +1414,6 @@ class Tornevall_cURL
         if (!empty($url)) {
             $this->CurlURL = $url;
         }
-
         if (preg_match("/\?wsdl$|\&wsdl$/i", $this->CurlURL) || $postAs == CURL_POST_AS::POST_AS_SOAP) {
             $Soap = new Tornevall_SimpleSoap($this->CurlURL, $this->curlopt);
             $Soap->setThrowableState($this->canThrow);

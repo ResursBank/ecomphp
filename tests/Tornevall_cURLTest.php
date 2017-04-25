@@ -17,9 +17,6 @@ class Tornevall_cURLTest extends \PHPUnit_Framework_TestCase
     function __construct()
     {
         //$this->setDebug(true);
-
-
-
         $this->NET = new \TorneLIB\TorneLIB_Network();
         $this->CURL = new \TorneLIB\Tornevall_cURL();
         $this->StartErrorReporting = error_reporting();
@@ -95,6 +92,14 @@ class Tornevall_cURLTest extends \PHPUnit_Framework_TestCase
         $this->CURL->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION = false;
         $this->CURL->setSslUnverified(true);
         $this->CURL->setSslVerify(true);
+    }
+
+    function testNoSsl() {
+        if ($this->CURL->hasSsl()) {
+            $this->markTestSkipped("This instance seems to have SSL available so we can't assume it doesn't");
+        } else {
+            $this->assertFalse($this->CURL->hasSsl());
+        }
     }
 
     /**
