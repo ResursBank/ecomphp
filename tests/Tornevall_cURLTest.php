@@ -10,16 +10,15 @@ class Tornevall_cURLTest extends \PHPUnit_Framework_TestCase
     private $CURL;
     private $Urls;
     private $TorSetupAddress = "127.0.0.1:9050";
-    private $TorSetupType = CURLPROXY_SOCKS4;
+    private $TorSetupType = 4;      /* CURLPROXY_SOCKS4*/
     private $StartErrorReporting;
     private $CurlVersion = null;
 
     function __construct()
     {
         //$this->setDebug(true);
-
-        $this->CURL = new \TorneLIB\Tornevall_cURL();
         $this->NET = new \TorneLIB\TorneLIB_Network();
+        $this->CURL = new \TorneLIB\Tornevall_cURL();
         $this->StartErrorReporting = error_reporting();
 
         if (function_exists('curl_version')) {
@@ -93,6 +92,14 @@ class Tornevall_cURLTest extends \PHPUnit_Framework_TestCase
         $this->CURL->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION = false;
         $this->CURL->setSslUnverified(true);
         $this->CURL->setSslVerify(true);
+    }
+
+    function testNoSsl() {
+        if ($this->CURL->hasSsl()) {
+            $this->markTestSkipped("This instance seems to have SSL available so we can't assume it doesn't");
+        } else {
+            $this->assertFalse($this->CURL->hasSsl());
+        }
     }
 
     /**
@@ -222,7 +229,7 @@ class Tornevall_cURLTest extends \PHPUnit_Framework_TestCase
         $this->pemDefault();
         // XML_Serializer
         $container = $this->getParsed($this->urlGet("ssl&bool&o=xml&method=get"));
-        $this->assertTrue(is_object($container->using) && $container->using['0'] == "XML/Serializer");
+        $this->assertTrue(isset($container->using) && is_object($container->using) && $container->using['0'] == "XML/Serializer");
     }
 
     /**
@@ -232,7 +239,7 @@ class Tornevall_cURLTest extends \PHPUnit_Framework_TestCase
         $this->pemDefault();
         // SimpleXMLElement
         $container = $this->getParsed($this->urlGet("ssl&bool&o=xml&method=get&using=SimpleXMLElement"));
-        $this->assertTrue(is_object($container->using) && $container->using == "SimpleXMLElement");
+        $this->assertTrue(isset($container->using) && is_object($container->using) && $container->using == "SimpleXMLElement");
     }
 
     /**
@@ -241,9 +248,13 @@ class Tornevall_cURLTest extends \PHPUnit_Framework_TestCase
     function testGetSimpleDom() {
         $this->pemDefault();
         $this->CURL->setParseHtml(true);
-        $container = $this->getParsed($this->urlGet("ssl&bool&o=xml&method=get&using=SimpleXMLElement", null, "simple.html"));
+        try {
+            $container = $this->getParsed($this->urlGet("ssl&bool&o=xml&method=get&using=SimpleXMLElement", null, "simple.html"));
+        } catch (\Exception $e) {
+
+        }
         // ByNodes, ByClosestTag, ById
-        $this->assertTrue(count($container['ById']) > 0);
+        $this->assertTrue(isset($container['ById']) && count($container['ById']) > 0);
     }
 
     function testGetArpaLocalhost4() {
@@ -445,7 +456,7 @@ class Tornevall_cURLTest extends \PHPUnit_Framework_TestCase
             }
         }
         if (!$serviceFound) {
-            $this->markTestIncomplete("Service not found in the current control");
+            $this->markTestSkipped("Skip TOR Network tests: TOR Service not found in the current control");
         } else {
             $this->CURL->setProxy($this->TorSetupAddress, $this->TorSetupType);
             $CurlJson = $this->CURL->doGet($this->Urls['simplejson']);
