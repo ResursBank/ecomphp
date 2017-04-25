@@ -100,15 +100,19 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	public $alertMessage = null;
 	/** @var array Expected payment method count (SE) */
 	public $paymentMethodCount = array(
-		'mock' => 5,
+		'mock'    => 5,
 		'nonmock' => 5
 	);
 	/** @var array Expected payment method cound (NO) */
-	public $paymentMethodCountNorway = array('mock' => 3);
+	public $paymentMethodCountNorway = array( 'mock' => 3 );
+
 	/** Before each test, invoke this */
-	public function setUp(){ }
+	public function setUp() {
+	}
+
 	/** After each test, invoke this */
-	public function tearDown() {}
+	public function tearDown() {
+	}
 
 	/************* PRIVATES **************/
 
@@ -154,14 +158,14 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	 */
 	public function __construct() {
 
-		if (version_compare(PHP_VERSION, '5.3.0', "<")) {
-			if (!$this->allowObsoletePHP) {
-				throw new ResursException("PHP 5.3 or later are required for this module to work. If you feel safe with running this with an older version, please see ");
+		if ( version_compare( PHP_VERSION, '5.3.0', "<" ) ) {
+			if ( ! $this->allowObsoletePHP ) {
+				throw new ResursException( "PHP 5.3 or later are required for this module to work. If you feel safe with running this with an older version, please see " );
 			}
 		}
 
-		register_shutdown_function(array($this, 'shutdownSuite'));
-		if ($this->environmentName === "nonmock") {
+		register_shutdown_function( array( $this, 'shutdownSuite' ) );
+		if ( $this->environmentName === "nonmock" ) {
 			$this->username = $this->usernameNonmock;
 			$this->password = $this->passwordNonmock;
 		}
@@ -169,62 +173,62 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 		$this->setupConfig();
 
 		/* Set up default government id for bookings */
-		$this->testGovId = $this->govIdNatural;
+		$this->testGovId       = $this->govIdNatural;
 		$this->testGovIdNorway = $this->govIdNaturalNorway;
 		$this->initServices();
 	}
 
 	private function setupConfig() {
-		if (file_exists('test.json')) {
-			$config = json_decode(file_get_contents("test.json"));
-			if (isset($config->mock->username)) {
-				$this->username = $config->mock->username;
+		if ( file_exists( 'test.json' ) ) {
+			$config = json_decode( file_get_contents( "test.json" ) );
+			if ( isset( $config->mock->username ) ) {
+				$this->username       = $config->mock->username;
 				$this->usernameSweden = $this->username;
 			}
-			if (isset($config->mock->password)) {
-				$this->password = $config->mock->password;
+			if ( isset( $config->mock->password ) ) {
+				$this->password       = $config->mock->password;
 				$this->passwordSweden = $this->password;
 			}
-			if (isset($config->sweden->username)) {
-				$this->username = $config->sweden->username;
+			if ( isset( $config->sweden->username ) ) {
+				$this->username       = $config->sweden->username;
 				$this->usernameSweden = $this->username;
 			}
-			if (isset($config->sweden->password)) {
-				$this->password = $config->sweden->password;
+			if ( isset( $config->sweden->password ) ) {
+				$this->password       = $config->sweden->password;
 				$this->passwordSweden = $this->password;
 			}
-			if (isset($config->norway->username)) {
+			if ( isset( $config->norway->username ) ) {
 				$this->usernameNorway = $config->norway->username;
 			}
-			if (isset($config->norway->password)) {
+			if ( isset( $config->norway->password ) ) {
 				$this->passwordNorway = $config->norway->password;
 			}
-			if (isset($config->nonmock->username)) {
+			if ( isset( $config->nonmock->username ) ) {
 				$this->usernameNonmock = $config->nonmock->username;
 			}
-			if (isset($config->nonmock->password)) {
+			if ( isset( $config->nonmock->password ) ) {
 				$this->passwordNonmock = $config->nonmock->password;
 			}
-			if (isset($config->alertReceivers) && is_array($config->alertReceivers)) {
+			if ( isset( $config->alertReceivers ) && is_array( $config->alertReceivers ) ) {
 				$this->alertReceivers = $config->alertReceivers;
 			}
-			if (isset($config->alertFrom) && is_array($config->alertFrom)) {
+			if ( isset( $config->alertFrom ) && is_array( $config->alertFrom ) ) {
 				$this->alertFrom = $config->alertFrom;
 			}
-			if (isset($config->availableMethods)) {
-				foreach ($config->availableMethods as $methodId => $methodObject) {
-					$this->availableMethods[$methodId] = $methodObject;
+			if ( isset( $config->availableMethods ) ) {
+				foreach ( $config->availableMethods as $methodId => $methodObject ) {
+					$this->availableMethods[ $methodId ] = $methodObject;
 				}
 			}
-			if (isset($config->availableMethodsNorway)) {
-				foreach ($config->availableMethodsNorway as $methodId => $methodObject) {
-					$this->availableMethodsNorway[$methodId] = $methodObject;
+			if ( isset( $config->availableMethodsNorway ) ) {
+				foreach ( $config->availableMethodsNorway as $methodId => $methodObject ) {
+					$this->availableMethodsNorway[ $methodId ] = $methodObject;
 				}
 			}
-			if (isset($config->callbackUrl)) {
+			if ( isset( $config->callbackUrl ) ) {
 				$this->callbackUrl = $config->callbackUrl;
 			}
-			if (isset($config->signUrl)) {
+			if ( isset( $config->signUrl ) ) {
 				$this->signUrl = $config->signUrl;
 			}
 		}
@@ -234,7 +238,9 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	 * Initialization of environment with ability to change into others.
 	 */
 	private function checkEnvironment() {
-		if ($this->environmentName === "nonmock") { $this->rb->setNonMock(); }
+		if ( $this->environmentName === "nonmock" ) {
+			$this->rb->setNonMock();
+		}
 		$this->initServices();
 	}
 
@@ -246,10 +252,10 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	private function isUp() {
 		try {
 			$paymentMethods = $this->rb->getPaymentMethods();
-		} catch (Exception $e) {
+		} catch ( Exception $e ) {
 			return false;
 		}
-		if (count($paymentMethods) > 0) {
+		if ( count( $paymentMethods ) > 0 ) {
 			return true;
 		}
 	}
@@ -258,12 +264,12 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	 * Send mail alerts to defined users in case of special errors
 	 */
 	private function alertSender() {
-		$checkMessage = trim($this->alertMessage);
-		if (!empty($checkMessage)) {
+		$checkMessage = trim( $this->alertMessage );
+		if ( ! empty( $checkMessage ) ) {
 			//$message = 'Following problems occured during the running of PHPApi TestSuite:' . "\n" . $this->alertMessage;
-			$message = trim($this->alertMessage);
-			foreach ($this->alertReceivers as $receiver) {
-				mail($receiver, "PHPApi TestSuite Alert [".$this->environmentName."]", $message, "From: " . $this->alertFrom . "\nContent-Type: text/plain");
+			$message = trim( $this->alertMessage );
+			foreach ( $this->alertReceivers as $receiver ) {
+				mail( $receiver, "PHPApi TestSuite Alert [" . $this->environmentName . "]", $message, "From: " . $this->alertFrom . "\nContent-Type: text/plain" );
 			}
 		}
 		//$this->alertMessage = null;
@@ -274,8 +280,8 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	 *
 	 * @param string $message A message to render for alerts (experimental)
 	 */
-	private function alertRender($message = "") {
-		if (!empty($message)) {
+	private function alertRender( $message = "" ) {
+		if ( ! empty( $message ) ) {
 			$this->alertMessage .= $message . "\n";
 		}
 	}
@@ -285,20 +291,24 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	 *
 	 * @return null|string A standard nonComplex string
 	 */
-	private function mkpass()
-	{
-		$retp = null;
+	private function mkpass() {
+		$retp               = null;
 		$characterListArray = array(
 			'abcdefghijklmnopqrstuvwxyz',
 			'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
 			'0123456789',
 			'!@#$%*?'
 		);
-		$chars = array();
-		$max = 10; // This is for now static
-		foreach ($characterListArray as $charListIndex => $charList) {for ($i = 0 ; $i <= ceil($max/sizeof($characterListArray)) ; $i++) {$chars[] = $charList{mt_rand(0, (strlen($charList) - 1))};}}
-		shuffle($chars);
-		$retp = implode("", $chars);
+		$chars              = array();
+		$max                = 10; // This is for now static
+		foreach ( $characterListArray as $charListIndex => $charList ) {
+			for ( $i = 0; $i <= ceil( $max / sizeof( $characterListArray ) ); $i ++ ) {
+				$chars[] = $charList{mt_rand( 0, ( strlen( $charList ) - 1 ) )};
+			}
+		}
+		shuffle( $chars );
+		$retp = implode( "", $chars );
+
 		return $retp;
 	}
 
@@ -309,19 +319,20 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	 * @throws Exception
 	 */
 	private function getAMethod() {
-		$methods= null;
+		$methods      = null;
 		$currentError = null;
 		try {
 			$methods = $this->rb->getPaymentMethods();
-		} catch (Exception $e) {
+		} catch ( Exception $e ) {
 			$currentError = $e->getMessage();
 		}
-		if (is_array($methods)) {
-			$method = array_pop($methods);
-			$id = $method->id;
+		if ( is_array( $methods ) ) {
+			$method = array_pop( $methods );
+			$id     = $method->id;
+
 			return $id;
 		}
-		throw new Exception("Cannot receive a random payment method from ecommerce" . (!empty($currentError) ? " ($currentError)":""));
+		throw new Exception( "Cannot receive a random payment method from ecommerce" . ( ! empty( $currentError ) ? " ($currentError)" : "" ) );
 	}
 
 	/**
@@ -331,131 +342,143 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	 * @param bool|false $bookSuccess Set to true if booking is supposed to success
 	 * @param bool|false $forceSigning Set to true if signing is forced
 	 * @param bool|true $signSuccess True=Successful signing, False=Failed signing
+	 *
 	 * @return bool Returning true if booking went as you expected
 	 */
-	private function doBookPayment($setMethod = '', $bookSuccess = true, $forceSigning = false, $signSuccess = true, $country = 'SE', $ownSpecline = array())
-	{
-		$this->setCountry($country);
+	private function doBookPayment( $setMethod = '', $bookSuccess = true, $forceSigning = false, $signSuccess = true, $country = 'SE', $ownSpecline = array() ) {
+		$this->setCountry( $country );
 		$paymentServiceSet = $this->rb->getPreferredPaymentService();
 		//$this->checkEnvironment();
-
-		$useMethodList = $this->availableMethods;
+		$useMethodList      = $this->availableMethods;
 		$useGovIdLegalCivic = $this->govIdLegalCivic;
-		$useGovId = $this->testGovId;
-		$usePhoneNumber = "0101010101";
-		$bookStatus = null;
+		$useGovId           = $this->testGovId;
+		$usePhoneNumber     = "0101010101";
+		$bookStatus         = null;
 
-		if ($country == "NO") {
-			if (count($this->availableMethodsNorway) && !empty($this->usernameNorway)) {
-				$useMethodList = $this->availableMethodsNorway;
+		if ( $country == "NO" ) {
+			if ( count( $this->availableMethodsNorway ) && ! empty( $this->usernameNorway ) ) {
+				$useMethodList      = $this->availableMethodsNorway;
 				$useGovIdLegalCivic = $this->govIdLegalCivicNorway;
-				$useGovId = $this->testGovIdNorway;
-				$usePhoneNumber = "+4723456789";
+				$useGovId           = $this->testGovIdNorway;
+				$usePhoneNumber     = "+4723456789";
 			} else {
 				$this->markTestIncomplete();
 			}
-		} else if ($country == "SE") {
-			if (!count($this->availableMethods) || empty($this->username)) {
+		} else if ( $country == "SE" ) {
+			if ( ! count( $this->availableMethods ) || empty( $this->username ) ) {
 				$this->markTestIncomplete();
 			}
 		}
 
 		/* Set unit amount higher (than 500 as before) so we may pass boundaries in tests */
 		//$bookData['type'] = "hosted";
-		if ($this->zeroSpecLine) {
-			if (!$this->zeroSpecLineZeroTax) {
+		if ( $this->zeroSpecLine ) {
+			if ( ! $this->zeroSpecLineZeroTax ) {
 				$bookData['specLine'] = $this->getSpecLineZero();
 			} else {
-				$bookData['specLine'] = $this->getSpecLineZero(array(), true);
+				$bookData['specLine'] = $this->getSpecLineZero( array(), true );
 			}
 		} else {
 			$bookData['specLine'] = $this->getSpecLine();
 		}
-		$this->zeroSpecLine = false;
-		$bookData['address'] = array(
-			'fullName' => 'Test Testsson',
-			'firstName' => 'Test',
-			'lastName' => 'Testsson',
+		$this->zeroSpecLine   = false;
+		$bookData['address']  = array(
+			'fullName'    => 'Test Testsson',
+			'firstName'   => 'Test',
+			'lastName'    => 'Testsson',
 			'addressRow1' => 'Testgatan 1',
-			'postalArea' => 'Testort',
-			'postalCode' => '12121',
-			'country' => 'SE'
+			'postalArea'  => 'Testort',
+			'postalCode'  => '12121',
+			'country'     => 'SE'
 		);
 		$bookData['customer'] = array(
 			'governmentId' => $useGovId,
-			'phone' => $usePhoneNumber,
-			'email' => 'noreply@resurs.se',
-			'type' => 'NATURAL'
+			'phone'        => $usePhoneNumber,
+			'email'        => 'noreply@resurs.se',
+			'type'         => 'NATURAL'
 		);
-		if (isset($useMethodList['invoice_legal']) && $setMethod == $useMethodList['invoice_legal']) {
+		if ( isset( $useMethodList['invoice_legal'] ) && $setMethod == $useMethodList['invoice_legal'] ) {
 			$bookData['customer']['contactGovernmentId'] = $useGovIdLegalCivic;
-			$bookData['customer']['type'] = 'LEGAL';
+			$bookData['customer']['type']                = 'LEGAL';
 		}
-		if (isset($useMethodList['card']) && $setMethod == $useMethodList['card']) {
+		if ( isset( $useMethodList['card'] ) && $setMethod == $useMethodList['card'] ) {
 			$useGovId = $this->cardGovId;
-			$this->rb->prepareCardData($this->cardNumber, false);
+			$this->rb->prepareCardData( $this->cardNumber, false );
 		}
-		if (isset($useMethodList['card_new']) && $setMethod == $useMethodList['card_new']) {
+		if ( isset( $useMethodList['card_new'] ) && $setMethod == $useMethodList['card_new'] ) {
 			$useGovId = $this->cardGovId;
-			$this->rb->prepareCardData(null, true);
+			$this->rb->prepareCardData( null, true );
 		}
 		$bookData['paymentData']['waitForFraudControl'] = $this->waitForFraudControl;
-		$bookData['signing'] = array(
-			'successUrl' => $this->signUrl . '/?success=true',
-			'failUrl' => $this->signUrl . "/?success=false",
+		$bookData['signing']                            = array(
+			'successUrl'   => $this->signUrl . '/?success=true',
+			'failUrl'      => $this->signUrl . "/?success=false",
 			'forceSigning' => $forceSigning
 		);
 
-		$res = $this->rb->bookPayment($setMethod, $bookData);
+		$res = $this->rb->bookPayment( $setMethod, $bookData );
 		/*
 		 * bookPaymentStatus is for simplified flows only
 		 */
-		if (isset($res->bookPaymentStatus)) {
+		if ( isset( $res->bookPaymentStatus ) ) {
 			$bookStatus = $res->bookPaymentStatus;
 		}
 
-		if ($paymentServiceSet == \Resursbank\RBEcomPHP\ResursMethodTypes::METHOD_CHECKOUT) {
+		if ( $paymentServiceSet == \Resursbank\RBEcomPHP\ResursMethodTypes::METHOD_CHECKOUT ) {
 			return $res;
 		}
 
-		if ($bookStatus == "SIGNING") {
-			if ($this->environmentName === "mock") {
+		if ( $bookStatus == "SIGNING" ) {
+			if ( $this->environmentName === "mock" ) {
 				/* Pick up the signing url */
-				$signUrl = $res->signingUrl;
-				$getSigningPage = file_get_contents($signUrl);
-				$Network = new \TorneLIB\TorneLIB_Network();
-				$signUrlHostInfo = $Network->getUrlDomain($signUrl);
-				$getUrlHost = $signUrlHostInfo[1] . "://" . $signUrlHostInfo[0];
-				$mockSuccessUrl = $getUrlHost . "/" . preg_replace('/(.*?)\<a href=\"(.*?)\">(.*?)\>Mock success(.*)/is', '$2', $getSigningPage);
-				$getSuccessContent = json_decode(file_get_contents($mockSuccessUrl));
-				if ($getSuccessContent->success == "true") { if ($signSuccess) { return true; } else {return false;} }
-				if ($getSuccessContent->success == "false") { if (!$signSuccess) { return true; } else {return false;} }
+				$signUrl           = $res->signingUrl;
+				$getSigningPage    = file_get_contents( $signUrl );
+				$Network           = new \TorneLIB\TorneLIB_Network();
+				$signUrlHostInfo   = $Network->getUrlDomain( $signUrl );
+				$getUrlHost        = $signUrlHostInfo[1] . "://" . $signUrlHostInfo[0];
+				$mockSuccessUrl    = $getUrlHost . "/" . preg_replace( '/(.*?)\<a href=\"(.*?)\">(.*?)\>Mock success(.*)/is', '$2', $getSigningPage );
+				$getSuccessContent = json_decode( file_get_contents( $mockSuccessUrl ) );
+				if ( $getSuccessContent->success == "true" ) {
+					if ( $signSuccess ) {
+						return true;
+					} else {
+						return false;
+					}
+				}
+				if ( $getSuccessContent->success == "false" ) {
+					if ( ! $signSuccess ) {
+						return true;
+					} else {
+						return false;
+					}
+				}
 			}
-		} elseif ($bookStatus == "FROZEN") {
+		} elseif ( $bookStatus == "FROZEN" ) {
 			return true;
-		} elseif ($bookStatus == "BOOKED") {
+		} elseif ( $bookStatus == "BOOKED" ) {
 			return true;
-		} elseif ($bookStatus == "DENIED") {
-			if ($bookSuccess) {
+		} elseif ( $bookStatus == "DENIED" ) {
+			if ( $bookSuccess ) {
 				return false;
 			} else {
 				return true;
 			}
 		}
+
 		return false;
 	}
 
 	/** Setup a country for webservices */
-	private function setCountry($country = 'SE') {
-		if ($country == "SE") {
+	private function setCountry( $country = 'SE' ) {
+		if ( $country == "SE" ) {
 			$this->username = $this->usernameSweden;
 			$this->password = $this->passwordSweden;
-		} elseif ($country == "NO") {
+		} elseif ( $country == "NO" ) {
 			$this->username = $this->usernameNorway;
 			$this->password = $this->passwordNorway;
 		}
 		/* Re-Initialize services if country has changed */
-		if ($this->chosenCountry != $country) {
+		if ( $this->chosenCountry != $country ) {
 			$this->initServices();
 		}
 		$this->chosenCountry = $country;
@@ -468,39 +491,42 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	 * Test the availability of the wsdl sources
 	 */
 	public function testNoWsdl() {
-		$wsdlPath = __DIR__ . "/../source/rbwsdl/";
-		$hasFrame = false;
-		if (!empty($this->getCheckoutFrame(true))) {
-			$hasFrame = true;
+		if ( $this->hasWsdl === true ) {
+			$this->markTestSkipped( "Non-Wsdl tests are skipped since the wsdl files are in place (this test requires the difference)" );
 		}
-		if ($this->hasWsdl) {
-			$this->markTestSkipped("Non-Wsdl tests are skipped since the wsdl files are in place (this test requires the difference)");
-		}
-		$this->assertTrue(!$this->hasWsdl);
+		/*
+		 * As we do not have a present version of the wsdl stubs when reaching this point, we will not be able to set up the preferred method engine
+		 * as the simplified stream at all. What has to be done is to make those calls independent to the loss of stubs. By doing this, we will be
+		 * able to leave the needs of stubs in all future versions where we are calling internal functions.
+		 */
+		$this->assertTrue( ! $this->hasWsdl );
 	}
 
-	public function getSpecLine($specialSpecline = array()) {
-		if (count($specialSpecline)) {
+	public function getSpecLine( $specialSpecline = array() ) {
+		if ( count( $specialSpecline ) ) {
 			return $specialSpecline;
 		}
+
 		return array(
-			'artNo' => 'EcomPHP-testArticle-' . rand(1,1024),
-			'description' => 'EComPHP Random Test Article number ' . rand(1,1024),
-			'quantity' => 1,
-			'unitAmountWithoutVat' => intval(rand(1000,10000)),
-			'vatPct' => 25
+			'artNo'                => 'EcomPHP-testArticle-' . rand( 1, 1024 ),
+			'description'          => 'EComPHP Random Test Article number ' . rand( 1, 1024 ),
+			'quantity'             => 1,
+			'unitAmountWithoutVat' => intval( rand( 1000, 10000 ) ),
+			'vatPct'               => 25
 		);
 	}
-	public function getSpecLineZero($specialSpecline = array(), $zeroTax = false) {
-		if (count($specialSpecline)) {
+
+	public function getSpecLineZero( $specialSpecline = array(), $zeroTax = false ) {
+		if ( count( $specialSpecline ) ) {
 			return $specialSpecline;
 		}
+
 		return array(
-			'artNo' => 'EcomPHP-testArticle-' . rand(1,1024),
-			'description' => 'EComPHP Random Test Article number ' . rand(1,1024),
-			'quantity' => 1,
+			'artNo'                => 'EcomPHP-testArticle-' . rand( 1, 1024 ),
+			'description'          => 'EComPHP Random Test Article number ' . rand( 1, 1024 ),
+			'quantity'             => 1,
 			'unitAmountWithoutVat' => 0,
-			'vatPct' => $zeroTax ? 0 : 25
+			'vatPct'               => $zeroTax ? 0 : 25
 		);
 	}
 
@@ -509,9 +535,10 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	 * to follow standards and prevent tests in older php versions.
 	 *
 	 * @param bool $activate
+	 *
 	 * @link https://test.resurs.com/docs/x/TYNM#ECommercePHPLibrary-ObsoletePHPversions
 	 */
-	public function setObsoletePhp($activate = false) {
+	public function setObsoletePhp( $activate = false ) {
 		$this->allowObsoletePHP = $activate;
 	}
 
@@ -529,100 +556,123 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	 * Test if environment is ok
 	 */
 	public function testGetEnvironment() {
-		if ($this->ignoreDefaultTests) { $this->markTestSkipped(); }
+		if ( $this->ignoreDefaultTests ) {
+			$this->markTestSkipped();
+		}
 		$this->checkEnvironment();
-		$this->assertTrue($this->isUp() === true);
+		$this->assertTrue( $this->isUp() === true );
 	}
 
 	/**
 	 * Test if payment methods works properly
 	 */
-	public function testGetPaymentMethods()
-	{
-		if ($this->ignoreDefaultTests) { $this->markTestSkipped(); }
+	public function testGetPaymentMethods() {
+		if ( $this->ignoreDefaultTests ) {
+			$this->markTestSkipped();
+		}
 		$this->checkEnvironment();
 		$paymentMethods = $this->rb->getPaymentMethods();
-		if (!count($paymentMethods)) {
-			$this->alertRender("No payment methods received from ecommerce");
+		if ( ! count( $paymentMethods ) ) {
+			$this->alertRender( "No payment methods received from ecommerce" );
 		}
-		$this->assertTrue(count($paymentMethods) > 0);
+		$this->assertTrue( count( $paymentMethods ) > 0 );
 	}
 
 	/**
 	 * Make sure that all payment methods set up for the representative is there
 	 */
 	public function testGetPaymentMethodsAll() {
-		if ($this->ignoreDefaultTests) { $this->markTestSkipped(); }
+		if ( $this->ignoreDefaultTests ) {
+			$this->markTestSkipped();
+		}
 		$this->checkEnvironment();
 		$paymentMethods = $this->rb->getPaymentMethods();
-		if (count($paymentMethods) !== $this->paymentMethodCount[$this->environmentName]) {
-			$this->alertRender("Payment method mismatch - got " . count($paymentMethods) . ", expected 5.");
+		if ( count( $paymentMethods ) !== $this->paymentMethodCount[ $this->environmentName ] ) {
+			$this->alertRender( "Payment method mismatch - got " . count( $paymentMethods ) . ", expected 5." );
 		}
-		$this->assertTrue(count($paymentMethods) === $this->paymentMethodCount[$this->environmentName]);
+		$this->assertTrue( count( $paymentMethods ) === $this->paymentMethodCount[ $this->environmentName ] );
 	}
 
 	/**
 	 * Just like testGetPaymentMethodsAll, but converted to an array with the internal function objectsIntoArray
+	 * @deprecated 1.0.0
 	 */
 	public function testGetPaymentMethodsArray() {
-		if ($this->ignoreDefaultTests) { $this->markTestSkipped(); }
-		$this->checkEnvironment();
-		$paymentMethods = $this->rb->getPaymentMethodsArray();
-		if (count($paymentMethods) !== $this->paymentMethodCount[$this->environmentName]) {
-			$this->alertRender("Payment method mismatch - got " . count($paymentMethods) . ", expected 5.");
+		if ( $this->ignoreDefaultTests ) {
+			$this->markTestSkipped();
 		}
-		$this->assertTrue(count($paymentMethods) === $this->paymentMethodCount[$this->environmentName]);
+		$this->checkEnvironment();
+		$paymentMethods = $this->rb->objectsIntoArray($this->rb->getPaymentMethods());
+		if ( count( $paymentMethods ) !== $this->paymentMethodCount[ $this->environmentName ] ) {
+			$this->alertRender( "Payment method mismatch - got " . count( $paymentMethods ) . ", expected 5." );
+		}
+		$this->assertTrue( count( $paymentMethods ) === $this->paymentMethodCount[ $this->environmentName ] );
 	}
+
 	/**
 	 * getAddress, NATURAL
 	 */
 	public function testGetAddressNatural() {
-		if ($this->ignoreDefaultTests) { $this->markTestSkipped(); }
+		if ( $this->ignoreDefaultTests ) {
+			$this->markTestSkipped();
+		}
 		$this->checkEnvironment();
 		$getAddressData = array();
 		try {
-			$getAddressData = $this->rb->getAddress($this->govIdNatural, 'NATURAL', '127.0.0.1');
-		} catch (Exception $e) {}
-		$this->assertTrue(!empty($getAddressData->fullName));
+			$getAddressData = $this->rb->getAddress( $this->govIdNatural, 'NATURAL', '127.0.0.1' );
+		} catch ( Exception $e ) {
+		}
+		$this->assertTrue( ! empty( $getAddressData->fullName ) );
 	}
+
 	/**
 	 * getAddress, LEGAL, Civic number
 	 */
 	public function testGetAddressLegalCivic() {
-		if ($this->ignoreDefaultTests) { $this->markTestSkipped(); }
+		if ( $this->ignoreDefaultTests ) {
+			$this->markTestSkipped();
+		}
 		$this->checkEnvironment();
 		$getAddressData = array();
 		try {
-			$getAddressData = $this->rb->getAddress($this->govIdLegalCivic, 'LEGAL', '127.0.0.1');
-		} catch (Exception $e) {}
-		$this->assertTrue(!empty($getAddressData->fullName));
+			$getAddressData = $this->rb->getAddress( $this->govIdLegalCivic, 'LEGAL', '127.0.0.1' );
+		} catch ( Exception $e ) {
+		}
+		$this->assertTrue( ! empty( $getAddressData->fullName ) );
 	}
+
 	/**
 	 * getAddress, LEGAL, Organization number
 	 */
 	public function testGetAddressLegalOrg() {
-		if ($this->ignoreDefaultTests) { $this->markTestSkipped(); }
+		if ( $this->ignoreDefaultTests ) {
+			$this->markTestSkipped();
+		}
 		$this->checkEnvironment();
 		$getAddressData = array();
 		try {
-			$getAddressData = $this->rb->getAddress($this->govIdLegalOrg, 'LEGAL', '127.0.0.1');
-		} catch (Exception $e) {}
-		$this->assertTrue(!empty($getAddressData->fullName));
+			$getAddressData = $this->rb->getAddress( $this->govIdLegalOrg, 'LEGAL', '127.0.0.1' );
+		} catch ( Exception $e ) {
+		}
+		$this->assertTrue( ! empty( $getAddressData->fullName ) );
 	}
+
 	/**
 	 * Testing of annuity factors (if they exist), with the first found payment method
 	 */
 	public function testGetAnnuityFactors() {
-		if ($this->ignoreDefaultTests) { $this->markTestSkipped(); }
+		if ( $this->ignoreDefaultTests ) {
+			$this->markTestSkipped();
+		}
 		$this->checkEnvironment();
 		$annuity = false;
 		$methods = $this->rb->getPaymentMethods();
-		if (is_array($methods)) {
-			$method = array_pop($methods);
-			$id = $method->id;
-			$annuity = $this->rb->getAnnuityFactors($id);
+		if ( is_array( $methods ) ) {
+			$method  = array_pop( $methods );
+			$id      = $method->id;
+			$annuity = $this->rb->getAnnuityFactors( $id );
 		}
-		$this->assertTrue(count($annuity) > 1);
+		$this->assertTrue( count( $annuity ) > 1 );
 	}
 
 	/**
@@ -630,11 +680,13 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	 * Payment Method: Invoice
 	 * Customer Type: NATURAL, GRANTED
 	 */
-	public function testBookPaymentInvoiceNatural() {
-		if ($this->ignoreBookingTests) { $this->markTestSkipped(); }
+	public function testBookSimplifiedPaymentInvoiceNatural() {
+		if ( $this->ignoreBookingTests ) {
+			$this->markTestSkipped();
+		}
 		$this->checkEnvironment();
-		$bookResult = $this->doBookPayment($this->availableMethods['invoice_natural'], true, false, true);
-		$this->assertTrue($bookResult);
+		$bookResult = $this->doBookPayment( $this->availableMethods['invoice_natural'], true, false, true );
+		$this->assertTrue( $bookResult );
 	}
 
 	/**
@@ -643,23 +695,47 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	 * Customer Type: NATURAL, GRANTED
 	 */
 	public function testBookPaymentInvoiceExtendedNatural() {
-		if ($this->ignoreBookingTests) { $this->markTestSkipped(); }
+		if ( $this->ignoreBookingTests ) {
+			$this->markTestSkipped();
+		}
 		$this->checkEnvironment();
 		$this->rb->alwaysUseExtendedCustomer = true;
-		$bookResult = $this->doBookPayment($this->availableMethods['invoice_natural'], true, false, true);
-		$this->assertTrue($bookResult);
+		$bookResult                          = $this->doBookPayment( $this->availableMethods['invoice_natural'], true, false, true );
+		$this->assertTrue( $bookResult );
+	}
+
+	/**
+	 * Test findPayments()
+	 */
+	public function testFindPayments() {
+		$this->checkEnvironment();
+		$paymentList = $this->rb->findPayments();
+		$this->assertGreaterThan(0, count($paymentList));
 	}
 
 	/**
 	 * Book and see if there is a payment registered at Resurs Bank
 	 */
 	public function testGetPayment() {
-		if ($this->ignoreBookingTests) { $this->markTestSkipped(); }
+		if ( $this->ignoreBookingTests ) {
+			$this->markTestSkipped();
+		}
 		$this->checkEnvironment();
-		$bookResult = $this->doBookPayment($this->availableMethods['invoice_natural'], true, false, true);
-		$bookedPaymentId = $this->rb->getPreferredPaymentId();
-		$payment = $this->rb->getPayment($bookedPaymentId);
-		$this->assertTrue($bookResult && $payment->id == $bookedPaymentId);
+		if (!$this->hasWsdl) {
+			// If we are running this test in nonWsdl-mode, we can probably pick up an old order from findPayments
+			$paymentList = $this->rb->findPayments();
+			if (is_array($paymentList) && count($paymentList)) {
+				$existingPayment = array_pop( $paymentList );
+				$payment = $this->rb->getPayment($existingPayment->paymentId);
+				$this->assertTrue( $payment->id == $existingPayment->paymentId );
+			}
+		} else {
+			$bookResult      = $this->doBookPayment( $this->availableMethods['invoice_natural'], true, false, true );
+			$bookedPaymentId = $this->rb->getPreferredPaymentId();
+			$payment         = $this->rb->getPayment( $bookedPaymentId );
+			$this->assertTrue( $bookResult && $payment->id == $bookedPaymentId );
+		}
+
 	}
 
 	/*
@@ -667,29 +743,33 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	 * Expected result: Fail.
 	 */
 	public function testBookPaymentZeroInvoiceNatural() {
-		if ($this->ignoreBookingTests) { $this->markTestSkipped(); }
+		if ( $this->ignoreBookingTests ) {
+			$this->markTestSkipped();
+		}
 		$this->checkEnvironment();
 		$this->zeroSpecLine = true;
-		$hasException = false;
+		$hasException       = false;
 		try {
-			$this->doBookPayment($this->availableMethods['invoice_natural'], true, false, true);
-		}
-		catch (Exception $exceptionWanted) {
+			$this->doBookPayment( $this->availableMethods['invoice_natural'], true, false, true );
+		} catch ( Exception $exceptionWanted ) {
 			$hasException = true;
 		}
-		$this->assertTrue($hasException);
+		$this->assertTrue( $hasException );
 	}
+
 	/**
 	 * Test booking.
 	 * Payment Method: Invoice
 	 * Customer Type: NATURAL, DENIED
 	 */
 	public function testBookPaymentInvoiceNaturalDenied() {
-		if ($this->ignoreBookingTests) { $this->markTestSkipped(); }
+		if ( $this->ignoreBookingTests ) {
+			$this->markTestSkipped();
+		}
 		$this->checkEnvironment();
 		$this->testGovId = $this->govIdNaturalDenied;
-		$bookResult = $this->doBookPayment($this->availableMethods['invoice_natural'], false, false, true);
-		$this->assertTrue($bookResult);
+		$bookResult      = $this->doBookPayment( $this->availableMethods['invoice_natural'], false, false, true );
+		$this->assertTrue( $bookResult );
 	}
 
 	/**
@@ -698,33 +778,39 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	 * Customer Type: NATURAL, DENIED
 	 */
 	public function testBookPaymentInvoiceLegal() {
-		if ($this->ignoreBookingTests) { $this->markTestSkipped(); }
+		if ( $this->ignoreBookingTests ) {
+			$this->markTestSkipped();
+		}
 		$this->username = $this->usernameSweden;
 		$this->password = $this->passwordSweden;
 		$this->checkEnvironment();
 		$this->testGovId = $this->govIdLegalOrg;
-		$bookResult = $this->doBookPayment($this->availableMethods['invoice_legal'], false, false, true);
-		$this->assertTrue($bookResult);
+		$bookResult      = $this->doBookPayment( $this->availableMethods['invoice_legal'], false, false, true );
+		$this->assertTrue( $bookResult );
 	}
 
 	/**
 	 * Test booking with a card
 	 */
 	public function testBookPaymentCard() {
-		if ($this->ignoreBookingTests) { $this->markTestSkipped(); }
+		if ( $this->ignoreBookingTests ) {
+			$this->markTestSkipped();
+		}
 		$this->checkEnvironment();
-		$bookResult = $this->doBookPayment($this->availableMethods['card'], true, false, true, 'SE');
-		$this->assertTrue($bookResult === true);
+		$bookResult = $this->doBookPayment( $this->availableMethods['card'], true, false, true, 'SE' );
+		$this->assertTrue( $bookResult === true );
 	}
 
 	/**
 	 * Test booking with new card
 	 */
 	public function testBookPaymentNewCard() {
-		if ($this->ignoreBookingTests) { $this->markTestSkipped(); }
+		if ( $this->ignoreBookingTests ) {
+			$this->markTestSkipped();
+		}
 		$this->checkEnvironment();
-		$bookResult = $this->doBookPayment($this->availableMethods['card_new'], true, false, true, 'SE');
-		$this->assertTrue($bookResult === true);
+		$bookResult = $this->doBookPayment( $this->availableMethods['card_new'], true, false, true, 'SE' );
+		$this->assertTrue( $bookResult === true );
 	}
 
 	/**
@@ -733,10 +819,12 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	 * Customer Type: NATURAL, GRANTED
 	 */
 	public function testBookPaymentInvoiceNaturalNorway() {
-		if ($this->ignoreBookingTests) { $this->markTestSkipped(); }
+		if ( $this->ignoreBookingTests ) {
+			$this->markTestSkipped();
+		}
 		$this->checkEnvironment();
-		$bookResult = $this->doBookPayment($this->availableMethodsNorway['invoice_natural'], true, false, true, 'NO');
-		$this->assertTrue($bookResult === true);
+		$bookResult = $this->doBookPayment( $this->availableMethodsNorway['invoice_natural'], true, false, true, 'NO' );
+		$this->assertTrue( $bookResult === true );
 	}
 
 	/**
@@ -745,51 +833,54 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	 */
 	public function testSekkiSimple() {
 		$this->checkEnvironment();
-		if ($this->ignoreSEKKItests) { $this->markTestSkipped(); }
+		if ( $this->ignoreSEKKItests ) {
+			$this->markTestSkipped();
+		}
 		$methodSimple = $this->getAMethod();
-		$amount = rand(1000, 10000);
-		$sekkiUrls = $this->rb->getSekkiUrls($amount, $methodSimple);
-		$matches = 0;
-		$appenders = 0;
-		if (is_array($sekkiUrls)) {
-			foreach ($sekkiUrls as $UrlData) {
-				if ($UrlData->appendPriceLast) {
-					$appenders++;
-					if (preg_match("/amount=$amount/i", $UrlData->url)) {
-						$matches++;
+		$amount       = rand( 1000, 10000 );
+		$sekkiUrls    = $this->rb->getSekkiUrls( $amount, $methodSimple );
+		$matches      = 0;
+		$appenders    = 0;
+		if ( is_array( $sekkiUrls ) ) {
+			foreach ( $sekkiUrls as $UrlData ) {
+				if ( $UrlData->appendPriceLast ) {
+					$appenders ++;
+					if ( preg_match( "/amount=$amount/i", $UrlData->url ) ) {
+						$matches ++;
 					}
 				}
 			}
 		}
-		$this->assertTrue($matches === $appenders);
+		$this->assertTrue( $matches === $appenders );
 	}
 
 	/**
 	 * Test pre-fetched sekki-url-generator
 	 * @throws Exception
 	 */
-	public function testSekkiArray()
-	{
+	public function testSekkiArray() {
 		$this->checkEnvironment();
-		if ($this->ignoreSEKKItests) { $this->markTestSkipped(); }
-		$methodSimple = $this->getAMethod();
-		$amount = rand(1000, 10000);
-		$preparedMethod = $this->rb->getPaymentMethodSpecific($methodSimple);
-		if (isset($preparedMethod->legalInfoLinks)) {
-			$sekkiUrls = $this->rb->getSekkiUrls($amount, $preparedMethod->legalInfoLinks);
-			$matches = 0;
+		if ( $this->ignoreSEKKItests ) {
+			$this->markTestSkipped();
+		}
+		$methodSimple   = $this->getAMethod();
+		$amount         = rand( 1000, 10000 );
+		$preparedMethod = $this->rb->getPaymentMethodSpecific( $methodSimple );
+		if ( isset( $preparedMethod->legalInfoLinks ) ) {
+			$sekkiUrls = $this->rb->getSekkiUrls( $amount, $preparedMethod->legalInfoLinks );
+			$matches   = 0;
 			$appenders = 0;
-			if (is_array($sekkiUrls)) {
-				foreach ($sekkiUrls as $UrlData) {
-					if ($UrlData->appendPriceLast) {
-						$appenders++;
-						if (preg_match("/amount=$amount/i", $UrlData->url)) {
-							$matches++;
+			if ( is_array( $sekkiUrls ) ) {
+				foreach ( $sekkiUrls as $UrlData ) {
+					if ( $UrlData->appendPriceLast ) {
+						$appenders ++;
+						if ( preg_match( "/amount=$amount/i", $UrlData->url ) ) {
+							$matches ++;
 						}
 					}
 				}
 			}
-			$this->assertTrue($matches === $appenders);
+			$this->assertTrue( $matches === $appenders );
 		}
 	}
 
@@ -797,63 +888,68 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	 * Test all payment methods
 	 */
 	public function testSekkiAll() {
-		if ($this->ignoreSEKKItests) { $this->markTestSkipped(); }
-		$amount = rand(1000, 10000);
-		$sekkiUrls = $this->rb->getSekkiUrls($amount);
-		foreach ($sekkiUrls as $method => $sekkiUrls) {
-			$matches = 0;
+		if ( $this->ignoreSEKKItests ) {
+			$this->markTestSkipped();
+		}
+		$amount    = rand( 1000, 10000 );
+		$sekkiUrls = $this->rb->getSekkiUrls( $amount );
+		foreach ( $sekkiUrls as $method => $sekkiUrls ) {
+			$matches   = 0;
 			$appenders = 0;
-			if (is_array($sekkiUrls)) {
-				foreach ($sekkiUrls as $UrlData) {
-					if ($UrlData->appendPriceLast) {
-						$appenders++;
-						if (preg_match("/amount=$amount/i", $UrlData->url)) {
-							$matches++;
+			if ( is_array( $sekkiUrls ) ) {
+				foreach ( $sekkiUrls as $UrlData ) {
+					if ( $UrlData->appendPriceLast ) {
+						$appenders ++;
+						if ( preg_match( "/amount=$amount/i", $UrlData->url ) ) {
+							$matches ++;
 						}
 					}
 				}
 			}
 		}
-		$this->assertTrue($matches === $appenders);
+		$this->assertTrue( $matches === $appenders );
 	}
 
 	/**
 	 * Test curstom url
 	 */
-	public function testSekkiCustom()
-	{
+	public function testSekkiCustom() {
 		$this->checkEnvironment();
-		if ($this->ignoreSEKKItests) { $this->markTestSkipped(); }
-		$amount = rand(1000, 10000);
-		$URL = "https://test.resurs.com/customurl/index.html?content=true&secondparameter=true";
-		$customURL = $this->rb->getSekkiUrls($amount, null, $URL);
-		$this->assertTrue((preg_match("/amount=$amount/i", $customURL)? true:false));
+		if ( $this->ignoreSEKKItests ) {
+			$this->markTestSkipped();
+		}
+		$amount    = rand( 1000, 10000 );
+		$URL       = "https://test.resurs.com/customurl/index.html?content=true&secondparameter=true";
+		$customURL = $this->rb->getSekkiUrls( $amount, null, $URL );
+		$this->assertTrue( ( preg_match( "/amount=$amount/i", $customURL ) ? true : false ) );
 	}
 
 	/**
 	 * This test is incomplete.
 	 *
 	 * @param bool $returnTheFrame
+	 *
 	 * @return bool|null
 	 */
-	private function getCheckoutFrame($returnTheFrame = false) {
+	private function getCheckoutFrame( $returnTheFrame = false ) {
 		$assumeThis = false;
-		if ($returnTheFrame) {
+		if ( $returnTheFrame ) {
 			$iFrameUrl = false;
 		}
-		if ($this->ignoreBookingTests) { $this->markTestSkipped(); }
-		$this->rb->alwaysUseExtendedCustomer = true;
-		$this->rb->setPreferredPaymentService(\Resursbank\RBEcomPHP\ResursMethodTypes::METHOD_CHECKOUT);
-		$bookResult = $this->doBookPayment($this->availableMethods['invoice_natural'], true, false, true);
-		if (is_string($bookResult) && preg_match("/iframe src/i", $bookResult)) {
-			$iFrameUrl = $this->rb->getIframeSrc($bookResult);
-			$CURL = new \TorneLIB\Tornevall_cURL();
-			$iframeContent = $CURL->doGet($iFrameUrl);
-			if (!empty($iframeContent['body'])) {
+		if ( $this->ignoreBookingTests ) {
+			$this->markTestSkipped();
+		}
+		$this->rb->setPreferredPaymentService( \Resursbank\RBEcomPHP\ResursMethodTypes::METHOD_CHECKOUT );
+		$bookResult = $this->doBookPayment( $this->availableMethods['invoice_natural'], true, false, true );
+		if ( is_string( $bookResult ) && preg_match( "/iframe src/i", $bookResult ) ) {
+			$iFrameUrl     = $this->rb->getIframeSrc( $bookResult );
+			$CURL          = new \TorneLIB\Tornevall_cURL();
+			$iframeContent = $CURL->doGet( $iFrameUrl );
+			if ( ! empty( $iframeContent['body'] ) ) {
 				$assumeThis = true;
 			}
 		}
-		if (!$returnTheFrame) {
+		if ( ! $returnTheFrame ) {
 			return $assumeThis;
 		} else {
 			return $iFrameUrl;
@@ -861,66 +957,79 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	}
 
 	/**
-	 *
+	 * Try to fetch the iframe (Resurs Checkout).
 	 */
 	public function testGetCheckoutFrame() {
 		$this->checkEnvironment();
 		$hasIframe = ( $this->getCheckoutFrame( true ) ? true : false );
-		$this->assertTrue($hasIframe);
+		$this->assertTrue( $hasIframe );
 	}
-	
-    /***
-     * VERSION 1.0-1.1 DEPENDENT TESTS
-     */
 
-    /**
-     * Testing of callbacks
-     */
-    public function testCallbacks() {
-	    if ($this->ignoreDefaultTests) { $this->markTestSkipped(); }
-	    /* If disabled */
-	    if ($this->disableCallbackRegMock || ($this->disableCallbackRegNonMock && $this->environmentName === "nonmock")) {
-		    $this->assertTrue(1==1);
-		    return;
-	    }
-	    $this->checkEnvironment();
+	/***
+	 * VERSION 1.0-1.1 DEPENDENT TESTS
+	 */
 
-        $parameter = array(
-            'ANNULMENT' => array('paymentId'),
-            'AUTOMATIC_FRAUD_CONTROL' => array('paymentId', 'result'),
-            'FINALIZATION' => array('paymentId'),
-            'UNFREEZE' => array('paymentId')
-        );
+	/**
+	 * Testing of callbacks
+	 */
+	public function testCallbacks() {
+		if ( $this->ignoreDefaultTests ) {
+			$this->markTestSkipped();
+		}
+		/* If disabled */
+		if ( $this->disableCallbackRegMock || ( $this->disableCallbackRegNonMock && $this->environmentName === "nonmock" ) ) {
+			$this->assertTrue( 1 == 1 );
 
-        foreach ($parameter as $callbackType => $parameterArray) {
-            $digestSaltString = $this->mkpass();
-            $digestArray = array(
-                'digestSalt' => $digestSaltString,
-                'digestParameters' => $parameterArray
-            );
-            if ($callbackType == "ANNULMENT") {$setCallbackType = \Resursbank\RBEcomPHP\ResursCallbackTypes::ANNULMENT;}
-            if ($callbackType == "AUTOMATIC_FRAUD_CONTROL") {$setCallbackType = \Resursbank\RBEcomPHP\ResursCallbackTypes::AUTOMATIC_FRAUD_CONTROL;}
-            if ($callbackType == "FINALIZATION") {$setCallbackType = \Resursbank\RBEcomPHP\ResursCallbackTypes::FINALIZATION;}
-            if ($callbackType == "UNFREEZE") {$setCallbackType = \Resursbank\RBEcomPHP\ResursCallbackTypes::UNFREEZE;}
-            $renderArray = array();
-            if (is_array($parameterArray)) {
-                foreach ($parameterArray as $parameterName) {
-                    $renderArray[] = $parameterName . "={".$parameterName."}";
-                }
-            }
-            $callbackURL = $this->callbackUrl . "?event=".$callbackType."&digest={digest}&" . implode("&", $renderArray);
-            try {
-                $callbackSetResult = $this->rb->setCallback($setCallbackType, $callbackURL, $digestArray);
-                if (!empty($this->rb->lastError)) { continue; }
-                if ($callbackSetResult) { $callbackSaveData[$callbackType] = array('salt' => $digestSaltString); }
-            }
-            catch (Exception $regCallbackException)
-            {
+			return;
+		}
+		$this->checkEnvironment();
 
-            }
-        }
-        // Registered callbacks must be as many as the above parameters (preferrably 4)
-        $this->assertTrue(count($callbackSaveData) == count($parameter));
-    }
+		$parameter = array(
+			'ANNULMENT'               => array( 'paymentId' ),
+			'AUTOMATIC_FRAUD_CONTROL' => array( 'paymentId', 'result' ),
+			'FINALIZATION'            => array( 'paymentId' ),
+			'UNFREEZE'                => array( 'paymentId' )
+		);
+
+		foreach ( $parameter as $callbackType => $parameterArray ) {
+			$digestSaltString = $this->mkpass();
+			$digestArray      = array(
+				'digestSalt'       => $digestSaltString,
+				'digestParameters' => $parameterArray
+			);
+			if ( $callbackType == "ANNULMENT" ) {
+				$setCallbackType = \Resursbank\RBEcomPHP\ResursCallbackTypes::ANNULMENT;
+			}
+			if ( $callbackType == "AUTOMATIC_FRAUD_CONTROL" ) {
+				$setCallbackType = \Resursbank\RBEcomPHP\ResursCallbackTypes::AUTOMATIC_FRAUD_CONTROL;
+			}
+			if ( $callbackType == "FINALIZATION" ) {
+				$setCallbackType = \Resursbank\RBEcomPHP\ResursCallbackTypes::FINALIZATION;
+			}
+			if ( $callbackType == "UNFREEZE" ) {
+				$setCallbackType = \Resursbank\RBEcomPHP\ResursCallbackTypes::UNFREEZE;
+			}
+			$renderArray = array();
+			if ( is_array( $parameterArray ) ) {
+				foreach ( $parameterArray as $parameterName ) {
+					$renderArray[] = $parameterName . "={" . $parameterName . "}";
+				}
+			}
+			$callbackURL = $this->callbackUrl . "?event=" . $callbackType . "&digest={digest}&" . implode( "&", $renderArray ) . "&lastReg=" . strftime( "%y%m%d%H%M%S", time() );
+			try {
+				$callbackSetResult = $this->rb->setCallback( $setCallbackType, $callbackURL, $digestArray );
+				if ( ! empty( $this->rb->lastError ) ) {
+					continue;
+				}
+				if ( $callbackSetResult ) {
+					$callbackSaveData[ $callbackType ] = array( 'salt' => $digestSaltString );
+				}
+			} catch ( Exception $regCallbackException ) {
+
+			}
+		}
+		// Registered callbacks must be as many as the above parameters (preferrably 4)
+		$this->assertTrue( count( $callbackSaveData ) == count( $parameter ) );
+	}
 }
 
