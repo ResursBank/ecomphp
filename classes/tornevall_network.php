@@ -1645,6 +1645,11 @@ class Tornevall_SimpleSoap extends Tornevall_cURL
         }
     }
 
+    /**
+     * Prepare authentication for SOAP calls
+     *
+     * @param array $AuthData
+     */
     public function setSoapAuthentication($AuthData = array())
     {
         $this->AuthData = $AuthData;
@@ -1654,6 +1659,11 @@ class Tornevall_SimpleSoap extends Tornevall_cURL
         }
     }
 
+    /**
+     * Set up this class so that it can throw exceptions
+     *
+     * @param bool $throwable Setting this to false, we will suppress some errors
+     */
     public function setThrowableState($throwable = true)
     {
         $this->canThrowSoapFaults = $throwable;
