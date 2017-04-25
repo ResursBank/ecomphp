@@ -11,8 +11,8 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.0
- * @version 1.0.0
- * @deprecated 1.0.x Maintenance version only
+ * @version 1.0.1
+ * @deprecated 1.0 Maintenance version only
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @license Apache License
@@ -45,11 +45,43 @@ class ResursBank
     /** @var string The version of this gateway */
     private $version = "1.0.0";
     /** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-    private $lastUpdate = "20170420";
+    private $lastUpdate = "20170424";
     private $preferredId = null;
     private $ocShopScript = null;
     private $formTemplateRuleArray = array();
     private $hasNameSpace = false;
+
+    private $CURL = null;
+    private $hasWsdl = false;
+	/**
+	 * @var URLS pointing to direct access of Resurs Bank, instead of WSDL-stubs.
+	 * @since 1.0.1
+	 * @since 1.1.1
+	 */
+    private $URLS;
+
+	/**
+	 * @var array An index of where to find each service if no stubs are found
+	 * @since 1.0.1
+	 * @since 1.1.1
+	 */
+    private $ServiceRequestList = array(
+    	'getPaymentMethods' => 'SimplifiedShopFlowService',
+    	'getAddress' => 'SimplifiedShopFlowService',
+    	'getAnnuityFactors' => 'SimplifiedShopFlowService',
+    	'getPayment' => 'AfterShopFlowService',
+    	'findPayments' => 'AfterShopFlowService'
+    );
+
+	/**
+	 * If there is another method required for this to post, it is told here.
+	 *
+	 * @var array
+	 * @since 1.0.1
+	 * @since 1.1.1
+	 */
+    private $ServiceRequestMethods = array();
+
     public $alwaysUseExtendedCustomer = true;
 
     /**
@@ -323,7 +355,7 @@ class ResursBank
      */
     function __construct($login = '', $password = '', $targetEnvironment = ResursEnvironments::ENVIRONMENT_NOT_SET)
     {
-        if (defined('RB_API_PATH')) {
+	    if (defined('RB_API_PATH')) {
             $this->classPath = RB_API_PATH;
         }
         if (!class_exists('ReflectionClass')) {
@@ -596,6 +628,11 @@ class ResursBank
         return $returnJson;
     }
 
+	/**
+	 * @param int $method
+	 *
+	 * @return stdClass|string
+	 */
     public function getBookedJsonObject($method = ResursMethodTypes::METHOD_UNDEFINED)
     {
         $returnObject = new \stdClass();
@@ -653,7 +690,6 @@ class ResursBank
              */
             return $CurlLibResponse;
         }
-        //return $result;
     }
 
     /**
@@ -687,7 +723,6 @@ class ResursBank
                 throw new ResursException("PHP 5.3 or later are required for this module to work. If you feel safe with running this with an older version, please see ");
             }
         }
-
         /* Internally stored configuration - has to be activated on use */
         if ($this->configurationInternal) {
             if (defined('RB_API_CONFIG') && file_exists(RB_API_CONFIG . "/" . $this->configurationSystem)) {
@@ -738,7 +773,8 @@ class ResursBank
     }
 
     /**
-     * Convert a object to a data object (Issue #63127)
+     * Convert a object to a data object
+     *
      * @param array $d
      * @param bool $forceConversion
      * @param bool $preventConversion
@@ -775,18 +811,28 @@ class ResursBank
         return $newArray;
     }
 
+	/**
+	 * @deprecated 1.0.0 Unless you don't need this, do run through InitializeServices instead.
+	 */
+    private function InitializeWsdl() {
+    	$this->InitializeServices();
+    }
 
     /**
-     * Wsdl initializer - Everything communicating with RB Webservices are recommended to pass through here to generate a communication link
+     * Everything that communicates with Resurs Bank should go here, wheter is is web services or curl/json data. The former name of this
+     * function is InitializeWsdl, but since we are handling nonWsdl-calls differently, but still needs some kind of compatibility in dirty
+     * code structures, everything needs to be done from here. For now. In future version, this is probably deprecated too, as it is an
+     * obsolete way of getting things done as Resurs Bank has more than one way to pick things up in the API suite.
+     *
      * @return bool
      * @throws \Exception
+     * @since 1.0.1
+     * @since 1.1.1
      */
-    private function InitializeWsdl()
+    private function InitializeServices()
     {
         $throwable = true;
-        /**
-         * Looking for certs on request here, instead of constructor level.
-         */
+        // Looking for certs on request here, instead of constructor level.
         if ($this->testssl) {
             $this->openssl_guess();
         }
@@ -829,6 +875,7 @@ class ResursBank
      * @param string $arrayName The name of the array we're going to save
      * @param array $arrayContent The content of the array
      * @return bool If save is successful, we return true
+     * @deprecated 1.0.0
      */
     private function updateConfig($arrayName, $arrayContent = array())
     {
@@ -849,6 +896,7 @@ class ResursBank
     /**
      * Returns an array with stored configuration (if stored configuration are enabled)
      * @return array
+     * @deprecated 1.0.0
      */
     public function getConfigurationCache()
     {
@@ -973,7 +1021,6 @@ class ResursBank
                 $this->classPath = realpath($this->classPath . "/../rbwsdl");
             }
         }
-
         if (in_array('simplifiedshopflowservice', array_map("strtolower", $this->Include)) && file_exists($this->classPath . '/simplifiedshopflowservice-client/Resurs_SimplifiedShopFlowService.php')) {
             /** @noinspection PhpIncludeInspection */
             require $this->classPath . '/simplifiedshopflowservice-client/Resurs_SimplifiedShopFlowService.php';
@@ -998,8 +1045,8 @@ class ResursBank
             require $this->classPath . '/shopflowservice-client/Resurs_ShopFlowService.php';
             $apiFileLoads++;
         }
-        if (!$apiFileLoads && count($this->Include)) {
-            throw new ResursException("No service classes found", ResursExceptions::NO_SERVICE_CLASSES_LOADED, __FUNCTION__);
+        if ($apiFileLoads >= 1) {
+	        $this->hasWsdl = true;
         }
 
         // Requiring that SSL is available on the current server, will throw an exception if no HTTPS-wrapper is found.
@@ -1011,68 +1058,81 @@ class ResursBank
             $this->environment = $this->env_prod;
         }
         $this->hasCertFile = false;
-
         $this->soapOptions = $this->sslGetOptionsStream($this->soapOptions, array('http' => array("user_agent" => $this->getVersionFull())));
-        /*
-         * 1.0 vs 1.1: Keeping backwards compatibility in the major version of rbapiloader by looking for namespaced classes.
-         */
-        try {
-            // 1.0
-            if (class_exists('Resurs_SimplifiedShopFlowService')) {
-                $currentService = "simplifiedShopFlowService";
-                $this->simplifiedShopFlowService = new Resurs_SimplifiedShopFlowService($this->soapOptions, $this->environment . "SimplifiedShopFlowService?wsdl");
-            }
-            // 1.1
-            if (class_exists('\Resursbank\RBEcomPHP\Resurs_SimplifiedShopFlowService')) {
-                $this->hasNameSpace = true;
-                $currentService = "simplifiedShopFlowService";
-                $this->simplifiedShopFlowService = new Resurs_SimplifiedShopFlowService($this->soapOptions, $this->environment . "SimplifiedShopFlowService?wsdl");
-            }
-            // 1.0
-            if (class_exists('Resurs_ConfigurationService')) {
-                $currentService = "configurationService";
-                $this->configurationService = new Resurs_ConfigurationService($this->soapOptions, $this->environment . "ConfigurationService?wsdl");
-            }
-            // 1.1
-            if (class_exists('\Resursbank\RBEcomPHP\Resurs_ConfigurationService')) {
-                $this->hasNameSpace = true;
-                $currentService = "configurationService";
-                $this->configurationService = new Resurs_ConfigurationService($this->soapOptions, $this->environment . "ConfigurationService?wsdl");
-            }
 
-            // 1.0
-            if (class_exists('Resurs_AfterShopFlowService')) {
-                $currentService = "afterShopFlowService";
-                $this->afterShopFlowService = new Resurs_AfterShopFlowService($this->soapOptions, $this->environment . "AfterShopFlowService?wsdl");
-            }
-            // 1.1
-            if (class_exists('\Resursbank\RBEcomPHP\Resurs_AfterShopFlowService')) {
-                $this->hasNameSpace = true;
-                $currentService = "afterShopFlowService";
-                $this->afterShopFlowService = new Resurs_AfterShopFlowService($this->soapOptions, $this->environment . "AfterShopFlowService?wsdl");
-            }
+        if ($this->hasWsdl) {
+	        /*
+			 * 1.0 vs 1.1: Keeping backwards compatibility in the major version of rbapiloader by looking for namespaced classes.
+			 */
+	        try {
+		        // 1.0
+		        if ( class_exists( 'Resurs_SimplifiedShopFlowService' ) ) {
+			        $currentService                  = "simplifiedShopFlowService";
+			        $this->simplifiedShopFlowService = new Resurs_SimplifiedShopFlowService( $this->soapOptions, $this->environment . "SimplifiedShopFlowService?wsdl" );
+		        }
+		        // 1.1
+		        if ( class_exists( '\Resursbank\RBEcomPHP\Resurs_SimplifiedShopFlowService' ) ) {
+			        $this->hasNameSpace              = true;
+			        $currentService                  = "simplifiedShopFlowService";
+			        $this->simplifiedShopFlowService = new Resurs_SimplifiedShopFlowService( $this->soapOptions, $this->environment . "SimplifiedShopFlowService?wsdl" );
+		        }
+		        // 1.0
+		        if ( class_exists( 'Resurs_ConfigurationService' ) ) {
+			        $currentService             = "configurationService";
+			        $this->configurationService = new Resurs_ConfigurationService( $this->soapOptions, $this->environment . "ConfigurationService?wsdl" );
+		        }
+		        // 1.1
+		        if ( class_exists( '\Resursbank\RBEcomPHP\Resurs_ConfigurationService' ) ) {
+			        $this->hasNameSpace         = true;
+			        $currentService             = "configurationService";
+			        $this->configurationService = new Resurs_ConfigurationService( $this->soapOptions, $this->environment . "ConfigurationService?wsdl" );
+		        }
 
-            // 1.0
-            if (class_exists('Resurs_ShopFlowService')) {
-                /** @noinspection PhpUnusedLocalVariableInspection */
-                $currentService = "shopFlowService";
-                $this->shopFlowService = new Resurs_ShopFlowService($this->soapOptions, $this->environment . "ShopFlowService?wsdl");
-            }
-            // 1.1
-            if (class_exists('\Resursbank\RBEcomPHP\Resurs_ShopFlowService')) {
-                $this->hasNameSpace = true;
-                /** @noinspection PhpUnusedLocalVariableInspection */
-                $currentService = "shopFlowService";
-                $this->shopFlowService = new Resurs_ShopFlowService($this->soapOptions, $this->environment . "ShopFlowService?wsdl");
-            }
-        } catch (\Exception $e) {
-            /** Adds the $currentService to the message, to show which service that failed */
-            throw new ResursException($e->getMessage() . "\nStuck on service: " . $currentService, ResursExceptions::WSDL_APILOAD_EXCEPTION, __FUNCTION__, $e);
+		        // 1.0
+		        if ( class_exists( 'Resurs_AfterShopFlowService' ) ) {
+			        $currentService             = "afterShopFlowService";
+			        $this->afterShopFlowService = new Resurs_AfterShopFlowService( $this->soapOptions, $this->environment . "AfterShopFlowService?wsdl" );
+		        }
+		        // 1.1
+		        if ( class_exists( '\Resursbank\RBEcomPHP\Resurs_AfterShopFlowService' ) ) {
+			        $this->hasNameSpace         = true;
+			        $currentService             = "afterShopFlowService";
+			        $this->afterShopFlowService = new Resurs_AfterShopFlowService( $this->soapOptions, $this->environment . "AfterShopFlowService?wsdl" );
+		        }
+
+		        // 1.0
+		        if ( class_exists( 'Resurs_ShopFlowService' ) ) {
+			        /** @noinspection PhpUnusedLocalVariableInspection */
+			        $currentService        = "shopFlowService";
+			        $this->shopFlowService = new Resurs_ShopFlowService( $this->soapOptions, $this->environment . "ShopFlowService?wsdl" );
+		        }
+		        // 1.1
+		        if ( class_exists( '\Resursbank\RBEcomPHP\Resurs_ShopFlowService' ) ) {
+			        $this->hasNameSpace = true;
+			        /** @noinspection PhpUnusedLocalVariableInspection */
+			        $currentService        = "shopFlowService";
+			        $this->shopFlowService = new Resurs_ShopFlowService( $this->soapOptions, $this->environment . "ShopFlowService?wsdl" );
+		        }
+	        } catch ( \Exception $e ) {
+		        /** Adds the $currentService to the message, to show which service that failed */
+		        throw new ResursException( $e->getMessage() . "\nStuck on service: " . $currentService, ResursExceptions::WSDL_APILOAD_EXCEPTION, __FUNCTION__, $e );
+	        }
         }
-        /* count($Include)? */
-        if (!$apiFileLoads) {
-            throw new ResursException("No services was loaded", ResursExceptions::NO_SERVICE_API_HANDLED, __FUNCTION__);
-        }
+
+	    if (class_exists('TorneLIB\Tornevall_cURL')) {
+		    $this->CURL = new \TorneLIB\Tornevall_cURL();
+		    $this->CURL->setAuthentication($this->soapOptions['login'], $this->soapOptions['password']);
+	    }
+
+	    // Make sure there are available services
+	    if (count($this->Include) < 1) {
+			//If there are no inclusions of services, something might have been changed on the way over here
+		    throw new ResursException("No services was loaded", ResursExceptions::NO_SERVICE_API_HANDLED, __FUNCTION__);
+	    }
+	    // Prepare services URL in case of nonWsdl mode
+	    foreach ($this->Include as $ServiceName) {
+		    $this->URLS[$ServiceName] = $this->environment . $ServiceName . "?wsdl";
+	    }
         return true;
     }
 
@@ -1314,21 +1374,23 @@ class ResursBank
      * Method calls that should be passed directly to a webservice
      *
      * Unknown calls passed through __call(), so that we may cover functions unsupported by the gateway.
-     * This stub-gateway processing is also checking if the methods really exist in the stubs and passing them over is they do.<br>
-     * <br>
-     * This method also takes control of responses and returns the object "return" if it exists.<br>
-     * The function also supports array, by adding "Array" to the end of the method.<br>
+     * This stub-gateway processing is also checking if the methods really exist in the stubs and passing them over is they do.
+     *
+     * NOTE: If you're going nonWsdl, this method might go deprecated as curl works differently
+     *
+     * GETTING DATA AS ARRAYS (DEPRECATED)
+     * This method takes control of responses and returns the object "return" if it exists.
+     * The function also supports array, by adding "Array" to the end of the method).
      *
      * @param null $func
      * @param array $args
      * @return array|null
      * @throws \Exception
-     *
      */
     public function __call($func = null, $args = array())
     {
-        /* Initializing wsdl if not done is required here */
-        $this->InitializeWsdl();
+    	// Initializing wsdl if not done is required here
+        $this->InitializeServices();
 
         $returnObject = null;
         $this->serviceReturn = null;
@@ -1343,37 +1405,38 @@ class ResursBank
             $classfunc = preg_replace("/Array$/", '', $classfunc);
             $returnAsArray = true;
         }
-        $useNameSpace = "";
-        foreach (get_declared_classes() as $className) {
-            if (preg_match("/rbecomphp/i", $className) && preg_match("/resursbank/i", $className)) {
-                $useNameSpace = "\\Resursbank\\RBEcomPHP\\";
-                break;
-            }
-        }
-        try {
-            $reflectionClassName = "{$useNameSpace}{$classfunc}";
-            $reflection = new \ReflectionClass($reflectionClassName);
-            $instance = $reflection->newInstanceArgs($args);
-            // Check availability, fetch and stop on first match
-            if (!isset($returnObject) && in_array($func, get_class_methods("{$useNameSpace}Resurs_SimplifiedShopFlowService"))) {
-                $this->serviceReturn = "SimplifiedShopFlowService";
-                $returnObject = $this->simplifiedShopFlowService->$func($instance);
-            }
-            if (!isset($returnObject) && in_array($func, get_class_methods("{$useNameSpace}Resurs_ConfigurationService"))) {
-                $this->serviceReturn = "ConfigurationService";
-                $returnObject = $this->configurationService->$func($instance);
-            }
-            if (!isset($returnObject) && in_array($func, get_class_methods("{$useNameSpace}Resurs_AfterShopFlowService"))) {
-                $this->serviceReturn = "AfterShopFlowService";
-                $returnObject = $this->afterShopFlowService->$func($instance);
-            }
-            if (!isset($returnObject) && in_array($func, get_class_methods("{$useNameSpace}Resurs_ShopFlowService"))) {
-                $this->serviceReturn = "ShopFlowService";
-                $returnObject = $this->shopFlowService->$func($instance);
-            }
-            //if (!isset($returnObject) && in_array($func, get_class_methods("DeveloperService"))) {$this->serviceReturn = "DeveloperService";$returnObject = $this->developerService->$func($instance);}
-        } catch (\Exception $e) {
-            throw new ResursException($e->getMessage(), ResursExceptions::WSDL_PASSTHROUGH_EXCEPTION, __FUNCTION__ . "/" . $func . "/" . $classfunc);
+        if ($this->hasWsdl) {
+	        $useNameSpace = "";
+	        foreach ( get_declared_classes() as $className ) {
+		        if ( preg_match( "/rbecomphp/i", $className ) && preg_match( "/resursbank/i", $className ) ) {
+			        $useNameSpace = "\\Resursbank\\RBEcomPHP\\";
+			        break;
+		        }
+	        }
+	        try {
+		        $reflectionClassName = "{$useNameSpace}{$classfunc}";
+		        $reflection          = new \ReflectionClass( $reflectionClassName );
+		        $instance            = $reflection->newInstanceArgs( $args );
+		        // Check availability, fetch and stop on first match
+		        if ( ! isset( $returnObject ) && in_array( $func, get_class_methods( "{$useNameSpace}Resurs_SimplifiedShopFlowService" ) ) ) {
+			        $this->serviceReturn = "SimplifiedShopFlowService";
+			        $returnObject        = $this->simplifiedShopFlowService->$func( $instance );
+		        }
+		        if ( ! isset( $returnObject ) && in_array( $func, get_class_methods( "{$useNameSpace}Resurs_ConfigurationService" ) ) ) {
+			        $this->serviceReturn = "ConfigurationService";
+			        $returnObject        = $this->configurationService->$func( $instance );
+		        }
+		        if ( ! isset( $returnObject ) && in_array( $func, get_class_methods( "{$useNameSpace}Resurs_AfterShopFlowService" ) ) ) {
+			        $this->serviceReturn = "AfterShopFlowService";
+			        $returnObject        = $this->afterShopFlowService->$func( $instance );
+		        }
+		        if ( ! isset( $returnObject ) && in_array( $func, get_class_methods( "{$useNameSpace}Resurs_ShopFlowService" ) ) ) {
+			        $this->serviceReturn = "ShopFlowService";
+			        $returnObject        = $this->shopFlowService->$func( $instance );
+		        }
+	        } catch ( \Exception $e ) {
+		        throw new ResursException( $e->getMessage(), ResursExceptions::WSDL_PASSTHROUGH_EXCEPTION, __FUNCTION__ . "/" . $func . "/" . $classfunc );
+	        }
         }
         try {
             if (isset($returnObject) && !empty($returnObject) && isset($returnObject->return) && !empty($returnObject->return)) {
@@ -1606,7 +1669,7 @@ class ResursBank
      */
     public function setCallback($callbackType = ResursCallbackTypes::UNDEFINED, $callbackUriTemplate = "", $callbackDigest = array(), $basicAuthUserName = null, $basicAuthPassword = null)
     {
-        $this->InitializeWsdl();
+        $this->InitializeServices();
         $renderCallback = array();
         $digestParameters = array();
         $regCallBackResult = false;     // CodeInspection - Set to FunctionGlobal
@@ -1784,6 +1847,47 @@ class ResursBank
         return true;
     }
 
+	/**
+	 * Internal function to get the correct service URL for a specific call.
+	 * @param string $ServiceName
+	 *
+	 * @return string
+	 * @since 1.0.1
+	 * @since 1.1.1
+	 */
+    public function getServiceUrl($ServiceName = '') {
+    	$properService = "";
+    	if (!empty($this->CURL)) {
+		    if ( isset( $this->ServiceRequestList[ $ServiceName ] ) && isset( $this->URLS[ $this->ServiceRequestList[ $ServiceName ] ] ) ) {
+			    $properService = $this->URLS[ $this->ServiceRequestList[ $ServiceName ] ];
+		    }
+	    }
+	    return $properService;
+    }
+
+    private function getServiceMethod($ServiceName = '') {
+    	$ReturnMethod = "GET";
+	    if (!empty($this->CURL)) {
+		    if ( isset( $this->ServiceRequestMethods[ $ServiceName ] ) ) {
+			    $ReturnMethod = $this->ServiceRequestMethods[ $ServiceName ];
+		    }
+	    }
+    	return strtolower($ReturnMethod);
+    }
+
+	/**
+	 * WebServicesLight.
+	 *
+	 * @param string $serviceName
+	 * @param array $resursParameters
+	 *
+	 * @return array|mixed|null
+	 */
+    private function postService($serviceName = "", $resursParameters = array()) {
+	    $this->InitializeServices();
+	    $Service = $this->CURL->doGet($this->getServiceUrl($serviceName));
+	    return $this->getDataObject($Service->getParsedResponse($Service->$serviceName($resursParameters)));
+    }
 
     /**
      * List payment methods
@@ -1797,7 +1901,14 @@ class ResursBank
      */
     public function getPaymentMethods($parameters = array())
     {
-        $this->InitializeWsdl();
+	    $this->InitializeServices();
+    	if (!$this->hasWsdl) {
+		    return $this->postService( "getPaymentMethods", array(
+			    'customerType'   => isset( $parameters['customerType'] ) ? $parameters['customerType'] : null,
+			    'language'       => isset( $parameters['language'] ) ? $parameters['language'] : null,
+			    'purchaseAmount' => isset( $parameters['purchaseAmount'] ) ? $parameters['purchaseAmount'] : null
+		    ) );
+	    }
 
         /** @noinspection PhpUnusedLocalVariableInspection */
         $return = $this->getDataObject(array());
@@ -1838,11 +1949,76 @@ class ResursBank
         return $return;
     }
 
+	/**
+	 * @param string $governmentId
+	 * @param string $customerType
+	 * @param string $customerIpAddress
+	 *
+	 * @return array|mixed|null
+	 * @since 1.0.1
+	 * @since 1.1.1
+	 */
+    public function getAddress($governmentId = '', $customerType = 'NATURAL', $customerIpAddress = "") {
+	    if (!empty($customerIpAddress) && isset($_SERVER['REMOTE_ADDR'])) {
+	    	$customerIpAddress = $_SERVER['REMOTE_ADDR'];
+	    }
+	    return $this->postService("getAddress", array('governmentId' => $governmentId, 'customerType' => $customerType, 'customerIpAddress' => $customerIpAddress));
+    }
+
+	/**
+	 * AnnuityFactorsLight - Replacement of the former annuityfactor call, simplified.
+	 *
+	 * To use the former method, look for getAnnuityFactorsDeprecated. This function might however disappear in the future.
+	 *
+	 * @param string $paymentMethodId
+	 *
+	 * @return array|mixed|null
+	 * @since 1.0.1
+	 * @since 1.1.1
+	 * @link https://test.resurs.com/docs/x/JQBH getAnnuityFactors() documentation
+	 */
+	public function getAnnuityFactors($paymentMethodId = '') {
+		return $this->postService("getAnnuityFactors", array('paymentMethodId' => $paymentMethodId));
+	}
+
+	/**
+	 * Retrieves detailed information about the payment.
+	 *
+	 * @param string $paymentId
+	 *
+	 * @return array|mixed|null
+	 * @link https://test.resurs.com/docs/x/moEW getPayment() documentation
+	 * @since 1.0.1
+	 * @since 1.1.1
+	 */
+	public function getPayment($paymentId = '') {
+		return $this->postService("getPayment", array('paymentId' => $paymentId));
+	}
+
+	/**
+	 * Find/search payments
+	 *
+	 * @param array $searchCriteria
+	 * @param int $pageNumber
+	 * @param int $itemsPerPage
+	 * @param null $sortBy
+	 *
+	 * @return array|mixed|null
+	 * @link https://test.resurs.com/docs/x/loEW
+	 * @since 1.0.1
+	 * @since 1.1.1
+	 */
+	public function findPayments($searchCriteria = array(), $pageNumber = 1, $itemsPerPage = 10, $sortBy = null) {
+		return $this->postService('findPayments', array('searchCriteria' => $searchCriteria, 'pageNumber' => $pageNumber, 'itemsPerPage' => $itemsPerPage, 'sortBy' => $sortBy));
+	}
+
 
     /**
      * Get the list of Resurs Bank payment methods from cache, instead of live (Cache function needs to be active)
+     *
      * @return array
      * @throws ResursException
+     * @deprecated 1.0.0
      */
     public function getPaymentMethodsCache()
     {
@@ -1858,6 +2034,7 @@ class ResursBank
 
     /**
      * Get a list of current available payment methods, in the form of an arraylist with id's
+     *
      * @return array
      */
     public function getPaymentMethodNames()
@@ -1897,6 +2074,7 @@ class ResursBank
      * Test if a stored configuration (cache) has expired and needs to be renewed.
      * @param $cachedArrayName
      * @return bool
+     * @deprecated 1.0.0
      */
     private function cacheExpired($cachedArrayName)
     {
@@ -1912,6 +2090,7 @@ class ResursBank
      * @param string $paymentMethod Given payment method
      * @return array
      * @throws ResursException
+     * @deprecated 1.0.0
      */
     public function getAnnuityFactorsCache($paymentMethod)
     {
@@ -1935,10 +2114,11 @@ class ResursBank
      * @param string $paymentMethodId
      * @return mixed
      * @throws ResursException
+     * @deprecated 1.0.0
      */
-    public function getAnnuityFactors($paymentMethodId = '')
+    public function getAnnuityFactorsDeprecated($paymentMethodId = '')
     {
-        $this->InitializeWsdl();
+        $this->InitializeServices();
         $firstMethod = array();
         if (empty($paymentMethodId) || is_null($paymentMethodId)) {
             $methodsAvailable = $this->getPaymentMethods();
@@ -1952,7 +2132,6 @@ class ResursBank
         }
         /** @noinspection PhpParamsInspection */
         $annuityParameters = new resurs_getAnnuityFactors($paymentMethodId);
-        /* Issue #63127 */
         $return = $this->getDataObject($this->simplifiedShopFlowService->getAnnuityFactors($annuityParameters)->return);
         if ($this->configurationInternal) {
             $CurrentAnnuityFactors = isset($this->configurationArray['getAnnuityFactors']) ? $this->configurationArray['getAnnuityFactors'] : array();
@@ -1969,6 +2148,7 @@ class ResursBank
      * @param $methodType
      * @param $fieldArray
      * @return array
+     * @deprecated 1.0.0 It is strongly recommended that you are generating all this by yourself in an integration
      */
     public function setFormTemplateRules($customerType, $methodType, $fieldArray)
     {
@@ -1986,6 +2166,7 @@ class ResursBank
      * Retrieve html-form rules for each payment method type, including regular expressions for the form fields, to validate against.
      *
      * @return array
+     * @deprecated 1.0.0 It is strongly recommended that you are generating all this by yourself in an integration.
      */
     private function getFormTemplateRules()
     {
@@ -2092,6 +2273,7 @@ class ResursBank
      * @param $customerType
      * @return array
      * @throws ResursException
+     * @deprecated 1.0.0 It is strongly recommended that you are generating all this by yourself in an integration
      */
     public function getRegEx($formFieldName = '', $countryCode, $customerType)
     {
@@ -2142,6 +2324,7 @@ class ResursBank
      * @param bool $canThrow Make the function throw an exception instead of silently return false if getTemplateFieldsByMethodType has not been run yet
      * @return bool Returns false if you should NOT hide the field
      * @throws ResursException
+     * @deprecated 1.0.0 It is strongly recommended that you are generating all this by yourself in an integration
      */
     public function canHideFormField($formField = "", $canThrow = false)
     {
@@ -2183,6 +2366,7 @@ class ResursBank
      * @param string $customerType
      * @param string $specificType
      * @return array
+     * @deprecated 1.0.0 It is strongly recommended that you are generating all this by yourself in an integration
      */
     public function getTemplateFieldsByMethodType($paymentMethodName = "", $customerType = "", $specificType = "")
     {
@@ -2227,6 +2411,7 @@ class ResursBank
      *
      * @param string $paymentMethodName
      * @return array
+     * @deprecated 1.0.0 It is strongly recommended that you are generating all this by yourself in an integration
      */
     public function getTemplateFieldsByMethod($paymentMethodName = "")
     {
@@ -2238,6 +2423,7 @@ class ResursBank
      *
      * @param string $paymentMethodName
      * @return array
+     * @deprecated 1.0.0 It is strongly recommended that you are generating all this by yourself in an integration
      */
     public function getFormFieldsByMethod($paymentMethodName = "")
     {
@@ -2257,7 +2443,7 @@ class ResursBank
      */
     public function updatePaymentdata($paymentMethodId, $paymentDataArray = array())
     {
-        $this->InitializeWsdl();
+        $this->InitializeServices();
         $this->preferredId = $this->generatePreferredId();
         if (!is_object($this->_paymentData) && (class_exists('Resursbank\RBEcomPHP\resurs_paymentData') || class_exists('resurs_paymentData'))) {
             $this->_paymentData = new resurs_paymentData($paymentMethodId);
@@ -2265,7 +2451,6 @@ class ResursBank
             // If there are no wsdl-classes loaded, we should consider a default stdClass as object
             $this->_paymentData = new \stdClass();
         }
-
         $this->_paymentData->preferredId = isset($paymentDataArray['preferredId']) && !empty($paymentDataArray['preferredId']) ? $paymentDataArray['preferredId'] : $this->preferredId;
         $this->_paymentData->paymentMethodId = $paymentMethodId;
         $this->_paymentData->customerIpAddress = (isset($paymentDataArray['customerIpAddress']) && !empty($paymentDataArray['customerIpAddress']) ? $paymentDataArray['customerIpAddress'] : (isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '127.0.0.1'));
@@ -2334,7 +2519,7 @@ class ResursBank
                 throw new ResursException("Class specLine does not exist", ResursExceptions::UPDATECART_NOCLASS_EXCEPTION, __FUNCTION__);
             }
         }
-        $this->InitializeWsdl();
+        $this->InitializeServices();
         $realSpecArray = array();
         if (isset($speclineArray['artNo'])) {
             // If this require parameter is found first in the array, it's a single specrow.
@@ -2375,7 +2560,8 @@ class ResursBank
             $this->_specLineID++;
 
             /*
-             * When the class for resurs_SpecLine is missing (e.g. during omni/hosted), those this must be added differently:
+             * When the class for resurs_SpecLine is missing (e.g. during omni/hosted), the variables below must be set in a different way.
+             * In this function we'll let the array right through without any class definition.
              *
              * id
              * artNo
@@ -2413,6 +2599,7 @@ class ResursBank
      * Returns true if updateCart has interfered with the specRows (this is a good way to indicate if something went wrong with the handling)
      *
      * @return bool
+     * @deprecated 1.0.0
      */
     public function isCartFixed()
     {
@@ -2427,7 +2614,7 @@ class ResursBank
      */
     public function updatePaymentSpec($specLineArray = array())
     {
-        $this->InitializeWsdl();
+        $this->InitializeServices();
         if (class_exists('Resursbank\RBEcomPHP\resurs_paymentSpec') || class_exists('resurs_paymentSpec')) {
             $totalAmount = 0;
             $totalVatAmount = 0;
@@ -2453,7 +2640,7 @@ class ResursBank
      */
     public function updateAddress($addressArray = array(), $customerArray = array())
     {
-        $this->InitializeWsdl();
+        $this->InitializeServices();
         $address = null;
         $resursDeliveryAddress = null;
         $customerGovId = isset($customerArray['governmentId']) && !empty($customerArray['governmentId']) ? $customerArray['governmentId'] : "";
@@ -2694,7 +2881,7 @@ class ResursBank
         /* Prepare for a simplified flow */
         if (!$this->isOmniFlow && !$this->isHostedFlow) {
             // Do not use wsdl stubs if we are targeting rest services
-            $this->InitializeWsdl();
+            $this->InitializeServices();
         }
         $this->updatePaymentdata($paymentMethodId, isset($bookData['paymentData']) && is_array($bookData['paymentData']) && count($bookData['paymentData']) ? $bookData['paymentData'] : array());
         if (isset($bookData['specLine']) && is_array($bookData['specLine'])) {
@@ -2839,7 +3026,7 @@ class ResursBank
         if ($methodType == ResursMethodTypes::METHOD_HOSTED) {
             $this->isHostedFlow = true;
             $this->isOmniFlow = false;
-        } elseif ($methodType == ResursMethodTypes::METHOD_OMNI) {
+        } elseif ($methodType == ResursMethodTypes::METHOD_CHECKOUT) {
             $this->isHostedFlow = false;
             $this->isOmniFlow = true;
         } elseif ($methodType == ResursMethodTypes::METHOD_SIMPLIFIED) {
@@ -2961,7 +3148,7 @@ class ResursBank
      * @param array $omniResponse
      * @param bool $ocShopInternalHandle Make EComPHP will try to find and strip the script tag for the iframe resizer, if this is set to true
      * @return mixed|null|string
-     * @deprecated
+     * @deprecated 1.0.0
      */
     public function getOmniFrame($omniResponse = array(), $ocShopInternalHandle = false)
     {
@@ -3198,7 +3385,7 @@ class ResursBank
      */
     public function getNextInvoiceNumber($initInvoice = true, $firstInvoiceNumber = 1)
     {
-        $this->InitializeWsdl();
+        $this->InitializeServices();
         $invoiceNumber = null;
         $peek = null;
         try {
