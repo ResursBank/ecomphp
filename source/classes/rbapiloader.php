@@ -681,8 +681,15 @@ class ResursBank
                 /*
                  * Must handle ecommerce errors too.
                  */
-                if (isset($ResursResponse->errorCode) && $ResursResponse->errorCode > 0) {
-                    throw new \Exception(isset($ResursResponse->description) && !empty($ResursResponse->description) ? $ResursResponse->description : "Unknown error in " . __FUNCTION__, $ResursResponse->errorCode);
+                if (isset($ResursResponse->errorCode)) {
+                    if ($ResursResponse->errorCode > 0) {
+                        throw new \Exception(isset($ResursResponse->description) && !empty($ResursResponse->description) ? $ResursResponse->description : "Unknown error in " . __FUNCTION__, $ResursResponse->errorCode);
+                    } else if ($CurlLibResponse['code'] >= 500) {
+                        /*
+                         * If there are any internal server errors returned, the errorCode tend to be unset (0) and therefore not trigged. In this case, as the server won't do anything good anyway, we should throw an exception
+                         */
+                        throw new \Exception(isset($ResursResponse->description) && !empty($ResursResponse->description) ? $ResursResponse->description : "Unknown error in " . __FUNCTION__, $ResursResponse->errorCode);
+                    }
                 }
             }
         } else {
@@ -3322,6 +3329,22 @@ class ResursBank
         return $engineResponse;
     }
 
+
+    /**
+     * @param  mixed    $paymentId  [The current paymentId]
+     * @param  miced    $to         [What it should be updated to]
+     * @return mixed
+     * @throws Exception
+     */
+    public function updatePaymentReference($paymentId, $to) {
+        if ( empty($paymentId) || empty($to) ) {
+            throw new \Exception("Payment id and to must be set");
+        }
+
+        $url = $this->getCheckoutUrl() . '/checkout/payments/' . $paymentId . '/updatePaymentReference';
+        $response = $this->createJsonEngine($url, json_encode(array('paymentReference' => $to)), ResursCurlMethods::METHOD_PUT);
+        return $response;
+    }
 
     /**
      * Return a string containing the last error for the current session. Returns null if no errors occured
