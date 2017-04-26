@@ -1459,7 +1459,7 @@ class Tornevall_cURL
                     $jsonRealData = json_encode($postData);
                 } else {
                     $testJsonData = json_decode($postData);
-                    if (is_object($testJsonData)) {
+                    if (is_object($testJsonData) || is_array($testJsonData)) {
                         $jsonRealData = $postData;
                     }
                 }
@@ -1469,7 +1469,7 @@ class Tornevall_cURL
             }
         }
 
-        // Self set timeouts
+        // Self set timeouts, making sure the timeout set in the public is an integer over 0. Otherwise this falls back to the curldefauls.
         if (isset($this->CurlTimeout) && $this->CurlTimeout > 0) {
             curl_setopt($this->CurlSession, CURLOPT_CONNECTTIMEOUT, ceil($this->CurlTimeout / 2));
             curl_setopt($this->CurlSession, CURLOPT_TIMEOUT, $this->CurlTimeout);
@@ -1645,6 +1645,11 @@ class Tornevall_SimpleSoap extends Tornevall_cURL
         }
     }
 
+    /**
+     * Prepare authentication for SOAP calls
+     *
+     * @param array $AuthData
+     */
     public function setSoapAuthentication($AuthData = array())
     {
         $this->AuthData = $AuthData;
@@ -1654,6 +1659,11 @@ class Tornevall_SimpleSoap extends Tornevall_cURL
         }
     }
 
+    /**
+     * Set up this class so that it can throw exceptions
+     *
+     * @param bool $throwable Setting this to false, we will suppress some errors
+     */
     public function setThrowableState($throwable = true)
     {
         $this->canThrowSoapFaults = $throwable;
