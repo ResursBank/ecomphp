@@ -928,7 +928,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 	 *
 	 * @return bool|null
 	 */
-	private function getCheckoutFrame( $returnTheFrame = false ) {
+	private function getCheckoutFrame( $returnTheFrame = false, $returnPaymentReference = false ) {
 		$assumeThis = false;
 		if ( $returnTheFrame ) {
 			$iFrameUrl = false;
@@ -938,6 +938,9 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 		}
 		$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_CHECKOUT );
 		$bookResult = $this->doBookPayment( $this->availableMethods['invoice_natural'], true, false, true );
+		if ($returnPaymentReference) {
+		    return $this->rb->getPreferredPaymentId();
+        }
 		if ( is_string( $bookResult ) && preg_match( "/iframe src/i", $bookResult ) ) {
 			$iFrameUrl     = $this->rb->getIframeSrc( $bookResult );
 			$CURL          = new \TorneLIB\Tornevall_cURL();
@@ -976,10 +979,17 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 		$this->assertGreaterThan(0, count($this->rb->getCallBacksByRest(true)));
 	}
 
+    /**
+     * Try to update a payment reference by first creating the iframe
+     */
 	public function testSetReference() {
         $this->checkEnvironment();
-        $res = $this->rb->updatePaymentReference('20170426134542-0791567291', md5(microtime()));
-        print_r($res);
+        $iframePaymentReference = $this->getCheckoutFrame(false, true);
+        // Update reference to a random id with the margul-function.
+        $newReference = $this->rb->generatePreferredId();
+        echo "Update $iframePaymentReference with $newReference\n";
+        $res = $this->rb->updatePaymentReference($iframePaymentReference, $newReference);
+        print_R($res);
     }
 
 	public function setRegisterCallbacks() {
