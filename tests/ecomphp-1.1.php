@@ -924,46 +924,85 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 		$this->assertTrue( ( preg_match( "/amount=$amount/i", $customURL ) ? true : false ) );
 	}
 
-	/**
-	 * This test is incomplete.
-	 *
-	 * @param bool $returnTheFrame
-	 *
-	 * @return bool|null
-	 */
-	private function getCheckoutFrame( $returnTheFrame = false ) {
-		$assumeThis = false;
-		if ( $returnTheFrame ) {
-			$iFrameUrl = false;
-		}
-		if ( $this->ignoreBookingTests ) {
-			$this->markTestSkipped();
-		}
-		$this->rb->setPreferredPaymentService( \Resursbank\RBEcomPHP\ResursMethodTypes::METHOD_CHECKOUT );
-		$bookResult = $this->doBookPayment( $this->availableMethods['invoice_natural'], true, false, true );
-		if ( is_string( $bookResult ) && preg_match( "/iframe src/i", $bookResult ) ) {
-			$iFrameUrl     = $this->rb->getIframeSrc( $bookResult );
-			$CURL          = new \TorneLIB\Tornevall_cURL();
-			$iframeContent = $CURL->doGet( $iFrameUrl );
-			if ( ! empty( $iframeContent['body'] ) ) {
-				$assumeThis = true;
-			}
-		}
-		if ( ! $returnTheFrame ) {
-			return $assumeThis;
-		} else {
-			return $iFrameUrl;
-		}
-	}
+    /**
+     * This test is incomplete.
+     *
+     * @param bool $returnTheFrame
+     * @param bool $returnPaymentReference Return the payment reference instead of true/false/iframe
+     *
+     * @return bool|null
+     */
+    private function getCheckoutFrame( $returnTheFrame = false, $returnPaymentReference = false ) {
+        $assumeThis = false;
+        if ( $returnTheFrame ) {
+            $iFrameUrl = false;
+        }
+        if ( $this->ignoreBookingTests ) {
+            $this->markTestSkipped();
+        }
+        $this->rb->setPreferredPaymentService( \Resursbank\RBEcomPHP\ResursMethodTypes::METHOD_CHECKOUT );
+        $bookResult = $this->doBookPayment( $this->availableMethods['invoice_natural'], true, false, true );
+        if ($returnPaymentReference) {
+            return $this->rb->getPreferredPaymentId();
+        }
+        if ( is_string( $bookResult ) && preg_match( "/iframe src/i", $bookResult ) ) {
+            $iFrameUrl     = $this->rb->getIframeSrc( $bookResult );
+            $CURL          = new \TorneLIB\Tornevall_cURL();
+            $iframeContent = $CURL->doGet( $iFrameUrl );
+            if ( ! empty( $iframeContent['body'] ) ) {
+                $assumeThis = true;
+            }
+        }
+        if ( ! $returnTheFrame ) {
+            return $assumeThis;
+        } else {
+            return $iFrameUrl;
+        }
+    }
 
-	/**
-	 * Try to fetch the iframe (Resurs Checkout).
-	 */
-	public function testGetCheckoutFrame() {
-		$this->checkEnvironment();
-		$hasIframe = ( $this->getCheckoutFrame( true ) ? true : false );
-		$this->assertTrue( $hasIframe );
-	}
+    /**
+     * Try to fetch the iframe (Resurs Checkout).
+     */
+    public function testGetCheckoutFrame() {
+        $this->checkEnvironment();
+        $hasIframe = ( $this->getCheckoutFrame( true ) ? true : false );
+        $this->assertTrue( $hasIframe );
+    }
+
+    /**
+     * Get all callbacks by a rest call (objects)
+     */
+    public function testGetCallbackListByRest() {
+        $this->assertGreaterThan(0, count($this->rb->getCallBacksByRest()));
+    }
+
+    /**
+     * Get all callbacks by a rest call (key-indexed array)
+     */
+    public function testGetCallbackListAsArrayByRest() {
+        $this->assertGreaterThan(0, count($this->rb->getCallBacksByRest(true)));
+    }
+
+    /**
+     * Try to update a payment reference by first creating the iframe
+     */
+    public function testSetReference() {
+        $this->checkEnvironment();
+        $iframePaymentReference = $this->getCheckoutFrame(false, true);
+        // Update reference to a random id with the margul-function.
+        $newReference = $this->rb->generatePreferredId();
+        $res = null;
+        try {
+            $res = $this->rb->updatePaymentReference($iframePaymentReference, $newReference);
+        } catch (\Exception $e) {
+            echo "Exception catch: " . $e->getMessage();
+        }
+        print_r($res);
+    }
+
+    public function setRegisterCallbacks() {
+
+    }
 
 	/***
 	 * VERSION 1.0-1.1 DEPENDENT TESTS
