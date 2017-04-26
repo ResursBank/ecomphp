@@ -433,7 +433,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 				$Network           = new \TorneLIB\TorneLIB_Network();
 				$signUrlHostInfo   = $Network->getUrlDomain( $signUrl );
 				$getUrlHost        = $signUrlHostInfo[1] . "://" . $signUrlHostInfo[0];
-				$mockSuccessUrl    = $getUrlHost . "/" . preg_replace( '/(.*?)\<a href=\"(.*?)\">(.*?)\>Mock success(.*)/is', '$2', $getSigningPage );
+				$mockSuccessUrl    = preg_replace("/\/$/", '', $getUrlHost . "/" . preg_replace( '/(.*?)\<a href=\"(.*?)\">(.*?)\>Mock success(.*)/is', '$2', $getSigningPage ));
 				$getSuccessContent = json_decode( file_get_contents( $mockSuccessUrl ) );
 				if ( $getSuccessContent->success == "true" ) {
 					if ( $signSuccess ) {
@@ -975,6 +975,12 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 	public function testGetCallbackListAsArrayByRest() {
 		$this->assertGreaterThan(0, count($this->rb->getCallBacksByRest(true)));
 	}
+
+	public function testSetReference() {
+        $this->checkEnvironment();
+        $res = $this->rb->updatePaymentReference('20170426134542-0791567291', md5(microtime()));
+        print_r($res);
+    }
 
 	public function setRegisterCallbacks() {
 
