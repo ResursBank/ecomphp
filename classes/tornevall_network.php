@@ -384,11 +384,17 @@ class Tornevall_cURL
      */
     public function __construct()
     {
-        if (!function_exists('curl_init')) { throw new \Exception("curl library not found"); }
+        if (!function_exists('curl_init')) {
+            throw new \Exception("curl library not found");
+        }
 
         // Common ssl checkers (if they fail, there is a sslDriverError to recall
-        if (!in_array('https', @stream_get_wrappers())) { $this->sslDriverError[] = "SSL Failure: HTTPS wrapper can not be found"; }
-        if (!extension_loaded('openssl')) { $this->sslDriverError[] = "SSL Failure: HTTPS extension can not be found"; }
+        if (!in_array('https', @stream_get_wrappers())) {
+            $this->sslDriverError[] = "SSL Failure: HTTPS wrapper can not be found";
+        }
+        if (!extension_loaded('openssl')) {
+            $this->sslDriverError[] = "SSL Failure: HTTPS extension can not be found";
+        }
         if (function_exists('curl_version')) {
             $CurlVersionRequest = curl_version();
             $this->CurlVersion = $CurlVersionRequest['version'];
@@ -445,7 +451,8 @@ class Tornevall_cURL
         $this->useLocalCookies = $enabled;
     }
 
-    public function setResponseType($ResponseType = TORNELIB_CURL_RESPONSETYPE::RESPONSETYPE_ARRAY) {
+    public function setResponseType($ResponseType = TORNELIB_CURL_RESPONSETYPE::RESPONSETYPE_ARRAY)
+    {
         $this->ResponseType = $ResponseType;
     }
 
@@ -852,7 +859,8 @@ class Tornevall_cURL
         return $this->hasDefaultCertFile;
     }
 
-    public function hasSsl() {
+    public function hasSsl()
+    {
         return $this->sslCurlDriver;
     }
 
@@ -1241,17 +1249,17 @@ class Tornevall_cURL
         $returnResponse['URL'] = $this->CurlURL;
         $returnResponse['ip'] = isset($this->CurlIp) ? $this->CurlIp : null;  // Will only be filled if there is custom address set.
 
-            if ($this->ResponseType == TORNELIB_CURL_RESPONSETYPE::RESPONSETYPE_OBJECT) {
-                // This is probably not necessary and will not be the default setup after all.
-                $returnResponseObject = new TORNELIB_CURLOBJECT();
-                $returnResponseObject->header = $returnResponse['header'];
-                $returnResponseObject->body = $returnResponse['body'];
-                $returnResponseObject->code = $returnResponse['code'];
-                $returnResponseObject->parsed = $returnResponse['parsed'];
-                $returnResponseObject->url = $returnResponse['URL'];
-                $returnResponseObject->ip = $returnResponse['ip'];
-                return $returnResponseObject;
-            }
+        if ($this->ResponseType == TORNELIB_CURL_RESPONSETYPE::RESPONSETYPE_OBJECT) {
+            // This is probably not necessary and will not be the default setup after all.
+            $returnResponseObject = new TORNELIB_CURLOBJECT();
+            $returnResponseObject->header = $returnResponse['header'];
+            $returnResponseObject->body = $returnResponse['body'];
+            $returnResponseObject->code = $returnResponse['code'];
+            $returnResponseObject->parsed = $returnResponse['parsed'];
+            $returnResponseObject->url = $returnResponse['URL'];
+            $returnResponseObject->ip = $returnResponse['ip'];
+            return $returnResponseObject;
+        }
         $this->TemporaryResponse = $returnResponse;
         return $returnResponse;
     }
