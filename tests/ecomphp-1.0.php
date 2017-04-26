@@ -987,9 +987,13 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
         $iframePaymentReference = $this->getCheckoutFrame(false, true);
         // Update reference to a random id with the margul-function.
         $newReference = $this->rb->generatePreferredId();
-        echo "Update $iframePaymentReference with $newReference\n";
-        $res = $this->rb->updatePaymentReference($iframePaymentReference, $newReference);
-        print_R($res);
+        $res = null;
+        try {
+            $res = $this->rb->updatePaymentReference($iframePaymentReference, $newReference);
+        } catch (\Exception $e) {
+            echo "Exception catch: " . $e->getMessage();
+        }
+        print_r($res);
     }
 
 	public function setRegisterCallbacks() {

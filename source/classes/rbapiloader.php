@@ -3323,7 +3323,7 @@ class ResursBank
         if (empty($paymentId)) {
             throw new \Exception("Payment id not set");
         }
-        $omniUrl = $this->getOmniUrl();
+        $omniUrl = $this->getCheckoutUrl();
         $omniRefUrl = $omniUrl . "/checkout/payments/" . $paymentId;
         $engineResponse = $this->createJsonEngine($omniRefUrl, $jsonData, ResursCurlMethods::METHOD_PUT);
         return $engineResponse;
@@ -3331,8 +3331,8 @@ class ResursBank
 
 
     /**
-     * @param  mixed    $paymentId  [The current paymentId]
-     * @param  miced    $to         [What it should be updated to]
+     * @param  string    $paymentId  [The current paymentId]
+     * @param  string    $to         [What it should be updated to]
      * @return mixed
      * @throws Exception
      */
@@ -3340,7 +3340,6 @@ class ResursBank
         if ( empty($paymentId) || empty($to) ) {
             throw new \Exception("Payment id and to must be set");
         }
-
         $url = $this->getCheckoutUrl() . '/checkout/payments/' . $paymentId . '/updatePaymentReference';
         $response = $this->createJsonEngine($url, json_encode(array('paymentReference' => $to)), ResursCurlMethods::METHOD_PUT);
         return $response;
