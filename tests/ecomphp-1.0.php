@@ -962,6 +962,24 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 		$this->assertTrue( $hasIframe );
 	}
 
+	/**
+	 * Get all callbacks by a rest call (objects)
+	 */
+	public function testGetCallbackListByRest() {
+		$this->assertGreaterThan(0, count($this->rb->getCallBacksByRest()));
+	}
+
+	/**
+	 * Get all callbacks by a rest call (key-indexed array)
+	 */
+	public function testGetCallbackListAsArrayByRest() {
+		$this->assertGreaterThan(0, count($this->rb->getCallBacksByRest(true)));
+	}
+
+	public function setRegisterCallbacks() {
+
+	}
+
 	/***
 	 * VERSION 1.0-1.1 DEPENDENT TESTS
 	 */

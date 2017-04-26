@@ -4,15 +4,16 @@
  * Warning: This is a maintenance version only!
  *
  * Compatible with simplifiedFlow, hostedFlow and Resurs Checkout.
- * Requirements: WSDL stubs from WSDL2PHPGenerator (deprecated edition)
- * Important notes: As the WSDL files are generated, it is highly important to run tests before release.
+ * Requirements: Running other web service calls than the internals might require the bulk of WSDL stubs
+ *
+ * Important notes: When the WSDL files are generated and included to this library, it is highly important that you run the test suite.
  *
  * Last update: See the lastUpdate variable
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.0
  * @version 1.0.1
- * @deprecated 1.0 Maintenance version only
+ * @deprecated Maintenance version only
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @license Apache License
@@ -43,9 +44,9 @@ class ResursBank
     /** @var string Replacing $clientName on usage of setClientNAme */
     private $realClientName = "RB-EcomBridge";
     /** @var string The version of this gateway */
-    private $version = "1.0.0";
+    private $version = "1.0.1";
     /** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-    private $lastUpdate = "20170424";
+    private $lastUpdate = "20170426";
     private $preferredId = null;
     private $ocShopScript = null;
     private $formTemplateRuleArray = array();
@@ -1656,6 +1657,33 @@ class ResursBank
         return $currentDigest;
     }
 
+	/**
+	 * Retreive a full list of, by merchant, registered callbacks
+	 *
+	 * @param bool $ReturnAsArray
+	 *
+	 * @return array
+	 * @link https://test.resurs.com/docs/display/ecom/ECommerce+PHP+Library#ECommercePHPLibrary-getCallbacksByRest
+	 * @since 1.0.1
+	 */
+    public function getCallBacksByRest($ReturnAsArray = false) {
+	    $this->InitializeServices();
+	    $ResursResponse = $this->CURL->getParsedResponse($this->CURL->doGet($this->getCheckoutUrl() . "/callbacks"));
+	    if ($ReturnAsArray) {
+	    	$ResursResponseArray = array();
+	    	if (is_array($ResursResponse) && count($ResursResponse)) {
+	    		foreach ($ResursResponse as $object) {
+	    			if (isset($object->eventType)) {
+					    $ResursResponseArray[ $object->eventType ] = isset( $object->uriTemplate ) ? $object->uriTemplate : "";
+				    }
+			    }
+		    }
+		    print_R($ResursResponseArray);
+		    return $ResursResponseArray;
+	    }
+    	return $ResursResponse;
+    }
+
     /**
      * Simplifed callback registrator. Also handles re-registering of callbacks in case of already found in system.
      *
@@ -1674,17 +1702,16 @@ class ResursBank
         $digestParameters = array();
         $regCallBackResult = false;     // CodeInspection - Set to FunctionGlobal
         $renderCallback['eventType'] = $this->getCallbackTypeString($callbackType);
-
         if (empty($renderCallback['eventType'])) {
             throw new ResursException("The callback type you are trying to register is not supported by EComPHP", ResursExceptions::CALLBACK_TYPE_UNSUPPORTED, __FUNCTION__);
         }
         $confirmCallbackResult = false;
-
         if (isset($callbackDigest) && !is_array($callbackDigest)) { $callbackDigest = array(); }
-
         if (count($renderCallback) && $renderCallback['eventType'] != "" && !empty($callbackUriTemplate)) {
             /** @noinspection PhpParamsInspection */
-            $registerCallbackClass = new resurs_registerEventCallback($renderCallback['eventType'], $callbackUriTemplate);
+            if ($this->hasWsdl) {
+	            $registerCallbackClass = new resurs_registerEventCallback( $renderCallback['eventType'], $callbackUriTemplate );
+            }
             $digestAlgorithm = resurs_digestAlgorithm::SHA1;
 
             /*
@@ -1701,10 +1728,8 @@ class ResursBank
                 if ($callbackDigest['digestAlgorithm'] != "sha1") {
                     $digestAlgorithm = digestAlgorithm::MD5;
                 }
-
                 /* Start collect the parameters needed for the callback (manually if necessary - otherwise, we'll catch the parameters from our defaults as described at https://test.resurs.com/docs/x/LAAF) */
                 $parameterArray = array();
-
                 /*
                  * Make sure the digest parameters exists, and fill them in if the array exists but is empty
                  */
@@ -1718,7 +1743,6 @@ class ResursBank
                      */
                     $callbackDigest['digestParameters'] = $this->getCallbackTypeParameters($callbackType);
                 }
-
                 if (isset($callbackDigest['digestParameters']) && is_array($callbackDigest['digestParameters'])) {
                     if (count($callbackDigest['digestParameters'])) {
                         foreach ($callbackDigest['digestParameters'] as $parameter) {
@@ -1726,7 +1750,6 @@ class ResursBank
                         }
                     }
                 }
-
                 /*
                  * Check if the helper received a salt key. To now interfere with the array of digestKey, we are preparing with globalDigestKey.
                  */
@@ -1750,32 +1773,37 @@ class ResursBank
             }
             /* Generate a digest configuration for the services. */
             /** @noinspection PhpParamsInspection */
-            $digestConfiguration = new resurs_digestConfiguration($digestAlgorithm, $digestParameters['digestParameters']);
+            if ($this->hasWsdl) {
+	            $digestConfiguration = new resurs_digestConfiguration( $digestAlgorithm, $digestParameters['digestParameters'] );
+            }
             $digestConfiguration->digestSalt = $digestParameters['digestSalt'];
 
             /* Unregister any old callbacks if found. */
             $this->unSetCallback($callbackType);
 
-            /* If your site needs authentication to reach callbacks, this sets up a basic authentication for it */
-            if (!empty($basicAuthUserName)) {
-                $registerCallbackClass->setBasicAuthUserName($basicAuthUserName);
-            }
-            if (!empty($basicAuthPassword)) {
-                $registerCallbackClass->setBasicAuthPassword($basicAuthPassword);
-            }
-
-            /* Prepare for the primary digestive data. */
-            $registerCallbackClass->digestConfiguration = $digestConfiguration;
-            try {
-                /* And register the rendered callback at the service. Make sure that configurationService is really there before doing this. */
-                $regCallBackResult = $this->configurationService->registerEventCallback($registerCallbackClass);
-                if (is_object($regCallBackResult)) {
-                    $confirmCallbackResult = true;
-                }
-            } catch (\Exception $rbCallbackEx) {
-                /* Set up a silent. failover, and return false if the callback registration failed. Set the error into the lastError-variable. */
-                $regCallBackResult = false;
-                $this->lastError = $rbCallbackEx->getMessage();
+            if ($this->hasWsdl) {
+	            /* If your site needs authentication to reach callbacks, this sets up a basic authentication for it */
+	            if ( ! empty( $basicAuthUserName ) ) {
+		            $registerCallbackClass->setBasicAuthUserName( $basicAuthUserName );
+	            }
+	            if ( ! empty( $basicAuthPassword ) ) {
+		            $registerCallbackClass->setBasicAuthPassword( $basicAuthPassword );
+	            }
+	            /* Prepare for the primary digestive data. */
+	            $registerCallbackClass->digestConfiguration = $digestConfiguration;
+	            try {
+		            /* And register the rendered callback at the service. Make sure that configurationService is really there before doing this. */
+		            $regCallBackResult = $this->configurationService->registerEventCallback( $registerCallbackClass );
+		            if ( is_object( $regCallBackResult ) ) {
+			            $confirmCallbackResult = true;
+		            }
+	            } catch ( \Exception $rbCallbackEx ) {
+		            /* Set up a silent. failover, and return false if the callback registration failed. Set the error into the lastError-variable. */
+		            $regCallBackResult = false;
+		            $this->lastError   = $rbCallbackEx->getMessage();
+	            }
+            } else {
+            	die();
             }
 
             /* If the answer, received from the registerEventCallback, is an empty object we should also secure that everything is all right with the requested URL */
@@ -3214,11 +3242,13 @@ class ResursBank
 
     /**
      * Retrieve the correct omnicheckout url depending chosen environment
+     *
      * @param int $EnvironmentRequest
      * @param bool $getCurrentIfSet Always return "current" if it has been set first
      * @return string
+     * @since 1.0.1
      */
-    public function getOmniUrl($EnvironmentRequest = ResursEnvironments::ENVIRONMENT_TEST, $getCurrentIfSet = true)
+    public function getCheckoutUrl($EnvironmentRequest = ResursEnvironments::ENVIRONMENT_TEST, $getCurrentIfSet = true)
     {
         /*
          * If current_environment is set, override incoming variable
@@ -3235,6 +3265,19 @@ class ResursBank
         } else {
             return $this->env_omni_test;
         }
+    }
+
+	/**
+	 * Retrieve the correct omnicheckout url depending chosen environment
+	 *
+	 * @param int $EnvironmentRequest
+	 * @param bool $getCurrentIfSet
+	 *
+	 * @return string
+	 * @deprecated 1.0.0
+	 */
+    public function getOmniUrl($EnvironmentRequest = ResursEnvironments::ENVIRONMENT_TEST, $getCurrentIfSet = true) {
+	    return $this->getCheckoutUrl($EnvironmentRequest, $getCurrentIfSet);
     }
 
     /**
