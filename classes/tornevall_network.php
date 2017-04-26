@@ -1459,7 +1459,7 @@ class Tornevall_cURL
                     $jsonRealData = json_encode($postData);
                 } else {
                     $testJsonData = json_decode($postData);
-                    if (is_object($testJsonData)) {
+                    if (is_object($testJsonData) || is_array($testJsonData)) {
                         $jsonRealData = $postData;
                     }
                 }
@@ -1469,7 +1469,7 @@ class Tornevall_cURL
             }
         }
 
-        // Self set timeouts
+        // Self set timeouts, making sure the timeout set in the public is an integer over 0. Otherwise this falls back to the curldefauls.
         if (isset($this->CurlTimeout) && $this->CurlTimeout > 0) {
             curl_setopt($this->CurlSession, CURLOPT_CONNECTTIMEOUT, ceil($this->CurlTimeout / 2));
             curl_setopt($this->CurlSession, CURLOPT_TIMEOUT, $this->CurlTimeout);
