@@ -262,11 +262,15 @@ class Tornevall_cURL
 
     /** @var array Default paths to the certificates we are looking for */
     public $sslPemLocations = array('/etc/ssl/certs/cacert.pem', '/etc/ssl/certs/ca-certificates.crt');
+    /** @var bool For debugging only */
     public $_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION = false;
     /** @var bool During tests this will be set to true if certificate files is found */
     private $hasCertFile = false;
+    /** @var string Defines what file to use as a certificate bundle */
     private $useCertFile = "";
+    /** @var bool Shows if the certificate file found has been found internally or if it was set by user */
     private $hasDefaultCertFile = false;
+    /** @var bool Shows if the certificate check has been runned */
     private $openSslGuessed = false;
     /** @var bool During tests this will be set to true if certificate directory is found */
     private $hasCertDir = false;
@@ -275,6 +279,8 @@ class Tornevall_cURL
     private $CurlSession = null;
     /** @var null URL to communicate with */
     private $CurlURL = null;
+
+    /** @var null A tempoary set of the response from the url called */
     private $TemporaryResponse = null;
 
     /** @var array Default settings when initializing our curlsession */
@@ -291,7 +297,9 @@ class Tornevall_cURL
         CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_HTTPHEADER => array('Accept-Language: en'),
     );
+    /** @var array User set SSL Options */
     public $sslopt = array();
+
     private $followLocationEnforce = true;
     private $followLocationSet = true;
 
@@ -371,6 +379,11 @@ class Tornevall_cURL
      * @var bool
      */
     public $canThrow = true;
+
+    /** @var bool By default, this library does not store any curl_getinfo during exceptions */
+    private $canStoreSessionException = false;
+    /** @var array An array that contains each curl_exec (curl_getinfo) when an exception are thrown */
+    private $sessionsExceptions = array();
 
     /**
      * Defines whether, when there is an incoming SOAP-call, we should try to make the SOAP initialization twice.
@@ -546,6 +559,10 @@ class Tornevall_cURL
             }
         }
         return "";
+    }
+
+    public function getStoredExceptionInformation() {
+        return $this->sessionsExceptions;
     }
 
     /**
@@ -1321,6 +1338,15 @@ class Tornevall_cURL
     }
 
     /**
+     * Defines if this library should be able to store the curl_getinfo() for each curl_exec that generates an exception
+     *
+     * @param bool $Activate
+     */
+    public function setStoreSessionExceptions($Activate = false) {
+        $this->canStoreSessionException = $Activate;
+    }
+
+    /**
      * Call cUrl with a POST
      *
      * @param string $url
@@ -1621,6 +1647,12 @@ class Tornevall_cURL
         $returnContent = curl_exec($this->CurlSession);
 
         if (curl_errno($this->CurlSession)) {
+            if ($this->canStoreSessionException) {
+                $this->sessionsExceptions[] = array(
+                    'Content' => $returnContent,
+                    'SessionInfo' => curl_getinfo($this->CurlSession)
+                );
+            }
             $errorCode = curl_errno($this->CurlSession);
             if ($this->CurlResolveForced && $this->CurlResolveRetry >= 2) {
                 throw new \Exception(__FUNCTION__ . ": Could not fetch url after internal retries", 1004);
