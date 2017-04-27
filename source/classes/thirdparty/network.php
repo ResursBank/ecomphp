@@ -195,6 +195,7 @@ abstract class TorneLIB_Network_IP
  * Versioning are based on TorneLIB v5, but follows its own standards in the chain.
  *
  * @package TorneLIB
+ * @version 5.0.0/2017.4
  * @link https://phpdoc.tornevall.net/TorneLIBv5/source-class-TorneLIB.Tornevall_cURL.html PHPDoc/Staging - Tornevall_cURL
  * @link https://docs.tornevall.net/x/KQCy TorneLIB (PHP) Landing documentation
  * @link https://bitbucket.tornevall.net/projects/LIB/repos/tornelib-php/browse Sources of TorneLIB
@@ -215,7 +216,7 @@ class Tornevall_cURL
     private $CurlVersion = null;
 
     /** @var string Internal release snapshot that is being used to find out if we are running the latest version of this library */
-    private $TorneCurlRelease = "20170425";
+    private $TorneCurlRelease = "20170427";
 
     /**
      * Target environment (if target is production some debugging values will be skipped)
@@ -291,6 +292,8 @@ class Tornevall_cURL
         CURLOPT_HTTPHEADER => array('Accept-Language: en'),
     );
     public $sslopt = array();
+    private $followLocationEnforce = true;
+    private $followLocationSet = true;
 
     /** @var array Interfaces to use */
     public $IpAddr = array();
@@ -451,10 +454,28 @@ class Tornevall_cURL
         $this->useLocalCookies = $enabled;
     }
 
+    /**
+     * Enforce a response type if you're not happy with the default returned array.
+     *
+     * @param int $ResponseType
+     * @since 5.0.0/2017.4
+     */
     public function setResponseType($ResponseType = TORNELIB_CURL_RESPONSETYPE::RESPONSETYPE_ARRAY)
     {
         $this->ResponseType = $ResponseType;
     }
+
+    /**
+     * Enforces CURLOPT_FOLLOWLOCATION to act different if not matching with the internal rules
+     *
+     * @param bool $setEnabled
+     * @since 5.0.0/2017.4
+     */
+    public function setEnforceFollowLocation($setEnabled = true) {
+        $this->followLocationEnforce = true;
+        $this->followLocationSet = $setEnabled;
+    }
+
 
     /**
      * Switch over to forced debugging
@@ -1580,9 +1601,22 @@ class Tornevall_cURL
         /**** UNCONDITIONAL SETUP ****/
         curl_setopt($this->CurlSession, CURLOPT_HEADER, true);
         curl_setopt($this->CurlSession, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($this->CurlSession, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($this->CurlSession, CURLOPT_AUTOREFERER, true);
         curl_setopt($this->CurlSession, CURLINFO_HEADER_OUT, true);
+
+        /*
+         * Find out if CURLOPT_FOLLOWLOCATION can be set or not.
+         * If you need to enforce this setting to something very specific, setEnforceFollowLocation([bool]) is available for this.
+         */
+        if (!$this->followLocationEnforce) {
+            if (ini_get('open_basedir') == '' && ini_get('safe_mode' == 'Off')) {
+                curl_setopt($this->CurlSession, CURLOPT_FOLLOWLOCATION, true);
+            } else {
+                curl_setopt($this->CurlSession, CURLOPT_FOLLOWLOCATION, false);
+            }
+        } else {
+            curl_setopt($this->CurlSession, CURLOPT_FOLLOWLOCATION, $this->followLocationSet);
+        }
 
         $returnContent = curl_exec($this->CurlSession);
 
