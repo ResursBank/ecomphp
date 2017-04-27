@@ -413,7 +413,12 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 			'forceSigning' => $forceSigning
 		);
 
-		$res = $this->rb->bookPayment( $setMethod, $bookData );
+		if ( $paymentServiceSet !== ResursMethodTypes::METHOD_CHECKOUT ) {
+			$res = $this->rb->bookPayment( $setMethod, $bookData );
+		} else {
+			$res = $this->rb->bookPayment( $this->rb->getPreferredPaymentId(), $bookData );
+		}
+
 		/*
 		 * bookPaymentStatus is for simplified flows only
 		 */
@@ -937,10 +942,9 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 			$this->markTestSkipped();
 		}
 		$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_CHECKOUT );
-		$bookResult = $this->doBookPayment( $this->availableMethods['invoice_natural'], true, false, true );
-		if ($returnPaymentReference) {
-		    return $this->rb->getPreferredPaymentId();
-        }
+		$newReferenceId = $this->rb->generatePreferredId();
+		$bookResult = $this->doBookPayment( $newReferenceId, true, false, true );
+
 		if ( is_string( $bookResult ) && preg_match( "/iframe src/i", $bookResult ) ) {
 			$iFrameUrl     = $this->rb->getIframeSrc( $bookResult );
 			$CURL          = new \TorneLIB\Tornevall_cURL();
@@ -948,6 +952,9 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 			if ( ! empty( $iframeContent['body'] ) ) {
 				$assumeThis = true;
 			}
+		}
+		if ($returnPaymentReference) {
+			return $this->rb->getPreferredPaymentId();
 		}
 		if ( ! $returnTheFrame ) {
 			return $assumeThis;
@@ -984,12 +991,32 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
      */
 	public function testSetReference() {
         $this->checkEnvironment();
-        $iframePaymentReference = $this->getCheckoutFrame(false, true);
+        try {
+	        $iFrameUrl = $this->getCheckoutFrame( true );
+        } catch (Exception $e) {
+        	echo "Exception: " . $e->getMessage() . "\n";
+        }
         // Update reference to a random id with the margul-function.
-        $newReference = $this->rb->generatePreferredId();
-        echo "Update $iframePaymentReference with $newReference\n";
-        $res = $this->rb->updatePaymentReference($iframePaymentReference, $newReference);
-        print_R($res);
+		$CURL          = new \TorneLIB\Tornevall_cURL();
+        $CURL->CurlTimeout = 60;
+        $CURL->CurlHeaders[] = 'Connection: Keep-Alive';
+		$iframeRequest = $CURL->doGet( $iFrameUrl );
+		$iframeContent = $iframeRequest['body'];
+		$iframePaymentReference = $this->rb->getPreferredPaymentId();
+        if (!empty($iframePaymentReference) && !empty($iFrameUrl) && !empty($iframeContent) && strlen($iframeContent) > 1024) {
+	        $newReference = $this->rb->generatePreferredId();
+	        //echo "Update $iframePaymentReference with $newReference (iFrame URL: $iFrameUrl)\n";
+	        $startRequest = time();
+	        try {
+		        $res = $this->rb->updatePaymentReference( $iframePaymentReference, $newReference );
+	        } catch (Exception $e) {
+		        $stopRequest = time();
+	        	echo "Exception: " . $e->getCode() . ": " . $e->getMessage() . "\n";
+	        }
+	        $stopRequest = time();
+	        $requestDiff = $stopRequest-$startRequest;
+	        //echo "Request time length: " . $requestDiff . "\n";
+        }
     }
 
 	public function setRegisterCallbacks() {
