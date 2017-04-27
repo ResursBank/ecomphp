@@ -46,7 +46,7 @@ class ResursBank
     /** @var string The version of this gateway */
     private $version = "1.0.1";
     /** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-    private $lastUpdate = "20170426";
+    private $lastUpdate = "20170427";
     private $preferredId = null;
     private $ocShopScript = null;
     private $formTemplateRuleArray = array();
@@ -657,16 +657,17 @@ class ResursBank
      */
     private function createJsonEngine($url = '', $jsonData = "", $curlMethod = ResursCurlMethods::METHOD_POST)
     {
+    	if (empty($this->CURL)) {$this->InitializeServices();}
         $CurlLibResponse = null;
-        $CURL = new \TorneLIB\Tornevall_cURL();
-        $CURL->setAuthentication($this->username, $this->password);
-        $CURL->setUserAgent("EComPHP " . $this->version);
+	    $this->CURL->setAuthentication($this->username, $this->password);
+	    $this->CURL->setUserAgent("EComPHP " . $this->version);
+
         if ($curlMethod == ResursCurlMethods::METHOD_POST) {
-            $CurlLibResponse = $CURL->doPost($url, $jsonData, \TorneLIB\CURL_POST_AS::POST_AS_JSON);
+            $CurlLibResponse = $this->CURL->doPost($url, $jsonData, \TorneLIB\CURL_POST_AS::POST_AS_JSON);
         } else if ($curlMethod == ResursCurlMethods::METHOD_PUT) {
-            $CurlLibResponse = $CURL->doPut($url, $jsonData, \TorneLIB\CURL_POST_AS::POST_AS_JSON);
+            $CurlLibResponse = $this->CURL->doPut($url, $jsonData, \TorneLIB\CURL_POST_AS::POST_AS_JSON);
         } else {
-            $CurlLibResponse = $CURL->doGet($url, \TorneLIB\CURL_POST_AS::POST_AS_JSON);
+            $CurlLibResponse = $this->CURL->doGet($url, \TorneLIB\CURL_POST_AS::POST_AS_JSON);
         }
         if ($CurlLibResponse['code'] >= 400) {
             $useResponseCode = $CurlLibResponse['code'];
@@ -685,12 +686,14 @@ class ResursBank
                     if ($ResursResponse->errorCode > 0) {
                         throw new \Exception(isset($ResursResponse->description) && !empty($ResursResponse->description) ? $ResursResponse->description : "Unknown error in " . __FUNCTION__, $ResursResponse->errorCode);
                     } else if ($CurlLibResponse['code'] >= 500) {
-                        /*
+	                    /*
                          * If there are any internal server errors returned, the errorCode tend to be unset (0) and therefore not trigged. In this case, as the server won't do anything good anyway, we should throw an exception
                          */
                         throw new \Exception(isset($ResursResponse->description) && !empty($ResursResponse->description) ? $ResursResponse->description : "Unknown error in " . __FUNCTION__, $ResursResponse->errorCode);
                     }
                 }
+            } else {
+            	throw new \Exception(!empty($CurlLibResponse['body']) ? $CurlLibResponse['body'] : "Unknown error from server in " . __FUNCTION__, $CurlLibResponse['code']);
             }
         } else {
             /*
@@ -2479,7 +2482,7 @@ class ResursBank
     public function updatePaymentdata($paymentMethodId, $paymentDataArray = array())
     {
         $this->InitializeServices();
-        $this->preferredId = $this->generatePreferredId();
+	    if (empty($this->preferredId)) {$this->preferredId = $this->generatePreferredId();}
         if (!is_object($this->_paymentData) && (class_exists('Resursbank\RBEcomPHP\resurs_paymentData') || class_exists('resurs_paymentData'))) {
             $this->_paymentData = new resurs_paymentData($paymentMethodId);
         } else {
@@ -2822,7 +2825,8 @@ class ResursBank
                 throw new ResursException("There is no bookData available for the booking", ResursExceptions::BOOKPAYMENT_NO_BOOKDATA);
             }
         }
-        return $this->bookPaymentBulk($paymentMethodId, $bookData, $getReturnedObjectAsStd, $keepReturnObject, $externalParameters);
+        $returnBulk = $this->bookPaymentBulk($paymentMethodId, $bookData, $getReturnedObjectAsStd, $keepReturnObject, $externalParameters);
+		return $returnBulk;
     }
 
     /**
@@ -2869,7 +2873,7 @@ class ResursBank
      * @link https://test.resurs.com/docs/x/cIZM bookPayment EComPHP Reference
      * @link https://test.resurs.com/docs/display/ecom/bookPayment bookPayment reference
      *
-     * @param string $paymentMethodId
+     * @param string $paymentMethodId For Resurs Checkout, you should pass the reference ID here
      * @param array $bookData
      * @param bool $getReturnedObjectAsStd Returning a stdClass instead of a Resurs class
      * @param bool $keepReturnObject Making EComPHP backwards compatible when a webshop still needs the complete object, not only $bookPaymentResult->return
@@ -2907,6 +2911,12 @@ class ResursBank
         /* Special rule preparation for Resurs Bank Omnicheckout */
         if ($this->getBookParameter('type', $externalParameters) == "omni" || (isset($bookData['type']) && $bookData['type'] == "omni")) {
             $this->isOmniFlow = true;
+            /*
+             * In omnicheckout the first variable is not the payment method, it is the preferred order id
+             */
+            if (empty($this->preferredId)) {
+            	$this->preferredId = $paymentMethodId;
+            }
         }
         /* Make EComPHP ignore some steps that is not required in an omni checkout */
         if ($this->isOmniFlow) {
@@ -2918,7 +2928,7 @@ class ResursBank
             // Do not use wsdl stubs if we are targeting rest services
             $this->InitializeServices();
         }
-        $this->updatePaymentdata($paymentMethodId, isset($bookData['paymentData']) && is_array($bookData['paymentData']) && count($bookData['paymentData']) ? $bookData['paymentData'] : array());
+	    $this->updatePaymentdata($paymentMethodId, isset($bookData['paymentData']) && is_array($bookData['paymentData']) && count($bookData['paymentData']) ? $bookData['paymentData'] : array());
         if (isset($bookData['specLine']) && is_array($bookData['specLine'])) {
             $this->updateCart(isset($bookData['specLine']) ? $bookData['specLine'] : array());
         } else {
@@ -2991,7 +3001,6 @@ class ResursBank
                 }
             }
         }
-
         /* If this request actually belongs to an omni flow, let's handle the incoming data differently */
         if ($this->isOmniFlow) {
             /* Prepare a frame for omni checkout */
@@ -3112,7 +3121,6 @@ class ResursBank
             $bookData['paymentData']['paymentMethodId'] = $paymentMethodId;
         }
         if (!isset($bookData['paymentData']['preferredId']) || (isset($bookData['paymentData']['preferredId']) && empty($bookData['paymentData']['preferredId']))) {
-            $this->preferredId = $this->generatePreferredId(25, "hosted");
             $bookData['paymentData']['preferredId'] = $this->preferredId;
         }
         /**
@@ -3141,6 +3149,9 @@ class ResursBank
 
     public function prepareOmniFrame($bookData = array(), $orderReference = "", $omniCallType = ResursCheckoutCallTypes::METHOD_PAYMENTS)
     {
+	    if (empty($this->preferredId)) {
+		    $this->preferredId = $this->generatePreferredId();
+	    }
         if ($this->current_environment == ResursEnvironments::ENVIRONMENT_TEST) {
             $this->env_omni_current = $this->env_omni_test;
         } else {
@@ -3329,6 +3340,9 @@ class ResursBank
         return $engineResponse;
     }
 
+    public function getStoredCurlExceptionInformation() {
+    	return $this->CURL->getStoredExceptionInformation();
+    }
 
     /**
      * @param  mixed    $paymentId  [The current paymentId]
@@ -3342,7 +3356,7 @@ class ResursBank
         }
 
         $url = $this->getCheckoutUrl() . '/checkout/payments/' . $paymentId . '/updatePaymentReference';
-        $response = $this->createJsonEngine($url, json_encode(array('paymentReference' => $to)), ResursCurlMethods::METHOD_PUT);
+	    $response = $this->CURL->getParsedResponse($this->createJsonEngine($url, json_encode(array('paymentReference' => $to)), ResursCurlMethods::METHOD_PUT));
         return $response;
     }
 
