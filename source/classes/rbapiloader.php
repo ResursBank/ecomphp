@@ -3350,6 +3350,7 @@ class ResursBank
      * @param  string    $to         [What it should be updated to]
      * @return mixed
      * @throws Exception
+     * @since 1.0.1
      */
     public function updatePaymentReference($paymentId, $to) {
         if ( empty($paymentId) || empty($to) ) {
@@ -3366,15 +3367,25 @@ class ResursBank
 	 * @param string $metaDataValue
 	 *
 	 * @return bool
-	 * @throws Exception
+	 * @throws \Exception
+	 * @since 1.0.1
 	 */
     public function addMetaData($paymentId = '', $metaDataKey = '', $metaDataValue = '') {
-	    echo $paymentId;
 	    if ( empty( $paymentId ) ) {
 		    throw new \Exception( "Payment id is not set" );
 	    }
 	    if ( empty( $metaDataKey ) || empty( $metaDataValue ) ) {
 		    throw new \Exception( "Can't have empty meta information" );
+	    }
+
+	    $customErrorMessage = "";
+	    try {
+		    $checkPayment = $this->getPayment( $paymentId );
+	    } catch (\Exception $e) {
+	    	$customErrorMessage = $e->getMessage();
+	    }
+	    if (!isset($checkPayment->id)) {
+	    	throw new \Exception($customErrorMessage);
 	    }
 	    $metaDataArray    = array(
 		    'paymentId' => $paymentId,

@@ -1037,6 +1037,17 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 			$this->markTestIncomplete("No valid payment found");
 		}
 	}
+	public function testAddMetaDataFailure() {
+		$paymentData = null;
+		$chosenPayment = 0;
+		$paymentId = null;
+		try {
+			$this->rb->addMetaData( "UnexistentPaymentId", "RandomKey" . rand( 1000, 1999 ), "RandomValue" . rand( 2000, 3000 ) );
+		} catch (\Exception $e) {
+			$this->assertTrue(true);
+		}
+		$this->markTestSkipped("addMetaDataFailure failed since it never got an exception");
+	}
 
 	/***
 	 * VERSION 1.0-1.1 DEPENDENT TESTS
