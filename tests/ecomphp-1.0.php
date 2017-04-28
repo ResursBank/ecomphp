@@ -21,11 +21,8 @@ require_once( '../source/classes/rbapiloader.php' );
  *
  */
 class ResursBankTest extends PHPUnit_Framework_TestCase {
-	/**
-	 * Resurs Bank API Gateway, PHPUnit Test Client
-	 *
-	 * @subpackage EcomPHPClient
-	 */
+	private $CURL;
+	private $NETWORK;
 
 	/**
 	 * The heart of this unit. To make tests "nicely" compatible with 1.1, this should be placed on top of this class as it looks different there.
@@ -154,6 +151,8 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 	 *
 	 */
 	public function __construct() {
+		$this->CURL = new \TorneLIB\Tornevall_cURL();
+		$this->NETWORK = new \TorneLIB\TorneLIB_Network();
 
 		if ( version_compare( PHP_VERSION, '5.3.0', "<" ) ) {
 			if ( ! $this->allowObsoletePHP ) {
@@ -947,8 +946,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 
 		if ( is_string( $bookResult ) && preg_match( "/iframe src/i", $bookResult ) ) {
 			$iFrameUrl     = $this->rb->getIframeSrc( $bookResult );
-			$CURL          = new \TorneLIB\Tornevall_cURL();
-			$iframeContent = $CURL->doGet( $iFrameUrl );
+			$iframeContent = $this->CURL->doGet( $iFrameUrl );
 			if ( ! empty( $iframeContent['body'] ) ) {
 				$assumeThis = true;
 			}
@@ -964,13 +962,45 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 	}
 
 	/**
-	 * Try to fetch the iframe (Resurs Checkout).
+	 * Try to fetch the iframe (Resurs Checkout). When the iframe url has been received, check if there's content.
 	 */
 	public function testGetCheckoutFrame() {
 		$this->checkEnvironment();
-		$hasIframe = ( $this->getCheckoutFrame( true ) ? true : false );
-		$this->assertTrue( $hasIframe );
+		$getFrameUrl = $this->getCheckoutFrame( true );
+		$UrlDomain = $this->NETWORK->getUrlDomain($getFrameUrl);
+		// If there is no https defined in the frameUrl, the test might have failed
+		if (array_pop($UrlDomain) == "https") {
+			$FrameContent = $this->CURL->doGet($getFrameUrl);
+			$this->assertTrue($FrameContent['code'] == 200 && strlen($FrameContent['body']) > 1024);
+		}
 	}
+
+    /**
+     * Try to update a payment reference by first creating the iframe
+     */
+	public function testSetReference() {
+		// Note: In this test we might be a little bit more dependent on more step.
+
+		$res = array();
+        $this->checkEnvironment();
+        try {
+	        $iFrameUrl = $this->getCheckoutFrame( true );
+        } catch (Exception $e) {
+        	$this->markTestIncomplete("Exception: " . $e->getMessage());
+        }
+		$iframeRequest = $this->CURL->doGet( $iFrameUrl );
+		$iframeContent = $iframeRequest['body'];
+		$iframePaymentReference = $this->rb->getPreferredPaymentId();
+        if (!empty($iframePaymentReference) && !empty($iFrameUrl) && !empty($iframeContent) && strlen($iframeContent) > 1024) {
+	        $newReference = $this->rb->generatePreferredId();
+	        try {
+		        $res = $this->rb->updatePaymentReference( $iframePaymentReference, $newReference );
+	        } catch (Exception $e) {
+		        $stopRequest = time();
+	        	$this->markTestIncomplete("Exception: " . $e->getCode() . ": " . $e->getMessage());
+	        }
+        }
+    }
 
 	/**
 	 * Get all callbacks by a rest call (objects)
@@ -986,41 +1016,26 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 		$this->assertGreaterThan(0, count($this->rb->getCallBacksByRest(true)));
 	}
 
-    /**
-     * Try to update a payment reference by first creating the iframe
-     */
-	public function testSetReference() {
-        $this->checkEnvironment();
-        try {
-	        $iFrameUrl = $this->getCheckoutFrame( true );
-        } catch (Exception $e) {
-        	echo "Exception: " . $e->getMessage() . "\n";
-        }
-        // Update reference to a random id with the margul-function.
-		$CURL          = new \TorneLIB\Tornevall_cURL();
-        $CURL->CurlTimeout = 60;
-        $CURL->CurlHeaders[] = 'Connection: Keep-Alive';
-		$iframeRequest = $CURL->doGet( $iFrameUrl );
-		$iframeContent = $iframeRequest['body'];
-		$iframePaymentReference = $this->rb->getPreferredPaymentId();
-        if (!empty($iframePaymentReference) && !empty($iFrameUrl) && !empty($iframeContent) && strlen($iframeContent) > 1024) {
-	        $newReference = $this->rb->generatePreferredId();
-	        //echo "Update $iframePaymentReference with $newReference (iFrame URL: $iFrameUrl)\n";
-	        $startRequest = time();
-	        try {
-		        $res = $this->rb->updatePaymentReference( $iframePaymentReference, $newReference );
-	        } catch (Exception $e) {
-		        $stopRequest = time();
-	        	echo "Exception: " . $e->getCode() . ": " . $e->getMessage() . "\n";
-	        }
-	        $stopRequest = time();
-	        $requestDiff = $stopRequest-$startRequest;
-	        //echo "Request time length: " . $requestDiff . "\n";
-        }
-    }
+	public function testSetRegisterCallbacks() {
 
-	public function setRegisterCallbacks() {
+	}
+	public function testAddMetaData() {
+		$paymentData = null;
+		$chosenPayment = 0;
+		$paymentId = null;
 
+		$paymentList = $this->rb->findPayments();
+		// For some reason, we not always get a valid order
+		$preventLoop = 0;
+		while (!isset($paymentList[$chosenPayment]) && $preventLoop++ < 10) {$chosenPayment = rand(0,count($paymentList));}
+
+		if (isset($paymentList[$chosenPayment])) {
+			$paymentData = $paymentList[ $chosenPayment ];
+			$paymentId   = $paymentData->paymentId;
+			$this->assertTrue($this->rb->addMetaData($paymentId, "RandomKey" . rand(1000,1999), "RandomValue" . rand(2000,3000)));
+		} else {
+			$this->markTestIncomplete("No valid payment found");
+		}
 	}
 
 	/***
