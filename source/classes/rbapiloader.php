@@ -3366,15 +3366,24 @@ class ResursBank
 	 * @param string $metaDataValue
 	 *
 	 * @return bool
-	 * @throws Exception
+	 * @throws \Exception
 	 */
 	public function addMetaData($paymentId = '', $metaDataKey = '', $metaDataValue = '') {
-		echo $paymentId;
 		if ( empty( $paymentId ) ) {
 			throw new \Exception( "Payment id is not set" );
 		}
 		if ( empty( $metaDataKey ) || empty( $metaDataValue ) ) {
 			throw new \Exception( "Can't have empty meta information" );
+		}
+
+		$customErrorMessage = "";
+		try {
+			$checkPayment = $this->getPayment( $paymentId );
+		} catch (\Exception $e) {
+			$customErrorMessage = $e->getMessage();
+		}
+		if (!isset($checkPayment->id)) {
+			throw new \Exception($customErrorMessage);
 		}
 		$metaDataArray    = array(
 			'paymentId' => $paymentId,
@@ -3387,6 +3396,7 @@ class ResursBank
 		}
 		return false;
 	}
+
 
 	/**
 	 * Return a string containing the last error for the current session. Returns null if no errors occured
