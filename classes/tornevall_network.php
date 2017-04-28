@@ -595,6 +595,10 @@ class Tornevall_cURL
         }
     }
 
+    public function getUserAgent() {
+        return $this->CurlUserAgent;
+    }
+
     /**
      * cUrl initializer, if needed faster
      *
