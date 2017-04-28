@@ -110,7 +110,7 @@ class TorneLIB_JPGraph extends TorneLIB_Pluggable {
      * @return string|void
      */
     public function getGraph($GraphType = JPGRAPH_TYPES::GRAPH_LINE) {
-        if (!$this->HasJpgraph()) { return; }
+        if (!$this->HasJpgraph()) { throw new \Exception("JPGraph is unavailable in this environment");}
         if ($GraphType <= 0) { return; }
 	    if (!isset($this->JPGRAPH_ARRAY->values)) {return;}
         $UseValues = $this->TranslateArray($this->JPGRAPH_ARRAY->values);
