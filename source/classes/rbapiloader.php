@@ -44,9 +44,9 @@ class ResursBank
 	/** @var string Replacing $clientName on usage of setClientNAme */
 	private $realClientName = "RB-EcomBridge";
 	/** @var string The version of this gateway */
-	private $version = "1.0.1";
+	private $version = "1.1.1";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20170427";
+	private $lastUpdate = "20170428";
 	private $preferredId = null;
 	private $ocShopScript = null;
 	private $formTemplateRuleArray = array();
@@ -71,7 +71,8 @@ class ResursBank
 		'getAddress' => 'SimplifiedShopFlowService',
 		'getAnnuityFactors' => 'SimplifiedShopFlowService',
 		'getPayment' => 'AfterShopFlowService',
-		'findPayments' => 'AfterShopFlowService'
+		'findPayments' => 'AfterShopFlowService',
+		'addMetaData' => 'AfterShopFlowService'
 	);
 
 	/**
@@ -2805,7 +2806,7 @@ class ResursBank
 	 * This is the entry point of the simplified version of bookPayment. The normal action here is to send a bulked array with settings for how the payment should be handled (see https://test.resurs.com/docs/x/cIZM)
 	 * Minor notice: We are currently preparing support for hosted flow by sending array('type' => 'hosted'). It is however not ready to run yet.
 	 *
-	 * @param string $paymentMethodId
+	 * @param string $paymentMethodIdOrPaymentReference
 	 * @param array $bookData
 	 * @param bool $getReturnedObjectAsStd Returning a stdClass instead of a Resurs class
 	 * @param bool $keepReturnObject Making EComPHP backwards compatible when a webshop still needs the complete object, not only $bookPaymentResult->return
@@ -2815,7 +2816,7 @@ class ResursBank
 	 * @link https://test.resurs.com/docs/x/cIZM bookPayment EComPHP Reference
 	 * @link https://test.resurs.com/docs/display/ecom/bookPayment bookPayment reference
 	 */
-	public function bookPayment($paymentMethodId = '', $bookData = array(), $getReturnedObjectAsStd = true, $keepReturnObject = false, $externalParameters = array())
+	public function bookPayment($paymentMethodIdOrPaymentReference = '', $bookData = array(), $getReturnedObjectAsStd = true, $keepReturnObject = false, $externalParameters = array())
 	{
 		/* If the bookData-array seems empty, we'll try to import the internally set bookData */
 		if (is_array($bookData) && !count($bookData)) {
@@ -2825,7 +2826,7 @@ class ResursBank
 				throw new ResursException("There is no bookData available for the booking", ResursExceptions::BOOKPAYMENT_NO_BOOKDATA);
 			}
 		}
-		$returnBulk = $this->bookPaymentBulk($paymentMethodId, $bookData, $getReturnedObjectAsStd, $keepReturnObject, $externalParameters);
+		$returnBulk = $this->bookPaymentBulk($paymentMethodIdOrPaymentReference, $bookData, $getReturnedObjectAsStd, $keepReturnObject, $externalParameters);
 		return $returnBulk;
 	}
 
@@ -3334,7 +3335,7 @@ class ResursBank
 		if (empty($paymentId)) {
 			throw new \Exception("Payment id not set");
 		}
-		$omniUrl = $this->getOmniUrl();
+		$omniUrl = $this->getCheckoutUrl();
 		$omniRefUrl = $omniUrl . "/checkout/payments/" . $paymentId;
 		$engineResponse = $this->createJsonEngine($omniRefUrl, $jsonData, ResursCurlMethods::METHOD_PUT);
 		return $engineResponse;
@@ -3345,8 +3346,8 @@ class ResursBank
 	}
 
 	/**
-	 * @param  mixed    $paymentId  [The current paymentId]
-	 * @param  miced    $to         [What it should be updated to]
+	 * @param  string    $paymentId  [The current paymentId]
+	 * @param  string    $to         [What it should be updated to]
 	 * @return mixed
 	 * @throws Exception
 	 */
@@ -3354,10 +3355,37 @@ class ResursBank
 		if ( empty($paymentId) || empty($to) ) {
 			throw new \Exception("Payment id and to must be set");
 		}
-
 		$url = $this->getCheckoutUrl() . '/checkout/payments/' . $paymentId . '/updatePaymentReference';
 		$response = $this->CURL->getParsedResponse($this->createJsonEngine($url, json_encode(array('paymentReference' => $to)), ResursCurlMethods::METHOD_PUT));
 		return $response;
+	}
+
+	/**
+	 * @param string $paymentId
+	 * @param string $metaDataKey
+	 * @param string $metaDataValue
+	 *
+	 * @return bool
+	 * @throws Exception
+	 */
+	public function addMetaData($paymentId = '', $metaDataKey = '', $metaDataValue = '') {
+		echo $paymentId;
+		if ( empty( $paymentId ) ) {
+			throw new \Exception( "Payment id is not set" );
+		}
+		if ( empty( $metaDataKey ) || empty( $metaDataValue ) ) {
+			throw new \Exception( "Can't have empty meta information" );
+		}
+		$metaDataArray    = array(
+			'paymentId' => $paymentId,
+			'key'       => $metaDataKey,
+			'value'     => $metaDataValue
+		);
+		$metaDataResponse = $this->CURL->doGet( $this->getServiceUrl( "addMetaData" ) )->addMetaData( $metaDataArray );
+		if ( $metaDataResponse['code'] >= 200 ) {
+			return true;
+		}
+		return false;
 	}
 
 	/**

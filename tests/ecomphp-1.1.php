@@ -157,6 +157,8 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	 *
 	 */
 	public function __construct() {
+		$this->CURL = new \TorneLIB\Tornevall_cURL();
+		$this->NETWORK = new \TorneLIB\TorneLIB_Network();
 
 		if ( version_compare( PHP_VERSION, '5.3.0', "<" ) ) {
 			if ( ! $this->allowObsoletePHP ) {
@@ -416,7 +418,12 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 			'forceSigning' => $forceSigning
 		);
 
-		$res = $this->rb->bookPayment( $setMethod, $bookData );
+		if ( $paymentServiceSet !== \Resursbank\RBEcomPHP\ResursMethodTypes::METHOD_CHECKOUT ) {
+			$res = $this->rb->bookPayment( $setMethod, $bookData );
+		} else {
+			$res = $this->rb->bookPayment( $this->rb->getPreferredPaymentId(), $bookData );
+		}
+
 		/*
 		 * bookPaymentStatus is for simplified flows only
 		 */
@@ -436,7 +443,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 				$Network           = new \TorneLIB\TorneLIB_Network();
 				$signUrlHostInfo   = $Network->getUrlDomain( $signUrl );
 				$getUrlHost        = $signUrlHostInfo[1] . "://" . $signUrlHostInfo[0];
-				$mockSuccessUrl    = $getUrlHost . "/" . preg_replace( '/(.*?)\<a href=\"(.*?)\">(.*?)\>Mock success(.*)/is', '$2', $getSigningPage );
+				$mockSuccessUrl    = preg_replace("/\/$/", '', $getUrlHost . "/" . preg_replace( '/(.*?)\<a href=\"(.*?)\">(.*?)\>Mock success(.*)/is', '$2', $getSigningPage ));
 				$getSuccessContent = json_decode( file_get_contents( $mockSuccessUrl ) );
 				if ( $getSuccessContent->success == "true" ) {
 					if ( $signSuccess ) {
@@ -924,85 +931,118 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 		$this->assertTrue( ( preg_match( "/amount=$amount/i", $customURL ) ? true : false ) );
 	}
 
-    /**
-     * This test is incomplete.
-     *
-     * @param bool $returnTheFrame
-     * @param bool $returnPaymentReference Return the payment reference instead of true/false/iframe
-     *
-     * @return bool|null
-     */
-    private function getCheckoutFrame( $returnTheFrame = false, $returnPaymentReference = false ) {
-        $assumeThis = false;
-        if ( $returnTheFrame ) {
-            $iFrameUrl = false;
-        }
-        if ( $this->ignoreBookingTests ) {
-            $this->markTestSkipped();
-        }
-        $this->rb->setPreferredPaymentService( \Resursbank\RBEcomPHP\ResursMethodTypes::METHOD_CHECKOUT );
-        $bookResult = $this->doBookPayment( $this->availableMethods['invoice_natural'], true, false, true );
-        if ($returnPaymentReference) {
-            return $this->rb->getPreferredPaymentId();
-        }
-        if ( is_string( $bookResult ) && preg_match( "/iframe src/i", $bookResult ) ) {
-            $iFrameUrl     = $this->rb->getIframeSrc( $bookResult );
-            $CURL          = new \TorneLIB\Tornevall_cURL();
-            $iframeContent = $CURL->doGet( $iFrameUrl );
-            if ( ! empty( $iframeContent['body'] ) ) {
-                $assumeThis = true;
-            }
-        }
-        if ( ! $returnTheFrame ) {
-            return $assumeThis;
-        } else {
-            return $iFrameUrl;
-        }
-    }
+	/**
+	 * This test is incomplete.
+	 *
+	 * @param bool $returnTheFrame
+	 *
+	 * @return bool|null
+	 */
+	private function getCheckoutFrame( $returnTheFrame = false, $returnPaymentReference = false ) {
+		$assumeThis = false;
+		if ( $returnTheFrame ) {
+			$iFrameUrl = false;
+		}
+		if ( $this->ignoreBookingTests ) {
+			$this->markTestSkipped();
+		}
+		$this->rb->setPreferredPaymentService( \Resursbank\RBEcomPHP\ResursMethodTypes::METHOD_CHECKOUT );
+		$newReferenceId = $this->rb->generatePreferredId();
+		$bookResult = $this->doBookPayment( $newReferenceId, true, false, true );
 
-    /**
-     * Try to fetch the iframe (Resurs Checkout).
-     */
-    public function testGetCheckoutFrame() {
-        $this->checkEnvironment();
-        $hasIframe = ( $this->getCheckoutFrame( true ) ? true : false );
-        $this->assertTrue( $hasIframe );
-    }
+		if ( is_string( $bookResult ) && preg_match( "/iframe src/i", $bookResult ) ) {
+			$iFrameUrl     = $this->rb->getIframeSrc( $bookResult );
+			$iframeContent = $this->CURL->doGet( $iFrameUrl );
+			if ( ! empty( $iframeContent['body'] ) ) {
+				$assumeThis = true;
+			}
+		}
+		if ($returnPaymentReference) {
+			return $this->rb->getPreferredPaymentId();
+		}
+		if ( ! $returnTheFrame ) {
+			return $assumeThis;
+		} else {
+			return $iFrameUrl;
+		}
+	}
 
-    /**
-     * Get all callbacks by a rest call (objects)
-     */
-    public function testGetCallbackListByRest() {
-        $this->assertGreaterThan(0, count($this->rb->getCallBacksByRest()));
-    }
+	/**
+	 * Try to fetch the iframe (Resurs Checkout). When the iframe url has been received, check if there's content.
+	 */
+	public function testGetCheckoutFrame() {
+		$this->checkEnvironment();
+		$getFrameUrl = $this->getCheckoutFrame( true );
+		$UrlDomain = $this->NETWORK->getUrlDomain($getFrameUrl);
+		// If there is no https defined in the frameUrl, the test might have failed
+		if (array_pop($UrlDomain) == "https") {
+			$FrameContent = $this->CURL->doGet($getFrameUrl);
+			$this->assertTrue($FrameContent['code'] == 200 && strlen($FrameContent['body']) > 1024);
+		}
+	}
 
-    /**
-     * Get all callbacks by a rest call (key-indexed array)
-     */
-    public function testGetCallbackListAsArrayByRest() {
-        $this->assertGreaterThan(0, count($this->rb->getCallBacksByRest(true)));
-    }
+	/**
+	 * Try to update a payment reference by first creating the iframe
+	 */
+	public function testSetReference() {
+		// Note: In this test we might be a little bit more dependent on more step.
 
-    /**
-     * Try to update a payment reference by first creating the iframe
-     */
-    public function testSetReference() {
-        $this->checkEnvironment();
-        $iframePaymentReference = $this->getCheckoutFrame(false, true);
-        // Update reference to a random id with the margul-function.
-        $newReference = $this->rb->generatePreferredId();
-        $res = null;
-        try {
-            $res = $this->rb->updatePaymentReference($iframePaymentReference, $newReference);
-        } catch (\Exception $e) {
-            echo "Exception catch: " . $e->getMessage();
-        }
-        print_r($res);
-    }
+		$res = array();
+		$this->checkEnvironment();
+		try {
+			$iFrameUrl = $this->getCheckoutFrame( true );
+		} catch (Exception $e) {
+			$this->markTestIncomplete("Exception: " . $e->getMessage());
+		}
+		$iframeRequest = $this->CURL->doGet( $iFrameUrl );
+		$iframeContent = $iframeRequest['body'];
+		$iframePaymentReference = $this->rb->getPreferredPaymentId();
+		if (!empty($iframePaymentReference) && !empty($iFrameUrl) && !empty($iframeContent) && strlen($iframeContent) > 1024) {
+			$newReference = $this->rb->generatePreferredId();
+			try {
+				$res = $this->rb->updatePaymentReference( $iframePaymentReference, $newReference );
+			} catch (Exception $e) {
+				$stopRequest = time();
+				$this->markTestIncomplete("Exception: " . $e->getCode() . ": " . $e->getMessage());
+			}
+		}
+	}
 
-    public function setRegisterCallbacks() {
+	/**
+	 * Get all callbacks by a rest call (objects)
+	 */
+	public function testGetCallbackListByRest() {
+		$this->assertGreaterThan(0, count($this->rb->getCallBacksByRest()));
+	}
 
-    }
+	/**
+	 * Get all callbacks by a rest call (key-indexed array)
+	 */
+	public function testGetCallbackListAsArrayByRest() {
+		$this->assertGreaterThan(0, count($this->rb->getCallBacksByRest(true)));
+	}
+
+	public function testSetRegisterCallbacks() {
+
+	}
+	public function testAddMetaData() {
+		$paymentData = null;
+		$chosenPayment = 0;
+		$paymentId = null;
+
+		$paymentList = $this->rb->findPayments();
+		// For some reason, we not always get a valid order
+		$preventLoop = 0;
+		while (!isset($paymentList[$chosenPayment]) && $preventLoop++ < 10) {$chosenPayment = rand(0,count($paymentList));}
+
+		if (isset($paymentList[$chosenPayment])) {
+			$paymentData = $paymentList[ $chosenPayment ];
+			$paymentId   = $paymentData->paymentId;
+			$this->assertTrue($this->rb->addMetaData($paymentId, "RandomKey" . rand(1000,1999), "RandomValue" . rand(2000,3000)));
+		} else {
+			$this->markTestIncomplete("No valid payment found");
+		}
+	}
 
 	/***
 	 * VERSION 1.0-1.1 DEPENDENT TESTS
