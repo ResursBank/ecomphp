@@ -51,8 +51,11 @@ class ResursBank
     private $ocShopScript = null;
     private $formTemplateRuleArray = array();
     private $hasNameSpace = false;
+	private $validateExternalUrl = false;
+	private $externalApiAddress = "https://api.tornevall.net/2.0/";
 
     private $CURL = null;
+    private $NETWORK = null;
     private $hasWsdl = false;
 	/**
 	 * @var URLS pointing to direct access of Resurs Bank, instead of WSDL-stubs.
@@ -72,7 +75,9 @@ class ResursBank
     	'getAnnuityFactors' => 'SimplifiedShopFlowService',
     	'getPayment' => 'AfterShopFlowService',
     	'findPayments' => 'AfterShopFlowService',
-    	'addMetaData' => 'AfterShopFlowService'
+    	'addMetaData' => 'AfterShopFlowService',
+    	'registerEventCallback' => 'ConfigurationService',
+    	'getRegisteredEventCallback' => 'ConfigurationService'
     );
 
 	/**
@@ -723,7 +728,49 @@ class ResursBank
         $this->current_environment_updated = true;
     }
 
-    /**
+	public function setValidateExternalUrl($ValidationEnable = false) {
+		$this->validateExternalUrl = true;
+	}
+	private function validateExternalAddress($url = null, $expectedAcceptedCode = "200", $expectedErrorCode = "400") {
+    	$validResponse = false;
+		$ExternalAPI = $this->externalApiAddress . "/urltest/isavailable/";
+		$ExternalPostData = array('link' => base64_encode($url));
+		$ParsedResponse = $this->CURL->getParsedResponse($this->CURL->doPost($ExternalAPI, $ExternalPostData));
+		if (isset($ParsedResponse->response)) {
+			$isAvInfo = isset($ParsedResponse->response->isAvailableResponse->$url->result) ? $ParsedResponse->response->isAvailableResponse->$url->result : null;
+			if (isset($isAvInfo) && is_object($isAvInfo)) {
+
+				$hasSuccess = false;
+				foreach ( $isAvInfo as $browserName => $browserResponse ) {
+					if (is_string($expectedAcceptedCode) && $browserResponse == $expectedAcceptedCode) {
+						$hasSuccess = true;
+						break;
+					}
+					if (is_array($expectedAcceptedCode) && (count($expectedAcceptedCode) >= 2)) {
+						$fromAccept = $expectedAcceptedCode[0];
+						$toAccept = $expectedAcceptedCode[1];
+						if ($browserResponse >= $fromAccept && $browserResponse <= $toAccept) {
+							$hasSuccess = true;
+							break;
+						}
+					}
+					if (is_array($expectedErrorCode) && (count($expectedErrorCode) >= 2)) {
+						$fromAccept = $expectedErrorCode[0];
+						$toAccept = $expectedErrorCode[1];
+						if ($browserResponse >= $fromAccept && $browserResponse <= $toAccept) {
+							$hasSuccess = true;
+							break;
+						}
+					}
+				}
+			}
+		}
+		if (!$validResponse) {
+			throw new \Exception("The function validateExternalAddress is currently broken and can not be used");
+		}
+	}
+
+	/**
      * Find out if we have internal configuration enabled. The config file supports serialized (php) data and json-encoded content, but saves all data serialized.
      * @return bool
      * @throws ResursException
@@ -1134,6 +1181,9 @@ class ResursBank
 	    if (class_exists('TorneLIB\Tornevall_cURL')) {
 		    $this->CURL = new \TorneLIB\Tornevall_cURL();
 		    $this->CURL->setAuthentication($this->soapOptions['login'], $this->soapOptions['password']);
+	    }
+	    if (class_exists('TorneLIB\TorneLIB_Network')) {
+        	$this->NETWORK = new \TorneLIB\TorneLIB_Network();
 	    }
 
 	    // Make sure there are available services
@@ -1649,23 +1699,38 @@ class ResursBank
      * @param string $digestSaltString If empty, $digestSaltString is randomized
      * @param int $callbackType
      * @return string
+     * @deprecated 1.0.0
      */
     public function setCallbackDigest($digestSaltString = '', $callbackType = ResursCallbackTypes::UNDEFINED)
     {
-        /* Make sure the digestSaltString is never empty */
-        if (!empty($digestSaltString)) {
-            $currentDigest = $digestSaltString;
-        } else {
-            $currentDigest = $this->getSaltKey(4, 10);
-        }
-        if ($callbackType !== ResursCallbackTypes::UNDEFINED) {
-            $callbackTypeString = $this->getCallbackTypeString(!is_null($callbackType) ? $callbackType : ResursCallbackTypes::UNDEFINED);
-            $this->digestKey[$callbackTypeString] = $currentDigest;
-        } else {
-            $this->globalDigestKey = $currentDigest;
-        }
-        // Confirm the set up
-        return $currentDigest;
+    	return $this->setCallbackDigestSalt($digestSaltString, $callbackType);
+    }
+
+	/**
+	 * Callback digest helper - sets a simple digest key before calling setCallback
+	 *
+	 * @param string $digestSaltString If empty, $digestSaltString is randomized
+	 * @param int $callbackType
+	 *
+	 * @return string
+	 * @since 1.0.1
+	 * @since 1.1.1
+	 */
+    public function setCallbackDigestSalt($digestSaltString = '', $callbackType = ResursCallbackTypes::UNDEFINED) {
+	    // Make sure the digestSaltString is never empty
+	    if (!empty($digestSaltString)) {
+		    $currentDigest = $digestSaltString;
+	    } else {
+		    $currentDigest = $this->getSaltKey(4, 10);
+	    }
+	    if ($callbackType !== ResursCallbackTypes::UNDEFINED) {
+		    $callbackTypeString = $this->getCallbackTypeString(!is_null($callbackType) ? $callbackType : ResursCallbackTypes::UNDEFINED);
+		    $this->digestKey[$callbackTypeString] = $currentDigest;
+	    } else {
+		    $this->globalDigestKey = $currentDigest;
+	    }
+	    // Confirm the set up
+	    return $currentDigest;
     }
 
 	/**
@@ -1695,6 +1760,84 @@ class ResursBank
     	return $ResursResponse;
     }
 
+	/**
+	 * Register a callback URL with Resurs Bank
+	 *
+	 * @param int $callbackType
+	 * @param string $callbackUriTemplate
+	 * @param array $digestData
+	 * @param null $basicAuthUserName
+	 * @param null $basicAuthPassword
+	 *
+	 * @return bool
+	 * @throws Exception
+	 * @throws ResursException
+	 * @since 1.0.1
+	 * @since 1.1.1
+	 */
+    public function setRegisterCallback($callbackType = ResursCallbackTypes::UNDEFINED, $callbackUriTemplate = "", $digestData = array(), $basicAuthUserName = null, $basicAuthPassword = null) {
+    	$returnSuccess = false;
+    	$this->InitializeServices();
+
+	    if ($this->validateExternalUrl) {
+		    $this->validateExternalAddress($callbackUriTemplate, array(200,204), array(406));
+	    }
+	    $serviceUrl = $this->getServiceUrl("registerEventCallback");
+
+    	// The final array
+	    $renderCallback = array();
+
+	    // DEFAULT SETUP
+	    $renderCallback['eventType'] = $this->getCallbackTypeString($callbackType);
+	    if (empty($renderCallback['eventType'])) {
+		    throw new ResursException("The callback type you are trying to register is not supported by EComPHP", ResursExceptions::CALLBACK_TYPE_UNSUPPORTED, __FUNCTION__);
+	    }
+	    $renderCallback['uriTemplate'] = $callbackUriTemplate;
+
+	    // BASIC AUTH CONTROL
+	    if (!empty($basicAuthUserName) && !empty($basicAuthPassword)) {
+	    	$renderCallback['basicAuthUserName'] = $basicAuthUserName;
+	    	$renderCallback['basicAuthPassword'] = $basicAuthPassword;
+	    }
+
+	    ////// DIGEST CONFIGURATION BEGIN
+	    $renderCallback['digestConfiguration'] = array(
+	    	'digestParameters' => $this->getCallbackTypeParameters($callbackType)
+	    );
+	    if (isset($digestData['digestAlgorithm']) && strtolower($digestData['digestAlgorithm']) != "sha1" && strtolower($digestData['digestAlgorithm']) != "md5") {
+		    $renderCallback['digestConfiguration']['digestAlgorithm'] = "sha1";
+	    } elseif (!isset($callbackDigest['digestAlgorithm'])) {
+		    $renderCallback['digestConfiguration']['digestAlgorithm'] = "sha1";
+	    }
+	    $renderCallback['digestConfiguration']['digestAlgorithm'] = strtoupper($renderCallback['digestConfiguration']['digestAlgorithm']);
+	    if (!empty($callbackDigest['digestSalt'])) {
+		    if ($digestData['digestSalt']) {
+			    $renderCallback['digestConfiguration']['digestSalt'] = $digestData['digestSalt'];
+		    }
+	    }
+	    // Overriders - if the globalDigestKey or the digestKey (specific type required) is set, it means that setCallbackDigest has been used.
+	    if (!empty($this->globalDigestKey)) {
+		    $renderCallback['digestConfiguration']['digestSalt'] = $this->globalDigestKey;
+	    }
+	    if (isset($this->digestKey[$renderCallback['eventType']]) && !empty($this->digestKey[$renderCallback['eventType']])) {
+		    $renderCallback['digestConfiguration']['digestSalt'] = $this->digestKey['eventType'];
+	    }
+	    if (empty($renderCallback['digestConfiguration']['digestSalt'])) {
+	    	throw new \Exception("Can not continue without a digest salt key", ResursExceptions::CALLBACK_SALTDIGEST_MISSING);
+	    }
+	    ////// DIGEST CONFIGURATION FINISH
+
+	    // Make sure the callback gets unregistered first (This is a deprecated method to re-register callbacks that is already exists in Resurs Bank)
+	    $renderedResponse = $this->CURL->doGet($serviceUrl)->registerEventCallback($renderCallback);
+	    if ($renderedResponse['code'] == "200") {
+	    	$callbackUriControl = $this->CURL->getParsedResponse($this->CURL->doGet($this->getServiceUrl('getRegisteredEventCallback'))->getRegisteredEventCallback(array('eventType'=>$renderCallback['eventType'])));
+			if (isset($callbackUriControl->uriTemplate) && is_string($callbackUriControl->uriTemplate) && strtolower($callbackUriControl->uriTemplate) == strtolower($callbackUriTemplate)) {
+				return true;
+			}
+	    }
+	    return false;
+    }
+
     /**
      * Simplifed callback registrator. Also handles re-registering of callbacks in case of already found in system.
      *
@@ -1705,9 +1848,17 @@ class ResursBank
      * @param null $basicAuthPassword
      * @return bool
      * @throws \Exception
+     * @deprecated 1.0.0
      */
     public function setCallback($callbackType = ResursCallbackTypes::UNDEFINED, $callbackUriTemplate = "", $callbackDigest = array(), $basicAuthUserName = null, $basicAuthPassword = null)
     {
+    	return $this->setRegisterCallback($callbackType, $callbackUriTemplate, $callbackDigest, $basicAuthUserName, $basicAuthPassword);
+
+    	/*
+    	 * Code below is in deprecation state
+    	 */
+
+    	/*
         $this->InitializeServices();
         $renderCallback = array();
         $digestParameters = array();
@@ -1719,39 +1870,32 @@ class ResursBank
         $confirmCallbackResult = false;
         if (isset($callbackDigest) && !is_array($callbackDigest)) { $callbackDigest = array(); }
         if (count($renderCallback) && $renderCallback['eventType'] != "" && !empty($callbackUriTemplate)) {
-            /** @noinspection PhpParamsInspection */
             if ($this->hasWsdl) {
 	            $registerCallbackClass = new resurs_registerEventCallback( $renderCallback['eventType'], $callbackUriTemplate );
             }
             $digestAlgorithm = resurs_digestAlgorithm::SHA1;
 
-            /*
-             * Look for parameters in the request. Algorithms are set to SHA1 by default.
-             * If no digestsalts are set, we will throw you an exception, since empty salts is normally not a good idea
-             */
+            // Look for parameters in the request. Algorithms are set to SHA1 by default.
+	        // If no digestsalts are set, we will throw you an exception, since empty salts is normally not a good idea
             if (is_array($callbackDigest)) {
                 if (isset($callbackDigest['digestAlgorithm']) && strtolower($callbackDigest['digestAlgorithm']) != "sha1" && strtolower($callbackDigest['digestAlgorithm']) != "md5") {
                     $callbackDigest['digestAlgorithm'] = "sha1";
                 } elseif (!isset($callbackDigest['digestAlgorithm'])) {
                     $callbackDigest['digestAlgorithm'] = "sha1";
                 }
-                /* If requested algorithm is not sha1, use md5 as the other option. */
+                // If requested algorithm is not sha1, use md5 as the other option.
                 if ($callbackDigest['digestAlgorithm'] != "sha1") {
                     $digestAlgorithm = digestAlgorithm::MD5;
                 }
-                /* Start collect the parameters needed for the callback (manually if necessary - otherwise, we'll catch the parameters from our defaults as described at https://test.resurs.com/docs/x/LAAF) */
+                // Start collect the parameters needed for the callback (manually if necessary - otherwise, we'll catch the parameters from our defaults as described at https://test.resurs.com/docs/x/LAAF)
                 $parameterArray = array();
-                /*
-                 * Make sure the digest parameters exists, and fill them in if the array exists but is empty
-                 */
+                // Make sure the digest parameters exists, and fill them in if the array exists but is empty
                 if (isset($callbackDigest['digestParameters'])) {
                     if (((is_array($callbackDigest['digestParameters']) && !count($callbackDigest['digestParameters'])) || empty($callbackDigest['digestParameters']))) {
                         $callbackDigest['digestParameters'] = $this->getCallbackTypeParameters($callbackType);
                     }
                 } else {
-                    /*
-                     * Make sure that the parameter array is set if it does not exist at all
-                     */
+                    // Make sure that the parameter array is set if it does not exist at all
                     $callbackDigest['digestParameters'] = $this->getCallbackTypeParameters($callbackType);
                 }
                 if (isset($callbackDigest['digestParameters']) && is_array($callbackDigest['digestParameters'])) {
@@ -1761,11 +1905,9 @@ class ResursBank
                         }
                     }
                 }
-                /*
-                 * Check if the helper received a salt key. To now interfere with the array of digestKey, we are preparing with globalDigestKey.
-                 */
+                // Check if the helper received a salt key. To now interfere with the array of digestKey, we are preparing with globalDigestKey.
                 if (!count($this->digestKey) && !empty($this->globalDigestKey)) {
-                    /* Only set up the digesSalt if not already set */
+                    // Only set up the digesSalt if not already set
                     if (empty($callbackDigest['digestSalt'])) {
                         $callbackDigest['digestSalt'] = $this->globalDigestKey;
                     }
@@ -1774,7 +1916,7 @@ class ResursBank
                         $callbackDigest['digestSalt'] = $this->digestKey['eventType'];
                     }
                 }
-                /* Make sure there is a saltkey or throw */
+                // Make sure there is a saltkey or throw
                 if (isset($callbackDigest['digestSalt']) && !empty($callbackDigest['digestSalt'])) {
                     $digestParameters['digestSalt'] = $callbackDigest['digestSalt'];
                 } else {
@@ -1782,42 +1924,38 @@ class ResursBank
                 }
                 $digestParameters['digestParameters'] = (is_array($parameterArray) ? $parameterArray : array());
             }
-            /* Generate a digest configuration for the services. */
-            /** @noinspection PhpParamsInspection */
+            // Generate a digest configuration for the services.
             if ($this->hasWsdl) {
 	            $digestConfiguration = new resurs_digestConfiguration( $digestAlgorithm, $digestParameters['digestParameters'] );
             }
             $digestConfiguration->digestSalt = $digestParameters['digestSalt'];
-
-            /* Unregister any old callbacks if found. */
+            // Unregister any old callbacks if found.
             $this->unSetCallback($callbackType);
-
             if ($this->hasWsdl) {
-	            /* If your site needs authentication to reach callbacks, this sets up a basic authentication for it */
+	            // If your site needs authentication to reach callbacks, this sets up a basic authentication for it
 	            if ( ! empty( $basicAuthUserName ) ) {
 		            $registerCallbackClass->setBasicAuthUserName( $basicAuthUserName );
 	            }
 	            if ( ! empty( $basicAuthPassword ) ) {
 		            $registerCallbackClass->setBasicAuthPassword( $basicAuthPassword );
 	            }
-	            /* Prepare for the primary digestive data. */
+	            // Prepare for the primary digestive data.
 	            $registerCallbackClass->digestConfiguration = $digestConfiguration;
 	            try {
-		            /* And register the rendered callback at the service. Make sure that configurationService is really there before doing this. */
+		            // And register the rendered callback at the service. Make sure that configurationService is really there before doing this.
 		            $regCallBackResult = $this->configurationService->registerEventCallback( $registerCallbackClass );
 		            if ( is_object( $regCallBackResult ) ) {
 			            $confirmCallbackResult = true;
 		            }
 	            } catch ( \Exception $rbCallbackEx ) {
-		            /* Set up a silent. failover, and return false if the callback registration failed. Set the error into the lastError-variable. */
+		            // Set up a silent. failover, and return false if the callback registration failed. Set the error into the lastError-variable.
 		            $regCallBackResult = false;
 		            $this->lastError   = $rbCallbackEx->getMessage();
 	            }
             } else {
             	die();
             }
-
-            /* If the answer, received from the registerEventCallback, is an empty object we should also secure that everything is all right with the requested URL */
+            // If the answer, received from the registerEventCallback, is an empty object we should also secure that everything is all right with the requested URL
             if ($confirmCallbackResult) {
                 $getRegisteredCallbackConfirmation = $this->getRegisteredEventCallback($renderCallback['eventType']);
                 if (isset($getRegisteredCallbackConfirmation->uriTemplate)) {
@@ -1831,8 +1969,9 @@ class ResursBank
             }
             return $regCallBackResult;
         } else {
-            throw new ResursException("Insufficient data for callback registration", ResursExceptions::CALLBACK_UNSUFFICIENT_DATA, __FUNCTION__);
+            throw new ResursException("Insufficient data for callback registration", ResursExceptions::CALLBACK_INSUFFICIENT_DATA, __FUNCTION__);
         }
+    	*/
     }
 
     /**

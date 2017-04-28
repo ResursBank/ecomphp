@@ -1016,9 +1016,9 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 		$this->assertGreaterThan(0, count($this->rb->getCallBacksByRest(true)));
 	}
 
-	public function testSetRegisterCallbacks() {
-
-	}
+	/**
+	 * Testing add metaData, adding random data to a payment
+	 */
 	public function testAddMetaData() {
 		$paymentData = null;
 		$chosenPayment = 0;
@@ -1037,6 +1037,10 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 			$this->markTestIncomplete("No valid payment found");
 		}
 	}
+
+	/**
+	 * Testing add metaData, with a faulty payment id
+	 */
 	public function testAddMetaDataFailure() {
 		$paymentData = null;
 		$chosenPayment = 0;
@@ -1049,32 +1053,27 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 		$this->markTestSkipped("addMetaDataFailure failed since it never got an exception");
 	}
 
+
 	/***
 	 * VERSION 1.0-1.1 DEPENDENT TESTS
 	 */
 
 	/**
-	 * Testing of callbacks
+	 * Renders required data to pass to a callback registrator.
+	 *
+	 * @param bool $UseCurl Using the curl library, will render this data differently
+	 *
+	 * @return array
 	 */
-	public function testCallbacks() {
-		if ( $this->ignoreDefaultTests ) {
-			$this->markTestSkipped();
-		}
-		/* If disabled */
-		if ( $this->disableCallbackRegMock || ( $this->disableCallbackRegNonMock && $this->environmentName === "nonmock" ) ) {
-			$this->assertTrue( 1 == 1 );
-
-			return;
-		}
+	private function renderCallbackData($UseCurl = false) {
 		$this->checkEnvironment();
-
+		$returnCallbackArray = array();
 		$parameter = array(
 			'ANNULMENT'               => array( 'paymentId' ),
 			'AUTOMATIC_FRAUD_CONTROL' => array( 'paymentId', 'result' ),
 			'FINALIZATION'            => array( 'paymentId' ),
 			'UNFREEZE'                => array( 'paymentId' )
 		);
-
 		foreach ( $parameter as $callbackType => $parameterArray ) {
 			$digestSaltString = $this->mkpass();
 			$digestArray      = array(
@@ -1100,20 +1099,71 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 				}
 			}
 			$callbackURL = $this->callbackUrl . "?event=" . $callbackType . "&digest={digest}&" . implode( "&", $renderArray ) . "&lastReg=" . strftime( "%y%m%d%H%M%S", time() );
-			try {
-				$callbackSetResult = $this->rb->setCallback( $setCallbackType, $callbackURL, $digestArray );
-				if ( ! empty( $this->rb->lastError ) ) {
-					continue;
-				}
-				if ( $callbackSetResult ) {
-					$callbackSaveData[ $callbackType ] = array( 'salt' => $digestSaltString );
-				}
-			} catch ( Exception $regCallbackException ) {
+			$returnCallbackArray[] = array($setCallbackType, $callbackURL, $digestArray);
+		}
+		return $returnCallbackArray;
+	}
 
+	/**
+	 * Register new callback urls
+	 */
+	public function testSetRegisterCallbacks() {
+		$this->checkEnvironment();
+		$callbackArrayData = $this->renderCallbackData(true);
+		$this->rb->setValidateExternalUrl(true);
+		$globalDigest = $this->rb->setCallbackDigest($this->mkpass());
+		$cResponse = array();
+		foreach ($callbackArrayData as $indexCB => $callbackInfo) {
+			$cResponse[$callbackInfo[0]] = $this->rb->setRegisterCallback( $callbackInfo[0], $callbackInfo[1], $callbackInfo[2] );
+		}
+		$successFulCallbacks = 0;
+		foreach ($cResponse as $cbType) {
+			if ($cbType == "1") {
+				$successFulCallbacks++;
 			}
 		}
-		// Registered callbacks must be as many as the above parameters (preferrably 4)
-		$this->assertTrue( count( $callbackSaveData ) == count( $parameter ) );
+		$this->assertEquals(count($cResponse), $successFulCallbacks);
+	}
+
+	/**
+	 * Register new callback urls but without the digest key (Fail)
+	 */
+	public function testSetRegisterCallbacksWithoutDigest() {
+		$this->checkEnvironment();
+		$callbackArrayData = $this->renderCallbackData(true);
+		try {
+			foreach ( $callbackArrayData as $indexCB => $callbackInfo ) {
+				$cResponse = $this->rb->setRegisterCallback( $callbackInfo[0], $callbackInfo[1], $callbackInfo[2] );
+			}
+		} catch (\Exception $e) {
+			$this->assertTrue(!empty($e->getMessage()));
+		}
+	}
+
+	/**
+	 * Testing of callbacks
+	 */
+	public function testCallbacks() {
+		if ( $this->ignoreDefaultTests ) {
+			$this->markTestSkipped("Testing of deprecated callback function is disabled on request");
+		}
+		/* If disabled */
+		if ( $this->disableCallbackRegMock || ( $this->disableCallbackRegNonMock && $this->environmentName === "nonmock" ) ) {
+			$this->markTestSkipped("Testing of deprecated callback function is disabled due to special circumstances");
+			return;
+		}
+		$callbackArrayData = $this->renderCallbackData();
+		$callbackSetResult = array();
+		foreach ($callbackArrayData as $indexCB => $callbackInfo) {
+			try {
+				$cResponse = $this->rb->setCallback( $callbackInfo[0], $callbackInfo[1], $callbackInfo[2] );
+				$callbackSetResult[] = $callbackInfo[0];
+			} catch (\Exception $e) {
+				echo $e->getMessage();
+			}
+		}
+		// Registered callbacks must be at least 4 to be successful, as there are at least 4 important callbacks to pass through
+		$this->assertGreaterThanOrEqual( 4, count($callbackSetResult));
 	}
 }
 

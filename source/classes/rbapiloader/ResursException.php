@@ -44,7 +44,7 @@ abstract class ResursExceptions
     /*
      * API and callbacks
      */
-    const CALLBACK_UNSUFFICIENT_DATA = 6000;
+    const CALLBACK_INSUFFICIENT_DATA = 6000;
     const CALLBACK_TYPE_UNSUPPORTED = 6001;
     const CALLBACK_URL_MISMATCH = 6002;
     const CALLBACK_SALTDIGEST_MISSING = 6003;
