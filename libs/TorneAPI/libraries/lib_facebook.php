@@ -24,7 +24,7 @@
  *
  */
 
-namespace TorneAPIClient;
+namespace TorneLIB\API;
 
     use Facebook\Exceptions\FacebookResponseException;
     use Facebook\Exceptions\FacebookSDKException;
@@ -38,7 +38,6 @@ namespace TorneAPIClient;
 
         /** @var null|string Path where to find the SDK */
         public $SDK_PATH = null;
-
         /** @var bool Tells us wheter the SDK has been found or not */
         public $SDK_FOUND = false;
         /** @var bool Tells us wheter the SDK has been properly loaded or not */
@@ -159,7 +158,10 @@ namespace TorneAPIClient;
 
         /**
          * Get an access token if available
+         *
+         * @param bool $returnAsObject
          * @return \Facebook\Authentication\AccessToken|null
+         * @throws \Exception
          */
         public function GetSession($returnAsObject = false)
         {

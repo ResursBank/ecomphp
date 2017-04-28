@@ -4,7 +4,7 @@
  * @package TorneAPI
  */
 
-namespace TorneAPIClient;
+namespace TorneLIB\API;
 
     /**
      * @package TorneAPI-vBulletinBridge
@@ -20,7 +20,7 @@ namespace TorneAPIClient;
      *
      * @package TorneAPILibs
      */
-class LibVbulletin extends TorneAPICore
+class LibVbulletin extends CoreAPI
 {
 
     /** @var string The vBAPI key stored through API calls */

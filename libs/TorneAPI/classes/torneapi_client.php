@@ -1,56 +1,71 @@
 <?php
 
 /**
- * Tornevall Networks pluggable API Client Version 4.x
- * A simple API extender for TorneLIB, built as a standalone client
+ * Tornevall Networks pluggable API Client for TorneLIB 5.0.0
+ * API Extender for TorneLIB, that works with TorneAPI 2.x and various libraries.
+ * As this is a (quote) newborn project, there's nothing much added here.
  *
  * @package TorneAPI
  * @author Tomas Tornevall <thorne@tornevall.net>
- * @version 4.0.0
- * @copyright 2015-2017
+ * @version 5.0.0
+ * @copyright 2017-2019
  * @link http://docs.tornevall.net/x/FoBU A part of TorneLIB v4
  */
 
-namespace TorneAPIClient;
+namespace TorneLIB;
 
-use TorneAPIClient\LibFacebook;
-use TorneAPIClient\LibVbulletin;
-
+use Facebook\Facebook;
+use TorneLIB\API\CoreAPI;
+use TorneLIB\API\LibFacebook;
+use TorneLIB\API\LibVbulletin;
+use TorneLIB\TorneLIB_Network;
+use TorneLIB\Tornevall_cURL;
 
 /**
- * Class TorneAPIClient
- * @package TorneAPI
+ * Class API
+ * @package TorneLIB
  */
-class API extends TorneAPICore {
+class TorneAPI extends CoreAPI {
 
     private $curl = null;
-
-    /** @var null Standard TorneAPI Interface */
-    public $API_TorneAPI = null;
-    /** @var null Facebook Interface */
-    public $API_Facebook = null;
-    /** @var null vBulletin Interface */
-    public $API_vB = null;
-
-    /** @var null A default CURL channel */
-    public $CurlSession = null;
-
     private $LibrariesLoaded = array();
     public function __construct() {
-        $this->curl = new TorneAPI_CURL();
-        /* SSL Ceritificate Healer runs first */
-        $this->curl->TestCerts();
-        $this->InitializeLibraries();
+        parent::__construct();
     }
-    private function InitializeLibraries() {
-        if (($this->API_Facebook = new LibFacebook())) { $this->LibrariesLoaded['LibFacebook'] = true; }
+    /**
+     * Initialize a supported library
+     *
+     * @param string $LibName
+     * @param array $OptionsIn
+     * @return object
+     * @throws \Exception
+     */
+    public function Intialize($LibName = '', $OptionsIn = array()) {
+        $setReflector= null;
+        if (class_exists('\TorneLIB\API\\' . $LibName)) {
+            $setReflector= '\TorneLIB\API\\' . $LibName;
+        } else if (class_exists('\TorneLIB\API\\Lib' . $LibName)) {
+            $setReflector = '\TorneLIB\API\\Lib' . $LibName;
+        }
+        if (empty($setReflector)) {
+            throw new \Exception("API library $LibName is not supported");
+        }
+        try {
+            $Reflect = new \ReflectionClass($setReflector);
+            $Instance = $Reflect->newInstanceArgs($OptionsIn);
+            $this->LibrariesLoaded[$LibName] = true;
+        } catch (\Exception $e) {
+            throw new \Exception($e->getMessage(), $e->getCode());
+        }
+        return $Instance;
+    }
 
-        /** @var API_vB vBulletin does not need any checks */
-        $this->API_vB = new LibVbulletin();
-        $this->LibrariesLoaded['LibVbulletin'] = true;
-    }
-    public function getLoadedLibraries() {
+    public function getLoadedLibraries($LibraryName= '') {
+        if (!empty($LibraryName)) {
+            if (isset($this->LibrariesLoaded[$LibraryName])) {
+                return true;
+            }
+        }
         return $this->LibrariesLoaded;
     }
-
 }
