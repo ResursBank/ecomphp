@@ -1,3 +1,4 @@
 .idea
 tests/runtest
 test.php
+cookies/*
