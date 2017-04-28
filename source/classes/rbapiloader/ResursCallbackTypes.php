@@ -84,3 +84,11 @@ abstract class ResursCallbackTypes
      */
     const BOOKED = 7;
 }
+
+abstract class ResursCallbackReachability {
+    const IS_REACHABLE_NOT_AVAILABLE = 0;
+    const IS_FULLY_REACHABLE = 1;
+    const IS_REACHABLE_WITH_PROBLEMS = 2;
+    const IS_NOT_REACHABLE = 3;
+    const IS_REACHABLE_NOT_KNOWN = 4;
+}

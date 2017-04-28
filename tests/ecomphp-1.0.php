@@ -1107,10 +1107,9 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 	/**
 	 * Register new callback urls
 	 */
-	public function testSetRegisterCallbacks() {
+	public function testSetRegisterCallbacksDeprecated() {
 		$this->checkEnvironment();
 		$callbackArrayData = $this->renderCallbackData(true);
-		$this->rb->setValidateExternalUrl(true);
 		$globalDigest = $this->rb->setCallbackDigest($this->mkpass());
 		$cResponse = array();
 		foreach ($callbackArrayData as $indexCB => $callbackInfo) {
@@ -1124,6 +1123,38 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 		}
 		$this->assertEquals(count($cResponse), $successFulCallbacks);
 	}
+
+	public function testValidateExternalUrlSuccess() {
+        $this->checkEnvironment();
+        $callbackArrayData = $this->renderCallbackData(true);
+        $this->rb->setValidateExternalCallbackUrl($callbackArrayData[0][1]);
+	    $Reachable = $this->rb->validateExternalAddress();
+	    $this->assertTrue($Reachable === ResursCallbackReachability::IS_FULLY_REACHABLE);
+    }
+    /**
+     * Register new callback urls
+     */
+    public function testSetRegisterCallbacksWithValidatedUrl() {
+        $this->checkEnvironment();
+        $callbackArrayData = $this->renderCallbackData(true);
+        $globalDigest = $this->rb->setCallbackDigest($this->mkpass());
+        $cResponse = array();
+        foreach ($callbackArrayData as $indexCB => $callbackInfo) {
+            $this->rb->setValidateExternalCallbackUrl($callbackInfo[1]);
+            try {
+                $cResponse[$callbackInfo[0]] = $this->rb->setRegisterCallback($callbackInfo[0], $callbackInfo[1], $callbackInfo[2]);
+            } catch (\Exception $e) {
+                $this->markTestIncomplete("URL Validation failed during the setRegisterCallback process");
+            }
+        }
+        $successFulCallbacks = 0;
+        foreach ($cResponse as $cbType) {
+            if ($cbType == "1") {
+                $successFulCallbacks++;
+            }
+        }
+        $this->assertEquals(count($cResponse), $successFulCallbacks);
+    }
 
 	/**
 	 * Register new callback urls but without the digest key (Fail)

@@ -51,7 +51,7 @@ class ResursBank
     private $ocShopScript = null;
     private $formTemplateRuleArray = array();
     private $hasNameSpace = false;
-	private $validateExternalUrl = false;
+	private $validateExternalUrl = null;
 	private $externalApiAddress = "https://api.tornevall.net/2.0/";
 
     private $CURL = null;
@@ -728,46 +728,68 @@ class ResursBank
         $this->current_environment_updated = true;
     }
 
-	public function setValidateExternalUrl($ValidationEnable = false) {
-		$this->validateExternalUrl = true;
+    /**
+     * Set up this to automatically validate a destination url.
+     *
+     * @param null $url
+     * @param string $expectedHttpAcceptCode What response code from the web server we expect when we are successful
+     * @param string $expectedHttpErrorCode What response code from the web server we expect when we (normally) fails on digest failures
+     */
+	public function setValidateExternalCallbackUrl($url = null, $expectedHttpAcceptCode = "200", $expectedHttpErrorCode = "403") {
+		$this->validateExternalUrl = array(
+		    'url' => $url,
+            'http_accept' => $expectedHttpAcceptCode,
+            'http_error' => $expectedHttpErrorCode
+        );
 	}
-	private function validateExternalAddress($url = null, $expectedAcceptedCode = "200", $expectedErrorCode = "400") {
-    	$validResponse = false;
-		$ExternalAPI = $this->externalApiAddress . "/urltest/isavailable/";
-		$ExternalPostData = array('link' => base64_encode($url));
-		$ParsedResponse = $this->CURL->getParsedResponse($this->CURL->doPost($ExternalAPI, $ExternalPostData));
-		if (isset($ParsedResponse->response)) {
-			$isAvInfo = isset($ParsedResponse->response->isAvailableResponse->$url->result) ? $ParsedResponse->response->isAvailableResponse->$url->result : null;
-			if (isset($isAvInfo) && is_object($isAvInfo)) {
 
-				$hasSuccess = false;
-				foreach ( $isAvInfo as $browserName => $browserResponse ) {
-					if (is_string($expectedAcceptedCode) && $browserResponse == $expectedAcceptedCode) {
-						$hasSuccess = true;
-						break;
-					}
-					if (is_array($expectedAcceptedCode) && (count($expectedAcceptedCode) >= 2)) {
-						$fromAccept = $expectedAcceptedCode[0];
-						$toAccept = $expectedAcceptedCode[1];
-						if ($browserResponse >= $fromAccept && $browserResponse <= $toAccept) {
-							$hasSuccess = true;
-							break;
-						}
-					}
-					if (is_array($expectedErrorCode) && (count($expectedErrorCode) >= 2)) {
-						$fromAccept = $expectedErrorCode[0];
-						$toAccept = $expectedErrorCode[1];
-						if ($browserResponse >= $fromAccept && $browserResponse <= $toAccept) {
-							$hasSuccess = true;
-							break;
-						}
-					}
-				}
-			}
-		}
-		if (!$validResponse) {
-			throw new \Exception("The function validateExternalAddress is currently broken and can not be used");
-		}
+    /**
+     * Run external URL validator and see whether an URL is really reachable or not
+     *
+     * @return int Returns a value from the class ResursCallbackReachability
+     */
+	public function validateExternalAddress() {
+        if (is_array($this->validateExternalUrl) && count($this->validateExternalUrl)) {
+            $this->InitializeServices();
+            $ExternalAPI = $this->externalApiAddress . "/urltest/isavailable/";
+            $UrlDomain = $this->NETWORK->getUrlDomain($this->validateExternalUrl['url']);
+            if (!preg_match("/^http/i", $UrlDomain[1])) {
+                return ResursCallbackReachability::IS_REACHABLE_NOT_AVAILABLE;
+            }
+            $Expect = $this->validateExternalUrl['http_accept'];
+            $UnExpect = $this->validateExternalUrl['http_error'];
+            $useUrl = $this->validateExternalUrl['url'];
+            $ExternalPostData = array('link' => base64_encode($useUrl));
+            $ParsedResponse = $this->CURL->getParsedResponse($this->CURL->doPost($ExternalAPI, $ExternalPostData))->response->isAvailableResponse;
+            $UrlResult = $ParsedResponse->{$useUrl}->result;
+            $totalResults = 0;
+            $expectedResults = 0;
+            $unExpectedResults = 0;
+            $neitherResults = 0;
+            foreach ($UrlResult as $BrowserName => $BrowserResponse) {
+                $totalResults++;
+                if ($BrowserResponse == $Expect) {
+                    $expectedResults++;
+                } else if ($BrowserResponse == $UnExpect) {
+                    $unExpectedResults++;
+                } else {
+                    $neitherResults++;
+                }
+            }
+            if ($totalResults == $expectedResults) {
+                return ResursCallbackReachability::IS_FULLY_REACHABLE;
+            }
+            if ($expectedResults > 0 && $unExpectedResults > 0) {
+                return ResursCallbackReachability::IS_REACHABLE_WITH_PROBLEMS;
+            }
+            if ($neitherResults > 0) {
+                return ResursCallbackReachability::IS_REACHABLE_NOT_KNOWN;
+            }
+            if ($expectedResults === 0) {
+                return ResursCallbackReachability::IS_NOT_REACHABLE;
+            }
+        }
+        return ResursCallbackReachability::IS_REACHABLE_NOT_KNOWN;
 	}
 
 	/**
@@ -1699,7 +1721,6 @@ class ResursBank
      * @param string $digestSaltString If empty, $digestSaltString is randomized
      * @param int $callbackType
      * @return string
-     * @deprecated 1.0.0
      */
     public function setCallbackDigest($digestSaltString = '', $callbackType = ResursCallbackTypes::UNDEFINED)
     {
@@ -1779,8 +1800,13 @@ class ResursBank
     	$returnSuccess = false;
     	$this->InitializeServices();
 
-	    if ($this->validateExternalUrl) {
-		    $this->validateExternalAddress($callbackUriTemplate, array(200,204), array(406));
+	    if (is_array($this->validateExternalUrl) && count($this->validateExternalUrl)) {
+            $isValidAddress = $this->validateExternalAddress();
+            if ($isValidAddress == ResursCallbackReachability::IS_NOT_REACHABLE) {
+                throw new \Exception("Reachability Response: Your site might not be available to our callbacks");
+            } else if ($isValidAddress == ResursCallbackReachability::IS_REACHABLE_WITH_PROBLEMS) {
+                throw new \Exception("Reachability Response: Your site is availble from the outide. However, problems occured during tests, that indicates that your site is not available to our callbacks");
+            }
 	    }
 	    $serviceUrl = $this->getServiceUrl("registerEventCallback");
 
