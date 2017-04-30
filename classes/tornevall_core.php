@@ -60,7 +60,7 @@ class TorneLIB {
         $this->curl = new Tornevall_cURL();
 
         /* Initialize API connector */
-        $this->API = new TorneLIB_API();
+        $this->API = new TorneAPI();
 
         /* Initialize the plugin loader */
         $this->pluggable = new TorneLIB_Pluggable($this->config->getConfigurationObject());
@@ -68,9 +68,6 @@ class TorneLIB {
     public function getCurrentVersion() { return $this->version; }
     public function getLibraryName() {
         return TorneLIB_Configuration::CORE_NAME;
-    }
-    public function getTest() {
-        $this->config->getApiLocations('TorneAPI');
     }
 
     /**

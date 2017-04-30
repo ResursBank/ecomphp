@@ -122,6 +122,31 @@ class Tornevall_cURLTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     * Make a direct call to the curl library
+     */
+    function testQuickInitParsed() {
+        $TempCurl = new Tornevall_cURL("https://identifier.tornevall.net/?json");
+        $this->assertTrue(is_object($TempCurl->getParsedResponse()));
+    }
+
+    /**
+     * Make a direct call to the curl library and get the response code
+     */
+    function testQuickInitResponseCode() {
+        $TempCurl = new Tornevall_cURL("https://identifier.tornevall.net/?json");
+        $this->assertTrue($TempCurl->getResponseCode() == 200);
+    }
+
+    /**
+     * Make a direct call to the curl library and get the content of the body
+     */
+    function testQuickInitResponseBody() {
+        $TempCurl = new Tornevall_cURL("https://identifier.tornevall.net/?json");
+        // Some content must exists in the body
+        $this->assertTrue(strlen($TempCurl->getResponseBody()) >= 10);
+    }
+
+    /**
      * Fetch a response and immediately pick up the parsed response, from own content
      */
     function testGetParsedFromResponse() {
