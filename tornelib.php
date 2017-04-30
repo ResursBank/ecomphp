@@ -56,6 +56,6 @@ TorneLIB_Require(__DIR__ . '/classes/tornevall_database.php');
 TorneLIB_Require(__DIR__ . '/classes/tornevall_network.php');
 TorneLIB_Require(__DIR__ . '/classes/tornevall_dnsbl.php');
 TorneLIB_Require(__DIR__ . '/classes/tornevall_pluggable.php');
-TorneLIB_Require(__DIR__ . '/classes/tornevall_api.php');
+TorneLIB_Require(__DIR__ . '/libs/TorneAPI/autoload.php');
 
 
