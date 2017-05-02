@@ -773,67 +773,72 @@ class Tornevall_cURL
          * The certificate location here will be set up for the curl engine later on, during preparation of the connection.
          * NOTE: ini_set() does not work for setting up the cafile, this has to be done through php.ini, .htaccess, httpd.conf or .user.ini
          */
-        if ($this->testssl || $forceTesting) {
-            $this->openSslGuessed = true;
-            if (version_compare(PHP_VERSION, "5.6.0", ">=") && function_exists("openssl_get_cert_locations")) {
-                $locations = openssl_get_cert_locations();
-                if (is_array($locations)) {
-                    if (isset($locations['default_cert_file'])) {
-                        // If it exists, we don't have to bother anymore
-                        if (file_exists($locations['default_cert_file'])) {
-                            $this->hasCertFile = true;
-                            $this->useCertFile = $locations['default_cert_file'];
-                            $this->hasDefaultCertFile = true;
-                        }
-                        if (file_exists($locations['default_cert_dir'])) {
-                            $this->hasCertDir = true;
-                        }
-                        // For unit testing
-                        if ($this->TargetEnvironment == TORNELIB_CURL_ENVIRONMENT::ENVIRONMENT_TEST && isset($this->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION) && $this->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION === true) {
-                            // Enforce wrong certificate location
-                            $this->hasCertFile = false;
-                            $this->useCertFile = null;
-                        }
-                    }
-                    // Check if the above control was successful - switch over to pemlocations if not.
-                    if (!$this->hasCertFile && is_array($this->sslPemLocations) && count($this->sslPemLocations)) {
-                        // Loop through suggested locations and set the cafile in a variable if it's found.
-                        foreach ($this->sslPemLocations as $pemLocation) {
-                            if (file_exists($pemLocation)) {
-                                $this->useCertFile = $pemLocation;
+        if (ini_get('open_basedir') == '') {
+            if ($this->testssl || $forceTesting) {
+                $this->openSslGuessed = true;
+                if (version_compare(PHP_VERSION, "5.6.0", ">=") && function_exists("openssl_get_cert_locations")) {
+                    $locations = openssl_get_cert_locations();
+                    if (is_array($locations)) {
+                        if (isset($locations['default_cert_file'])) {
+                            // If it exists, we don't have to bother anymore
+                            if (file_exists($locations['default_cert_file'])) {
                                 $this->hasCertFile = true;
+                                $this->useCertFile = $locations['default_cert_file'];
+                                $this->hasDefaultCertFile = true;
+                            }
+                            if (file_exists($locations['default_cert_dir'])) {
+                                $this->hasCertDir = true;
+                            }
+                            // For unit testing
+                            if ($this->TargetEnvironment == TORNELIB_CURL_ENVIRONMENT::ENVIRONMENT_TEST && isset($this->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION) && $this->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION === true) {
+                                // Enforce wrong certificate location
+                                $this->hasCertFile = false;
+                                $this->useCertFile = null;
+                            }
+                        }
+                        // Check if the above control was successful - switch over to pemlocations if not.
+                        if (!$this->hasCertFile && is_array($this->sslPemLocations) && count($this->sslPemLocations)) {
+                            // Loop through suggested locations and set the cafile in a variable if it's found.
+                            foreach ($this->sslPemLocations as $pemLocation) {
+                                if (file_exists($pemLocation)) {
+                                    $this->useCertFile = $pemLocation;
+                                    $this->hasCertFile = true;
+                                }
                             }
                         }
                     }
-                }
-                // On guess, disable verification if failed (if allowed)
-                if (!$this->hasCertFile && $this->allowSslUnverified) {
-                    $this->setSslVerify(false);
-                }
-            } else {
-                // If we run on other PHP versions than 5.6.0 or higher, try to fall back into a known directory
-                if ($this->testssldeprecated) {
-                    if (!$this->hasCertFile && is_array($this->sslPemLocations) && count($this->sslPemLocations)) {
-                        // Loop through suggested locations and set the cafile in a variable if it's found.
-                        foreach ($this->sslPemLocations as $pemLocation) {
-                            if (file_exists($pemLocation)) {
-                                $this->useCertFile = $pemLocation;
-                                $this->hasCertFile = true;
-                            }
-                        }
-                        // For unit testing
-                        if ($this->TargetEnvironment == TORNELIB_CURL_ENVIRONMENT::ENVIRONMENT_TEST && isset($this->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION) && $this->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION === true) {
-                            // Enforce wrong certificate location
-                            $this->hasCertFile = false;
-                            $this->useCertFile = null;
-                        }
-                    }
-                    // Check if the above control was successful - switch over to pemlocations if not.
+                    // On guess, disable verification if failed (if allowed)
                     if (!$this->hasCertFile && $this->allowSslUnverified) {
                         $this->setSslVerify(false);
                     }
+                } else {
+                    // If we run on other PHP versions than 5.6.0 or higher, try to fall back into a known directory
+                    if ($this->testssldeprecated) {
+                        if (!$this->hasCertFile && is_array($this->sslPemLocations) && count($this->sslPemLocations)) {
+                            // Loop through suggested locations and set the cafile in a variable if it's found.
+                            foreach ($this->sslPemLocations as $pemLocation) {
+                                if (file_exists($pemLocation)) {
+                                    $this->useCertFile = $pemLocation;
+                                    $this->hasCertFile = true;
+                                }
+                            }
+                            // For unit testing
+                            if ($this->TargetEnvironment == TORNELIB_CURL_ENVIRONMENT::ENVIRONMENT_TEST && isset($this->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION) && $this->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION === true) {
+                                // Enforce wrong certificate location
+                                $this->hasCertFile = false;
+                                $this->useCertFile = null;
+                            }
+                        }
+                        // Check if the above control was successful - switch over to pemlocations if not.
+                        if (!$this->hasCertFile && $this->allowSslUnverified) {
+                            $this->setSslVerify(false);
+                        }
+                    }
                 }
             }
+        } else {
+            // Assume there is a valid certificate if jailed by open_basedir
+            return true;
         }
         return $this->hasCertFile;
     }
