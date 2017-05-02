@@ -1871,7 +1871,7 @@ class ResursBank
 		if (isset($renderCallback['eventType'])) {unset($renderCallback['eventType']);}
 		$renderedResponse = $this->CURL->doPost($renderCallbackUrl, $renderCallback, \TorneLIB\CURL_POST_AS::POST_AS_JSON);
 		if ($this->CURL->getResponseCode() >= 200 && $this->CURL->getResponseCode() <= 250) {
-			if (!$this->skipCallbackValidation) {
+			if (isset($this->skipCallbackValidation) && $this->skipCallbackValidation === false) {
 				$callbackUriControl = $this->CURL->getParsedResponse( $this->CURL->doGet( $renderCallbackUrl ) );
 				if ( isset( $callbackUriControl->uriTemplate ) && is_string( $callbackUriControl->uriTemplate ) && strtolower( $callbackUriControl->uriTemplate ) == strtolower( $callbackUriTemplate ) ) {
 					return true;
