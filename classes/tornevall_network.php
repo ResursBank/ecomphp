@@ -838,6 +838,7 @@ class Tornevall_cURL
             }
         } else {
             // Assume there is a valid certificate if jailed by open_basedir
+            $this->hasCertFile = true;
             return true;
         }
         return $this->hasCertFile;
