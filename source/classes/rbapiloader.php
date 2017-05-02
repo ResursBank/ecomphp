@@ -57,6 +57,7 @@ class ResursBank
     private $CURL = null;
     private $NETWORK = null;
     private $hasWsdl = false;
+
 	/**
 	 * @var URLS pointing to direct access of Resurs Bank, instead of WSDL-stubs.
 	 * @since 1.0.1
@@ -79,6 +80,8 @@ class ResursBank
     	'registerEventCallback' => 'ConfigurationService',
     	'getRegisteredEventCallback' => 'ConfigurationService'
     );
+
+    private $skipCallbackValidation = true;
 
 	/**
 	 * If there is another method required for this to post, it is told here.
@@ -1794,6 +1797,15 @@ class ResursBank
     }
 
 	/**
+	 * Setting this to false enables URI validation controls while registering callbacks
+	 *
+	 * @param bool $callbackValidationDisable
+	 */
+    public function setSkipCallbackValidation($callbackValidationDisable = true) {
+    	$this->skipCallbackValidation = $callbackValidationDisable;
+    }
+
+	/**
 	 * Register a callback URL with Resurs Bank
 	 *
 	 * @param int $callbackType
@@ -1819,7 +1831,8 @@ class ResursBank
                 throw new \Exception("Reachability Response: Your site is availble from the outide. However, problems occured during tests, that indicates that your site is not available to our callbacks");
             }
 	    }
-	    $serviceUrl = $this->getServiceUrl("registerEventCallback");
+	    //$serviceUrl = $this->getServiceUrl("registerEventCallback");
+	    $serviceUrl = $this->getCheckoutUrl() . "/callbacks";
 
     	// The final array
 	    $renderCallback = array();
@@ -1833,8 +1846,8 @@ class ResursBank
 
 	    // BASIC AUTH CONTROL
 	    if (!empty($basicAuthUserName) && !empty($basicAuthPassword)) {
-	    	$renderCallback['basicAuthUserName'] = $basicAuthUserName;
-	    	$renderCallback['basicAuthPassword'] = $basicAuthPassword;
+		    $renderCallback['basicAuthUserName'] = $basicAuthUserName;
+		    $renderCallback['basicAuthPassword'] = $basicAuthPassword;
 	    }
 
 	    ////// DIGEST CONFIGURATION BEGIN
@@ -1865,12 +1878,18 @@ class ResursBank
 	    ////// DIGEST CONFIGURATION FINISH
 
 	    // Make sure the callback gets unregistered first (This is a deprecated method to re-register callbacks that is already exists in Resurs Bank)
-	    $renderedResponse = $this->CURL->doGet($serviceUrl)->registerEventCallback($renderCallback);
-	    if ($renderedResponse['code'] == "200") {
-	    	$callbackUriControl = $this->CURL->getParsedResponse($this->CURL->doGet($this->getServiceUrl('getRegisteredEventCallback'))->getRegisteredEventCallback(array('eventType'=>$renderCallback['eventType'])));
-			if (isset($callbackUriControl->uriTemplate) && is_string($callbackUriControl->uriTemplate) && strtolower($callbackUriControl->uriTemplate) == strtolower($callbackUriTemplate)) {
-				return true;
-			}
+	    //$renderedResponse = $this->CURL->doGet($serviceUrl)->registerEventCallback($renderCallback);
+	    $renderCallbackUrl = $serviceUrl . "/" . $renderCallback['eventType'];
+	    if (isset($renderCallback['eventType'])) {unset($renderCallback['eventType']);}
+	    $renderedResponse = $this->CURL->doPost($renderCallbackUrl, $renderCallback, \TorneLIB\CURL_POST_AS::POST_AS_JSON);
+	    if ($this->CURL->getResponseCode() >= 200 && $this->CURL->getResponseCode() <= 250) {
+	    	if (!$this->skipCallbackValidation) {
+			    $callbackUriControl = $this->CURL->getParsedResponse( $this->CURL->doGet( $renderCallbackUrl ) );
+			    if ( isset( $callbackUriControl->uriTemplate ) && is_string( $callbackUriControl->uriTemplate ) && strtolower( $callbackUriControl->uriTemplate ) == strtolower( $callbackUriTemplate ) ) {
+				    return true;
+			    }
+		    }
+		    return true;
 	    }
 	    return false;
     }
