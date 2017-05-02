@@ -57,6 +57,7 @@ class ResursBank
 	private $CURL = null;
 	private $NETWORK = null;
 	private $hasWsdl = false;
+
 	/**
 	 * @var URLS pointing to direct access of Resurs Bank, instead of WSDL-stubs.
 	 * @since 1.0.1
@@ -79,6 +80,9 @@ class ResursBank
 		'registerEventCallback' => 'ConfigurationService',
 		'getRegisteredEventCallback' => 'ConfigurationService'
 	);
+
+	private $skipCallbackValidation = true;
+	private $registerCallbacksViaRest = false;
 
 	/**
 	 * If there is another method required for this to post, it is told here.
@@ -760,7 +764,7 @@ class ResursBank
 			$UnExpect = $this->validateExternalUrl['http_error'];
 			$useUrl = $this->validateExternalUrl['url'];
 			$ExternalPostData = array('link' => base64_encode($useUrl));
-			$ParsedResponse = $this->CURL->getParsedResponse( $this->CURL->doPost( $ExternalAPI, $ExternalPostData ) )->response->isAvailableResponse;
+			$ParsedResponse = $this->CURL->getParsedResponse($this->CURL->doPost($ExternalAPI, $ExternalPostData))->response->isAvailableResponse;
 			if (isset($ParsedResponse->{$useUrl}->exceptiondata->errorcode) && !empty($ParsedResponse->{$useUrl}->exceptiondata->errorcode)) {
 				return ResursCallbackReachability::IS_NOT_REACHABLE;
 			}
@@ -1794,6 +1798,24 @@ class ResursBank
 	}
 
 	/**
+	 * Setting this to false enables URI validation controls while registering callbacks
+	 *
+	 * @param bool $callbackValidationDisable
+	 */
+	public function setSkipCallbackValidation($callbackValidationDisable = true) {
+		$this->skipCallbackValidation = $callbackValidationDisable;
+	}
+
+	/**
+	 * If you want to register callbacks through the rest API instead of SOAP, set this to true
+	 *
+	 * @param bool $useRest
+	 */
+	public function setRegisterCallbacksViaRest($useRest = true) {
+		$this->registerCallbacksViaRest = $useRest;
+	}
+
+	/**
 	 * Register a callback URL with Resurs Bank
 	 *
 	 * @param int $callbackType
@@ -1819,9 +1841,6 @@ class ResursBank
 				throw new \Exception("Reachability Response: Your site is availble from the outide. However, problems occured during tests, that indicates that your site is not available to our callbacks");
 			}
 		}
-		//$serviceUrl = $this->getServiceUrl("registerEventCallback");
-		$serviceUrl = $this->getCheckoutUrl() . "/callbacks";
-
 		// The final array
 		$renderCallback = array();
 
@@ -1865,12 +1884,20 @@ class ResursBank
 		}
 		////// DIGEST CONFIGURATION FINISH
 
-		// Make sure the callback gets unregistered first (This is a deprecated method to re-register callbacks that is already exists in Resurs Bank)
-		//$renderedResponse = $this->CURL->doGet($serviceUrl)->registerEventCallback($renderCallback);
-		$renderCallbackUrl = $serviceUrl . "/" . $renderCallback['eventType'];
-		if (isset($renderCallback['eventType'])) {unset($renderCallback['eventType']);}
-		$renderedResponse = $this->CURL->doPost($renderCallbackUrl, $renderCallback, \TorneLIB\CURL_POST_AS::POST_AS_JSON);
-		if ($this->CURL->getResponseCode() >= 200 && $this->CURL->getResponseCode() <= 250) {
+		if ($this->registerCallbacksViaRest) {
+			$serviceUrl        = $this->getCheckoutUrl() . "/callbacks";
+			$renderCallbackUrl = $serviceUrl . "/" . $renderCallback['eventType'];
+			if ( isset( $renderCallback['eventType'] ) ) {
+				unset( $renderCallback['eventType'] );
+			}
+			$renderedResponse = $this->CURL->doPost($renderCallbackUrl, $renderCallback, \TorneLIB\CURL_POST_AS::POST_AS_JSON);
+			$code = $this->CURL->getResponseCode();
+		} else {
+			$serviceUrl = $this->getServiceUrl("registerEventCallback");
+			$renderedResponse = $this->CURL->doPost($serviceUrl)->registerEventCallback($renderCallback);
+			$code = $renderedResponse['code'];
+		}
+		if ($code >= 200 && $code <= 250) {
 			if (isset($this->skipCallbackValidation) && $this->skipCallbackValidation === false) {
 				$callbackUriControl = $this->CURL->getParsedResponse( $this->CURL->doGet( $renderCallbackUrl ) );
 				if ( isset( $callbackUriControl->uriTemplate ) && is_string( $callbackUriControl->uriTemplate ) && strtolower( $callbackUriControl->uriTemplate ) == strtolower( $callbackUriTemplate ) ) {
