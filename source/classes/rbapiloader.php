@@ -1310,56 +1310,62 @@ class ResursBank
 	private function openssl_guess($forceTesting = false)
 	{
 		$pemLocation = "";
-		if ($this->testssl || $forceTesting) {
-			$this->openSslGuessed = true;
-			if (version_compare(PHP_VERSION, "5.6.0", ">=") && function_exists("openssl_get_cert_locations")) {
-				$locations = openssl_get_cert_locations();
-				if (is_array($locations)) {
-					if (isset($locations['default_cert_file'])) {
-						/* If it exists don't bother */
-						if (file_exists($locations['default_cert_file'])) {
-							$this->hasCertFile = true;
-							$this->useCertFile = $locations['default_cert_file'];
-							$this->hasDefaultCertFile = true;
+		if (ini_get('open_basedir') == '') {
+			if ( $this->testssl || $forceTesting ) {
+				$this->openSslGuessed = true;
+				if ( version_compare( PHP_VERSION, "5.6.0", ">=" ) && function_exists( "openssl_get_cert_locations" ) ) {
+					$locations = openssl_get_cert_locations();
+					if ( is_array( $locations ) ) {
+						if ( isset( $locations['default_cert_file'] ) ) {
+							/* If it exists don't bother */
+							if ( file_exists( $locations['default_cert_file'] ) ) {
+								$this->hasCertFile        = true;
+								$this->useCertFile        = $locations['default_cert_file'];
+								$this->hasDefaultCertFile = true;
+							}
+							if ( file_exists( $locations['default_cert_dir'] ) ) {
+								$this->hasCertDir = true;
+							}
+							/* Sometimes certificates are located in a default location, which is /etc/ssl/certs - this part scans through such directories for a proper cert-file */
+							if ( ! $this->hasCertFile && is_array( $this->sslPemLocations ) && count( $this->sslPemLocations ) ) {
+								/* Loop through suggested locations and set a cafile if found */
+								foreach ( $this->sslPemLocations as $pemLocation ) {
+									if ( file_exists( $pemLocation ) ) {
+										ini_set( 'openssl.cafile', $pemLocation );
+										$this->useCertFile = $pemLocation;
+										$this->hasCertFile = true;
+									}
+								}
+							}
 						}
-						if (file_exists($locations['default_cert_dir'])) {
-							$this->hasCertDir = true;
-						}
-						/* Sometimes certificates are located in a default location, which is /etc/ssl/certs - this part scans through such directories for a proper cert-file */
-						if (!$this->hasCertFile && is_array($this->sslPemLocations) && count($this->sslPemLocations)) {
+					}
+					/* On guess, disable verification if failed */
+					if ( ! $this->hasCertFile ) {
+						$this->setSslVerify( false );
+					}
+				} else {
+					/* If we run on other PHP versions than 5.6.0 or higher, try to fall back into a known directory */
+					if ( $this->testssldeprecated ) {
+						if ( ! $this->hasCertFile && is_array( $this->sslPemLocations ) && count( $this->sslPemLocations ) ) {
 							/* Loop through suggested locations and set a cafile if found */
-							foreach ($this->sslPemLocations as $pemLocation) {
-								if (file_exists($pemLocation)) {
-									ini_set('openssl.cafile', $pemLocation);
+							foreach ( $this->sslPemLocations as $pemLocation ) {
+								if ( file_exists( $pemLocation ) ) {
+									ini_set( 'openssl.cafile', $pemLocation );
 									$this->useCertFile = $pemLocation;
 									$this->hasCertFile = true;
 								}
 							}
 						}
-					}
-				}
-				/* On guess, disable verification if failed */
-				if (!$this->hasCertFile) {
-					$this->setSslVerify(false);
-				}
-			} else {
-				/* If we run on other PHP versions than 5.6.0 or higher, try to fall back into a known directory */
-				if ($this->testssldeprecated) {
-					if (!$this->hasCertFile && is_array($this->sslPemLocations) && count($this->sslPemLocations)) {
-						/* Loop through suggested locations and set a cafile if found */
-						foreach ($this->sslPemLocations as $pemLocation) {
-							if (file_exists($pemLocation)) {
-								ini_set('openssl.cafile', $pemLocation);
-								$this->useCertFile = $pemLocation;
-								$this->hasCertFile = true;
-							}
+						if ( ! $this->hasCertFile ) {
+							$this->setSslVerify( false );
 						}
-					}
-					if (!$this->hasCertFile) {
-						$this->setSslVerify(false);
 					}
 				}
 			}
+		} else {
+			// Assume there is a valid certificate if jailed by open_basedir
+			$this->hasCertFile = true;
+			return true;
 		}
 		return $this->hasCertFile;
 	}
