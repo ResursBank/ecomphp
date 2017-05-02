@@ -398,7 +398,7 @@ class Tornevall_cURL
     /**
      * TorneLIB_CURL constructor.
      */
-    public function __construct()
+    public function __construct($PreferredURL = '', $PreparedPostData = array(), $PreferredMethod = CURL_METHODS::METHOD_POST)
     {
         if (!function_exists('curl_init')) {
             throw new \Exception("curl library not found");
@@ -440,6 +440,19 @@ class Tornevall_cURL
         }
         $this->openssl_guess();
         register_shutdown_function(array($this, 'tornecurl_terminate'));
+
+        if (!empty($PreferredURL)) {
+            if ($PreferredMethod == CURL_METHODS::METHOD_GET) {
+                $InstantResponse = $this->doGet($PreferredURL);
+            } else if ($PreferredMethod == CURL_METHODS::METHOD_POST) {
+                $InstantResponse = $this->doPost($PreferredURL, $PreparedPostData);
+            } else if ($PreferredMethod == CURL_METHODS::METHOD_PUT) {
+                $InstantResponse = $this->doPut($PreferredURL, $PreparedPostData);
+            } else if ($PreferredMethod == CURL_METHODS::METHOD_DELETE) {
+                $InstantResponse = $this->doDelete($PreferredURL, $PreparedPostData);
+            }
+            return $InstantResponse;
+        }
     }
 
     /**
@@ -593,6 +606,10 @@ class Tornevall_cURL
         } else {
             $this->CurlUserAgent = 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; .NET CLR 1.0.3705; .NET CLR 1.1.4322; Media Center PC 4.0; TorneLIB+cUrl ' . $this->TorneCurlVersion . '/' . $this->TorneCurlRelease . ')';
         }
+    }
+
+    public function getUserAgent() {
+        return $this->CurlUserAgent;
     }
 
     /**
@@ -1175,6 +1192,32 @@ class Tornevall_cURL
             return $this->TemporaryResponse['parsed'];
         } else if (isset($ResponseContent['parsed'])) {
             return $ResponseContent['parsed'];
+        }
+        return null;
+    }
+
+    /**
+     * @param null $ResponseContent
+     * @return int
+     */
+    public function getResponseCode($ResponseContent = null) {
+        if (is_null($ResponseContent) && !empty($this->TemporaryResponse)) {
+            return (int)$this->TemporaryResponse['code'];
+        } else if (isset($ResponseContent['code'])) {
+            return (int)$ResponseContent['code'];
+        }
+        return 0;
+    }
+
+    /**
+     * @param null $ResponseContent
+     * @return null
+     */
+    public function getResponseBody($ResponseContent = null) {
+        if (is_null($ResponseContent) && !empty($this->TemporaryResponse)) {
+            return $this->TemporaryResponse['body'];
+        } else if (isset($ResponseContent['body'])) {
+            return $ResponseContent['body'];
         }
         return null;
     }

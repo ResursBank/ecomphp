@@ -11,9 +11,6 @@
  *
  */
 
-/**
- * Load EcomPHP
- */
 require_once( '../source/classes/rbapiloader.php' );
 
 /**
@@ -439,19 +436,24 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 				$getUrlHost        = $signUrlHostInfo[1] . "://" . $signUrlHostInfo[0];
 				$mockSuccessUrl    = preg_replace("/\/$/", '', $getUrlHost . "/" . preg_replace( '/(.*?)\<a href=\"(.*?)\">(.*?)\>Mock success(.*)/is', '$2', $getSigningPage ));
 				$getSuccessContent = json_decode( file_get_contents( $mockSuccessUrl ) );
-				if ( $getSuccessContent->success == "true" ) {
-					if ( $signSuccess ) {
-						return true;
-					} else {
-						return false;
+				if (isset($getSuccessContent->success)) {
+					if ( $getSuccessContent->success == "true" ) {
+						if ( $signSuccess ) {
+							return true;
+						} else {
+							return false;
+						}
 					}
-				}
-				if ( $getSuccessContent->success == "false" ) {
-					if ( ! $signSuccess ) {
-						return true;
-					} else {
-						return false;
+					if ( $getSuccessContent->success == "false" ) {
+						if ( ! $signSuccess ) {
+							return true;
+						} else {
+							return false;
+						}
 					}
+				} else {
+					$this->markTestIncomplete("\$getSuccessContent does not contain any success-object.");
+					return false;
 				}
 			}
 		} elseif ( $bookStatus == "FROZEN" ) {
@@ -1045,14 +1047,15 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 		$paymentData = null;
 		$chosenPayment = 0;
 		$paymentId = null;
+		$hasException = false;
 		try {
 			$this->rb->addMetaData( "UnexistentPaymentId", "RandomKey" . rand( 1000, 1999 ), "RandomValue" . rand( 2000, 3000 ) );
 		} catch (\Exception $e) {
 			$this->assertTrue(true);
+			$hasException = true;
 		}
-		$this->markTestSkipped("addMetaDataFailure failed since it never got an exception");
+		if (!$hasException) {$this->markTestSkipped("addMetaDataFailure failed since it never got an exception");}
 	}
-
 
 	/***
 	 * VERSION 1.0-1.1 DEPENDENT TESTS
@@ -1129,15 +1132,19 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
         $callbackArrayData = $this->renderCallbackData(true);
         $this->rb->setValidateExternalCallbackUrl($callbackArrayData[0][1]);
 	    $Reachable = $this->rb->validateExternalAddress();
+		if ($Reachable !== ResursCallbackReachability::IS_FULLY_REACHABLE) {
+			$this->markTestIncomplete("External address validation returned $Reachable instead of " . ResursCallbackReachability::IS_FULLY_REACHABLE . ".\nPlease check your callback url (".$callbackArrayData[0][1].") so that is properly configured and reachable.");
+		}
 	    $this->assertTrue($Reachable === ResursCallbackReachability::IS_FULLY_REACHABLE);
     }
+
     /**
      * Register new callback urls
      */
     public function testSetRegisterCallbacksWithValidatedUrl() {
         $this->checkEnvironment();
         $callbackArrayData = $this->renderCallbackData(true);
-        $globalDigest = $this->rb->setCallbackDigest($this->mkpass());
+        $this->rb->setCallbackDigest($this->mkpass());
         $cResponse = array();
         foreach ($callbackArrayData as $indexCB => $callbackInfo) {
             $this->rb->setValidateExternalCallbackUrl($callbackInfo[1]);
@@ -1185,6 +1192,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 		}
 		$callbackArrayData = $this->renderCallbackData();
 		$callbackSetResult = array();
+		$this->rb->setCallbackDigest($this->mkpass());
 		foreach ($callbackArrayData as $indexCB => $callbackInfo) {
 			try {
 				$cResponse = $this->rb->setCallback( $callbackInfo[0], $callbackInfo[1], $callbackInfo[2] );
