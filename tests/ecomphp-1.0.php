@@ -435,16 +435,16 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 				$signUrlHostInfo   = $Network->getUrlDomain( $signUrl );
 				$getUrlHost        = $signUrlHostInfo[1] . "://" . $signUrlHostInfo[0];
 				$mockSuccessUrl    = preg_replace("/\/$/", '', $getUrlHost . "/" . preg_replace( '/(.*?)\<a href=\"(.*?)\">(.*?)\>Mock success(.*)/is', '$2', $getSigningPage ));
-				$getSuccessContent = json_decode( file_get_contents( $mockSuccessUrl ) );
-				if (isset($getSuccessContent->success)) {
-					if ( $getSuccessContent->success == "true" ) {
+				$getSuccessContent = $this->CURL->getParsedResponse($this->CURL->doPost($mockSuccessUrl));
+				if (isset($getSuccessContent->_GET->success)) {
+					if ( $getSuccessContent->_GET->success == "true" ) {
 						if ( $signSuccess ) {
 							return true;
 						} else {
 							return false;
 						}
 					}
-					if ( $getSuccessContent->success == "false" ) {
+					if ( $getSuccessContent->_GET->success == "false" ) {
 						if ( ! $signSuccess ) {
 							return true;
 						} else {
