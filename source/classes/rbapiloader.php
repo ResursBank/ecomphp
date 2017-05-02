@@ -35,7 +35,7 @@ require_once( RB_API_PATH . '/rbapiloader/ResursMethodTypes.php' );
 
 
 /**
- * Class ResursBank
+ * Class ResursBank Primary class for EComPHP
  */
 class ResursBank
 {
@@ -44,15 +44,18 @@ class ResursBank
 	/** @var string Replacing $clientName on usage of setClientNAme */
 	private $realClientName = "RB-EcomBridge";
 	/** @var string The version of this gateway */
-	private $version = "1.1.1";
+	private $version = "1.0.1";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
 	private $lastUpdate = "20170428";
 	private $preferredId = null;
 	private $ocShopScript = null;
 	private $formTemplateRuleArray = array();
 	private $hasNameSpace = false;
+	private $validateExternalUrl = null;
+	private $externalApiAddress = "https://api.tornevall.net/2.0/";
 
 	private $CURL = null;
+	private $NETWORK = null;
 	private $hasWsdl = false;
 	/**
 	 * @var URLS pointing to direct access of Resurs Bank, instead of WSDL-stubs.
@@ -72,7 +75,9 @@ class ResursBank
 		'getAnnuityFactors' => 'SimplifiedShopFlowService',
 		'getPayment' => 'AfterShopFlowService',
 		'findPayments' => 'AfterShopFlowService',
-		'addMetaData' => 'AfterShopFlowService'
+		'addMetaData' => 'AfterShopFlowService',
+		'registerEventCallback' => 'ConfigurationService',
+		'getRegisteredEventCallback' => 'ConfigurationService'
 	);
 
 	/**
@@ -353,7 +358,7 @@ class ResursBank
 	 * @param string $login
 	 * @param string $password
 	 * @param int $targetEnvironment
-	 * @throws ResursException
+	 * @throws \Exception
 	 */
 	function __construct($login = '', $password = '', $targetEnvironment = ResursEnvironments::ENVIRONMENT_NOT_SET)
 	{
@@ -361,7 +366,7 @@ class ResursBank
 			$this->classPath = RB_API_PATH;
 		}
 		if (!class_exists('ReflectionClass')) {
-			throw new ResursException("ReflectionClass can not be found", ResursExceptions::CLASS_REFLECTION_MISSING, __FUNCTION__);
+			throw new \Exception(__FUNCTION__ .": ReflectionClass can not be found", ResursExceptions::CLASS_REFLECTION_MISSING);
 		}
 		$this->soapOptions['cache_wsdl'] = (defined('WSDL_CACHE_BOTH') ? WSDL_CACHE_BOTH : true);
 		$this->soapOptions['ssl_method'] = (defined('SOAP_SSL_METHOD_TLS') ? SOAP_SSL_METHOD_TLS : false);
@@ -443,14 +448,14 @@ class ResursBank
 	 * Convert array to json
 	 * @param array $jsonData
 	 * @return array|mixed|string|void
-	 * @throws ResursException
+	 * @throws \Exception
 	 */
 	private function toJson($jsonData = array())
 	{
 		if (is_array($jsonData) || is_object($jsonData)) {
 			$jsonData = json_encode($jsonData);
 			if (json_last_error()) {
-				throw new ResursException(json_last_error_msg(), json_last_error());
+				throw new \Exception(__FUNCTION__ . ": " . json_last_error_msg(), json_last_error());
 			}
 		}
 		return $jsonData;
@@ -724,15 +729,83 @@ class ResursBank
 	}
 
 	/**
+	 * Set up this to automatically validate a destination url.
+	 *
+	 * @param null $url
+	 * @param string $expectedHttpAcceptCode What response code from the web server we expect when we are successful
+	 * @param string $expectedHttpErrorCode What response code from the web server we expect when we (normally) fails on digest failures
+	 */
+	public function setValidateExternalCallbackUrl($url = null, $expectedHttpAcceptCode = "200", $expectedHttpErrorCode = "403") {
+		$this->validateExternalUrl = array(
+			'url' => $url,
+			'http_accept' => $expectedHttpAcceptCode,
+			'http_error' => $expectedHttpErrorCode
+		);
+	}
+
+	/**
+	 * Run external URL validator and see whether an URL is really reachable or not
+	 *
+	 * @return int Returns a value from the class ResursCallbackReachability
+	 */
+	public function validateExternalAddress() {
+		if (is_array($this->validateExternalUrl) && count($this->validateExternalUrl)) {
+			$this->InitializeServices();
+			$ExternalAPI = $this->externalApiAddress . "/urltest/isavailable/";
+			$UrlDomain = $this->NETWORK->getUrlDomain($this->validateExternalUrl['url']);
+			if (!preg_match("/^http/i", $UrlDomain[1])) {
+				return ResursCallbackReachability::IS_REACHABLE_NOT_AVAILABLE;
+			}
+			$Expect = $this->validateExternalUrl['http_accept'];
+			$UnExpect = $this->validateExternalUrl['http_error'];
+			$useUrl = $this->validateExternalUrl['url'];
+			$ExternalPostData = array('link' => base64_encode($useUrl));
+			$ParsedResponse = $this->CURL->getParsedResponse( $this->CURL->doPost( $ExternalAPI, $ExternalPostData ) )->response->isAvailableResponse;
+			if (isset($ParsedResponse->{$useUrl}->exceptiondata->errorcode) && !empty($ParsedResponse->{$useUrl}->exceptiondata->errorcode)) {
+				return ResursCallbackReachability::IS_NOT_REACHABLE;
+			}
+			$UrlResult = $ParsedResponse->{$useUrl}->result;
+			$totalResults = 0;
+			$expectedResults = 0;
+			$unExpectedResults = 0;
+			$neitherResults = 0;
+			foreach ($UrlResult as $BrowserName => $BrowserResponse) {
+				$totalResults++;
+				if ($BrowserResponse == $Expect) {
+					$expectedResults++;
+				} else if ($BrowserResponse == $UnExpect) {
+					$unExpectedResults++;
+				} else {
+					$neitherResults++;
+				}
+			}
+			if ($totalResults == $expectedResults) {
+				return ResursCallbackReachability::IS_FULLY_REACHABLE;
+			}
+			if ($expectedResults > 0 && $unExpectedResults > 0) {
+				return ResursCallbackReachability::IS_REACHABLE_WITH_PROBLEMS;
+			}
+			if ($neitherResults > 0) {
+				return ResursCallbackReachability::IS_REACHABLE_NOT_KNOWN;
+			}
+			if ($expectedResults === 0) {
+				return ResursCallbackReachability::IS_NOT_REACHABLE;
+			}
+		}
+		return ResursCallbackReachability::IS_REACHABLE_NOT_KNOWN;
+	}
+
+	/**
 	 * Find out if we have internal configuration enabled. The config file supports serialized (php) data and json-encoded content, but saves all data serialized.
+	 *
 	 * @return bool
-	 * @throws ResursException
+	 * @throws \Exception
 	 */
 	private function hasConfiguration()
 	{
 		if (version_compare(PHP_VERSION, '5.3.0', "<")) {
 			if (!$this->allowObsoletePHP) {
-				throw new ResursException("PHP 5.3 or later are required for this module to work. If you feel safe with running this with an older version, please see ");
+				throw new \Exception(__FUNCTION__ . ": PHP 5.3 or later are required for this module to work. If you feel safe with running this with an older version, you can use the function setObsoletePhp()", 500);
 			}
 		}
 		/* Internally stored configuration - has to be activated on use */
@@ -862,7 +935,7 @@ class ResursBank
 					return $this->hasinit;
 				} catch (\Exception $e) {
 					$this->hasinit = false;
-					throw new ResursException($e->getMessage(), $e->getCode(), __FUNCTION__);
+					throw new \Exception(__FUNCTION__ . ": " . $e->getMessage(), $e->getCode());
 				}
 			}
 		} catch (\Exception $initWsdlException) {
@@ -875,7 +948,7 @@ class ResursBank
 				$throwable = false;
 			}
 			if ($this->throwOnInit && $throwable) {
-				throw new ResursException($initWsdlException->getMessage(), $initWsdlException->getCode(), __FUNCTION__);
+				throw new \Exception(__FUNCTION__ . ": " . $initWsdlException->getMessage(), $initWsdlException->getCode());
 			}
 		}
 		return $this->hasinit;
@@ -888,6 +961,7 @@ class ResursBank
 	 * @param array $arrayContent The content of the array
 	 * @return bool If save is successful, we return true
 	 * @deprecated 1.0.0
+	 * @deprecated 1.1.0
 	 */
 	private function updateConfig($arrayName, $arrayContent = array())
 	{
@@ -909,6 +983,7 @@ class ResursBank
 	 * Returns an array with stored configuration (if stored configuration are enabled)
 	 * @return array
 	 * @deprecated 1.0.0
+	 * @deprecated 1.1.0
 	 */
 	public function getConfigurationCache()
 	{
@@ -995,7 +1070,7 @@ class ResursBank
 	/**
 	 * Initializer for WSDL before calling services. Decides what username and environment to use. Default is always test.
 	 *
-	 * @throws ResursException
+	 * @throws \Exception
 	 */
 	private function initWsdl()
 	{
@@ -1127,7 +1202,7 @@ class ResursBank
 				}
 			} catch ( \Exception $e ) {
 				/** Adds the $currentService to the message, to show which service that failed */
-				throw new ResursException( $e->getMessage() . "\nStuck on service: " . $currentService, ResursExceptions::WSDL_APILOAD_EXCEPTION, __FUNCTION__, $e );
+				throw new \Exception( __FUNCTION__ . ": " . $e->getMessage() . "\nStuck on service: " . $currentService, ResursExceptions::WSDL_APILOAD_EXCEPTION, $e);
 			}
 		}
 
@@ -1135,11 +1210,14 @@ class ResursBank
 			$this->CURL = new \TorneLIB\Tornevall_cURL();
 			$this->CURL->setAuthentication($this->soapOptions['login'], $this->soapOptions['password']);
 		}
+		if (class_exists('TorneLIB\TorneLIB_Network')) {
+			$this->NETWORK = new \TorneLIB\TorneLIB_Network();
+		}
 
 		// Make sure there are available services
 		if (count($this->Include) < 1) {
 			//If there are no inclusions of services, something might have been changed on the way over here
-			throw new ResursException("No services was loaded", ResursExceptions::NO_SERVICE_API_HANDLED, __FUNCTION__);
+			throw new \Exception(__FUNCTION__ . ": No services was loaded", ResursExceptions::NO_SERVICE_API_HANDLED);
 		}
 		// Prepare services URL in case of nonWsdl mode
 		foreach ($this->Include as $ServiceName) {
@@ -1314,7 +1392,7 @@ class ResursBank
 	{
 		if ($this->HTTPS === true) {
 			if (!in_array('https', @stream_get_wrappers())) {
-				throw new ResursException("HTTPS wrapper can not be found", ResursExceptions::SSL_WRAPPER_MISSING, __FUNCTION__);
+				throw new \Exception(__FUNCTION__ . ": HTTPS wrapper can not be found", ResursExceptions::SSL_WRAPPER_MISSING);
 			}
 		}
 	}
@@ -1447,7 +1525,7 @@ class ResursBank
 					$returnObject        = $this->shopFlowService->$func( $instance );
 				}
 			} catch ( \Exception $e ) {
-				throw new ResursException( $e->getMessage(), ResursExceptions::WSDL_PASSTHROUGH_EXCEPTION, __FUNCTION__ . "/" . $func . "/" . $classfunc );
+				throw new \Exception( __FUNCTION__ . "/".$func."/".$classfunc.": " . $e->getMessage(), ResursExceptions::WSDL_PASSTHROUGH_EXCEPTION);
 			}
 		}
 		try {
@@ -1652,7 +1730,21 @@ class ResursBank
 	 */
 	public function setCallbackDigest($digestSaltString = '', $callbackType = ResursCallbackTypes::UNDEFINED)
 	{
-		/* Make sure the digestSaltString is never empty */
+		return $this->setCallbackDigestSalt($digestSaltString, $callbackType);
+	}
+
+	/**
+	 * Callback digest helper - sets a simple digest key before calling setCallback
+	 *
+	 * @param string $digestSaltString If empty, $digestSaltString is randomized
+	 * @param int $callbackType
+	 *
+	 * @return string
+	 * @since 1.0.1
+	 * @since 1.1.1
+	 */
+	public function setCallbackDigestSalt($digestSaltString = '', $callbackType = ResursCallbackTypes::UNDEFINED) {
+		// Make sure the digestSaltString is never empty
 		if (!empty($digestSaltString)) {
 			$currentDigest = $digestSaltString;
 		} else {
@@ -1696,6 +1788,88 @@ class ResursBank
 	}
 
 	/**
+	 * Register a callback URL with Resurs Bank
+	 *
+	 * @param int $callbackType
+	 * @param string $callbackUriTemplate
+	 * @param array $digestData
+	 * @param null $basicAuthUserName
+	 * @param null $basicAuthPassword
+	 *
+	 * @return bool
+	 * @throws \Exception
+	 * @since 1.0.1
+	 * @since 1.1.1
+	 */
+	public function setRegisterCallback($callbackType = ResursCallbackTypes::UNDEFINED, $callbackUriTemplate = "", $digestData = array(), $basicAuthUserName = null, $basicAuthPassword = null) {
+		$returnSuccess = false;
+		$this->InitializeServices();
+
+		if (is_array($this->validateExternalUrl) && count($this->validateExternalUrl)) {
+			$isValidAddress = $this->validateExternalAddress();
+			if ($isValidAddress == ResursCallbackReachability::IS_NOT_REACHABLE) {
+				throw new \Exception("Reachability Response: Your site might not be available to our callbacks");
+			} else if ($isValidAddress == ResursCallbackReachability::IS_REACHABLE_WITH_PROBLEMS) {
+				throw new \Exception("Reachability Response: Your site is availble from the outide. However, problems occured during tests, that indicates that your site is not available to our callbacks");
+			}
+		}
+		$serviceUrl = $this->getServiceUrl("registerEventCallback");
+
+		// The final array
+		$renderCallback = array();
+
+		// DEFAULT SETUP
+		$renderCallback['eventType'] = $this->getCallbackTypeString($callbackType);
+		if (empty($renderCallback['eventType'])) {
+			throw new \Exception(__FUNCTION__ . ": The callback type you are trying to register is not supported by EComPHP", ResursExceptions::CALLBACK_TYPE_UNSUPPORTED);
+		}
+		$renderCallback['uriTemplate'] = $callbackUriTemplate;
+
+		// BASIC AUTH CONTROL
+		if (!empty($basicAuthUserName) && !empty($basicAuthPassword)) {
+			$renderCallback['basicAuthUserName'] = $basicAuthUserName;
+			$renderCallback['basicAuthPassword'] = $basicAuthPassword;
+		}
+
+		////// DIGEST CONFIGURATION BEGIN
+		$renderCallback['digestConfiguration'] = array(
+			'digestParameters' => $this->getCallbackTypeParameters($callbackType)
+		);
+		if (isset($digestData['digestAlgorithm']) && strtolower($digestData['digestAlgorithm']) != "sha1" && strtolower($digestData['digestAlgorithm']) != "md5") {
+			$renderCallback['digestConfiguration']['digestAlgorithm'] = "sha1";
+		} elseif (!isset($callbackDigest['digestAlgorithm'])) {
+			$renderCallback['digestConfiguration']['digestAlgorithm'] = "sha1";
+		}
+		$renderCallback['digestConfiguration']['digestAlgorithm'] = strtoupper($renderCallback['digestConfiguration']['digestAlgorithm']);
+		if (!empty($callbackDigest['digestSalt'])) {
+			if ($digestData['digestSalt']) {
+				$renderCallback['digestConfiguration']['digestSalt'] = $digestData['digestSalt'];
+			}
+		}
+		// Overriders - if the globalDigestKey or the digestKey (specific type required) is set, it means that setCallbackDigest has been used.
+		if (!empty($this->globalDigestKey)) {
+			$renderCallback['digestConfiguration']['digestSalt'] = $this->globalDigestKey;
+		}
+		if (isset($this->digestKey[$renderCallback['eventType']]) && !empty($this->digestKey[$renderCallback['eventType']])) {
+			$renderCallback['digestConfiguration']['digestSalt'] = $this->digestKey['eventType'];
+		}
+		if (empty($renderCallback['digestConfiguration']['digestSalt'])) {
+			throw new \Exception("Can not continue without a digest salt key", ResursExceptions::CALLBACK_SALTDIGEST_MISSING);
+		}
+		////// DIGEST CONFIGURATION FINISH
+
+		// Make sure the callback gets unregistered first (This is a deprecated method to re-register callbacks that is already exists in Resurs Bank)
+		$renderedResponse = $this->CURL->doGet($serviceUrl)->registerEventCallback($renderCallback);
+		if ($renderedResponse['code'] == "200") {
+			$callbackUriControl = $this->CURL->getParsedResponse($this->CURL->doGet($this->getServiceUrl('getRegisteredEventCallback'))->getRegisteredEventCallback(array('eventType'=>$renderCallback['eventType'])));
+			if (isset($callbackUriControl->uriTemplate) && is_string($callbackUriControl->uriTemplate) && strtolower($callbackUriControl->uriTemplate) == strtolower($callbackUriTemplate)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
 	 * Simplifed callback registrator. Also handles re-registering of callbacks in case of already found in system.
 	 *
 	 * @param int $callbackType
@@ -1705,134 +1879,130 @@ class ResursBank
 	 * @param null $basicAuthPassword
 	 * @return bool
 	 * @throws \Exception
+	 * @deprecated 1.0.0
 	 */
 	public function setCallback($callbackType = ResursCallbackTypes::UNDEFINED, $callbackUriTemplate = "", $callbackDigest = array(), $basicAuthUserName = null, $basicAuthPassword = null)
 	{
-		$this->InitializeServices();
-		$renderCallback = array();
-		$digestParameters = array();
-		$regCallBackResult = false;     // CodeInspection - Set to FunctionGlobal
-		$renderCallback['eventType'] = $this->getCallbackTypeString($callbackType);
-		if (empty($renderCallback['eventType'])) {
-			throw new ResursException("The callback type you are trying to register is not supported by EComPHP", ResursExceptions::CALLBACK_TYPE_UNSUPPORTED, __FUNCTION__);
-		}
-		$confirmCallbackResult = false;
-		if (isset($callbackDigest) && !is_array($callbackDigest)) { $callbackDigest = array(); }
-		if (count($renderCallback) && $renderCallback['eventType'] != "" && !empty($callbackUriTemplate)) {
-			/** @noinspection PhpParamsInspection */
-			if ($this->hasWsdl) {
-				$registerCallbackClass = new resurs_registerEventCallback( $renderCallback['eventType'], $callbackUriTemplate );
-			}
-			$digestAlgorithm = resurs_digestAlgorithm::SHA1;
+		return $this->setRegisterCallback($callbackType, $callbackUriTemplate, $callbackDigest, $basicAuthUserName, $basicAuthPassword);
 
-			/*
-             * Look for parameters in the request. Algorithms are set to SHA1 by default.
-             * If no digestsalts are set, we will throw you an exception, since empty salts is normally not a good idea
-             */
-			if (is_array($callbackDigest)) {
-				if (isset($callbackDigest['digestAlgorithm']) && strtolower($callbackDigest['digestAlgorithm']) != "sha1" && strtolower($callbackDigest['digestAlgorithm']) != "md5") {
-					$callbackDigest['digestAlgorithm'] = "sha1";
-				} elseif (!isset($callbackDigest['digestAlgorithm'])) {
-					$callbackDigest['digestAlgorithm'] = "sha1";
-				}
-				/* If requested algorithm is not sha1, use md5 as the other option. */
-				if ($callbackDigest['digestAlgorithm'] != "sha1") {
-					$digestAlgorithm = digestAlgorithm::MD5;
-				}
-				/* Start collect the parameters needed for the callback (manually if necessary - otherwise, we'll catch the parameters from our defaults as described at https://test.resurs.com/docs/x/LAAF) */
-				$parameterArray = array();
-				/*
-                 * Make sure the digest parameters exists, and fill them in if the array exists but is empty
-                 */
-				if (isset($callbackDigest['digestParameters'])) {
-					if (((is_array($callbackDigest['digestParameters']) && !count($callbackDigest['digestParameters'])) || empty($callbackDigest['digestParameters']))) {
-						$callbackDigest['digestParameters'] = $this->getCallbackTypeParameters($callbackType);
-					}
-				} else {
-					/*
-                     * Make sure that the parameter array is set if it does not exist at all
-                     */
-					$callbackDigest['digestParameters'] = $this->getCallbackTypeParameters($callbackType);
-				}
-				if (isset($callbackDigest['digestParameters']) && is_array($callbackDigest['digestParameters'])) {
-					if (count($callbackDigest['digestParameters'])) {
-						foreach ($callbackDigest['digestParameters'] as $parameter) {
-							array_push($parameterArray, $parameter);
-						}
-					}
-				}
-				/*
-                 * Check if the helper received a salt key. To now interfere with the array of digestKey, we are preparing with globalDigestKey.
-                 */
-				if (!count($this->digestKey) && !empty($this->globalDigestKey)) {
-					/* Only set up the digesSalt if not already set */
-					if (empty($callbackDigest['digestSalt'])) {
-						$callbackDigest['digestSalt'] = $this->globalDigestKey;
-					}
-				} else {
-					if (isset($this->digestKey[$renderCallback['eventType']])) {
-						$callbackDigest['digestSalt'] = $this->digestKey['eventType'];
-					}
-				}
-				/* Make sure there is a saltkey or throw */
-				if (isset($callbackDigest['digestSalt']) && !empty($callbackDigest['digestSalt'])) {
-					$digestParameters['digestSalt'] = $callbackDigest['digestSalt'];
-				} else {
-					throw new ResursException("No salt key for digest found", ResursExceptions::CALLBACK_SALTDIGEST_MISSING, __FUNCTION__);
-				}
-				$digestParameters['digestParameters'] = (is_array($parameterArray) ? $parameterArray : array());
-			}
-			/* Generate a digest configuration for the services. */
-			/** @noinspection PhpParamsInspection */
-			if ($this->hasWsdl) {
-				$digestConfiguration = new resurs_digestConfiguration( $digestAlgorithm, $digestParameters['digestParameters'] );
-			}
-			$digestConfiguration->digestSalt = $digestParameters['digestSalt'];
+		/*
+    	 * Code below is in deprecation state
+    	 */
 
-			/* Unregister any old callbacks if found. */
-			$this->unSetCallback($callbackType);
+		/*
+        $this->InitializeServices();
+        $renderCallback = array();
+        $digestParameters = array();
+        $regCallBackResult = false;     // CodeInspection - Set to FunctionGlobal
+        $renderCallback['eventType'] = $this->getCallbackTypeString($callbackType);
+        if (empty($renderCallback['eventType'])) {
+            throw new ResursException("The callback type you are trying to register is not supported by EComPHP", ResursExceptions::CALLBACK_TYPE_UNSUPPORTED, __FUNCTION__);
+        }
+        $confirmCallbackResult = false;
+        if (isset($callbackDigest) && !is_array($callbackDigest)) { $callbackDigest = array(); }
+        if (count($renderCallback) && $renderCallback['eventType'] != "" && !empty($callbackUriTemplate)) {
+            if ($this->hasWsdl) {
+	            $registerCallbackClass = new resurs_registerEventCallback( $renderCallback['eventType'], $callbackUriTemplate );
+            }
+            $digestAlgorithm = resurs_digestAlgorithm::SHA1;
 
-			if ($this->hasWsdl) {
-				/* If your site needs authentication to reach callbacks, this sets up a basic authentication for it */
-				if ( ! empty( $basicAuthUserName ) ) {
-					$registerCallbackClass->setBasicAuthUserName( $basicAuthUserName );
-				}
-				if ( ! empty( $basicAuthPassword ) ) {
-					$registerCallbackClass->setBasicAuthPassword( $basicAuthPassword );
-				}
-				/* Prepare for the primary digestive data. */
-				$registerCallbackClass->digestConfiguration = $digestConfiguration;
-				try {
-					/* And register the rendered callback at the service. Make sure that configurationService is really there before doing this. */
-					$regCallBackResult = $this->configurationService->registerEventCallback( $registerCallbackClass );
-					if ( is_object( $regCallBackResult ) ) {
-						$confirmCallbackResult = true;
-					}
-				} catch ( \Exception $rbCallbackEx ) {
-					/* Set up a silent. failover, and return false if the callback registration failed. Set the error into the lastError-variable. */
-					$regCallBackResult = false;
-					$this->lastError   = $rbCallbackEx->getMessage();
-				}
-			} else {
-				die();
-			}
-
-			/* If the answer, received from the registerEventCallback, is an empty object we should also secure that everything is all right with the requested URL */
-			if ($confirmCallbackResult) {
-				$getRegisteredCallbackConfirmation = $this->getRegisteredEventCallback($renderCallback['eventType']);
-				if (isset($getRegisteredCallbackConfirmation->uriTemplate)) {
-					if (strtolower($getRegisteredCallbackConfirmation->uriTemplate) == strtolower($callbackUriTemplate)) {
-						return true;
-					} else {
-						// Mismatching urls fails
-						throw new ResursException("registerEventCallback returns a different callback URL than expected", ResursExceptions::CALLBACK_URL_MISMATCH, __FUNCTION__);
-					}
-				}
-			}
-			return $regCallBackResult;
-		} else {
-			throw new ResursException("Insufficient data for callback registration", ResursExceptions::CALLBACK_UNSUFFICIENT_DATA, __FUNCTION__);
-		}
+            // Look for parameters in the request. Algorithms are set to SHA1 by default.
+	        // If no digestsalts are set, we will throw you an exception, since empty salts is normally not a good idea
+            if (is_array($callbackDigest)) {
+                if (isset($callbackDigest['digestAlgorithm']) && strtolower($callbackDigest['digestAlgorithm']) != "sha1" && strtolower($callbackDigest['digestAlgorithm']) != "md5") {
+                    $callbackDigest['digestAlgorithm'] = "sha1";
+                } elseif (!isset($callbackDigest['digestAlgorithm'])) {
+                    $callbackDigest['digestAlgorithm'] = "sha1";
+                }
+                // If requested algorithm is not sha1, use md5 as the other option.
+                if ($callbackDigest['digestAlgorithm'] != "sha1") {
+                    $digestAlgorithm = digestAlgorithm::MD5;
+                }
+                // Start collect the parameters needed for the callback (manually if necessary - otherwise, we'll catch the parameters from our defaults as described at https://test.resurs.com/docs/x/LAAF)
+                $parameterArray = array();
+                // Make sure the digest parameters exists, and fill them in if the array exists but is empty
+                if (isset($callbackDigest['digestParameters'])) {
+                    if (((is_array($callbackDigest['digestParameters']) && !count($callbackDigest['digestParameters'])) || empty($callbackDigest['digestParameters']))) {
+                        $callbackDigest['digestParameters'] = $this->getCallbackTypeParameters($callbackType);
+                    }
+                } else {
+                    // Make sure that the parameter array is set if it does not exist at all
+                    $callbackDigest['digestParameters'] = $this->getCallbackTypeParameters($callbackType);
+                }
+                if (isset($callbackDigest['digestParameters']) && is_array($callbackDigest['digestParameters'])) {
+                    if (count($callbackDigest['digestParameters'])) {
+                        foreach ($callbackDigest['digestParameters'] as $parameter) {
+                            array_push($parameterArray, $parameter);
+                        }
+                    }
+                }
+                // Check if the helper received a salt key. To now interfere with the array of digestKey, we are preparing with globalDigestKey.
+                if (!count($this->digestKey) && !empty($this->globalDigestKey)) {
+                    // Only set up the digesSalt if not already set
+                    if (empty($callbackDigest['digestSalt'])) {
+                        $callbackDigest['digestSalt'] = $this->globalDigestKey;
+                    }
+                } else {
+                    if (isset($this->digestKey[$renderCallback['eventType']])) {
+                        $callbackDigest['digestSalt'] = $this->digestKey['eventType'];
+                    }
+                }
+                // Make sure there is a saltkey or throw
+                if (isset($callbackDigest['digestSalt']) && !empty($callbackDigest['digestSalt'])) {
+                    $digestParameters['digestSalt'] = $callbackDigest['digestSalt'];
+                } else {
+                    throw new ResursException("No salt key for digest found", ResursExceptions::CALLBACK_SALTDIGEST_MISSING, __FUNCTION__);
+                }
+                $digestParameters['digestParameters'] = (is_array($parameterArray) ? $parameterArray : array());
+            }
+            // Generate a digest configuration for the services.
+            if ($this->hasWsdl) {
+	            $digestConfiguration = new resurs_digestConfiguration( $digestAlgorithm, $digestParameters['digestParameters'] );
+            }
+            $digestConfiguration->digestSalt = $digestParameters['digestSalt'];
+            // Unregister any old callbacks if found.
+            $this->unSetCallback($callbackType);
+            if ($this->hasWsdl) {
+	            // If your site needs authentication to reach callbacks, this sets up a basic authentication for it
+	            if ( ! empty( $basicAuthUserName ) ) {
+		            $registerCallbackClass->setBasicAuthUserName( $basicAuthUserName );
+	            }
+	            if ( ! empty( $basicAuthPassword ) ) {
+		            $registerCallbackClass->setBasicAuthPassword( $basicAuthPassword );
+	            }
+	            // Prepare for the primary digestive data.
+	            $registerCallbackClass->digestConfiguration = $digestConfiguration;
+	            try {
+		            // And register the rendered callback at the service. Make sure that configurationService is really there before doing this.
+		            $regCallBackResult = $this->configurationService->registerEventCallback( $registerCallbackClass );
+		            if ( is_object( $regCallBackResult ) ) {
+			            $confirmCallbackResult = true;
+		            }
+	            } catch ( \Exception $rbCallbackEx ) {
+		            // Set up a silent. failover, and return false if the callback registration failed. Set the error into the lastError-variable.
+		            $regCallBackResult = false;
+		            $this->lastError   = $rbCallbackEx->getMessage();
+	            }
+            } else {
+            	die();
+            }
+            // If the answer, received from the registerEventCallback, is an empty object we should also secure that everything is all right with the requested URL
+            if ($confirmCallbackResult) {
+                $getRegisteredCallbackConfirmation = $this->getRegisteredEventCallback($renderCallback['eventType']);
+                if (isset($getRegisteredCallbackConfirmation->uriTemplate)) {
+                    if (strtolower($getRegisteredCallbackConfirmation->uriTemplate) == strtolower($callbackUriTemplate)) {
+                        return true;
+                    } else {
+                        // Mismatching urls fails
+                        throw new ResursException("registerEventCallback returns a different callback URL than expected", ResursExceptions::CALLBACK_URL_MISMATCH, __FUNCTION__);
+                    }
+                }
+            }
+            return $regCallBackResult;
+        } else {
+            throw new ResursException("Insufficient data for callback registration", ResursExceptions::CALLBACK_INSUFFICIENT_DATA, __FUNCTION__);
+        }
+    	*/
 	}
 
 	/**
@@ -1840,13 +2010,13 @@ class ResursBank
 	 *
 	 * @param int $callbackType
 	 * @return bool
-	 * @throws ResursException
+	 * @throws \Exception
 	 */
 	public function unSetCallback($callbackType = ResursCallbackTypes::UNDEFINED)
 	{
 		$renderCallback['eventType'] = $this->getCallbackTypeString($callbackType);
 		if (empty($renderCallback['eventType'])) {
-			throw new ResursException("The callback type you are trying to unregister is not supported by EComPHP", ResursExceptions::CALLBACK_TYPE_UNSUPPORTED);
+			throw new \Exception(__FUNCTION__ . ": The callback type you are trying to unregister is not supported by EComPHP", ResursExceptions::CALLBACK_TYPE_UNSUPPORTED);
 		}
 		try {
 			$this->unregisterEventCallback($renderCallback['eventType']);
@@ -2048,7 +2218,13 @@ class ResursBank
 	 * @since 1.1.1
 	 */
 	public function findPayments($searchCriteria = array(), $pageNumber = 1, $itemsPerPage = 10, $sortBy = null) {
-		return $this->postService('findPayments', array('searchCriteria' => $searchCriteria, 'pageNumber' => $pageNumber, 'itemsPerPage' => $itemsPerPage, 'sortBy' => $sortBy));
+		$searchCriterias = array(
+			'searchCriteria' => $searchCriteria,
+			'pageNumber' => $pageNumber,
+			'itemsPerPage' => $itemsPerPage
+		);
+		if (!empty($sortBy)) {$searchCriterias['sortBy'] = $sortBy;}
+		return $this->postService('findPayments', $searchCriterias);
 	}
 
 
@@ -2056,8 +2232,9 @@ class ResursBank
 	 * Get the list of Resurs Bank payment methods from cache, instead of live (Cache function needs to be active)
 	 *
 	 * @return array
-	 * @throws ResursException
+	 * @throws \Exception
 	 * @deprecated 1.0.0
+	 * @deprecated 1.1.0
 	 */
 	public function getPaymentMethodsCache()
 	{
@@ -2068,7 +2245,7 @@ class ResursBank
 				return $this->objectsIntoArray($this->getPaymentMethods());
 			}
 		}
-		throw new ResursException("Can not fetch payment methods from cache. You must enable internal caching first.", ResursExceptions::PAYMENT_METHODS_CACHE_DISABLED, __FUNCTION__);
+		throw new \Exception(__FUNCTION__ . ": Can not fetch payment methods from cache. You must enable internal caching first.", ResursExceptions::PAYMENT_METHODS_CACHE_DISABLED);
 	}
 
 	/**
@@ -2128,7 +2305,7 @@ class ResursBank
 	 * Get annuityfactors from payment method through cache, instead of live (Cache function needs to be active)
 	 * @param string $paymentMethod Given payment method
 	 * @return array
-	 * @throws ResursException
+	 * @throws \Exception
 	 * @deprecated 1.0.0
 	 */
 	public function getAnnuityFactorsCache($paymentMethod)
@@ -2140,7 +2317,7 @@ class ResursBank
 				return $this->objectsIntoArray($this->getAnnuityFactors($paymentMethod));
 			}
 		} else {
-			throw new ResursException("Can not fetch annuity factors from cache. You must enable internal caching first.", ResursExceptions::ANNUITY_FACTORS_CACHE_DISABLED, __FUNCTION__);
+			throw new \Exception(__FUNCTION__ . ": Can not fetch annuity factors from cache. You must enable internal caching first.", ResursExceptions::ANNUITY_FACTORS_CACHE_DISABLED);
 		}
 	}
 
@@ -2152,8 +2329,9 @@ class ResursBank
 	 *
 	 * @param string $paymentMethodId
 	 * @return mixed
-	 * @throws ResursException
+	 * @throws \Exception
 	 * @deprecated 1.0.0
+	 * @deprecated 1.1.0
 	 */
 	public function getAnnuityFactorsDeprecated($paymentMethodId = '')
 	{
@@ -2165,7 +2343,7 @@ class ResursBank
 				$firstMethod = array_pop($methodsAvailable);
 				$paymentMethodId = isset($firstMethod->id) ? $firstMethod->id : null;
 				if (empty($paymentMethodId)) {
-					throw new ResursException("getAnnuityFactorsException: No available payment method", ResursExceptions::ANNUITY_FACTORS_METHOD_UNAVAILABLE, __FUNCTION__);
+					throw new \Exception(__FUNCTION__ . ": getAnnuityFactorsException  No available payment method", ResursExceptions::ANNUITY_FACTORS_METHOD_UNAVAILABLE);
 				}
 			}
 		}
@@ -2311,8 +2489,9 @@ class ResursBank
 	 * @param $countryCode
 	 * @param $customerType
 	 * @return array
-	 * @throws ResursException
+	 * @throws \Exception
 	 * @deprecated 1.0.0 It is strongly recommended that you are generating all this by yourself in an integration
+	 * @deprecated 1.1.0 It is strongly recommended that you are generating all this by yourself in an integration
 	 */
 	public function getRegEx($formFieldName = '', $countryCode, $customerType)
 	{
@@ -2322,10 +2501,10 @@ class ResursBank
 		$returnRegEx = $templateRule['regexp'];
 
 		if (empty($countryCode)) {
-			throw new ResursException("Country code is missing in getRegEx-request for form fields", ResursExceptions::REGEX_COUNTRYCODE_MISSING);
+			throw new \Exception(__FUNCTION__ . ": Country code is missing in getRegEx-request for form fields", ResursExceptions::REGEX_COUNTRYCODE_MISSING);
 		}
 		if (empty($customerType)) {
-			throw new ResursException("Customer type is missing in getRegEx-request for form fields", ResursExceptions::REGEX_CUSTOMERTYPE_MISSING);
+			throw new \Exception(__FUNCTION__ . ": Customer type is missing in getRegEx-request for form fields", ResursExceptions::REGEX_CUSTOMERTYPE_MISSING);
 		}
 
 		if (!empty($countryCode) && isset($returnRegEx[strtoupper($countryCode)])) {
@@ -2362,8 +2541,9 @@ class ResursBank
 	 * @param string $formField The field you want to test
 	 * @param bool $canThrow Make the function throw an exception instead of silently return false if getTemplateFieldsByMethodType has not been run yet
 	 * @return bool Returns false if you should NOT hide the field
-	 * @throws ResursException
+	 * @throws \Exception
 	 * @deprecated 1.0.0 It is strongly recommended that you are generating all this by yourself in an integration
+	 * @deprecated 1.1.0 It is strongly recommended that you are generating all this by yourself in an integration
 	 */
 	public function canHideFormField($formField = "", $canThrow = false)
 	{
@@ -2382,7 +2562,7 @@ class ResursBank
 		}
 
 		if ($canThrow && !$canHideSet) {
-			throw new ResursException("templateFieldsByMethodResponse is empty. You have to run getTemplateFieldsByMethodType first", ResursExceptions::FORMFIELD_CANHIDE_EXCEPTION, __FUNCTION__);
+			throw new \Exception(__FUNCTION__ . ": templateFieldsByMethodResponse is empty. You have to run getTemplateFieldsByMethodType first", ResursExceptions::FORMFIELD_CANHIDE_EXCEPTION);
 		}
 
 		return $canHideSet;
@@ -2549,13 +2729,13 @@ class ResursBank
 	 *
 	 * @param array $speclineArray
 	 * @return null
-	 * @throws ResursException
+	 * @throws \Exception
 	 */
 	public function updateCart($speclineArray = array())
 	{
 		if (!$this->isOmniFlow && !$this->isHostedFlow) {
 			if (!class_exists('Resursbank\RBEcomPHP\resurs_specLine') && !class_exists('resurs_specLine')) {
-				throw new ResursException("Class specLine does not exist", ResursExceptions::UPDATECART_NOCLASS_EXCEPTION, __FUNCTION__);
+				throw new \Exception(__FUNCTION__ . ": Class specLine does not exist", ResursExceptions::UPDATECART_NOCLASS_EXCEPTION);
 			}
 		}
 		$this->InitializeServices();
@@ -2739,7 +2919,7 @@ class ResursBank
 
 	/**
 	 * Internal handler for carddata
-	 * @throws ResursException
+	 * @throws \Exception
 	 */
 	private function updateCardData()
 	{
@@ -2758,7 +2938,7 @@ class ResursBank
 			}
 		}
 		if (!empty($this->cardDataCardNumber) && !empty($this->cardDataUseAmount)) {
-			throw new ResursException("Card number and amount can not be set at the same time", ResursExceptions::UPDATECARD_DOUBLE_DATA_EXCEPTION, __FUNCTION__);
+			throw new \Exception(__FUNCTION__ . ": Card number and amount can not be set at the same time", ResursExceptions::UPDATECARD_DOUBLE_DATA_EXCEPTION);
 		}
 		return $this->_paymentCardData;
 	}
@@ -2769,7 +2949,7 @@ class ResursBank
 	 * @param null $cardNumber
 	 * @param bool|false $useAmount Set to true when using new cards
 	 * @param bool|false $setOwnAmount If customer applies for a new card specify the credit amount that is applied for. If $setOwnAmount is not null, this amount will be used instead of the specrow data
-	 * @throws ResursException
+	 * @throws \Exception
 	 */
 	public function prepareCardData($cardNumber = null, $useAmount = false, $setOwnAmount = null)
 	{
@@ -2777,7 +2957,7 @@ class ResursBank
 			if (is_numeric($cardNumber)) {
 				$this->cardDataCardNumber = $cardNumber;
 			} else {
-				throw new ResursException("Card number must be numeric", ResursExceptions::PREPARECARD_NUMERIC_EXCEPTION, __FUNCTION__);
+				throw new \Exception(__FUNCTION__ . ": Card number must be numeric", ResursExceptions::PREPARECARD_NUMERIC_EXCEPTION);
 			}
 		}
 		if ($useAmount) {
@@ -2812,7 +2992,7 @@ class ResursBank
 	 * @param bool $keepReturnObject Making EComPHP backwards compatible when a webshop still needs the complete object, not only $bookPaymentResult->return
 	 * @param array $externalParameters External parameters
 	 * @return object
-	 * @throws ResursException
+	 * @throws \Exception
 	 * @link https://test.resurs.com/docs/x/cIZM bookPayment EComPHP Reference
 	 * @link https://test.resurs.com/docs/display/ecom/bookPayment bookPayment reference
 	 */
@@ -2823,7 +3003,7 @@ class ResursBank
 			if (is_array($this->bookData) && count($this->bookData)) {
 				$bookData = $this->bookData;
 			} else {
-				throw new ResursException("There is no bookData available for the booking", ResursExceptions::BOOKPAYMENT_NO_BOOKDATA);
+				throw new \Exception(__FUNCTION__. ": There is no bookData available for the booking", ResursExceptions::BOOKPAYMENT_NO_BOOKDATA);
 			}
 		}
 		$returnBulk = $this->bookPaymentBulk($paymentMethodIdOrPaymentReference, $bookData, $getReturnedObjectAsStd, $keepReturnObject, $externalParameters);
@@ -2880,7 +3060,7 @@ class ResursBank
 	 * @param bool $keepReturnObject Making EComPHP backwards compatible when a webshop still needs the complete object, not only $bookPaymentResult->return
 	 * @param array $externalParameters External parameters
 	 * @return array|mixed|null This normally returns an object depending on your platform request
-	 * @throws ResursException
+	 * @throws \Exception
 	 */
 	private function bookPaymentBulk($paymentMethodId = '', $bookData = array(), $getReturnedObjectAsStd = true, $keepReturnObject = false, $externalParameters = array())
 	{
@@ -2963,7 +3143,7 @@ class ResursBank
              * throw an execption here.
              */
 			if (!$this->isOmniFlow && !$this->isHostedFlow) {
-				throw new ResursException("bookPaymentClass not found, and this is neither an omni nor hosted flow", ResursExceptions::BOOKPAYMENT_NO_BOOKPAYMENT_CLASS, __FUNCTION__);
+				throw new \Exception(__FUNCTION__ . ": bookPaymentClass not found, and this is neither an omni nor hosted flow", ResursExceptions::BOOKPAYMENT_NO_BOOKPAYMENT_CLASS);
 			}
 		}
 		if (!empty($this->cardDataCardNumber) || $this->cardDataUseAmount) {
@@ -3011,10 +3191,10 @@ class ResursBank
 					$this->omniFrame = $preOmni->html;
 				}
 			} catch (\Exception $omniFrameException) {
-				throw new ResursException($omniFrameException->getMessage(), $omniFrameException->getCode(), "prepareOmniFrame");
+				throw new \Exception(__FUNCTION__ . "/prepareOmniFrame: " . $omniFrameException->getMessage(), $omniFrameException->getCode());
 			}
 			if (isset($this->omniFrame->faultCode)) {
-				throw new ResursException(isset($this->omniFrame->description) ? $this->omniFrame->description : "Unknown error received from Resurs Bank OmniAPI", $this->omniFrame->faultCode, "bookPaymentOmniFrame");
+				throw new \Exception(__FUNCTION__ ."/prepareOmniFrame-bookPaymentOmniFrame: " . (isset($this->omniFrame->description) ? $this->omniFrame->description : "Unknown error received from Resurs Bank OmniAPI"), $this->omniFrame->faultCode);
 			}
 			return $this->omniFrame;
 		}
@@ -3024,12 +3204,12 @@ class ResursBank
 			try {
 				$hostedResult = $this->bookPaymentHosted($paymentMethodId, $bookData, $getReturnedObjectAsStd, $keepReturnObject);
 			} catch (\Exception $hostedException) {
-				throw new ResursException($hostedException->getMessage(), $hostedException->getCode());
+				throw new \Exception(__FUNCTION__. ": " . $hostedException->getMessage(), $hostedException->getCode());
 			}
 			if (isset($hostedResult->location)) {
 				return $hostedResult->location;
 			} else {
-				throw new ResursException("Can not find location in hosted flow", 404, "bookPaymentHosted");
+				throw new \Exception(__FUNCTION__ . "/bookPaymentHosted: Can not find location in hosted flow", 404);
 			}
 		}
 		/* If this request was not about an omni flow, let's continue prepare the signing data */
@@ -3041,9 +3221,9 @@ class ResursBank
 			$bookPaymentResult = $this->simplifiedShopFlowService->bookPayment($bookPaymentInit);
 		} catch (\Exception $bookPaymentException) {
 			if (isset($bookPaymentException->faultstring)) {
-				throw new ResursException($bookPaymentException->faultstring);
+				throw new \Exception($bookPaymentException->faultstring, 500);
 			}
-			throw new ResursException($bookPaymentException->getMessage(), $bookPaymentException->getCode());
+			throw new \Exception(__FUNCTION__ . ": " . $bookPaymentException->getMessage(), $bookPaymentException->getCode());
 		}
 		if ($getReturnedObjectAsStd) {
 			if (isset($bookPaymentResult->return)) {
@@ -3055,7 +3235,7 @@ class ResursBank
 					return $this->getDataObject($bookPaymentResult);
 				}
 			} else {
-				throw new ResursException("bookPaymentResult does not contain a return object");
+				throw new \Exception(__FUNCTION__ . ": bookPaymentResult does not contain a return object", 500);
 			}
 		}
 		return $bookPaymentResult;
@@ -3102,9 +3282,8 @@ class ResursBank
 	 * @param bool $getReturnedObjectAsStd Returning a stdClass instead of a Resurs class
 	 * @param bool $keepReturnObject Making EComPHP backwards compatible when a webshop still needs the complete object, not only $bookPaymentResult->return
 	 * @return array|mixed|object
-	 * @throws ResursException
+	 * @throws \Exception
 	 */
-
 	private function bookPaymentHosted($paymentMethodId = '', $bookData = array(), $getReturnedObjectAsStd = true, $keepReturnObject = false)
 	{
 		if ($this->current_environment == ResursEnvironments::ENVIRONMENT_TEST) {
@@ -3143,11 +3322,19 @@ class ResursBank
 		// Compatibility fixed for PHP 5.3
 		if (!empty($hostedErrorResult)) {
 			$hostedErrNo = $this->hostedErrNo($this->simpleWebEngine);
-			throw new ResursException($hostedErrorResult, $hostedErrNo);
+			throw new \Exception(__FUNCTION__ . ": " . $hostedErrorResult, $hostedErrNo);
 		}
 		return $this->simpleWebEngine['parsed'];
 	}
 
+	/**
+	 * @param array $bookData
+	 * @param string $orderReference
+	 * @param int $omniCallType
+	 *
+	 * @return mixed
+	 * @throws \Exception
+	 */
 	public function prepareOmniFrame($bookData = array(), $orderReference = "", $omniCallType = ResursCheckoutCallTypes::METHOD_PAYMENTS)
 	{
 		if (empty($this->preferredId)) {
@@ -3159,7 +3346,7 @@ class ResursBank
 			$this->env_omni_current = $this->env_omni_prod;
 		}
 		if (empty($orderReference) && !isset($bookData['orderReference'])) {
-			throw new ResursException("You must proved omnicheckout with a orderReference", 500);
+			throw new \Exception(__FUNCTION__ . ": You must proved omnicheckout with a orderReference", 500);
 		}
 		if (empty($orderReference) && isset($bookData['orderReference'])) {
 			$orderReference = $bookData['orderReference'];
@@ -3169,20 +3356,20 @@ class ResursBank
 		}
 		if ($omniCallType == ResursCheckoutCallTypes::METHOD_CALLBACK) {
 			$omniSubPath = "/callbacks/";
-			throw new ResursException("METHOD_CALLBACK for OmniCheckout is not yet implemented");
+			throw new \Exception(__FUNCTION__ . ": METHOD_CALLBACK for OmniCheckout is not yet implemented");
 		}
 		$omniReferenceUrl = $this->env_omni_current . $omniSubPath;
 		try {
-			$bookDataJson = $this->toJsonByType($bookData, ResursMethodTypes::METHOD_OMNI);
+			$bookDataJson = $this->toJsonByType($bookData, ResursMethodTypes::METHOD_CHECKOUT);
 			$this->simpleWebEngine = $this->createJsonEngine($omniReferenceUrl, $bookDataJson);
 			$omniErrorResult = $this->omniError($this->simpleWebEngine);
 			// Compatibility fixed for PHP 5.3
 			if (!empty($omniErrorResult)) {
 				$omniErrNo = $this->omniErrNo($this->simpleWebEngine);
-				throw new ResursException($omniErrorResult, $omniErrNo);
+				throw new \Exception(__FUNCTION__ . ": " . $omniErrorResult, $omniErrNo);
 			}
 		} catch (\Exception $jsonException) {
-			throw new ResursException($jsonException->getMessage(), $jsonException->getCode());
+			throw new \Exception(__FUNCTION__ . ": " . $jsonException->getMessage(), $jsonException->getCode());
 		}
 		return $this->simpleWebEngine['parsed'];
 	}
@@ -3350,6 +3537,7 @@ class ResursBank
 	 * @param  string    $to         [What it should be updated to]
 	 * @return mixed
 	 * @throws Exception
+	 * @since 1.0.1
 	 */
 	public function updatePaymentReference($paymentId, $to) {
 		if ( empty($paymentId) || empty($to) ) {
@@ -3367,6 +3555,7 @@ class ResursBank
 	 *
 	 * @return bool
 	 * @throws \Exception
+	 * @since 1.0.1
 	 */
 	public function addMetaData($paymentId = '', $metaDataKey = '', $metaDataValue = '') {
 		if ( empty( $paymentId ) ) {
@@ -3396,7 +3585,6 @@ class ResursBank
 		}
 		return false;
 	}
-
 
 	/**
 	 * Return a string containing the last error for the current session. Returns null if no errors occured
@@ -3621,7 +3809,7 @@ class ResursBank
 	 * @param bool $useSpecifiedQuantity If set to true, the quantity set clientside will be used rather than the exact quantity from the spec in getPayment (This requires that $quantityMatch is set to false)
 	 * @return bool True if successful
 	 * @throws \Exception
-	 * @throws ResursException
+	 * @throws \Exception
 	 */
 	public function finalizePayment($paymentId = "", $clientPaymentSpec = array(), $finalizeParams = array(), $quantityMatch = true, $useSpecifiedQuantity = false)
 	{
@@ -3649,7 +3837,7 @@ class ResursBank
 				$this->afterShopFlowService->finalizePayment($finalizePaymentContainer);
 				$finalizeResult = true;
 			} catch (\Exception $e) {
-				throw new ResursException($e->getMessage(), 500, __FUNCTION__);
+				throw new \Exception(__FUNCTION__ . ": ". $e->getMessage(), 500, __FUNCTION__);
 			}
 		}
 		return $finalizeResult;
@@ -3667,7 +3855,6 @@ class ResursBank
 	 * @param bool $useSpecifiedQuantity
 	 * @return bool
 	 * @throws \Exception
-	 * @throws ResursException
 	 *
 	 */
 	public function creditPayment($paymentId = "", $clientPaymentSpec = array(), $creditParams = array(), $quantityMatch = true, $useSpecifiedQuantity = false)
@@ -3696,7 +3883,7 @@ class ResursBank
 				$this->afterShopFlowService->creditPayment($creditPaymentContainer);
 				$creditResult = true;
 			} catch (\Exception $e) {
-				throw new ResursException($e->getMessage());
+				throw new \Exception(__FUNCTION__ . ": " . $e->getMessage(), $e->getCode());
 			}
 		}
 		return $creditResult;
@@ -3714,7 +3901,6 @@ class ResursBank
 	 * @param bool $useSpecifiedQuantity If set to true, the quantity set clientside will be used rather than the exact quantity from the spec in getPayment (This requires that $quantityMatch is set to false)
 	 * @return bool
 	 * @throws \Exception
-	 * @throws ResursException
 	 */
 	public function annulPayment($paymentId = "", $clientPaymentSpec = array(), $annulParams = array(), $quantityMatch = true, $useSpecifiedQuantity = false)
 	{
@@ -3744,7 +3930,7 @@ class ResursBank
 				$this->afterShopFlowService->annulPayment($annulPaymentContainer);
 				$annulResult = true;
 			} catch (\Exception $e) {
-				throw new ResursException($e->getMessage());
+				throw new \Exception(__FUNCTION__ . ": " . $e->getMessage(), $e->getCode());
 			}
 		}
 		return $annulResult;
@@ -3777,7 +3963,7 @@ class ResursBank
 	 * @param bool $quantityMatch
 	 * @param bool $useSpecifiedQuantity If set to true, the quantity set clientside will be used rather than the exact quantity from the spec in getPayment (This requires that $quantityMatch is set to false)
 	 * @return bool
-	 * @throws ResursException
+	 * @throws \Exception
 	 */
 	public function cancelPayment($paymentId = "", $clientPaymentSpec = array(), $cancelParams = array(), $quantityMatch = true, $useSpecifiedQuantity = false)
 	{
@@ -3859,7 +4045,7 @@ class ResursBank
 
 		/* On total fail, throw the last error */
 		if (!$cancelStateSuccess) {
-			throw new ResursException($lastErrorMessage);
+			throw new Exception(__FUNCTION__ . ": " . $lastErrorMessage, 500);
 		}
 
 		return $cancelStateSuccess;
@@ -3933,7 +4119,7 @@ class ResursBank
 	 * @param bool $quantityMatch (Optional, Passthrough) Match quantity. If false, quantity will be ignored during finalization and all client specified paymentspecs will match
 	 * @param bool $useSpecifiedQuantity If set to true, the quantity set clientside will be used rather than the exact quantity from the spec in getPayment (This requires that $quantityMatch is set to false)
 	 * @return array
-	 * @throws ResursException
+	 * @throws \Exception
 	 */
 	public function renderPaymentSpecContainer($paymentId, $renderType, $paymentArray = array(), $clientPaymentSpec = array(), $renderParams = array(), $quantityMatch = true, $useSpecifiedQuantity = false)
 	{
@@ -3951,7 +4137,7 @@ class ResursBank
 
 		if (!count($paymentSpecLine)) {
 			/* Should occur when you for example try to annul an order that is already debited or credited */
-			throw new ResursException("No articles was added during the renderingprocess (RenderType $renderType)", ResursExceptions::PAYMENTSPEC_EMPTY, __FUNCTION__);
+			throw new \Exception(__FUNCTION__ . ": No articles was added during the renderingprocess (RenderType $renderType)", ResursExceptions::PAYMENTSPEC_EMPTY);
 		}
 
 		if (is_array($paymentSpecLine) && count($paymentSpecLine)) {
@@ -4015,7 +4201,7 @@ class ResursBank
 			 * Note: If the paymentspec are rendered without speclines, this may be caused by for example a finalization where the speclines already are finalized.
 			 */
 			if (!count($newSpecLine)) {
-				throw new ResursException("No articles has been added to the paymentspec due to mismatching clientPaymentSpec", ResursExceptions::PAYMENTSPEC_EMPTY, __FUNCTION__);
+				throw new \Exception(__FUNCTION__ . ": No articles has been added to the paymentspec due to mismatching clientPaymentSpec", ResursExceptions::PAYMENTSPEC_EMPTY);
 			}
 
 			/* If no invoice id is set, we are presuming that Resurs Bank Invoice numbering sequence is the right one - Enforcing an invoice number if not exists */
@@ -4282,13 +4468,13 @@ class ResursBank
 	 * @param int $renderType
 	 * @param array $finalizeParams
 	 * @return array
-	 * @throws ResursException
+	 * @throws \Exception
 	 */
 	private function renderSpecLine($paymentArray = array(), $renderType = ResursAfterShopRenderTypes::NONE, $finalizeParams = array())
 	{
 		$returnSpecObject = array();
 		if ($renderType == ResursAfterShopRenderTypes::NONE) {
-			throw new ResursException("Can not render specLines without RenderType");
+			throw new \Exception(__FUNCTION__ . ": Can not render specLines without RenderType", 500);
 		}
 		/* Preparation of the returning array*/
 		$specLines = array();
@@ -4365,4 +4551,15 @@ class ResursBank
 	{
 		// Implement __callStatic() method.
 	}
+}
+
+/**
+ * Class ResursCallbackReachability While using external controls on url reachability, this is required
+ */
+abstract class ResursCallbackReachability {
+	const IS_REACHABLE_NOT_AVAILABLE = 0;
+	const IS_FULLY_REACHABLE = 1;
+	const IS_REACHABLE_WITH_PROBLEMS = 2;
+	const IS_NOT_REACHABLE = 3;
+	const IS_REACHABLE_NOT_KNOWN = 4;
 }
