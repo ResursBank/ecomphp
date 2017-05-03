@@ -1246,11 +1246,18 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 	    }
     }
 
+	/**
+	 * Testing of unregisterEventCallback via rest calls
+	 */
 	public function testUnregisterEventCallbackViaRest() {
 		$this->checkEnvironment();
 		$this->rb->setRegisterCallbacksViaRest(true);
 		$this->assertTrue($this->rb->unregisterEventCallback(ResursCallbackTypes::ANNULMENT));
 	}
+
+	/**
+	 * Testing of unregisterEventCallback via soap calls
+	 */
 	public function testUnregisterEventCallbackViaSoap() {
 		$this->checkEnvironment();
 		$this->rb->setRegisterCallbacksViaRest(false);

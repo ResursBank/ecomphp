@@ -2066,21 +2066,21 @@ class ResursBank
      * @return bool
      * @throws \Exception
      * @deprecated 1.0.0 Use unregisterEventCallback instead
+     * @deprecated 1.1.0 Use unregisterEventCallback instead
      */
     public function unSetCallback($callbackType = ResursCallbackTypes::UNDEFINED)
     {
-        $renderCallback['eventType'] = $this->getCallbackTypeString($callbackType);
-        if (empty($renderCallback['eventType'])) {
-            throw new \Exception(__FUNCTION__ . ": The callback type you are trying to unregister is not supported by EComPHP", ResursExceptions::CALLBACK_TYPE_UNSUPPORTED);
-        }
-        try {
-            $this->unregisterEventCallback($renderCallback['eventType']);
-        } catch (\Exception $e) {
-            return false;
-        }
-        return true;
+    	return $this->unregisterEventCallback($callbackType);
     }
 
+	/**
+	 * Simplifies removal of callbacks even when they does not exist at first.
+	 * @param int $callbackType
+	 *
+	 * @return bool
+	 * @since 1.0.1
+	 * @since 1.1.1
+	 */
     public function unregisterEventCallback($callbackType = ResursCallbackTypes::UNDEFINED) {
 	    $callbackType = $this->getCallbackTypeString($callbackType);
 
