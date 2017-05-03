@@ -1058,6 +1058,14 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 		if (!$hasException) {$this->markTestSkipped("addMetaDataFailure failed since it never got an exception");}
 	}
 
+	/**
+	 * Test getCostOfPurchase
+	 */
+	function testGetCostOfPurcase() {
+		$PurchaseInfo = $this->rb->getCostOfPurchase($this->getAMethod(), 100);
+		$this->assertTrue(is_string($PurchaseInfo) && strlen($PurchaseInfo) >= 1024);
+	}
+
 	/***
 	 * VERSION 1.0-1.1 DEPENDENT TESTS
 	 */

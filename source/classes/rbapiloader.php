@@ -74,6 +74,7 @@ class ResursBank
     	'getPaymentMethods' => 'SimplifiedShopFlowService',
     	'getAddress' => 'SimplifiedShopFlowService',
     	'getAnnuityFactors' => 'SimplifiedShopFlowService',
+    	'getCostOfPurchaseHtml' => 'SimplifiedShopFlowService',
     	'getPayment' => 'AfterShopFlowService',
     	'findPayments' => 'AfterShopFlowService',
     	'addMetaData' => 'AfterShopFlowService',
@@ -4457,30 +4458,14 @@ class ResursBank
      */
     public function getCostOfPurchase($paymentMethod = '', $amount = 0, $returnBody = false, $callCss = 'costofpurchase.css', $hrefTarget = "_blank")
     {
-        $returnHtml = $this->getCostOfPurchaseHtml($paymentMethod, $amount);
-
-        /*
-         * Try to make the target open as a different target, if set.
-         * This will not invoke, if not set.
-         */
+    	$returnHtml = $this->CURL->getParsedResponse($this->CURL->doGet($this->getServiceUrl('getCostOfPurchaseHtml'))->getCostOfPurchaseHtml(array('paymentMethodId' => $paymentMethod, 'amount' => $amount)));
+    	// Try to make the target open as a different target, if set. This will not invoke, if not set.
         if (!empty($hrefTarget)) {
-
-            /*
-             * Check if we get an embedded return and fix it.
-             */
-            if (isset($returnHtml->return)) {
-                $returnHtml = $returnHtml->return;
-            }
-
-            /*
-             * Check if there are any target set, somewhere in the returned html.
-             * If true, we'll consider this already done somewhere else.
-             */
+             // Check if there are any target set, somewhere in the returned html. If true, we'll consider this already done somewhere else.
             if (!preg_match("/target=/is", $returnHtml)) {
                 $returnHtml = preg_replace("/href=/is", 'target="' . $hrefTarget . '" href=', $returnHtml);
             }
         }
-
         if ($returnBody) {
             $specific = $this->getPaymentMethodSpecific($paymentMethod);
             $methodDescription = htmlentities(isset($specific->description) && !empty($specific->description) ? $specific->description : "Payment information");
@@ -4490,7 +4475,6 @@ class ResursBank
                     <meta charset="UTF-8">
                     <title>' . $methodDescription . '</title>
             ';
-
             if (is_null($callCss)) {
                 $callCss = "costofpurchase.css";
             }
@@ -4503,7 +4487,6 @@ class ResursBank
                     }
                 }
             }
-
             $returnBodyHtml .= '
                 </head>
                 <body>
@@ -4517,7 +4500,6 @@ class ResursBank
             ';
             $returnHtml = $returnBodyHtml;
         }
-
         return $returnHtml;
     }
 
