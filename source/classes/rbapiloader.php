@@ -46,7 +46,7 @@ class ResursBank
     /** @var string The version of this gateway */
     private $version = "1.0.1";
     /** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-    private $lastUpdate = "20170428";
+    private $lastUpdate = "20170503";
     private $preferredId = null;
     private $ocShopScript = null;
     private $formTemplateRuleArray = array();
@@ -78,10 +78,12 @@ class ResursBank
     	'findPayments' => 'AfterShopFlowService',
     	'addMetaData' => 'AfterShopFlowService',
     	'registerEventCallback' => 'ConfigurationService',
+    	'unregisterEventCallback' => 'ConfigurationService',
     	'getRegisteredEventCallback' => 'ConfigurationService'
     );
 
     private $skipCallbackValidation = true;
+    private $registerCallbacksViaRest = true;
 
 	/**
 	 * If there is another method required for this to post, it is told here.
@@ -750,6 +752,7 @@ class ResursBank
      * Run external URL validator and see whether an URL is really reachable or not
      *
      * @return int Returns a value from the class ResursCallbackReachability
+     * @throws Exception
      */
 	public function validateExternalAddress() {
         if (is_array($this->validateExternalUrl) && count($this->validateExternalUrl)) {
@@ -763,7 +766,20 @@ class ResursBank
             $UnExpect = $this->validateExternalUrl['http_error'];
             $useUrl = $this->validateExternalUrl['url'];
             $ExternalPostData = array('link' => base64_encode($useUrl));
-            $ParsedResponse = $this->CURL->getParsedResponse($this->CURL->doPost($ExternalAPI, $ExternalPostData))->response->isAvailableResponse;
+            try {
+	            $WebRequest = $this->CURL->getParsedResponse( $this->CURL->doPost( $ExternalAPI, $ExternalPostData ) );
+            } catch (\Exception $e) {
+            	return ResursCallbackReachability::IS_REACHABLE_NOT_KNOWN;
+            }
+            if (isset($WebRequest->response->isAvailableResponse)) {
+	            $ParsedResponse = $WebRequest->response->isAvailableResponse;
+            } else {
+            	if (isset($WebRequest->errors) && !empty($WebRequest->errors->faultstring)) {
+		            throw new \Exception($WebRequest->errors->faultstring, $WebRequest->errors->code);
+	            } else {
+		            throw new \Exception("No response returned from API", 500);
+	            }
+            }
 	        if (isset($ParsedResponse->{$useUrl}->exceptiondata->errorcode) && !empty($ParsedResponse->{$useUrl}->exceptiondata->errorcode)) {
 		        return ResursCallbackReachability::IS_NOT_REACHABLE;
 	        }
@@ -1211,6 +1227,7 @@ class ResursBank
 
 	    if (class_exists('TorneLIB\Tornevall_cURL')) {
 		    $this->CURL = new \TorneLIB\Tornevall_cURL();
+		    $this->CURL->setStoreSessionExceptions(true);
 		    $this->CURL->setAuthentication($this->soapOptions['login'], $this->soapOptions['password']);
 	    }
 	    if (class_exists('TorneLIB\TorneLIB_Network')) {
@@ -1790,7 +1807,6 @@ class ResursBank
 				    }
 			    }
 		    }
-		    print_R($ResursResponseArray);
 		    return $ResursResponseArray;
 	    }
     	return $ResursResponse;
@@ -1803,6 +1819,15 @@ class ResursBank
 	 */
     public function setSkipCallbackValidation($callbackValidationDisable = true) {
     	$this->skipCallbackValidation = $callbackValidationDisable;
+    }
+
+	/**
+	 * If you want to register callbacks through the rest API instead of SOAP, set this to true
+	 *
+	 * @param bool $useRest
+	 */
+    public function setRegisterCallbacksViaRest($useRest = true) {
+    	$this->registerCallbacksViaRest = $useRest;
     }
 
 	/**
@@ -1821,8 +1846,7 @@ class ResursBank
 	 */
     public function setRegisterCallback($callbackType = ResursCallbackTypes::UNDEFINED, $callbackUriTemplate = "", $digestData = array(), $basicAuthUserName = null, $basicAuthPassword = null) {
     	$returnSuccess = false;
-    	$this->InitializeServices();
-
+	    $this->InitializeServices();
 	    if (is_array($this->validateExternalUrl) && count($this->validateExternalUrl)) {
             $isValidAddress = $this->validateExternalAddress();
             if ($isValidAddress == ResursCallbackReachability::IS_NOT_REACHABLE) {
@@ -1831,9 +1855,6 @@ class ResursBank
                 throw new \Exception("Reachability Response: Your site is availble from the outide. However, problems occured during tests, that indicates that your site is not available to our callbacks");
             }
 	    }
-	    //$serviceUrl = $this->getServiceUrl("registerEventCallback");
-	    $serviceUrl = $this->getCheckoutUrl() . "/callbacks";
-
     	// The final array
 	    $renderCallback = array();
 
@@ -1877,13 +1898,21 @@ class ResursBank
 	    }
 	    ////// DIGEST CONFIGURATION FINISH
 
-	    // Make sure the callback gets unregistered first (This is a deprecated method to re-register callbacks that is already exists in Resurs Bank)
-	    //$renderedResponse = $this->CURL->doGet($serviceUrl)->registerEventCallback($renderCallback);
-	    $renderCallbackUrl = $serviceUrl . "/" . $renderCallback['eventType'];
-	    if (isset($renderCallback['eventType'])) {unset($renderCallback['eventType']);}
-	    $renderedResponse = $this->CURL->doPost($renderCallbackUrl, $renderCallback, \TorneLIB\CURL_POST_AS::POST_AS_JSON);
-	    if ($this->CURL->getResponseCode() >= 200 && $this->CURL->getResponseCode() <= 250) {
-	    	if (!$this->skipCallbackValidation) {
+	    if ($this->registerCallbacksViaRest) {
+		    $serviceUrl        = $this->getCheckoutUrl() . "/callbacks";
+		    $renderCallbackUrl = $serviceUrl . "/" . $renderCallback['eventType'];
+		    if ( isset( $renderCallback['eventType'] ) ) {
+			    unset( $renderCallback['eventType'] );
+		    }
+		    $renderedResponse = $this->CURL->doPost($renderCallbackUrl, $renderCallback, \TorneLIB\CURL_POST_AS::POST_AS_JSON);
+		    $code = $this->CURL->getResponseCode();
+	    } else {
+		    $renderCallbackUrl = $this->getServiceUrl("registerEventCallback");
+		    $renderedResponse = $this->CURL->doPost($renderCallbackUrl)->registerEventCallback($renderCallback);
+		    $code = $renderedResponse['code'];
+	    }
+	    if ($code >= 200 && $code <= 250) {
+	    	if (isset($this->skipCallbackValidation) && $this->skipCallbackValidation === false) {
 			    $callbackUriControl = $this->CURL->getParsedResponse( $this->CURL->doGet( $renderCallbackUrl ) );
 			    if ( isset( $callbackUriControl->uriTemplate ) && is_string( $callbackUriControl->uriTemplate ) && strtolower( $callbackUriControl->uriTemplate ) == strtolower( $callbackUriTemplate ) ) {
 				    return true;
@@ -2036,6 +2065,7 @@ class ResursBank
      * @param int $callbackType
      * @return bool
      * @throws \Exception
+     * @deprecated 1.0.0 Use unregisterEventCallback instead
      */
     public function unSetCallback($callbackType = ResursCallbackTypes::UNDEFINED)
     {
@@ -2049,6 +2079,29 @@ class ResursBank
             return false;
         }
         return true;
+    }
+
+    public function unregisterEventCallback($callbackType = ResursCallbackTypes::UNDEFINED) {
+	    $callbackType = $this->getCallbackTypeString($callbackType);
+
+	    if (!empty($callbackType)) {
+		    if ( $this->registerCallbacksViaRest ) {
+			    $this->InitializeServices();
+			    $serviceUrl        = $this->getCheckoutUrl() . "/callbacks";
+			    $renderCallbackUrl = $serviceUrl . "/" . $callbackType;
+			    $curlResponse = $this->CURL->doDelete($renderCallbackUrl);
+			    if ($curlResponse['code'] >= 200 && $curlResponse['code'] <= 250) {
+			    	return true;
+			    }
+		    } else {
+			    $this->InitializeServices();
+			    $curlResponse = $this->CURL->doGet($this->getServiceUrl('unregisterEventCallback'))->unregisterEventCallback(array('eventType' => $callbackType));
+			    if ($curlResponse['code'] >= 200 && $curlResponse['code'] <= 250) {
+				    return true;
+			    }
+		    }
+	    }
+	    return false;
     }
 
     /**
