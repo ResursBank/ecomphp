@@ -57,6 +57,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	public $ignoreDefaultTests = false;
 	public $ignoreBookingTests = false;
 	public $ignoreSEKKItests = false;
+	public $ignoreUrlExternalValidation = true;
 	/** @var string Test with natural government id */
 	public $govIdNatural = "198305147715";
 	/** @var string Test with natural government id/Norway */
@@ -299,8 +300,8 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 			'abcdefghijklmnopqrstuvwxyz',
 			'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
 			'0123456789',
-			'!@#$%*?'
 		);
+		//'!@#$%*?'
 		$chars              = array();
 		$max                = 10; // This is for now static
 		foreach ( $characterListArray as $charListIndex => $charList ) {
@@ -1074,17 +1075,18 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	 * Renders required data to pass to a callback registrator.
 	 *
 	 * @param bool $UseCurl Using the curl library, will render this data differently
+	 * @param bool $UseUrlRewrite Register urls "nicely" with url_rewrite-like parameters
 	 *
 	 * @return array
 	 */
-	private function renderCallbackData($UseCurl = false) {
+	private function renderCallbackData($UseCurl = false, $UseUrlRewrite = false) {
 		$this->checkEnvironment();
 		$returnCallbackArray = array();
 		$parameter = array(
 			'ANNULMENT'               => array( 'paymentId' ),
-			'AUTOMATIC_FRAUD_CONTROL' => array( 'paymentId', 'result' ),
 			'FINALIZATION'            => array( 'paymentId' ),
-			'UNFREEZE'                => array( 'paymentId' )
+			'UNFREEZE'                => array( 'paymentId' ),
+			'AUTOMATIC_FRAUD_CONTROL' => array( 'paymentId', 'result' )
 		);
 		foreach ( $parameter as $callbackType => $parameterArray ) {
 			$digestSaltString = $this->mkpass();
@@ -1107,25 +1109,101 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 			$renderArray = array();
 			if ( is_array( $parameterArray ) ) {
 				foreach ( $parameterArray as $parameterName ) {
-					$renderArray[] = $parameterName . "={" . $parameterName . "}";
+					if (!$UseUrlRewrite) {
+						$renderArray[] = $parameterName . "={" . $parameterName . "}";
+					} else {
+						$renderArray[] = $parameterName . "/{" . $parameterName . "}";
+					}
 				}
 			}
-			$callbackURL = $this->callbackUrl . "?event=" . $callbackType . "&digest={digest}&" . implode( "&", $renderArray ) . "&lastReg=" . strftime( "%y%m%d%H%M%S", time() );
+			if (!$UseUrlRewrite) {
+				$callbackURL = $this->callbackUrl . "?event=" . $callbackType . "&digest={digest}&" . implode( "&", $renderArray ) . "&lastReg=" . strftime( "%y%m%d%H%M%S", time() );
+			} else {
+				$callbackURL = $this->callbackUrl . "/event/" . $callbackType . "/digest/{digest}/" . implode( "/", $renderArray ) . "/lastReg/" . strftime( "%y%m%d%H%M%S", time() );
+			}
 			$returnCallbackArray[] = array($setCallbackType, $callbackURL, $digestArray);
 		}
 		return $returnCallbackArray;
 	}
 
 	/**
-	 * Register new callback urls
+	 * Register new callback urls via SOAP
 	 */
-	public function testSetRegisterCallbacksDeprecated() {
+	public function testSetRegisterCallbacksSoap() {
 		$this->checkEnvironment();
 		$callbackArrayData = $this->renderCallbackData(true);
 		$globalDigest = $this->rb->setCallbackDigest($this->mkpass());
 		$cResponse = array();
+		$this->rb->setRegisterCallbacksViaRest(false);
 		foreach ($callbackArrayData as $indexCB => $callbackInfo) {
-			$cResponse[$callbackInfo[0]] = $this->rb->setRegisterCallback( $callbackInfo[0], $callbackInfo[1], $callbackInfo[2] );
+			$cResponse[$callbackInfo[0]] = $this->rb->setRegisterCallback( $callbackInfo[0], $callbackInfo[1] . "&via=soap", $callbackInfo[2] );
+		}
+		$successFulCallbacks = 0;
+		foreach ($cResponse as $cbType) {
+			if ($cbType == "1") {
+				$successFulCallbacks++;
+			}
+		}
+		$this->assertEquals(count($cResponse), $successFulCallbacks);
+	}
+	/**
+	 * Register new callback urls via SOAP
+	 */
+	public function testSetRegisterCallbacksSoapUrlRewrite() {
+		$this->checkEnvironment();
+		$callbackArrayData = $this->renderCallbackData(true, true);
+		$globalDigest = $this->rb->setCallbackDigest($this->mkpass());
+		$cResponse = array();
+		$this->rb->setRegisterCallbacksViaRest(false);
+		foreach ($callbackArrayData as $indexCB => $callbackInfo) {
+			$cResponse[$callbackInfo[0]] = $this->rb->setRegisterCallback( $callbackInfo[0], $callbackInfo[1] . "&via=soap", $callbackInfo[2] );
+		}
+		$successFulCallbacks = 0;
+		foreach ($cResponse as $cbType) {
+			if ($cbType == "1") {
+				$successFulCallbacks++;
+			}
+		}
+		$this->assertEquals(count($cResponse), $successFulCallbacks);
+	}
+
+	/**
+	 * Register new callback urls via REST
+	 */
+	public function testSetRegisterCallbacksRest() {
+		$callbackArrayData = $this->renderCallbackData(true);
+		$cResponse = array();
+		$this->checkEnvironment();
+		$globalDigest = $this->rb->setCallbackDigest($this->mkpass());
+		$this->rb->setRegisterCallbacksViaRest(true);
+		foreach ($callbackArrayData as $indexCB => $callbackInfo) {
+			$cbResult = $this->rb->setRegisterCallback( $callbackInfo[0], $callbackInfo[1] . "&via=rest", $callbackInfo[2] );
+			if ($cbResult) {
+				$cResponse[ $callbackInfo[0] ] = $cbResult;
+			}
+		}
+		$successFulCallbacks = 0;
+		foreach ($cResponse as $cbType) {
+			if ($cbType == "1") {
+				$successFulCallbacks++;
+			}
+		}
+		$this->assertEquals(count($cResponse), $successFulCallbacks);
+	}
+	/**
+	 * Register new callback urls via REST
+	 */
+	public function testSetRegisterCallbacksRestUrlRewrite() {
+		$callbackArrayData = $this->renderCallbackData(true, true);
+		$cResponse = array();
+		$this->checkEnvironment();
+		$globalDigest = $this->rb->setCallbackDigest($this->mkpass());
+		$this->rb->setRegisterCallbacksViaRest(true);
+		foreach ($callbackArrayData as $indexCB => $callbackInfo) {
+			$cbResult = $this->rb->setRegisterCallback( $callbackInfo[0], $callbackInfo[1] . "&via=rest", $callbackInfo[2] );
+			if ($cbResult) {
+				$cResponse[ $callbackInfo[0] ] = $cbResult;
+			}
 		}
 		$successFulCallbacks = 0;
 		foreach ($cResponse as $cbType) {
@@ -1150,26 +1228,42 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	/**
 	 * Register new callback urls
 	 */
-	public function testSetRegisterCallbacksWithValidatedUrl() {
+	public function testSetRegisterCallbacksWithValidatedUrlViaRest() {
+		if (!$this->ignoreUrlExternalValidation) {
+			$this->checkEnvironment();
+			$this->rb->setRegisterCallbacksViaRest(true);
+			$callbackArrayData = $this->renderCallbackData( true );
+			$this->rb->setCallbackDigest( $this->mkpass() );
+			$cResponse = array();
+			foreach ( $callbackArrayData as $indexCB => $callbackInfo ) {
+				try {
+					$this->rb->setValidateExternalCallbackUrl( $callbackInfo[1] . "&via=restValidated" );
+					$cResponse[ $callbackInfo[0] ] = $this->rb->setRegisterCallback( $callbackInfo[0], $callbackInfo[1] . "&via=restValidated", $callbackInfo[2] );
+				} catch ( \Exception $e ) {
+					$this->markTestIncomplete( "Exception thrown: URL Validation failed for ".(isset($callbackInfo[1]) && !empty($callbackInfo[1]) ? $callbackInfo[1] . "&via=restValidated" : "??")." during the setRegisterCallback procss (".$e->getMessage().")" );
+				}
+			}
+			$successFulCallbacks = 0;
+			foreach ( $cResponse as $cbType ) {
+				if ( $cbType == "1" ) {
+					$successFulCallbacks ++;
+				}
+			}
+			$this->assertEquals( count( $cResponse ), $successFulCallbacks );
+		} else {
+			$this->markTestSkipped("ignoreUrlExternalValidation is active, skipping test");
+		}
+	}
+
+	public function testUnregisterEventCallbackViaRest() {
 		$this->checkEnvironment();
-		$callbackArrayData = $this->renderCallbackData(true);
-		$this->rb->setCallbackDigest($this->mkpass());
-		$cResponse = array();
-		foreach ($callbackArrayData as $indexCB => $callbackInfo) {
-			$this->rb->setValidateExternalCallbackUrl($callbackInfo[1]);
-			try {
-				$cResponse[$callbackInfo[0]] = $this->rb->setRegisterCallback($callbackInfo[0], $callbackInfo[1], $callbackInfo[2]);
-			} catch (\Exception $e) {
-				$this->markTestIncomplete("URL Validation failed during the setRegisterCallback process");
-			}
-		}
-		$successFulCallbacks = 0;
-		foreach ($cResponse as $cbType) {
-			if ($cbType == "1") {
-				$successFulCallbacks++;
-			}
-		}
-		$this->assertEquals(count($cResponse), $successFulCallbacks);
+		$this->rb->setRegisterCallbacksViaRest(true);
+		$this->assertTrue($this->rb->unregisterEventCallback(\Resursbank\RBEcomPHP\ResursCallbackTypes::ANNULMENT));
+	}
+	public function testUnregisterEventCallbackViaSoap() {
+		$this->checkEnvironment();
+		$this->rb->setRegisterCallbacksViaRest(false);
+		$this->assertTrue($this->rb->unregisterEventCallback(\Resursbank\RBEcomPHP\ResursCallbackTypes::ANNULMENT));
 	}
 
 	/**
@@ -1214,4 +1308,3 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 		$this->assertGreaterThanOrEqual( 4, count($callbackSetResult));
 	}
 }
-

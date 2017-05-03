@@ -216,7 +216,7 @@ class Tornevall_cURL
     private $CurlVersion = null;
 
     /** @var string Internal release snapshot that is being used to find out if we are running the latest version of this library */
-    private $TorneCurlRelease = "20170427";
+    private $TorneCurlRelease = "20170503";
 
     /**
      * Target environment (if target is production some debugging values will be skipped)
@@ -369,7 +369,9 @@ class Tornevall_cURL
     private $AuthData = array('Username' => null, 'Password' => null, 'Type' => CURL_AUTH_TYPES::AUTHTYPE_NONE);
 
     /** @var array Adding own headers to the HTTP-request here */
-    public $CurlHeaders = array();
+    private $CurlHeaders = array();
+    private $CurlHeadersSystem = array();
+    private $CurlHeadersUserDefined = array();
 
     /**
      * Set up if this library can throw exceptions, whenever it needs to do that.
@@ -1479,19 +1481,29 @@ class Tornevall_cURL
     private function fixHttpHeaders($headerList = array())
     {
         if (is_array($headerList) && count($headerList)) {
-            $newHeader = array();
             foreach ($headerList as $headerKey => $headerValue) {
                 $testHead = explode(":", $headerValue, 2);
                 if (isset($testHead[1])) {
-                    $newHeader[] = $headerValue;
+	                $this->CurlHeaders[] = $headerValue;
                 } else {
                     if (!is_numeric($headerKey)) {
-                        $newHeader[] = $headerKey . ": " . $headerValue;
+	                    $this->CurlHeaders[] = $headerKey . ": " . $headerValue;
                     }
                 }
             }
         }
-        return $newHeader;
+    }
+
+	/**
+	 * Add extra curl headers
+	 *
+	 * @param string $key
+	 * @param string $value
+	 */
+    public function setCurlHeader($key = '', $value = '') {
+    	if (!empty($key)) {
+    		$this->CurlHeadersUserDefined[$key] = $value;
+	    }
     }
 
     /**
@@ -1509,6 +1521,7 @@ class Tornevall_cURL
         if (!empty($url)) {
             $this->CurlURL = $url;
         }
+	    $this->CurlHeaders = array();
         if (preg_match("/\?wsdl$|\&wsdl$/i", $this->CurlURL) || $postAs == CURL_POST_AS::POST_AS_SOAP) {
             $Soap = new Tornevall_SimpleSoap($this->CurlURL, $this->curlopt);
             $Soap->setThrowableState($this->canThrow);
@@ -1567,8 +1580,8 @@ class Tornevall_cURL
                         $jsonRealData = $postData;
                     }
                 }
-                $this->CurlHeaders['Content-Type'] = "application/json";
-                $this->CurlHeaders['Content-Length'] = strlen($jsonRealData);
+                $this->CurlHeadersSystem['Content-Type'] = "application/json";
+                $this->CurlHeadersSystem['Content-Length'] = strlen($jsonRealData);
                 curl_setopt($this->CurlSession, CURLOPT_POSTFIELDS, $jsonRealData);
             }
         }
@@ -1633,12 +1646,13 @@ class Tornevall_cURL
         if (isset($this->CurlReferer) && !empty($this->CurlReferer)) {
             curl_setopt($this->CurlSession, CURLOPT_REFERER, $this->CurlReferer);
         }
-        // If this is really necessary, allow it
-        if (isset($this->CurlHeaders) && is_array($this->CurlHeaders) && count($this->CurlHeaders)) {
-            $this->CurlHeaders = $this->fixHttpHeaders($this->CurlHeaders);
-            curl_setopt($this->CurlSession, CURLOPT_HTTPHEADER, $this->CurlHeaders);
-        }
 
+        $this->fixHttpHeaders($this->CurlHeadersUserDefined);
+        $this->fixHttpHeaders($this->CurlHeadersSystem);
+
+	    if (isset($this->CurlHeaders) && is_array($this->CurlHeaders) && count($this->CurlHeaders)) {
+		    curl_setopt($this->CurlSession, CURLOPT_HTTPHEADER, $this->CurlHeaders);
+	    }
         if (isset($this->CurlUserAgent) && !empty($this->CurlUserAgent)) {
             curl_setopt($this->CurlSession, CURLOPT_USERAGENT, $this->CurlUserAgent);
         }

@@ -44,9 +44,9 @@ class ResursBank
 	/** @var string Replacing $clientName on usage of setClientNAme */
 	private $realClientName = "RB-EcomBridge";
 	/** @var string The version of this gateway */
-	private $version = "1.0.1";
+	private $version = "1.1.1";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20170428";
+	private $lastUpdate = "20170503";
 	private $preferredId = null;
 	private $ocShopScript = null;
 	private $formTemplateRuleArray = array();
@@ -78,11 +78,12 @@ class ResursBank
 		'findPayments' => 'AfterShopFlowService',
 		'addMetaData' => 'AfterShopFlowService',
 		'registerEventCallback' => 'ConfigurationService',
+		'unregisterEventCallback' => 'ConfigurationService',
 		'getRegisteredEventCallback' => 'ConfigurationService'
 	);
 
 	private $skipCallbackValidation = true;
-	private $registerCallbacksViaRest = false;
+	private $registerCallbacksViaRest = true;
 
 	/**
 	 * If there is another method required for this to post, it is told here.
@@ -751,6 +752,7 @@ class ResursBank
 	 * Run external URL validator and see whether an URL is really reachable or not
 	 *
 	 * @return int Returns a value from the class ResursCallbackReachability
+	 * @throws Exception
 	 */
 	public function validateExternalAddress() {
 		if (is_array($this->validateExternalUrl) && count($this->validateExternalUrl)) {
@@ -764,7 +766,20 @@ class ResursBank
 			$UnExpect = $this->validateExternalUrl['http_error'];
 			$useUrl = $this->validateExternalUrl['url'];
 			$ExternalPostData = array('link' => base64_encode($useUrl));
-			$ParsedResponse = $this->CURL->getParsedResponse($this->CURL->doPost($ExternalAPI, $ExternalPostData))->response->isAvailableResponse;
+			try {
+				$WebRequest = $this->CURL->getParsedResponse( $this->CURL->doPost( $ExternalAPI, $ExternalPostData ) );
+			} catch (\Exception $e) {
+				return ResursCallbackReachability::IS_REACHABLE_NOT_KNOWN;
+			}
+			if (isset($WebRequest->response->isAvailableResponse)) {
+				$ParsedResponse = $WebRequest->response->isAvailableResponse;
+			} else {
+				if (isset($WebRequest->errors) && !empty($WebRequest->errors->faultstring)) {
+					throw new \Exception($WebRequest->errors->faultstring, $WebRequest->errors->code);
+				} else {
+					throw new \Exception("No response returned from API", 500);
+				}
+			}
 			if (isset($ParsedResponse->{$useUrl}->exceptiondata->errorcode) && !empty($ParsedResponse->{$useUrl}->exceptiondata->errorcode)) {
 				return ResursCallbackReachability::IS_NOT_REACHABLE;
 			}
@@ -1212,6 +1227,7 @@ class ResursBank
 
 		if (class_exists('TorneLIB\Tornevall_cURL')) {
 			$this->CURL = new \TorneLIB\Tornevall_cURL();
+			$this->CURL->setStoreSessionExceptions(true);
 			$this->CURL->setAuthentication($this->soapOptions['login'], $this->soapOptions['password']);
 		}
 		if (class_exists('TorneLIB\TorneLIB_Network')) {
@@ -1791,7 +1807,6 @@ class ResursBank
 					}
 				}
 			}
-			print_R($ResursResponseArray);
 			return $ResursResponseArray;
 		}
 		return $ResursResponse;
@@ -1832,7 +1847,6 @@ class ResursBank
 	public function setRegisterCallback($callbackType = ResursCallbackTypes::UNDEFINED, $callbackUriTemplate = "", $digestData = array(), $basicAuthUserName = null, $basicAuthPassword = null) {
 		$returnSuccess = false;
 		$this->InitializeServices();
-
 		if (is_array($this->validateExternalUrl) && count($this->validateExternalUrl)) {
 			$isValidAddress = $this->validateExternalAddress();
 			if ($isValidAddress == ResursCallbackReachability::IS_NOT_REACHABLE) {
@@ -1893,8 +1907,8 @@ class ResursBank
 			$renderedResponse = $this->CURL->doPost($renderCallbackUrl, $renderCallback, \TorneLIB\CURL_POST_AS::POST_AS_JSON);
 			$code = $this->CURL->getResponseCode();
 		} else {
-			$serviceUrl = $this->getServiceUrl("registerEventCallback");
-			$renderedResponse = $this->CURL->doPost($serviceUrl)->registerEventCallback($renderCallback);
+			$renderCallbackUrl = $this->getServiceUrl("registerEventCallback");
+			$renderedResponse = $this->CURL->doPost($renderCallbackUrl)->registerEventCallback($renderCallback);
 			$code = $renderedResponse['code'];
 		}
 		if ($code >= 200 && $code <= 250) {
@@ -2051,6 +2065,7 @@ class ResursBank
 	 * @param int $callbackType
 	 * @return bool
 	 * @throws \Exception
+	 * @deprecated 1.0.0 Use unregisterEventCallback instead
 	 */
 	public function unSetCallback($callbackType = ResursCallbackTypes::UNDEFINED)
 	{
@@ -2064,6 +2079,29 @@ class ResursBank
 			return false;
 		}
 		return true;
+	}
+
+	public function unregisterEventCallback($callbackType = ResursCallbackTypes::UNDEFINED) {
+		$callbackType = $this->getCallbackTypeString($callbackType);
+
+		if (!empty($callbackType)) {
+			if ( $this->registerCallbacksViaRest ) {
+				$this->InitializeServices();
+				$serviceUrl        = $this->getCheckoutUrl() . "/callbacks";
+				$renderCallbackUrl = $serviceUrl . "/" . $callbackType;
+				$curlResponse = $this->CURL->doDelete($renderCallbackUrl);
+				if ($curlResponse['code'] >= 200 && $curlResponse['code'] <= 250) {
+					return true;
+				}
+			} else {
+				$this->InitializeServices();
+				$curlResponse = $this->CURL->doGet($this->getServiceUrl('unregisterEventCallback'))->unregisterEventCallback(array('eventType' => $callbackType));
+				if ($curlResponse['code'] >= 200 && $curlResponse['code'] <= 250) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	/**
