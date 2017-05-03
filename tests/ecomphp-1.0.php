@@ -44,7 +44,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 		}
 	}
 
-	/************* PUBLICS **************/
+	////////// Public variables
 	public $ignoreDefaultTests = false;
 	public $ignoreBookingTests = false;
 	public $ignoreSEKKItests = false;
@@ -106,8 +106,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 	public function tearDown() {
 	}
 
-	/************* PRIVATES **************/
-
+	////////// Private variables
 	/** @var string Defines what environment should be running */
 	private $environmentName = "mock";
 	/** @var null|ResursBank API Connector */
@@ -981,7 +980,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
     /**
      * Try to update a payment reference by first creating the iframe
      */
-	public function testSetReference() {
+	public function testUpdatePaymentReference() {
 		// Note: In this test we might be a little bit more dependent on more step.
 
 		$res = array();

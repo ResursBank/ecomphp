@@ -39,24 +39,71 @@ require_once(RB_API_PATH . '/rbapiloader/ResursMethodTypes.php');
  */
 class ResursBank
 {
-    /** @var string This. */
+
+	////////// Constants
+	/**
+	 * Constant variable for using ecommerce production mode
+	 */
+	const ENVIRONMENT_PRODUCTION = 0;
+	/**
+	 * Constant variable for using ecommerce in test mode
+	 */
+	const ENVIRONMENT_TEST = 1;
+
+	////////// Public variables
+	/** @var bool In tests being made with newer wsdl stubs, extended customer are surprisingly always best practice. It is however settable from here if we need to avoid this. */
+	public $alwaysUseExtendedCustomer = true;
+
+	/**
+	 * @var array Configuration.
+	 */
+	public $config;
+
+	////////// Private variables
+
+	///// Client Specific Settings
+	/** @var string The version of this gateway */
+	private $version = "1.0.1";
+	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
+	private $lastUpdate = "20170503";
+	/** @var string This. */
     private $clientName = "RB-EcomBridge";
     /** @var string Replacing $clientName on usage of setClientNAme */
     private $realClientName = "RB-EcomBridge";
-    /** @var string The version of this gateway */
-    private $version = "1.0.1";
-    /** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-    private $lastUpdate = "20170503";
-    private $preferredId = null;
-    private $ocShopScript = null;
-    private $formTemplateRuleArray = array();
-    private $hasNameSpace = false;
-	private $validateExternalUrl = null;
-	private $externalApiAddress = "https://api.tornevall.net/2.0/";
 
-    private $CURL = null;
-    private $NETWORK = null;
-    private $hasWsdl = false;
+	///// Package related
+	/** @var bool For backwards compatibility - If this extension are being used in an environment where namespaces are set up, this will be flagged true here */
+	private $hasNameSpace = false;
+	/** @var bool For backwards compatibility - If this extension has the full wsdl package included, this will be flagged true here */
+	private $hasWsdl = false;
+
+	///// Communication
+	/** @var null Class for handling HTTP calls */
+	private $CURL = null;
+	/** @var null Class for handling Network related checks */
+	private $NETWORK = null;
+	/** @var string Validating URLs are made through a third party API and is disabled by default (Used for checking reachability of an URL) */
+	private $externalApiAddress = "https://api.tornevall.net/2.0/";
+	/** @var array An array that defines an url to test and which response codes (OK-200, and errors when for example a digest fails) from the webserver that is expected */
+	private $validateExternalUrl = null;
+	/**
+	 * Defines which way we are actually communicating - if the WSDL stubs are left out of the pacakge, this will remain false.
+	 * If the package do contain the full release packages, this will be switched over to true.
+	 * @var bool
+	 */
+	private $skipCallbackValidation = true;
+	private $registerCallbacksViaRest = true;
+
+	///// Shop
+	/** @var null The preferred payment order reference, set in a shopflow. Reachable through getPreferredPaymentId() */
+	private $preferredId = null;
+	/** @var null When using clearOcShop(), the Resurs Checkout tailing script (resizer) will be stored here */
+    private $ocShopScript = null;
+
+
+    ///// Template rules (Which is a clone from Resurs Bank deprecated shopflow that defines what customer data fields that is required while running simplified flow)
+	///// In the deprecated shopFlow, this was the default behaviour.
+    private $formTemplateRuleArray = array();
 
 	/**
 	 * @var URLS pointing to direct access of Resurs Bank, instead of WSDL-stubs.
@@ -83,11 +130,8 @@ class ResursBank
     	'getRegisteredEventCallback' => 'ConfigurationService'
     );
 
-    private $skipCallbackValidation = true;
-    private $registerCallbacksViaRest = true;
-
 	/**
-	 * If there is another method required for this to post, it is told here.
+	 * If there is another method than the GET method, it is told here, which services that requires this. Most of the WSDL data are fetched by GET.
 	 *
 	 * @var array
 	 * @since 1.0.1
@@ -95,22 +139,11 @@ class ResursBank
 	 */
     private $ServiceRequestMethods = array();
 
-    public $alwaysUseExtendedCustomer = true;
-
     /**
      * Resurs Bank API Client Gateway. Works with dynamic data arrays. By default, the API-gateway will connect to Resurs Bank test environment, so to use production mode this must be configured at runtime.
      *
      * @subpackage RBEcomPHPClient
      */
-
-    /**
-     * Constant variable for using ecommerce production mode
-     */
-    const ENVIRONMENT_PRODUCTION = 0;
-    /**
-     * Constant variable for using ecommerce in test mode
-     */
-    const ENVIRONMENT_TEST = 1;
 
     /**
      * @var array Standard options for the SOAP-interface.
@@ -122,11 +155,6 @@ class ResursBank
         'password' => '',
         'trace' => 1
     );
-
-    /**
-     * @var array Configuration.
-     */
-    public $config;
 
     /** @var bool Set to true if you want to try to use internally cached data. This is disabled by default since it may, in a addition to performance, also be a security issue since the configuration file needs read- and write permissions */
     public $configurationInternal = false;
