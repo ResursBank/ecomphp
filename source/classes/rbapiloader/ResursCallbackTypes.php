@@ -14,7 +14,7 @@
 namespace Resursbank\RBEcomPHP;
 
 /**
- * Class ResursCallbackTypes: Callbacks that can be registered with Resurs Bank.
+ * Class ResursCallbackTypes Callbacks that can be registered with Resurs Bank.
  */
 abstract class ResursCallbackTypes {
 

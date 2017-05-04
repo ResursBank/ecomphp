@@ -20,6 +20,6 @@
     "card": "card",
     "card_new": "card_new"
   },
-  "callbackUrl": "http://myurl.test.com/",
-  "signUrl": "http://myurl.test.com/signlandingpage.php"
+  "callbackUrl": "https://test.resurs.com/signdummy/index.php?isCallback=1",
+  "signUrl": "https://test.resurs.com/signdummy/index.php?isSigningUrl=1"
 }
