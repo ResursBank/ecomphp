@@ -53,11 +53,11 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
         }
     }
 
-	/************* PUBLICS **************/
+	////////// Public variables
 	public $ignoreDefaultTests = false;
 	public $ignoreBookingTests = false;
 	public $ignoreSEKKItests = false;
-	public $ignoreUrlExternalValidation = true;
+	public $ignoreUrlExternalValidation = false;
 	/** @var string Test with natural government id */
 	public $govIdNatural = "198305147715";
 	/** @var string Test with natural government id/Norway */
@@ -115,8 +115,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	public function tearDown() {
 	}
 
-	/************* PRIVATES **************/
-
+	////////// Private variables
 	/** @var string Defines what environment should be running */
 	private $environmentName = "mock";
 	/** @var null|ResursBank API Connector */
@@ -414,8 +413,8 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 		}
 		$bookData['paymentData']['waitForFraudControl'] = $this->waitForFraudControl;
 		$bookData['signing']                            = array(
-			'successUrl'   => $this->signUrl . '/?success=true',
-			'failUrl'      => $this->signUrl . "/?success=false",
+			'successUrl'   => $this->signUrl . '&success=true',
+			'failUrl'      => $this->signUrl . "&success=false",
 			'forceSigning' => $forceSigning
 		);
 
@@ -990,28 +989,27 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	/**
 	 * Try to update a payment reference by first creating the iframe
 	 */
-	public function testSetReference() {
-		// Note: In this test we might be a little bit more dependent on more step.
-
-		$res = array();
+	public function testUpdatePaymentReference() {
 		$this->checkEnvironment();
 		try {
 			$iFrameUrl = $this->getCheckoutFrame( true );
 		} catch (Exception $e) {
 			$this->markTestIncomplete("Exception: " . $e->getMessage());
 		}
+		$this->CURL->setLocalCookies(true);
 		$iframeRequest = $this->CURL->doGet( $iFrameUrl );
 		$iframeContent = $iframeRequest['body'];
 		$iframePaymentReference = $this->rb->getPreferredPaymentId();
+		$Success = false;
 		if (!empty($iframePaymentReference) && !empty($iFrameUrl) && !empty($iframeContent) && strlen($iframeContent) > 1024) {
 			$newReference = $this->rb->generatePreferredId();
 			try {
-				$res = $this->rb->updatePaymentReference( $iframePaymentReference, $newReference );
+				$Success = $this->rb->updatePaymentReference( $iframePaymentReference, $newReference );
 			} catch (Exception $e) {
-				$stopRequest = time();
 				$this->markTestIncomplete("Exception: " . $e->getCode() . ": " . $e->getMessage());
 			}
 		}
+		$this->assertTrue($Success === true);
 	}
 
 	/**
@@ -1065,6 +1063,14 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 			$hasException = true;
 		}
 		if (!$hasException) {$this->markTestSkipped("addMetaDataFailure failed since it never got an exception");}
+	}
+
+	/**
+	 * Test getCostOfPurchase
+	 */
+	function testGetCostOfPurcase() {
+		$PurchaseInfo = $this->rb->getCostOfPurchase($this->getAMethod(), 100);
+		$this->assertTrue(is_string($PurchaseInfo) && strlen($PurchaseInfo) >= 1024);
 	}
 
 	/***
@@ -1255,11 +1261,18 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 		}
 	}
 
+	/**
+	 * Testing of unregisterEventCallback via rest calls
+	 */
 	public function testUnregisterEventCallbackViaRest() {
 		$this->checkEnvironment();
 		$this->rb->setRegisterCallbacksViaRest(true);
 		$this->assertTrue($this->rb->unregisterEventCallback(\Resursbank\RBEcomPHP\ResursCallbackTypes::ANNULMENT));
 	}
+
+	/**
+	 * Testing of unregisterEventCallback via soap calls
+	 */
 	public function testUnregisterEventCallbackViaSoap() {
 		$this->checkEnvironment();
 		$this->rb->setRegisterCallbacksViaRest(false);
@@ -1298,7 +1311,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 		$this->rb->setCallbackDigest($this->mkpass());
 		foreach ($callbackArrayData as $indexCB => $callbackInfo) {
 			try {
-				$cResponse = $this->rb->setCallback( $callbackInfo[0], $callbackInfo[1], $callbackInfo[2] );
+				$cResponse = $this->rb->setRegisterCallback( $callbackInfo[0], $callbackInfo[1], $callbackInfo[2] );
 				$callbackSetResult[] = $callbackInfo[0];
 			} catch (\Exception $e) {
 				echo $e->getMessage();

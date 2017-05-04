@@ -39,24 +39,71 @@ require_once( RB_API_PATH . '/rbapiloader/ResursMethodTypes.php' );
  */
 class ResursBank
 {
+
+	////////// Constants
+	/**
+	 * Constant variable for using ecommerce production mode
+	 */
+	const ENVIRONMENT_PRODUCTION = 0;
+	/**
+	 * Constant variable for using ecommerce in test mode
+	 */
+	const ENVIRONMENT_TEST = 1;
+
+	////////// Public variables
+	/** @var bool In tests being made with newer wsdl stubs, extended customer are surprisingly always best practice. It is however settable from here if we need to avoid this. */
+	public $alwaysUseExtendedCustomer = true;
+
+	/**
+	 * @var array Configuration.
+	 */
+	public $config;
+
+	////////// Private variables
+
+	///// Client Specific Settings
+	/** @var string The version of this gateway */
+	private $version = "1.0.1";
+	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
+	private $lastUpdate = "20170504";
 	/** @var string This. */
 	private $clientName = "RB-EcomBridge";
 	/** @var string Replacing $clientName on usage of setClientNAme */
 	private $realClientName = "RB-EcomBridge";
-	/** @var string The version of this gateway */
-	private $version = "1.1.1";
-	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20170503";
-	private $preferredId = null;
-	private $ocShopScript = null;
-	private $formTemplateRuleArray = array();
-	private $hasNameSpace = false;
-	private $validateExternalUrl = null;
-	private $externalApiAddress = "https://api.tornevall.net/2.0/";
 
-	private $CURL = null;
-	private $NETWORK = null;
+	///// Package related
+	/** @var bool For backwards compatibility - If this extension are being used in an environment where namespaces are set up, this will be flagged true here */
+	private $hasNameSpace = false;
+	/** @var bool For backwards compatibility - If this extension has the full wsdl package included, this will be flagged true here */
 	private $hasWsdl = false;
+
+	///// Communication
+	/** @var null Class for handling HTTP calls */
+	private $CURL = null;
+	/** @var null Class for handling Network related checks */
+	private $NETWORK = null;
+	/** @var string Validating URLs are made through a third party API and is disabled by default (Used for checking reachability of an URL) */
+	private $externalApiAddress = "https://api.tornevall.net/2.0/";
+	/** @var array An array that defines an url to test and which response codes (OK-200, and errors when for example a digest fails) from the webserver that is expected */
+	private $validateExternalUrl = null;
+	/**
+	 * Defines which way we are actually communicating - if the WSDL stubs are left out of the pacakge, this will remain false.
+	 * If the package do contain the full release packages, this will be switched over to true.
+	 * @var bool
+	 */
+	private $skipCallbackValidation = true;
+	private $registerCallbacksViaRest = true;
+
+	///// Shop
+	/** @var null The preferred payment order reference, set in a shopflow. Reachable through getPreferredPaymentId() */
+	private $preferredId = null;
+	/** @var null When using clearOcShop(), the Resurs Checkout tailing script (resizer) will be stored here */
+	private $ocShopScript = null;
+
+
+	///// Template rules (Which is a clone from Resurs Bank deprecated shopflow that defines what customer data fields that is required while running simplified flow)
+	///// In the deprecated shopFlow, this was the default behaviour.
+	private $formTemplateRuleArray = array();
 
 	/**
 	 * @var URLS pointing to direct access of Resurs Bank, instead of WSDL-stubs.
@@ -83,11 +130,8 @@ class ResursBank
 		'getRegisteredEventCallback' => 'ConfigurationService'
 	);
 
-	private $skipCallbackValidation = true;
-	private $registerCallbacksViaRest = true;
-
 	/**
-	 * If there is another method required for this to post, it is told here.
+	 * If there is another method than the GET method, it is told here, which services that requires this. Most of the WSDL data are fetched by GET.
 	 *
 	 * @var array
 	 * @since 1.0.1
@@ -95,22 +139,11 @@ class ResursBank
 	 */
 	private $ServiceRequestMethods = array();
 
-	public $alwaysUseExtendedCustomer = true;
-
 	/**
 	 * Resurs Bank API Client Gateway. Works with dynamic data arrays. By default, the API-gateway will connect to Resurs Bank test environment, so to use production mode this must be configured at runtime.
 	 *
 	 * @subpackage RBEcomPHPClient
 	 */
-
-	/**
-	 * Constant variable for using ecommerce production mode
-	 */
-	const ENVIRONMENT_PRODUCTION = 0;
-	/**
-	 * Constant variable for using ecommerce in test mode
-	 */
-	const ENVIRONMENT_TEST = 1;
 
 	/**
 	 * @var array Standard options for the SOAP-interface.
@@ -122,11 +155,6 @@ class ResursBank
 		'password' => '',
 		'trace' => 1
 	);
-
-	/**
-	 * @var array Configuration.
-	 */
-	public $config;
 
 	/** @var bool Set to true if you want to try to use internally cached data. This is disabled by default since it may, in a addition to performance, also be a security issue since the configuration file needs read- and write permissions */
 	public $configurationInternal = false;
@@ -753,12 +781,12 @@ class ResursBank
 	 * Run external URL validator and see whether an URL is really reachable or not
 	 *
 	 * @return int Returns a value from the class ResursCallbackReachability
-	 * @throws Exception
+	 * @throws \Exception
 	 */
 	public function validateExternalAddress() {
 		if (is_array($this->validateExternalUrl) && count($this->validateExternalUrl)) {
 			$this->InitializeServices();
-			$ExternalAPI = $this->externalApiAddress . "/urltest/isavailable/";
+			$ExternalAPI = $this->externalApiAddress . "urltest/isavailable/";
 			$UrlDomain = $this->NETWORK->getUrlDomain($this->validateExternalUrl['url']);
 			if (!preg_match("/^http/i", $UrlDomain[1])) {
 				return ResursCallbackReachability::IS_REACHABLE_NOT_AVAILABLE;
@@ -766,17 +794,18 @@ class ResursBank
 			$Expect = $this->validateExternalUrl['http_accept'];
 			$UnExpect = $this->validateExternalUrl['http_error'];
 			$useUrl = $this->validateExternalUrl['url'];
-			$ExternalPostData = array('link' => base64_encode($useUrl));
+			$ExternalPostData = array('link' => $this->NETWORK->base64url_encode($useUrl));
 			try {
-				$WebRequest = $this->CURL->getParsedResponse( $this->CURL->doPost( $ExternalAPI, $ExternalPostData ) );
+				$this->CURL->doPost( $ExternalAPI, $ExternalPostData, \TorneLIB\CURL_POST_AS::POST_AS_JSON );
+				$WebResponse = $this->CURL->getParsedResponse();
 			} catch (\Exception $e) {
 				return ResursCallbackReachability::IS_REACHABLE_NOT_KNOWN;
 			}
-			if (isset($WebRequest->response->isAvailableResponse)) {
-				$ParsedResponse = $WebRequest->response->isAvailableResponse;
+			if (isset($WebResponse->response->isAvailableResponse)) {
+				$ParsedResponse = $WebResponse->response->isAvailableResponse;
 			} else {
-				if (isset($WebRequest->errors) && !empty($WebRequest->errors->faultstring)) {
-					throw new \Exception($WebRequest->errors->faultstring, $WebRequest->errors->code);
+				if (isset($WebResponse->errors) && !empty($WebResponse->errors->faultstring)) {
+					throw new \Exception($WebResponse->errors->faultstring, $WebResponse->errors->code);
 				} else {
 					throw new \Exception("No response returned from API", 500);
 				}
@@ -3624,7 +3653,11 @@ class ResursBank
 		}
 		$url = $this->getCheckoutUrl() . '/checkout/payments/' . $paymentId . '/updatePaymentReference';
 		$response = $this->CURL->getParsedResponse($this->createJsonEngine($url, json_encode(array('paymentReference' => $to)), ResursCurlMethods::METHOD_PUT));
-		return $response;
+		$ResponseCode = $this->CURL->getResponseCode();
+		if ($ResponseCode >= 200 && $ResponseCode <= 250) {
+			return true;
+		}
+		return false;
 	}
 
 	/**
@@ -4124,7 +4157,7 @@ class ResursBank
 
 		/* On total fail, throw the last error */
 		if (!$cancelStateSuccess) {
-			throw new Exception(__FUNCTION__ . ": " . $lastErrorMessage, 500);
+			throw new \Exception(__FUNCTION__ . ": " . $lastErrorMessage, 500);
 		}
 
 		return $cancelStateSuccess;
