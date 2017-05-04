@@ -65,7 +65,7 @@ class ResursBank
 	/** @var string The version of this gateway */
 	private $version = "1.0.1";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20170503";
+	private $lastUpdate = "20170504";
 	/** @var string This. */
     private $clientName = "RB-EcomBridge";
     /** @var string Replacing $clientName on usage of setClientNAme */
@@ -781,12 +781,12 @@ class ResursBank
      * Run external URL validator and see whether an URL is really reachable or not
      *
      * @return int Returns a value from the class ResursCallbackReachability
-     * @throws Exception
+     * @throws \Exception
      */
 	public function validateExternalAddress() {
         if (is_array($this->validateExternalUrl) && count($this->validateExternalUrl)) {
             $this->InitializeServices();
-            $ExternalAPI = $this->externalApiAddress . "/urltest/isavailable/";
+            $ExternalAPI = $this->externalApiAddress . "urltest/isavailable/";
             $UrlDomain = $this->NETWORK->getUrlDomain($this->validateExternalUrl['url']);
             if (!preg_match("/^http/i", $UrlDomain[1])) {
                 return ResursCallbackReachability::IS_REACHABLE_NOT_AVAILABLE;
@@ -794,17 +794,18 @@ class ResursBank
             $Expect = $this->validateExternalUrl['http_accept'];
             $UnExpect = $this->validateExternalUrl['http_error'];
             $useUrl = $this->validateExternalUrl['url'];
-            $ExternalPostData = array('link' => base64_encode($useUrl));
+            $ExternalPostData = array('link' => $this->NETWORK->base64url_encode($useUrl));
             try {
-	            $WebRequest = $this->CURL->getParsedResponse( $this->CURL->doPost( $ExternalAPI, $ExternalPostData ) );
+            	$this->CURL->doPost( $ExternalAPI, $ExternalPostData, \TorneLIB\CURL_POST_AS::POST_AS_JSON );
+	            $WebResponse = $this->CURL->getParsedResponse();
             } catch (\Exception $e) {
             	return ResursCallbackReachability::IS_REACHABLE_NOT_KNOWN;
             }
-            if (isset($WebRequest->response->isAvailableResponse)) {
-	            $ParsedResponse = $WebRequest->response->isAvailableResponse;
+            if (isset($WebResponse->response->isAvailableResponse)) {
+	            $ParsedResponse = $WebResponse->response->isAvailableResponse;
             } else {
-            	if (isset($WebRequest->errors) && !empty($WebRequest->errors->faultstring)) {
-		            throw new \Exception($WebRequest->errors->faultstring, $WebRequest->errors->code);
+            	if (isset($WebResponse->errors) && !empty($WebResponse->errors->faultstring)) {
+		            throw new \Exception($WebResponse->errors->faultstring, $WebResponse->errors->code);
 	            } else {
 		            throw new \Exception("No response returned from API", 500);
 	            }
@@ -3652,7 +3653,11 @@ class ResursBank
         }
         $url = $this->getCheckoutUrl() . '/checkout/payments/' . $paymentId . '/updatePaymentReference';
 	    $response = $this->CURL->getParsedResponse($this->createJsonEngine($url, json_encode(array('paymentReference' => $to)), ResursCurlMethods::METHOD_PUT));
-        return $response;
+	    $ResponseCode = $this->CURL->getResponseCode();
+	    if ($ResponseCode >= 200 && $ResponseCode <= 250) {
+	    	return true;
+	    }
+        return false;
     }
 
 	/**
@@ -4152,7 +4157,7 @@ class ResursBank
 
         /* On total fail, throw the last error */
         if (!$cancelStateSuccess) {
-            throw new Exception(__FUNCTION__ . ": " . $lastErrorMessage, 500);
+            throw new \Exception(__FUNCTION__ . ": " . $lastErrorMessage, 500);
         }
 
         return $cancelStateSuccess;

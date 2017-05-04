@@ -48,7 +48,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 	public $ignoreDefaultTests = false;
 	public $ignoreBookingTests = false;
 	public $ignoreSEKKItests = false;
-	public $ignoreUrlExternalValidation = true;
+	public $ignoreUrlExternalValidation = false;
 	/** @var string Test with natural government id */
 	public $govIdNatural = "198305147715";
 	/** @var string Test with natural government id/Norway */
@@ -404,8 +404,8 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 		}
 		$bookData['paymentData']['waitForFraudControl'] = $this->waitForFraudControl;
 		$bookData['signing']                            = array(
-			'successUrl'   => $this->signUrl . '/?success=true',
-			'failUrl'      => $this->signUrl . "/?success=false",
+			'successUrl'   => $this->signUrl . '&success=true',
+			'failUrl'      => $this->signUrl . "&success=false",
 			'forceSigning' => $forceSigning
 		);
 
@@ -981,27 +981,26 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
      * Try to update a payment reference by first creating the iframe
      */
 	public function testUpdatePaymentReference() {
-		// Note: In this test we might be a little bit more dependent on more step.
-
-		$res = array();
         $this->checkEnvironment();
         try {
 	        $iFrameUrl = $this->getCheckoutFrame( true );
         } catch (Exception $e) {
         	$this->markTestIncomplete("Exception: " . $e->getMessage());
         }
+        $this->CURL->setLocalCookies(true);
 		$iframeRequest = $this->CURL->doGet( $iFrameUrl );
 		$iframeContent = $iframeRequest['body'];
 		$iframePaymentReference = $this->rb->getPreferredPaymentId();
+		$Success = false;
         if (!empty($iframePaymentReference) && !empty($iFrameUrl) && !empty($iframeContent) && strlen($iframeContent) > 1024) {
 	        $newReference = $this->rb->generatePreferredId();
 	        try {
-		        $res = $this->rb->updatePaymentReference( $iframePaymentReference, $newReference );
+		        $Success = $this->rb->updatePaymentReference( $iframePaymentReference, $newReference );
 	        } catch (Exception $e) {
-		        $stopRequest = time();
 	        	$this->markTestIncomplete("Exception: " . $e->getCode() . ": " . $e->getMessage());
 	        }
         }
+        $this->assertTrue($Success === true);
     }
 
 	/**
@@ -1303,7 +1302,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 		$this->rb->setCallbackDigest($this->mkpass());
 		foreach ($callbackArrayData as $indexCB => $callbackInfo) {
 			try {
-				$cResponse = $this->rb->setCallback( $callbackInfo[0], $callbackInfo[1], $callbackInfo[2] );
+				$cResponse = $this->rb->setRegisterCallback( $callbackInfo[0], $callbackInfo[1], $callbackInfo[2] );
 				$callbackSetResult[] = $callbackInfo[0];
 			} catch (\Exception $e) {
 				echo $e->getMessage();
