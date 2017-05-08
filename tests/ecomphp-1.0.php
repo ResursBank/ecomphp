@@ -99,12 +99,10 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 	public $paymentMethodCountNorway = array( 'mock' => 3 );
 
 	/** Before each test, invoke this */
-	public function setUp() {
-	}
+	public function setUp() {}
 
 	/** After each test, invoke this */
-	public function tearDown() {
-	}
+	public function tearDown() {}
 
 	////////// Private variables
 	/** @var string Defines what environment should be running */
@@ -362,7 +360,6 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 				$this->markTestIncomplete();
 			}
 		}
-
 		/* Set unit amount higher (than 500 as before) so we may pass boundaries in tests */
 		//$bookData['type'] = "hosted";
 		if ( $this->zeroSpecLine ) {
@@ -1310,5 +1307,24 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 		}
 		// Registered callbacks must be at least 4 to be successful, as there are at least 4 important callbacks to pass through
 		$this->assertGreaterThanOrEqual( 4, count($callbackSetResult));
+	}
+
+	function testGetNextInvoiceNumber() {
+		$this->assertTrue($this->rb->getNextInvoiceNumber() >= 1);
+	}
+	function testSetNextInvoiceNumber() {
+		$NextInvoiceNumber = $this->rb->getNextInvoiceNumber(true, 1000);
+		$this->assertEquals(1000, $this->rb->getNextInvoiceNumber());
+	}
+	function testReSetNextInvoiceNumber() {
+		$NextInvoiceNumber = $this->rb->getNextInvoiceNumber(true, 1);
+		print_R($NextInvoiceNumber);
+		//$this->assertEquals(1000, $this->rb->getNextInvoiceNumber());
+	}
+
+	/// 1.0.2 features
+	function testCreatePayment() {
+		$this->checkEnvironment();
+		$this->rb->createPayment();
 	}
 }

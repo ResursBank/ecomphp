@@ -274,8 +274,11 @@ class ResursBank
 		'addMetaData' => 'AfterShopFlowService',
 		'registerEventCallback' => 'ConfigurationService',
 		'unregisterEventCallback' => 'ConfigurationService',
-		'getRegisteredEventCallback' => 'ConfigurationService'
+		'getRegisteredEventCallback' => 'ConfigurationService',
+		'peekInvoiceSequence' => 'ConfigurationService',
+		'setInvoiceSequence' => 'ConfigurationService'
 	);
+
 	/**
 	 * If there is another method than the GET method, it is told here, which services that requires this. Most of the WSDL data are fetched by GET.
 	 *
@@ -538,7 +541,7 @@ class ResursBank
 	 * @deprecated 1.0.1 Unless you don't need this, do run through InitializeServices instead.
 	 * @deprecated 1.1.1 Unless you don't need this, do run through InitializeServices instead.
 	 */
-	private function InitializeWsdl() {
+	public function InitializeWsdl() {
 		$this->InitializeServices();
 	}
 	/**
@@ -1630,26 +1633,34 @@ class ResursBank
 	public function getStoredCurlExceptionInformation() {
 		return $this->CURL->getStoredExceptionInformation();
 	}
+
 	/**
 	 * Get next invoice number - and initialize if not set.
-	 * @param bool $initInvoice Initializes invoice number if not set (if not set, this is set to 1 if nothing else is set)
+	 *
+	 * @param bool $initInvoice Allow to set a new invoice number if not set (if not set, this is set to 1 if nothing else is set)
 	 * @param int $firstInvoiceNumber Initializes invoice number sequence with this value if not set and requested
-	 * @return int Returns
+	 * @return int Returns If 0, the set up might have failed
 	 * @throws ResursException
 	 */
 	public function getNextInvoiceNumber($initInvoice = true, $firstInvoiceNumber = 1)
 	{
 		$this->InitializeServices();
-		$invoiceNumber = null;
-		$peek = null;
-		try {
-			$peek = $this->configurationService->peekInvoiceSequence(array('nextInvoiceNumber' => null));
-			$invoiceNumber = $peek->nextInvoiceNumber;
-		} catch (\Exception $e) {
+		$invoiceNumber = 0;
+		if ($initInvoice) {
+			try {
+				$invoiceNumber = $this->postService( "peekInvoiceSequence" )->nextInvoiceNumber;
+			} catch ( \Exception $e ) {
+
+			}
 		}
-		if (empty($invoiceNumber) && $initInvoice) {
-			$this->configurationService->setInvoiceSequence(array('nextInvoiceNumber' => $firstInvoiceNumber));
-			$invoiceNumber = $firstInvoiceNumber;
+		if (is_numeric($invoiceNumber) && $invoiceNumber > 0 && $initInvoice) {
+			try {
+				$this->postService( "setInvoiceSequence", array( 'nextInvoiceNumber' => $firstInvoiceNumber ) );
+				$invoiceNumber = $firstInvoiceNumber;
+			} catch (\Exception $e) {
+				// If the initialization failed, due to an already set invoice number, we will fall back to the last one
+				$invoiceNumber = $this->postService( "peekInvoiceSequence", array( 'nextInvoiceNumber' => null ) )->nextInvoiceNumber;
+			}
 		}
 		return $invoiceNumber;
 	}
@@ -3624,6 +3635,17 @@ class ResursBank
 
 	////// MASTER SHOPFLOWS - PRIMARY BOOKING FUNCTIONS
 	/**
+	 * The new payment creation function (replaces bookPayment)
+	 *
+	 * @since 1.0.2
+	 * @since 1.1.2
+	 */
+	public function createPayment() {
+		echo $this->enforceService;
+		die();
+	}
+
+	/**
 	 * bookPayment - Compiler for bookPayment.
 	 *
 	 * This is the entry point of the simplified version of bookPayment. The normal action here is to send a bulked array with settings for how the payment should be handled (see https://test.resurs.com/docs/x/cIZM)
@@ -3638,6 +3660,8 @@ class ResursBank
 	 * @throws \Exception
 	 * @link https://test.resurs.com/docs/x/cIZM bookPayment EComPHP Reference
 	 * @link https://test.resurs.com/docs/display/ecom/bookPayment bookPayment reference
+	 * @deprecated 1.1.2
+	 * @deprecated 1.0.2
 	 */
 	public function bookPayment($paymentMethodIdOrPaymentReference = '', $bookData = array(), $getReturnedObjectAsStd = true, $keepReturnObject = false, $externalParameters = array())
 	{
@@ -3668,6 +3692,8 @@ class ResursBank
 	 * @param array $externalParameters External parameters
 	 * @return array|mixed|null This normally returns an object depending on your platform request
 	 * @throws \Exception
+	 * @deprecated 1.1.2
+	 * @deprecated 1.0.2
 	 */
 	private function bookPaymentBulk($paymentMethodId = '', $bookData = array(), $getReturnedObjectAsStd = true, $keepReturnObject = false, $externalParameters = array())
 	{
@@ -3842,6 +3868,13 @@ class ResursBank
 		}
 		return $bookPaymentResult;
 	}
+
+	/**
+	 * @param string $parameter
+	 * @param null $object
+	 *
+	 * @return null
+	 */
 	private function getBookedParameter($parameter = '', $object = null)
 	{
 		if (is_null($object) && is_object($this->lastBookPayment)) {
