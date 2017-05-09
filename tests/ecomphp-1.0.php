@@ -229,9 +229,9 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 	 * Initialization of environment with ability to change into others.
 	 */
 	private function checkEnvironment() {
-		if ( $this->environmentName === "nonmock" ) {
+/*		if ( $this->environmentName === "nonmock" ) {
 			$this->rb->setNonMock();
-		}
+		}*/
 		$this->initServices();
 	}
 
@@ -1325,6 +1325,31 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 	/// 1.0.2 features
 	function testCreatePayment() {
 		$this->checkEnvironment();
-		$this->rb->createPayment();
+		try {
+			$this->rb->setPreferredPaymentService(ResursMethodTypes::METHOD_CHECKOUT);
+			//$this->rb->setBillingByGetAddress($this->rb->getAddress("198305147715", "NATURAL", "127.0.0.1"));
+			$this->rb->setBillingAddress("Anders Andersson", "Anders", "Andersson", "Hamngatan 2", null, "12345", "Ingenstans", "SE");
+			$this->rb->createPayment("A");
+		} catch (\Exception $e) {
+			$this->markTestIncomplete($e->getMessage());
+		}
+	}
+	function testCreatePaymentWithPayload() {
+		$this->checkEnvironment();
+		$bookData['address']  = array(
+			'fullName'    => 'Test Testsson',
+			'firstName'   => 'Test',
+			'lastName'    => 'Testsson',
+			'addressRow1' => 'Testgatan 1',
+			'postalArea'  => 'Testort',
+			'postalCode'  => '12121',
+			'country'     => 'SE'
+		);
+		$this->rb->setPreferredPaymentService(ResursMethodTypes::METHOD_CHECKOUT);
+		try {
+			$this->rb->createPayment("A", $bookData);
+		} catch (\Exception $e) {
+			$this->markTestIncomplete($e->getMessage());
+		}
 	}
 }

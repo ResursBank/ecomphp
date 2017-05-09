@@ -227,6 +227,7 @@ class ResursBank
 	 * @deprecated 1.1.1
 	 */
 	private $simpleWebEngine;
+	private $Payload;
 
 	/// Environment URLs
 	/** @var null The chosen environment */
@@ -895,6 +896,16 @@ class ResursBank
 		$this->current_environment_updated = true;
 	}
 	/**
+	 * Returns target environment (production or test)
+	 *
+	 * @return int
+	 * @since 1.0.2
+	 * @since 1.1.2
+	 */
+	public function getEnvironment() {
+		return $this->current_environment;
+	}
+	/**
 	 * Function to enable/disabled SSL Peer/Host verification, if problems occur with certificates
 	 * @param bool|true $enabledFlag
 	 * @deprecated 1.0.1
@@ -993,7 +1004,7 @@ class ResursBank
      * @param $data
      * @return string
      */
-    public function base64url_encode($data)
+    private function base64url_encode($data)
     {
         return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
     }
@@ -1003,7 +1014,7 @@ class ResursBank
      * @param $data
      * @return string
      */
-    public function base64url_decode($data)
+	private function base64url_decode($data)
     {
         return base64_decode(str_pad(strtr($data, '-_', '+/'), strlen($data) % 4, '=', STR_PAD_RIGHT));
     }
@@ -1318,8 +1329,7 @@ class ResursBank
 			$renderedResponse = $this->CURL->doPost($renderCallbackUrl, $renderCallback, \TorneLIB\CURL_POST_AS::POST_AS_JSON);
 			$code = $this->CURL->getResponseCode();
 		} else {
-			$renderCallbackUrl = $this->getServiceUrl("registerEventCallback");
-			$renderedResponse = $this->CURL->doPost($renderCallbackUrl)->registerEventCallback($renderCallback);
+			$renderedResponse = $this->postService("registerEventCallback", $renderCallback);
 			$code = $renderedResponse['code'];
 		}
 		if ($code >= 200 && $code <= 250) {
@@ -1502,6 +1512,7 @@ class ResursBank
 				}
 			} else {
 				$this->InitializeServices();
+				// Not using postService here, since we're
 				$curlResponse = $this->CURL->doGet($this->getServiceUrl('unregisterEventCallback'))->unregisterEventCallback(array('eventType' => $callbackType));
 				if ($curlResponse['code'] >= 200 && $curlResponse['code'] <= 250) {
 					return true;
@@ -1674,52 +1685,13 @@ class ResursBank
 	 * @return mixed
 	 * @throws \Exception
 	 */
-	public function getPaymentMethods($parameters = array())
-	{
+	public function getPaymentMethods($parameters = array()) {
 		$this->InitializeServices();
-		if (!$this->hasWsdl) {
-			return $this->postService( "getPaymentMethods", array(
-				'customerType'   => isset( $parameters['customerType'] ) ? $parameters['customerType'] : null,
-				'language'       => isset( $parameters['language'] ) ? $parameters['language'] : null,
-				'purchaseAmount' => isset( $parameters['purchaseAmount'] ) ? $parameters['purchaseAmount'] : null
-			) );
-		}
-		/** @noinspection PhpUnusedLocalVariableInspection */
-		$return = $this->getDataObject(array());
-		if ((class_exists('Resursbank\RBEcomPHP\resurs_getPaymentMethods') || class_exists("resurs_getPaymentMethods")) && isset($this->simplifiedShopFlowService) && !empty($this->simplifiedShopFlowService)) {
-			$paymentMethodParameters = new resurs_getPaymentMethods();
-			if (isset($parameters['customerType'])) {
-				$paymentMethodParameters->customerType = $parameters['customerType'];
-			}
-			if (isset($parameters['language']) && !empty($parameters['language'])) {
-				$paymentMethodParameters->language = $parameters['language'];
-			}
-			if (isset($parameters['purchaseAmount'])) {
-				$paymentMethodParameters->purchaseAmount = $parameters['purchaseAmount'];
-			}
-			/*
-			 * Decide how data objects should be returned.
-			 */
-			$return = $this->getDataObject(isset($this->simplifiedShopFlowService->getPaymentMethods($paymentMethodParameters)->return) ? $this->simplifiedShopFlowService->getPaymentMethods($paymentMethodParameters)->return : array());
-			/*
-			 * If the return value is objectified instead of arrayed, we should be aware of that the response may only contain one payment method and surround the returned response as
-			 * that missing part to keep the expected behaviour in the core of EComPHP. This issue should have been fixed for a long time ago.
-			 *
-			 * Note: Nothing of this may work properly in ResursLIB(-PHP) so the method has to be rewritten based on a newer wsdl generator.
-			 *
-			 */
-			if (!is_array($return) && is_object($return)) {
-				$newReturn = array($return);
-				return $newReturn;
-			}
-			$this->updateConfig('getPaymentMethods', $return);
-
-		} else {
-			$return = array(
-				'error' => 'Can not load class for getPaymentMethods'
-			);
-		}
-		return $return;
+		return $this->postService( "getPaymentMethods", array(
+			'customerType'   => isset( $parameters['customerType'] ) ? $parameters['customerType'] : null,
+			'language'       => isset( $parameters['language'] ) ? $parameters['language'] : null,
+			'purchaseAmount' => isset( $parameters['purchaseAmount'] ) ? $parameters['purchaseAmount'] : null
+		) );
 	}
 	/**
 	 * @param string $governmentId
@@ -1981,7 +1953,7 @@ class ResursBank
 	 */
 	public function getCostOfPurchase($paymentMethod = '', $amount = 0, $returnBody = false, $callCss = 'costofpurchase.css', $hrefTarget = "_blank")
 	{
-		$returnHtml = $this->CURL->getParsedResponse($this->CURL->doGet($this->getServiceUrl('getCostOfPurchaseHtml'))->getCostOfPurchaseHtml(array('paymentMethodId' => $paymentMethod, 'amount' => $amount)));
+		$returnHtml = $this->postService("getCostOfPurchaseHtml", array('paymentMethodId' => $paymentMethod, 'amount' => $amount));
 		// Try to make the target open as a different target, if set. This will not invoke, if not set.
 		if (!empty($hrefTarget)) {
 			// Check if there are any target set, somewhere in the returned html. If true, we'll consider this already done somewhere else.
@@ -3637,12 +3609,190 @@ class ResursBank
 	/**
 	 * The new payment creation function (replaces bookPayment)
 	 *
+	 * For EComPHP 1.0.2 there is no need for any object conversion (or external parameters). Most of the parameters is about which preferred payment flow that is used, which should
+	 * be set with the function setPreferredPaymentService() instead. If no preferred are set, we will fall back to the simplified flow.
+	 *
+	 * @param string $payment_id_or_method For ResursCheckout the payment id are preferred before the payment method
+	 * @param array $payload If there are any extra (or full) payload for the chosen payment, it should be placed here
+	 *
+	 * @throws \Exception
 	 * @since 1.0.2
 	 * @since 1.1.2
 	 */
-	public function createPayment() {
-		echo $this->enforceService;
-		die();
+	public function createPayment($payment_id_or_method = '', $payload = array()) {
+		$this->InitializeServices();
+		$this->handlePayload($payload);
+		if (!$this->enforceService) {
+			$this->setPreferredPaymentService(ResursMethodTypes::METHOD_SIMPLIFIED);
+		}
+		if (empty($payment_id_or_method)) {
+			if ($this->enforceService === ResursMethodTypes::METHOD_CHECKOUT) {
+				throw new \Exception( "A payment method or payment id must be defined", ResursExceptions::CREATEPAYMENT_NO_ID_SET );
+			}
+		}
+		if (!count($this->Payload)) {
+			throw new \Exception("No payload are set for this payment", ResursExceptions::BOOKPAYMENT_NO_BOOKDATA);
+		}
+
+		print_r($this->Payload);
+		if ($this->enforceService === ResursMethodTypes::METHOD_CHECKOUT) {
+
+		} else if ($this->enforceService === ResursMethodTypes::METHOD_HOSTED) {
+
+		} else {
+
+		}
+	}
+
+	/**
+	 * Customer address simplifier. Renders a correct array depending on the flow.
+	 *
+	 * @param $fullName
+	 * @param $firstName
+	 * @param $lastName
+	 * @param $addressRow1
+	 * @param $addressRow2
+	 * @param $postalArea
+	 * @param $postalCode
+	 * @param $country
+	 *
+	 * @return array
+	 */
+	private function renderAddress($fullName, $firstName, $lastName, $addressRow1, $addressRow2, $postalArea, $postalCode, $country) {
+		$ReturnAddress = array(
+			'fullName' => $fullName,
+			'firstName' => $firstName,
+			'lastName' => $lastName,
+			'addressRow1' => $addressRow1,
+			'postalArea' => $postalArea,
+			'postalCode' => $postalCode
+		);
+		if (!empty(trim($addressRow2))) {
+			$ReturnAddress['addressRow2'] = $addressRow2;
+		}
+		if ($this->enforceService === ResursMethodTypes::METHOD_SIMPLIFIED) {
+			$ReturnAddress['country'] = $country;
+		} else {
+			$ReturnAddress['countryCode'] = $country;
+		}
+		return $ReturnAddress;
+	}
+
+	/**
+	 * Inject a payload with given array, object or string (defaults to array)
+	 *
+	 * @param $ArrayKey
+	 * @param array $ArrayValue
+	 */
+	private function setPayloadArray($ArrayKey, $ArrayValue = array()) {
+		if ($ArrayKey == "address" || $ArrayKey == "deliveryAddress") {
+			if (!isset( $this->Payload['customer'])) {
+				$this->Payload['customer'] = array();
+			}
+			$this->Payload['customer'][ $ArrayKey ] = $ArrayValue;
+		} else {
+			$this->Payload[ $ArrayKey ] = $ArrayValue;
+		}
+	}
+	/**
+	 * Generate a Payload for customer address, depending on a received getAddress()-object
+	 *
+	 * @param $addressData
+	 */
+	private function setAddressPayload($addressKey = 'address', $addressData) {
+		if (is_object($addressData)) {
+			$this->setPayloadArray( $addressKey, $this->renderAddress(
+				isset( $addressData->fullName ) && ! empty( $addressData->fullName ) ? $addressData->fullName : "",
+				isset( $addressData->firstName ) && ! empty( $addressData->firstName ) ? $addressData->firstName : "",
+				isset( $addressData->lastName ) && ! empty( $addressData->lastName ) ? $addressData->lastName : "",
+				isset( $addressData->addressRow1 ) && ! empty( $addressData->addressRow1 ) ? $addressData->addressRow1 : "",
+				isset( $addressData->addressRow2 ) && ! empty( $addressData->addressRow2 ) ? $addressData->addressRow2 : "",
+				isset( $addressData->postalArea ) && ! empty( $addressData->postalArea ) ? $addressData->postalArea : "",
+				isset( $addressData->postalCode ) && ! empty( $addressData->postalCode ) ? $addressData->postalCode : "",
+				isset( $addressData->country ) && ! empty( $addressData->country ) ? $addressData->country : ""
+			) );
+		} else if (is_array($addressData)) {
+			$this->setPayloadArray( $addressKey, $this->renderAddress(
+				isset( $addressData['fullName'] ) && ! empty( $addressData['fullName'] ) ? $addressData['fullName'] : "",
+				isset( $addressData['firstName'] ) && ! empty( $addressData['firstName'] ) ? $addressData['firstName'] : "",
+				isset( $addressData['lastName'] ) && ! empty( $addressData['lastName'] ) ? $addressData['lastName'] : "",
+				isset( $addressData['addressRow1'] ) && ! empty( $addressData['addressRow1'] ) ? $addressData['addressRow1'] : "",
+				isset( $addressData['addressRow2'] ) && ! empty( $addressData['addressRow2'] ) ? $addressData['addressRow2'] : "",
+				isset( $addressData['postalArea'] ) && ! empty( $addressData['postalArea'] ) ? $addressData['postalArea'] : "",
+				isset( $addressData['postalCode'] ) && ! empty( $addressData['postalCode'] ) ? $addressData['postalCode'] : "",
+				isset( $addressData['country'] ) && ! empty( $addressData['country'] ) ? $addressData['country'] : ""
+			));
+		}
+	}
+	/**
+	 * Payload simplifier: Having data from getAddress, you want to set as billing address, this can be done from here.
+	 *
+	 * @param $getAddressData
+	 */
+	public function setBillingByGetAddress($getAddressData) {
+		$this->setAddressPayload("address", $getAddressData);
+	}
+	/**
+	 * Payload simplifier: Having data from getAddress, you want to set as shipping address, this can be done from here.
+	 *
+	 * @param $getAddressData
+	 */
+	public function setDeliveryByGetAddress($getAddressData) {
+		$this->setAddressPayload("deliveryAddress", $getAddressData);
+	}
+	/**
+	 * Generate a Payload for customer address, depending on developer code
+	 *
+	 * @param $fullName
+	 * @param $firstName
+	 * @param $lastName
+	 * @param $addressRow1
+	 * @param $addressRow2
+	 * @param $postalArea
+	 * @param $postalCode
+	 * @param $country
+	 */
+	public function setBillingAddress($fullName, $firstName, $lastName, $addressRow1, $addressRow2, $postalArea, $postalCode, $country) {
+		$this->setAddressPayload("address", $this->renderAddress($fullName, $firstName, $lastName, $addressRow1, $addressRow2, $postalArea, $postalCode, $country));
+	}
+	/**
+	 * Generate a payload for customer delivery address, depending on developer code
+	 *
+	 * @param $fullName
+	 * @param $firstName
+	 * @param $lastName
+	 * @param $addressRow1
+	 * @param $addressRow2
+	 * @param $postalArea
+	 * @param $postalCode
+	 * @param $country
+	 */
+	public function setDeliveryAddress($fullName, $firstName, $lastName, $addressRow1, $addressRow2, $postalArea, $postalCode, $country) {
+		$this->setAddressPayload("deliveryAddress", $this->renderAddress($fullName, $firstName, $lastName, $addressRow1, $addressRow2, $postalArea, $postalCode, $country));
+	}
+
+	/**
+	 * Compile user defined payload with payload that may have been pre-set by other calls
+	 *
+	 * @param array $userDefinedPayload
+	 * @since 1.0.2
+	 * @since 1.1.2
+	 */
+	private function handlePayload($userDefinedPayload = array()) {
+		if ( is_array( $userDefinedPayload ) && count($userDefinedPayload) ) {
+			foreach ( $userDefinedPayload as $payloadKey => $payloadContent ) {
+				$this->Payload[$payloadKey] = $payloadContent;
+			}
+		}
+		// Address and deliveryAddress should move to the correct location
+		if (isset($this->Payload['address'])) {
+			$this->Payload['customer']['address'] = $this->Payload['address'];
+			unset($this->Payload['address']);
+		}
+		if (isset($this->Payload['deliveryAddress'])) {
+			$this->Payload['customer']['deliveryAddress'] = $this->Payload['deliveryAddress'];
+			unset($this->Payload['deliveryAddress']);
+		}
 	}
 
 	/**
@@ -4132,6 +4282,17 @@ class ResursBank
 
 
 	////// HOSTED FLOW
+
+	/**
+	 * @return string
+	 */
+	public function getHostedUrl() {
+		if ($this->current_environment == ResursEnvironments::ENVIRONMENT_TEST) {
+			return $this->env_hosted_test;
+		} else {
+			return $this->env_hosted_prod;
+		}
+	}
 	/**
 	 * Book payment through hosted flow
 	 *
@@ -4355,6 +4516,8 @@ class ResursBank
      * @param array $addressArray
      * @param array $customerArray
      * @throws ResursException
+     * @deprecated 1.0.2
+     * @deprecated 1.1.2
      */
     public function updateAddress($addressArray = array(), $customerArray = array())
     {
