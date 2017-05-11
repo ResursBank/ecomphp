@@ -53,7 +53,30 @@ class TorneLIB_Network
         return (!empty($thisdomain) ? $thisdomain : null);
     }
 
-    /**
+	/**
+	 * base64_encode
+	 *
+	 * @param $data
+	 * @return string
+	 */
+	public function base64url_encode($data)
+	{
+		return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+	}
+
+	/**
+	 * base64_decode
+	 *
+	 * @param $data
+	 * @return string
+	 */
+	public function base64url_decode($data)
+	{
+		return base64_decode(str_pad(strtr($data, '-_', '+/'), strlen($data) % 4, '=', STR_PAD_RIGHT));
+	}
+
+
+	/**
      * Get reverse octets from ip address
      *
      * @param string $ipAddr
@@ -212,11 +235,11 @@ class Tornevall_cURL
     private $NETWORK;
 
     /** @var string Internal version that is being used to find out if we are running the latest version of this library */
-    private $TorneCurlVersion = "5.0.0-API-2017.4";
+    private $TorneCurlVersion = "5.0.0/2017.4";
     private $CurlVersion = null;
 
     /** @var string Internal release snapshot that is being used to find out if we are running the latest version of this library */
-    private $TorneCurlRelease = "20170428";
+    private $TorneCurlRelease = "20170503";
 
     /**
      * Target environment (if target is production some debugging values will be skipped)
@@ -369,7 +392,9 @@ class Tornevall_cURL
     private $AuthData = array('Username' => null, 'Password' => null, 'Type' => CURL_AUTH_TYPES::AUTHTYPE_NONE);
 
     /** @var array Adding own headers to the HTTP-request here */
-    public $CurlHeaders = array();
+    private $CurlHeaders = array();
+    private $CurlHeadersSystem = array();
+    private $CurlHeadersUserDefined = array();
 
     /**
      * Set up if this library can throw exceptions, whenever it needs to do that.
@@ -398,7 +423,7 @@ class Tornevall_cURL
     /**
      * TorneLIB_CURL constructor.
      */
-    public function __construct()
+    public function __construct($PreferredURL = '', $PreparedPostData = array(), $PreferredMethod = CURL_METHODS::METHOD_POST)
     {
         if (!function_exists('curl_init')) {
             throw new \Exception("curl library not found");
@@ -440,6 +465,19 @@ class Tornevall_cURL
         }
         $this->openssl_guess();
         register_shutdown_function(array($this, 'tornecurl_terminate'));
+
+        if (!empty($PreferredURL)) {
+            if ($PreferredMethod == CURL_METHODS::METHOD_GET) {
+                $InstantResponse = $this->doGet($PreferredURL);
+            } else if ($PreferredMethod == CURL_METHODS::METHOD_POST) {
+                $InstantResponse = $this->doPost($PreferredURL, $PreparedPostData);
+            } else if ($PreferredMethod == CURL_METHODS::METHOD_PUT) {
+                $InstantResponse = $this->doPut($PreferredURL, $PreparedPostData);
+            } else if ($PreferredMethod == CURL_METHODS::METHOD_DELETE) {
+                $InstantResponse = $this->doDelete($PreferredURL, $PreparedPostData);
+            }
+            return $InstantResponse;
+        }
     }
 
     /**
@@ -760,67 +798,73 @@ class Tornevall_cURL
          * The certificate location here will be set up for the curl engine later on, during preparation of the connection.
          * NOTE: ini_set() does not work for setting up the cafile, this has to be done through php.ini, .htaccess, httpd.conf or .user.ini
          */
-        if ($this->testssl || $forceTesting) {
-            $this->openSslGuessed = true;
-            if (version_compare(PHP_VERSION, "5.6.0", ">=") && function_exists("openssl_get_cert_locations")) {
-                $locations = openssl_get_cert_locations();
-                if (is_array($locations)) {
-                    if (isset($locations['default_cert_file'])) {
-                        // If it exists, we don't have to bother anymore
-                        if (file_exists($locations['default_cert_file'])) {
-                            $this->hasCertFile = true;
-                            $this->useCertFile = $locations['default_cert_file'];
-                            $this->hasDefaultCertFile = true;
-                        }
-                        if (file_exists($locations['default_cert_dir'])) {
-                            $this->hasCertDir = true;
-                        }
-                        // For unit testing
-                        if ($this->TargetEnvironment == TORNELIB_CURL_ENVIRONMENT::ENVIRONMENT_TEST && isset($this->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION) && $this->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION === true) {
-                            // Enforce wrong certificate location
-                            $this->hasCertFile = false;
-                            $this->useCertFile = null;
-                        }
-                    }
-                    // Check if the above control was successful - switch over to pemlocations if not.
-                    if (!$this->hasCertFile && is_array($this->sslPemLocations) && count($this->sslPemLocations)) {
-                        // Loop through suggested locations and set the cafile in a variable if it's found.
-                        foreach ($this->sslPemLocations as $pemLocation) {
-                            if (file_exists($pemLocation)) {
-                                $this->useCertFile = $pemLocation;
+        if (ini_get('open_basedir') == '') {
+            if ($this->testssl || $forceTesting) {
+                $this->openSslGuessed = true;
+                if (version_compare(PHP_VERSION, "5.6.0", ">=") && function_exists("openssl_get_cert_locations")) {
+                    $locations = openssl_get_cert_locations();
+                    if (is_array($locations)) {
+                        if (isset($locations['default_cert_file'])) {
+                            // If it exists, we don't have to bother anymore
+                            if (file_exists($locations['default_cert_file'])) {
                                 $this->hasCertFile = true;
+                                $this->useCertFile = $locations['default_cert_file'];
+                                $this->hasDefaultCertFile = true;
+                            }
+                            if (file_exists($locations['default_cert_dir'])) {
+                                $this->hasCertDir = true;
+                            }
+                            // For unit testing
+                            if ($this->TargetEnvironment == TORNELIB_CURL_ENVIRONMENT::ENVIRONMENT_TEST && isset($this->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION) && $this->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION === true) {
+                                // Enforce wrong certificate location
+                                $this->hasCertFile = false;
+                                $this->useCertFile = null;
+                            }
+                        }
+                        // Check if the above control was successful - switch over to pemlocations if not.
+                        if (!$this->hasCertFile && is_array($this->sslPemLocations) && count($this->sslPemLocations)) {
+                            // Loop through suggested locations and set the cafile in a variable if it's found.
+                            foreach ($this->sslPemLocations as $pemLocation) {
+                                if (file_exists($pemLocation)) {
+                                    $this->useCertFile = $pemLocation;
+                                    $this->hasCertFile = true;
+                                }
                             }
                         }
                     }
-                }
-                // On guess, disable verification if failed (if allowed)
-                if (!$this->hasCertFile && $this->allowSslUnverified) {
-                    $this->setSslVerify(false);
-                }
-            } else {
-                // If we run on other PHP versions than 5.6.0 or higher, try to fall back into a known directory
-                if ($this->testssldeprecated) {
-                    if (!$this->hasCertFile && is_array($this->sslPemLocations) && count($this->sslPemLocations)) {
-                        // Loop through suggested locations and set the cafile in a variable if it's found.
-                        foreach ($this->sslPemLocations as $pemLocation) {
-                            if (file_exists($pemLocation)) {
-                                $this->useCertFile = $pemLocation;
-                                $this->hasCertFile = true;
-                            }
-                        }
-                        // For unit testing
-                        if ($this->TargetEnvironment == TORNELIB_CURL_ENVIRONMENT::ENVIRONMENT_TEST && isset($this->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION) && $this->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION === true) {
-                            // Enforce wrong certificate location
-                            $this->hasCertFile = false;
-                            $this->useCertFile = null;
-                        }
-                    }
-                    // Check if the above control was successful - switch over to pemlocations if not.
+                    // On guess, disable verification if failed (if allowed)
                     if (!$this->hasCertFile && $this->allowSslUnverified) {
                         $this->setSslVerify(false);
                     }
+                } else {
+                    // If we run on other PHP versions than 5.6.0 or higher, try to fall back into a known directory
+                    if ($this->testssldeprecated) {
+                        if (!$this->hasCertFile && is_array($this->sslPemLocations) && count($this->sslPemLocations)) {
+                            // Loop through suggested locations and set the cafile in a variable if it's found.
+                            foreach ($this->sslPemLocations as $pemLocation) {
+                                if (file_exists($pemLocation)) {
+                                    $this->useCertFile = $pemLocation;
+                                    $this->hasCertFile = true;
+                                }
+                            }
+                            // For unit testing
+                            if ($this->TargetEnvironment == TORNELIB_CURL_ENVIRONMENT::ENVIRONMENT_TEST && isset($this->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION) && $this->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION === true) {
+                                // Enforce wrong certificate location
+                                $this->hasCertFile = false;
+                                $this->useCertFile = null;
+                            }
+                        }
+                        // Check if the above control was successful - switch over to pemlocations if not.
+                        if (!$this->hasCertFile && $this->allowSslUnverified) {
+                            $this->setSslVerify(false);
+                        }
+                    }
                 }
             }
+        } else {
+            // Assume there is a valid certificate if jailed by open_basedir
+            $this->hasCertFile = true;
+            return true;
         }
         return $this->hasCertFile;
     }
@@ -1184,6 +1228,32 @@ class Tornevall_cURL
     }
 
     /**
+     * @param null $ResponseContent
+     * @return int
+     */
+    public function getResponseCode($ResponseContent = null) {
+        if (is_null($ResponseContent) && !empty($this->TemporaryResponse)) {
+            return (int)$this->TemporaryResponse['code'];
+        } else if (isset($ResponseContent['code'])) {
+            return (int)$ResponseContent['code'];
+        }
+        return 0;
+    }
+
+    /**
+     * @param null $ResponseContent
+     * @return null
+     */
+    public function getResponseBody($ResponseContent = null) {
+        if (is_null($ResponseContent) && !empty($this->TemporaryResponse)) {
+            return $this->TemporaryResponse['body'];
+        } else if (isset($ResponseContent['body'])) {
+            return $ResponseContent['body'];
+        }
+        return null;
+    }
+
+    /**
      * Extract a specific key from a parsed webrequest
      *
      * @param $KeyName
@@ -1434,19 +1504,29 @@ class Tornevall_cURL
     private function fixHttpHeaders($headerList = array())
     {
         if (is_array($headerList) && count($headerList)) {
-            $newHeader = array();
             foreach ($headerList as $headerKey => $headerValue) {
                 $testHead = explode(":", $headerValue, 2);
                 if (isset($testHead[1])) {
-                    $newHeader[] = $headerValue;
+	                $this->CurlHeaders[] = $headerValue;
                 } else {
                     if (!is_numeric($headerKey)) {
-                        $newHeader[] = $headerKey . ": " . $headerValue;
+	                    $this->CurlHeaders[] = $headerKey . ": " . $headerValue;
                     }
                 }
             }
         }
-        return $newHeader;
+    }
+
+	/**
+	 * Add extra curl headers
+	 *
+	 * @param string $key
+	 * @param string $value
+	 */
+    public function setCurlHeader($key = '', $value = '') {
+    	if (!empty($key)) {
+    		$this->CurlHeadersUserDefined[$key] = $value;
+	    }
     }
 
     /**
@@ -1464,6 +1544,7 @@ class Tornevall_cURL
         if (!empty($url)) {
             $this->CurlURL = $url;
         }
+	    $this->CurlHeaders = array();
         if (preg_match("/\?wsdl$|\&wsdl$/i", $this->CurlURL) || $postAs == CURL_POST_AS::POST_AS_SOAP) {
             $Soap = new Tornevall_SimpleSoap($this->CurlURL, $this->curlopt);
             $Soap->setThrowableState($this->canThrow);
@@ -1522,8 +1603,8 @@ class Tornevall_cURL
                         $jsonRealData = $postData;
                     }
                 }
-                $this->CurlHeaders['Content-Type'] = "application/json";
-                $this->CurlHeaders['Content-Length'] = strlen($jsonRealData);
+                $this->CurlHeadersSystem['Content-Type'] = "application/json";
+                $this->CurlHeadersSystem['Content-Length'] = strlen($jsonRealData);
                 curl_setopt($this->CurlSession, CURLOPT_POSTFIELDS, $jsonRealData);
             }
         }
@@ -1588,12 +1669,13 @@ class Tornevall_cURL
         if (isset($this->CurlReferer) && !empty($this->CurlReferer)) {
             curl_setopt($this->CurlSession, CURLOPT_REFERER, $this->CurlReferer);
         }
-        // If this is really necessary, allow it
-        if (isset($this->CurlHeaders) && is_array($this->CurlHeaders) && count($this->CurlHeaders)) {
-            $this->CurlHeaders = $this->fixHttpHeaders($this->CurlHeaders);
-            curl_setopt($this->CurlSession, CURLOPT_HTTPHEADER, $this->CurlHeaders);
-        }
 
+        $this->fixHttpHeaders($this->CurlHeadersUserDefined);
+        $this->fixHttpHeaders($this->CurlHeadersSystem);
+
+	    if (isset($this->CurlHeaders) && is_array($this->CurlHeaders) && count($this->CurlHeaders)) {
+		    curl_setopt($this->CurlSession, CURLOPT_HTTPHEADER, $this->CurlHeaders);
+	    }
         if (isset($this->CurlUserAgent) && !empty($this->CurlUserAgent)) {
             curl_setopt($this->CurlSession, CURLOPT_USERAGENT, $this->CurlUserAgent);
         }
