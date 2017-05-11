@@ -49,54 +49,27 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 	public $ignoreBookingTests = false;
 	public $ignoreSEKKItests = false;
 	public $ignoreUrlExternalValidation = false;
-	/** @var string Test with natural government id */
-	public $govIdNatural = "198305147715";
-	/** @var string Test with natural government id/Norway */
-	public $govIdNaturalNorway = "180872-48794";
-	/** @var string Government id that will fail */
-	public $govIdNaturalDenied = "195012026430";
-	/** @var string Test with civic number (legal) */
-	public $govIdLegalCivic = "198305147715";
-	/** @var string Test with civic number (legal/Norway) */
-	public $govIdLegalCivicNorway = "180872-48794";
-	/** @var string Used for testing card-bookings  (9000 0000 0002 5000 = 25000) */
-	public $cardNumber = "9000000000025000";
-	/** @var string Government id for the card */
-	public $cardGovId = "194608282333";
-	/** @var string Test with organization number (legal) */
-	public $govIdLegalOrg = "166997368573";
-	/** @var string Test with denied organization number (legal) */
-	public $govIdLegalOrgDenied = "169468958195";
-	/** @var null If none, use natural. If legal, enter LEGAL */
-	public $customerType = null;
-	/** @var array Available methods for test (SE) */
-	public $availableMethods = array();
-	/** @var array Available methods for test (NO) */
-	public $availableMethodsNorway = array();
-	/** @var bool Wait for fraud control to take place in a booking */
-	public $waitForFraudControl = false;
-	/**
-	 * Disabling of callback registrations. Created during issues in nonMock where "ombudsadmin" broke down. To avoid issues with current autotest environments
-	 * we created the ability to disable callbacks, which is a key function for orders to receive callbacks properly (due to the salt keys). With those two functions
-	 * we are able to disable new registrations of callbacks, so that we can borrow a different representative id, during errors that actually requires functioning callbacks.
-	 */
-	/** @var bool Disable callback registration in mocked environment */
-	public $disableCallbackRegMock = false;
-	/** @var bool Disable callback registration in nonmocked environment */
-	public $disableCallbackRegNonMock = false;
 	/** @var array Alerts: Array of mail-receivers */
 	public $alertReceivers = array();
 	/** @var string Alerts: Name of sender */
 	public $alertFrom = array();
 	/** @var null Ignore this */
 	public $alertMessage = null;
-	/** @var array Expected payment method count (SE) */
-	public $paymentMethodCount = array(
+	/**
+	 * Expected payment method count (SE)
+	 * @var array
+	 * @deprecated
+	 */
+	private $paymentMethodCount = array(
 		'mock'    => 5,
 		'nonmock' => 5
 	);
-	/** @var array Expected payment method cound (NO) */
-	public $paymentMethodCountNorway = array( 'mock' => 3 );
+	/**
+	 * Expected payment method cound (NO)
+	 * @var array
+	 * @deprecated
+	 */
+	private $paymentMethodCountNorway = array( 'mock' => 3 );
 
 	/** Before each test, invoke this */
 	public function setUp() {}
@@ -135,6 +108,44 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 	private $testGovId = "";
 	/** @var string Selected government id for norway */
 	private $testGovIdNorway = "";
+	/** @var string Test with natural government id */
+	private $govIdNatural = "198305147715";
+	/** @var string Test with natural government id/Norway */
+	private $govIdNaturalNorway = "180872-48794";
+	/** @var string Government id that will fail */
+	private $govIdNaturalDenied = "195012026430";
+	/** @var string Test with civic number (legal) */
+	private $govIdLegalCivic = "198305147715";
+	/** @var string getAddress should receive this full name when using LEGAL */
+	private $govIdLegalFullname = "Pilsnerbolaget HB";
+	/** @var string Test with civic number (legal/Norway) */
+	private $govIdLegalCivicNorway = "180872-48794";
+	/** @var string Used for testing card-bookings  (9000 0000 0002 5000 = 25000) */
+	private $cardNumber = "9000000000025000";
+	/** @var string Government id for the card */
+	private $cardGovId = "194608282333";
+	/** @var string Test with organization number (legal) */
+	private $govIdLegalOrg = "166997368573";
+	/** @var string Test with denied organization number (legal) */
+	private $govIdLegalOrgDenied = "169468958195";
+	/** @var null If none, use natural. If legal, enter LEGAL */
+	private $customerType = null;
+	/** @var array Available methods for test (SE) */
+	private $availableMethods = array();
+	/** @var array Available methods for test (NO) */
+	private $availableMethodsNorway = array();
+	/** @var bool Wait for fraud control to take place in a booking */
+	private $waitForFraudControl = false;
+	/**
+	 * Disabling of callback registrations. Created during issues in nonMock where "ombudsadmin" broke down. To avoid issues with current autotest environments
+	 * we created the ability to disable callbacks, which is a key function for orders to receive callbacks properly (due to the salt keys). With those two functions
+	 * we are able to disable new registrations of callbacks, so that we can borrow a different representative id, during errors that actually requires functioning callbacks.
+	 */
+	/** @var bool Disable callback registration in mocked environment */
+	private $disableCallbackRegMock = false;
+	/** @var bool Disable callback registration in nonmocked environment */
+	private $disableCallbackRegNonMock = false;
+
 	private $zeroSpecLine = false;
 	private $zeroSpecLineZeroTax = false;
 	private $alwaysUseExtendedCustomer = true;
@@ -1056,7 +1067,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 	/**
 	 * Test getCostOfPurchase
 	 */
-	function testGetCostOfPurcase() {
+	function testGetCostOfPurchase() {
 		$PurchaseInfo = $this->rb->getCostOfPurchase($this->getAMethod(), 100);
 		$this->assertTrue(is_string($PurchaseInfo) && strlen($PurchaseInfo) >= 1024);
 	}
@@ -1313,23 +1324,34 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 		$this->assertTrue($this->rb->getNextInvoiceNumber() >= 1);
 	}
 	function testSetNextInvoiceNumber() {
-		$NextInvoiceNumber = $this->rb->getNextInvoiceNumber(true, 1000);
+		$this->rb->getNextInvoiceNumber(true, 1000);
 		$this->assertEquals(1000, $this->rb->getNextInvoiceNumber());
-	}
-	function testReSetNextInvoiceNumber() {
-		$NextInvoiceNumber = $this->rb->getNextInvoiceNumber(true, 1);
-		print_R($NextInvoiceNumber);
-		//$this->assertEquals(1000, $this->rb->getNextInvoiceNumber());
 	}
 
 	/// 1.0.2 features
+
+	function testSetCustomerNatural() {
+		$this->checkEnvironment();
+		$this->rb->setPreferredPaymentService(ResursMethodTypes::METHOD_CHECKOUT);
+		$ReturnedPayload = $this->rb->setBillingByGetAddress($this->govIdNatural);
+		$this->assertEquals($this->govIdNatural, $ReturnedPayload['customer']['governmentId']);
+	}
+	function testSetCustomerLegal() {
+		$this->checkEnvironment();
+		$this->rb->setPreferredPaymentService(ResursMethodTypes::METHOD_CHECKOUT);
+		$ReturnedPayload = $this->rb->setBillingByGetAddress($this->govIdLegalCivic, "LEGAL");
+		$this->assertTrue($ReturnedPayload['customer']['governmentId'] == $this->govIdLegalCivic && $ReturnedPayload['customer']['address']['fullName'] == $this->govIdLegalFullname);
+	}
+
 	function testCreatePayment() {
 		$this->checkEnvironment();
 		try {
 			$this->rb->setPreferredPaymentService(ResursMethodTypes::METHOD_CHECKOUT);
-			//$this->rb->setBillingByGetAddress($this->rb->getAddress("198305147715", "NATURAL", "127.0.0.1"));
+			$this->rb->setBillingByGetAddress("198305147715");
 			$this->rb->setBillingAddress("Anders Andersson", "Anders", "Andersson", "Hamngatan 2", null, "12345", "Ingenstans", "SE");
-			$this->rb->createPayment("A");
+			$this->rb->setCustomer(null, "0808080808", "0707070707", "test@test.com");
+			$useThisPaymentId = $this->rb->getPreferredId();
+			$this->rb->createPayment($useThisPaymentId);
 		} catch (\Exception $e) {
 			$this->markTestIncomplete($e->getMessage());
 		}

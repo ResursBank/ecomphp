@@ -1329,7 +1329,9 @@ class ResursBank
 			$renderedResponse = $this->CURL->doPost($renderCallbackUrl, $renderCallback, \TorneLIB\CURL_POST_AS::POST_AS_JSON);
 			$code = $this->CURL->getResponseCode();
 		} else {
-			$renderedResponse = $this->postService("registerEventCallback", $renderCallback);
+			$renderCallbackUrl = $this->getServiceUrl("registerEventCallback");
+			// We are not using postService here, since we are dependent on the response code rather than the response itself
+			$renderedResponse = $this->CURL->doPost($renderCallbackUrl)->registerEventCallback($renderCallback);
 			$code = $renderedResponse['code'];
 		}
 		if ($code >= 200 && $code <= 250) {
@@ -1634,7 +1636,9 @@ class ResursBank
 	private function postService($serviceName = "", $resursParameters = array()) {
 		$this->InitializeServices();
 		$Service = $this->CURL->doGet($this->getServiceUrl($serviceName));
-		return $this->getDataObject($Service->getParsedResponse($Service->$serviceName($resursParameters)));
+		$RequestService = $Service->$serviceName($resursParameters);
+		$ParsedResponse = $Service->getParsedResponse($RequestService);
+		return $this->getDataObject($ParsedResponse);
 	}
 	/**
 	 * When something from CURL threw an exception and you really need to get detailed information about those exceptions
@@ -3501,22 +3505,6 @@ class ResursBank
 	/////////// PRIMARY INTERNAL SHOPFLOW SECTION
 	////// HELPERS
 	/**
-	 * See generatePreferredId
-	 *
-	 * @param int $maxLength The maximum recommended length of a preferred id is currently 25. The order numbers may be shorter (the minimum length is 14, but in that case only the timestamp will be returned)
-	 * @param string $prefix Prefix to prepend at unique id level
-	 * @param bool $dualUniq Be paranoid and sha1-encrypt the first random uniq id first.
-	 * @return string
-	 */
-	public function getPreferredId($maxLength = 25, $prefix = "", $dualUniq = true)
-	{
-		return $this->generatePreferredId($maxLength, $prefix, $dualUniq);
-	}
-	public function getPreferredPaymentId()
-	{
-		return $this->preferredId;
-	}
-	/**
 	 * Generates a unique "preferredId" out of a datestamp
 	 *
 	 * @param int $maxLength The maximum recommended length of a preferred id is currently 25. The order numbers may be shorter (the minimum length is 14, but in that case only the timestamp will be returned)
@@ -3524,7 +3512,7 @@ class ResursBank
 	 * @param bool $dualUniq Be paranoid and sha1-encrypt the first random uniq id first.
 	 * @return string
 	 */
-	public function generatePreferredId($maxLength = 25, $prefix = "", $dualUniq = true)
+	public function getPreferredId($maxLength = 25, $prefix = "", $dualUniq = true)
 	{
 		$timestamp = strftime("%Y%m%d%H%M%S", time());
 		if ($dualUniq) {
@@ -3541,6 +3529,35 @@ class ResursBank
 		$preferredId = substr($preferredId, 0, $maxLength);
 		$this->preferredId = $preferredId;
 		return $this->preferredId;
+	}
+
+	/**
+	 * Returns a default automatically set payment reference. If the preferred id is not set, you can ask to create one
+	 *
+	 * @param bool $createIfNotSet Set for backwards compatibility
+	 *
+	 * @return null
+	 */
+	public function getPreferredPaymentId($createIfNotSet = true)
+	{
+		if (!empty($this->preferredId) && $createIfNotSet) {
+			$this->getPreferredId();
+		}
+		return $this->preferredId;
+	}
+	/**
+	 * Generates a unique "preferredId" out of a datestamp
+	 *
+	 * @param int $maxLength The maximum recommended length of a preferred id is currently 25. The order numbers may be shorter (the minimum length is 14, but in that case only the timestamp will be returned)
+	 * @param string $prefix Prefix to prepend at unique id level
+	 * @param bool $dualUniq Be paranoid and sha1-encrypt the first random uniq id first.
+	 * @return string
+	 * @deprecated 1.0.2 Use getPreferredId directly instead
+	 * @deprected 1.1.2 Use getPreferredId directly instead
+	 */
+	public function generatePreferredId($maxLength = 25, $prefix = "", $dualUniq = true)
+	{
+		return $this->getPreferredId($maxLength, $prefix, $dualUniq);
 	}
 	/**
 	 * Check if there is a parameter send through externals, during a bookPayment
@@ -3727,10 +3744,16 @@ class ResursBank
 	/**
 	 * Payload simplifier: Having data from getAddress, you want to set as billing address, this can be done from here.
 	 *
-	 * @param $getAddressData
+	 * @param $getaddressdata_or_governmentid
 	 */
-	public function setBillingByGetAddress($getAddressData) {
-		$this->setAddressPayload("address", $getAddressData);
+	public function setBillingByGetAddress($getaddressdata_or_governmentid, $customerType = "NATURAL") {
+		if (is_object($getaddressdata_or_governmentid)) {
+			$this->setAddressPayload( "address", $getaddressdata_or_governmentid );
+		} else if (is_numeric($getaddressdata_or_governmentid)) {
+			$this->Payload['customer']['governmentId'] = $getaddressdata_or_governmentid;
+			$this->setAddressPayload("address", $this->getAddress($getaddressdata_or_governmentid, $customerType, isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : "127.0.0.1"));
+		}
+		return $this->Payload;
 	}
 	/**
 	 * Payload simplifier: Having data from getAddress, you want to set as shipping address, this can be done from here.
@@ -3769,6 +3792,37 @@ class ResursBank
 	 */
 	public function setDeliveryAddress($fullName, $firstName, $lastName, $addressRow1, $addressRow2, $postalArea, $postalCode, $country) {
 		$this->setAddressPayload("deliveryAddress", $this->renderAddress($fullName, $firstName, $lastName, $addressRow1, $addressRow2, $postalArea, $postalCode, $country));
+	}
+
+	/**
+	 * @param string $governmentId
+	 * @param string $phone
+	 * @param string $cellphone
+	 * @param string $email
+	 * @param string $customerType NATURAL/LEGAL
+	 * @param string $contactgovernmentId
+	 */
+	public function setCustomer($governmentId = "", $phone = "", $cellphone = "", $email = "", $customerType = "", $contactgovernmentId = "") {
+		if (!isset($this->Payload['customer'])) {
+			$this->Payload['customer'] = array();
+		}
+		// Set this if not already set by a getAddress()
+		if (!isset($this->Payload['customer']['governmentId'])) {
+			$this->Payload['customer']['governmentId'] = ! empty( $governmentId ) ? $governmentId : "";
+		}
+		$this->Payload['customer']['email'] = $email;
+		if (!empty($phone)) {
+			$this->Payload['customer']['phone'] = $phone;
+		}
+		if (!empty($cellphone)) {
+			$this->Payload['customer']['cellPhone'] = $cellphone;
+		}
+		if (!empty($type)) {
+			$this->Payload['customer']['type'] = !empty($type) && (strtolower($customerType) == "natural" || strtolower($customerType) == "legal") ? $type : "NATURAL";
+		}
+		if (!empty($contactgovernmentId)) {
+			$this->Payload['customer']['contactGovernmentId'] = $contactgovernmentId;
+		}
 	}
 
 	/**
