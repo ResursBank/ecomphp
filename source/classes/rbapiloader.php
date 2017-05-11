@@ -228,6 +228,7 @@ class ResursBank
 	 */
 	private $simpleWebEngine;
 	private $Payload;
+	private $SpecLines;
 
 	/// Environment URLs
 	/** @var null The chosen environment */
@@ -244,6 +245,8 @@ class ResursBank
 	private $env_omni_test = "https://omnitest.resurs.com";
 	/** @var string Default URL to omnicheckout production */
 	private $env_omni_prod = "https://checkout.resurs.com";
+	/** @var string Country of choice */
+	private $envCountry;
 	/** @var string The current chosen URL for omnicheckout after initiation */
 	private $env_omni_current = "";
 	/** @var string The current chosen URL for hosted flow after initiation */
@@ -3610,6 +3613,29 @@ class ResursBank
 			$this->_bookedCallbackUrl = $bookedCallbackUrl;
 		}
 	}
+
+	/**
+	 * Set target country (optional)
+	 *
+	 * @param int $Country
+	 * @param bool $determineOnPaymentMethods
+	 *
+	 * @return string Country code is returned
+	 */
+	public function setCountry($Country = ResursCountry::COUNTRY_UNSET) {
+		if ($Country === ResursCountry::COUNTRY_DK) {
+			$this->envCountry = "DK";
+		} else if ($Country === ResursCountry::COUNTRY_NO) {
+			$this->envCountry = "NO";
+		} else if ($Country === ResursCountry::COUNTRY_FI) {
+			$this->envCountry = "FI";
+		} else if ($Country === ResursCountry::COUNTRY_SE) {
+			$this->envCountry = "SE";
+		} else {
+			$this->envCountry = null;
+		}
+		return $this->envCountry;
+	}
 	/**
 	 * Returns true if updateCart has interfered with the specRows (this is a good way to indicate if something went wrong with the handling)
 	 *
@@ -3620,6 +3646,54 @@ class ResursBank
 	public function isCartFixed()
 	{
 		return $this->bookPaymentCartFixed;
+	}
+	public function addOrderLine($articleNumberOrId = '', $description = '', $unitAmountWithoutVat = 0, $vatPct = 0, $unitMeasure = 'st', $articleType = "", $quantity = 1) {
+		if (!is_array($this->SpecLines)) {
+			$this->SpecLines = array();
+		}
+		// Simplified: id, artNo, description, quantity, unitMeasure, unitAmountWithoutVat, vatPct, totalVatAmount, totalAmount
+		// Hosted: artNo, description, quantity, unitMeasure, unitAmountWithoutVat, vatPct, totalVatAmount, totalAmount
+		// Checkout: artNo, description, quantity, unitMeasure, unitAmountWithoutVat, vatPct, type
+
+		$duplicateArticle = false;
+		foreach ($this->SpecLines as $specIndex => $specRow) {
+			if ($specRow['artNo'] == $articleNumberOrId && $specRow['unitAmountWithoutVat'] == $unitAmountWithoutVat) {
+				$duplicateArticle = false;
+				$this->SpecLines[$specIndex]['quantiy'] += $quantity;
+			}
+		}
+		if (!$duplicateArticle) {
+			$this->SpecLines[] = array(
+				'artNo'                => $articleNumberOrId,
+				'description'          => $description,
+				'quantity'             => $quantity,
+				'unitMeasure'          => $unitMeasure,
+				'unitAmountWithoutVat' => $unitAmountWithoutVat,
+				'vatPct'               => $vatPct,
+				'type'                 => $articleType
+			);
+		}
+		$this->renderPaymentSpec();
+	}
+	private function renderPaymentSpec() {
+		$myFlow = $this->getPreferredPaymentService();
+		if (is_array($this->SpecLines) && count($this->SpecLines)) {
+			foreach ($this->SpecLines as $specIndex => $specRow) {
+				if ($myFlow === ResursMethodTypes::METHOD_SIMPLIFIED) {
+					$this->SpecLines[$specIndex]['id'] = ($specIndex)+1;
+				}
+				if ($myFlow === ResursMethodTypes::METHOD_HOSTED || $myFlow === ResursMethodTypes::METHOD_SIMPLIFIED) {
+					if (!isset($specRow['totalVatAmount'])) {
+						$this->SpecLines[$specIndex]['totalVatAmount'] = ($specRow['unitAmountWithoutVat']* $specRow['vatPct'] / 100)*$specRow['quantity'];
+						$this->SpecLines[$specIndex]['totalAmount'] = ($specRow['unitAmountWithoutVat'] + ($specRow['unitAmountWithoutVat'] * $specRow['vatPct'] / 100)) * $specRow['quantity'];
+					}
+				}
+				if ($myFlow === ResursMethodTypes::METHOD_CHECKOUT) {
+
+				}
+			}
+		}
+		print_R($this->SpecLines);
 	}
 
 	////// MASTER SHOPFLOWS - PRIMARY BOOKING FUNCTIONS

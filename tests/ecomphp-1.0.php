@@ -517,7 +517,6 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 		if ( count( $specialSpecline ) ) {
 			return $specialSpecline;
 		}
-
 		return array(
 			'artNo'                => 'EcomPHP-testArticle-' . rand( 1, 1024 ),
 			'description'          => 'EComPHP Random Test Article number ' . rand( 1, 1024 ),
@@ -531,7 +530,6 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 		if ( count( $specialSpecline ) ) {
 			return $specialSpecline;
 		}
-
 		return array(
 			'artNo'                => 'EcomPHP-testArticle-' . rand( 1, 1024 ),
 			'description'          => 'EComPHP Random Test Article number ' . rand( 1, 1024 ),
@@ -1329,7 +1327,6 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 	}
 
 	/// 1.0.2 features
-
 	function testSetCustomerNatural() {
 		$this->checkEnvironment();
 		$this->rb->setPreferredPaymentService(ResursMethodTypes::METHOD_CHECKOUT);
@@ -1343,15 +1340,30 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 		$this->assertTrue($ReturnedPayload['customer']['governmentId'] == $this->govIdLegalCivic && $ReturnedPayload['customer']['address']['fullName'] == $this->govIdLegalFullname);
 	}
 
-	function testCreatePayment() {
+	private function addRandomOrderLine($articleNumberOrId = "Artikel", $description = "Beskrivning", $unitAmountWithoutVat = "0.80", $vatPct = 25, $type= null, $quantity = 10) {
+		$this->rb->addOrderLine(
+			$articleNumberOrId,
+			$description,
+			$unitAmountWithoutVat,
+			$vatPct,
+			"st",
+			$type,
+			$quantity
+		);
+	}
+	function testCreatePaymentPayloadSimplified() {
 		$this->checkEnvironment();
 		try {
-			$this->rb->setPreferredPaymentService(ResursMethodTypes::METHOD_CHECKOUT);
+			$this->rb->setPreferredPaymentService(ResursMethodTypes::METHOD_SIMPLIFIED);
 			$this->rb->setBillingByGetAddress("198305147715");
 			$this->rb->setBillingAddress("Anders Andersson", "Anders", "Andersson", "Hamngatan 2", null, "12345", "Ingenstans", "SE");
 			$this->rb->setCustomer(null, "0808080808", "0707070707", "test@test.com");
+			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
+			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
+			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
+			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
 			$useThisPaymentId = $this->rb->getPreferredId();
-			$this->rb->createPayment($useThisPaymentId);
+			$Payment = $this->rb->createPayment($useThisPaymentId);
 		} catch (\Exception $e) {
 			$this->markTestIncomplete($e->getMessage());
 		}
