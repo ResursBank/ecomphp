@@ -14,8 +14,13 @@ namespace TorneLIB;
  */
 class TorneLIB_Network
 {
+
+    private $proxyHeaders = array('HTTP_VIA','HTTP_X_FORWARDED_FOR', 'HTTP_FORWARDED_FOR','HTTP_X_FORWARDED','HTTP_FORWARDED','HTTP_CLIENT_IP', 'HTTP_FORWARDED_FOR_IP','VIA','X_FORWARDED_FOR','FORWARDED_FOR','X_FORWARDED', 'FORWARDED','CLIENT_IP','FORWARDED_FOR_IP','HTTP_PROXY_CONNECTION');
+    private $clientAddressList = array();
+
     function __construct()
     {
+        $this->renderProxyHeaders();
     }
 
     /**
@@ -28,6 +33,21 @@ class TorneLIB_Network
         $urex = explode("/", preg_replace("[^(.*?)//(.*?)/(.*)]", '$2', $url . "/"));
         $urtype = preg_replace("[^(.*?)://(.*)]", '$1', $url . "/");
         return array($urex[0], $urtype);
+    }
+
+    private function renderProxyHeaders() {
+        if (isset($_SERVER['REMOTE_ADDR'])) {
+            $this->clientAddressList = array('REMOTE_ADDR'=>$_SERVER['REMOTE_ADDR']);
+            foreach ($this->proxyHeaders as $proxyVar) {
+                if (isset($_SERVER[$proxyVar])) {
+                    $this->clientAddressList[$proxyVar] = $_SERVER[$proxyVar];
+                }
+            }
+        }
+    }
+
+    public function getProxyHeaders() {
+        return $this->clientAddressList;
     }
 
     /**
