@@ -206,6 +206,8 @@ class ResursBank
 	/** @var bool Internal "handshake" control that defines if the module has been initiated or not */
 	private $hasinit = false;
 
+	private $preferCustomerProxy = false;
+
 	///// Communication
 	/**
 	 * Primary class for handling all HTTP calls
@@ -273,6 +275,8 @@ class ResursBank
 		'getAddress' => 'SimplifiedShopFlowService',
 		'getAnnuityFactors' => 'SimplifiedShopFlowService',
 		'getCostOfPurchaseHtml' => 'SimplifiedShopFlowService',
+		'bookPayment' => 'SimplifiedShopFlowService',
+		'bookSignedPayment' => 'SimplifiedShopFlowService',
 		'getPayment' => 'AfterShopFlowService',
 		'findPayments' => 'AfterShopFlowService',
 		'addMetaData' => 'AfterShopFlowService',
@@ -1821,6 +1825,10 @@ class ResursBank
 		return false;
 	}
 	/**
+	 * Adds metadata to an already created order
+	 *
+	 * This should not by mistake be mixed up with the payload, that are created before a payment.
+	 *
 	 * @param string $paymentId
 	 * @param string $metaDataKey
 	 * @param string $metaDataValue
@@ -2089,6 +2097,29 @@ class ResursBank
 			}
 		}
 		return ResursCallbackReachability::IS_REACHABLE_NOT_KNOWN;
+	}
+	/**
+	 * Primary method of determining customer ip address
+	 *
+	 * @return string
+	 */
+	private function getCustomerIp() {
+		$primaryAddress = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : "127.0.0.1";
+		// Warning: This is untested and currently returns an array instead of a string, which may break ecommerce
+		if ($this->preferCustomerProxy && !empty($this->NETWORK) && count( $this->NETWORK->getProxyHeaders())) {
+			$primaryAddress = $this->NETWORK->getProxyHeaders();
+		}
+		return $primaryAddress;
+	}
+	/**
+	 * If you prefer to fetch anything that looks like a proxy if it mismatches to the REMOTE_ADDR, activate this (EXPERIMENTAL!!)
+	 *
+	 * @param bool $activated
+	 * @since 1.0.2
+	 * @since 1.1.2
+	 */
+	public function setCustomerIpProxy($activated = false) {
+		$this->preferCustomerProxy = $activated;
 	}
 	/**
 	 * Convert a object to a data object
@@ -3535,6 +3566,17 @@ class ResursBank
 	}
 
 	/**
+	 * Set your own order reference instead of taking the randomized one
+	 *
+	 * @param $myPreferredId
+	 * @since 1.0.2
+	 * @since 1.1.2
+	 */
+	public function setPreferredId($myPreferredId) {
+		$this->preferredId = $myPreferredId;
+	}
+
+	/**
 	 * Returns a default automatically set payment reference. If the preferred id is not set, you can ask to create one
 	 *
 	 * @param bool $createIfNotSet Set for backwards compatibility
@@ -3647,6 +3689,16 @@ class ResursBank
 	{
 		return $this->bookPaymentCartFixed;
 	}
+
+	/**
+	 * @param string $articleNumberOrId
+	 * @param string $description
+	 * @param int $unitAmountWithoutVat
+	 * @param int $vatPct
+	 * @param string $unitMeasure
+	 * @param string $articleType
+	 * @param int $quantity
+	 */
 	public function addOrderLine($articleNumberOrId = '', $description = '', $unitAmountWithoutVat = 0, $vatPct = 0, $unitMeasure = 'st', $articleType = "", $quantity = 1) {
 		if (!is_array($this->SpecLines)) {
 			$this->SpecLines = array();
@@ -3659,7 +3711,7 @@ class ResursBank
 		foreach ($this->SpecLines as $specIndex => $specRow) {
 			if ($specRow['artNo'] == $articleNumberOrId && $specRow['unitAmountWithoutVat'] == $unitAmountWithoutVat) {
 				$duplicateArticle = false;
-				$this->SpecLines[$specIndex]['quantiy'] += $quantity;
+				$this->SpecLines[$specIndex]['quantity'] += $quantity;
 			}
 		}
 		if (!$duplicateArticle) {
@@ -3670,13 +3722,14 @@ class ResursBank
 				'unitMeasure'          => $unitMeasure,
 				'unitAmountWithoutVat' => $unitAmountWithoutVat,
 				'vatPct'               => $vatPct,
-				'type'                 => $articleType
+				'type'                 => !empty($articleType)? $articleType:""
 			);
 		}
 		$this->renderPaymentSpec();
 	}
 	private function renderPaymentSpec() {
 		$myFlow = $this->getPreferredPaymentService();
+		$paymentSpec = array();
 		if (is_array($this->SpecLines) && count($this->SpecLines)) {
 			foreach ($this->SpecLines as $specIndex => $specRow) {
 				if ($myFlow === ResursMethodTypes::METHOD_SIMPLIFIED) {
@@ -3687,13 +3740,26 @@ class ResursBank
 						$this->SpecLines[$specIndex]['totalVatAmount'] = ($specRow['unitAmountWithoutVat']* $specRow['vatPct'] / 100)*$specRow['quantity'];
 						$this->SpecLines[$specIndex]['totalAmount'] = ($specRow['unitAmountWithoutVat'] + ($specRow['unitAmountWithoutVat'] * $specRow['vatPct'] / 100)) * $specRow['quantity'];
 					}
+					if (!isset($paymentSpec['totalAmount'])) { $paymentSpec['totalAmount'] = 0; }
+					if (!isset($paymentSpec['totalVatAmount'])) { $paymentSpec['totalVatAmount'] = 0; }
+					$paymentSpec['totalAmount'] += $this->SpecLines[$specIndex]['totalAmount'];
+					$paymentSpec['totalVatAmount'] += $this->SpecLines[$specIndex]['totalVatAmount'];
 				}
 				if ($myFlow === ResursMethodTypes::METHOD_CHECKOUT) {
-
+					// Reserved for future use
 				}
 			}
+			if ($myFlow === ResursMethodTypes::METHOD_SIMPLIFIED) {
+				$this->Payload['orderData'] = array(
+					'specLines' => $this->SpecLines,
+					'totalAmount' => $paymentSpec['totalAmount'],
+					'totalVatAmount' =>$paymentSpec['totalVatAmount']
+				);
+			}
+			if ($myFlow === ResursMethodTypes::METHOD_HOSTED) {
+				$this->Payload['orderData'] = array('orderLines' => array());
+			}
 		}
-		print_R($this->SpecLines);
 	}
 
 	////// MASTER SHOPFLOWS - PRIMARY BOOKING FUNCTIONS
@@ -3709,8 +3775,16 @@ class ResursBank
 	 * @throws \Exception
 	 * @since 1.0.2
 	 * @since 1.1.2
+	 * @return array
 	 */
 	public function createPayment($payment_id_or_method = '', $payload = array()) {
+		$this->preparePayload($payment_id_or_method, $payload);
+		if ($this->enforceService === ResursMethodTypes::METHOD_HOSTED || $this->enforceService === ResursMethodTypes::METHOD_SIMPLIFIED) {
+			$bookPaymentResult = $this->postService( 'bookPayment', $this->Payload );
+		}
+		return $bookPaymentResult;
+	}
+	private function preparePayload($payment_id_or_method = '', $payload = array()) {
 		$this->InitializeServices();
 		$this->handlePayload($payload);
 		if (!$this->enforceService) {
@@ -3724,17 +3798,15 @@ class ResursBank
 		if (!count($this->Payload)) {
 			throw new \Exception("No payload are set for this payment", ResursExceptions::BOOKPAYMENT_NO_BOOKDATA);
 		}
-
-		print_r($this->Payload);
-		if ($this->enforceService === ResursMethodTypes::METHOD_CHECKOUT) {
-
-		} else if ($this->enforceService === ResursMethodTypes::METHOD_HOSTED) {
-
-		} else {
-
+		if ($this->enforceService === ResursMethodTypes::METHOD_HOSTED || $this->enforceService === ResursMethodTypes::METHOD_SIMPLIFIED) {
+			$paymentDataPayload ['paymentData'] = array(
+				'paymentMethodId'   => $payment_id_or_method,
+				'preferredId'       => $this->getPreferredPaymentId(),
+				'customerIpAddress' => $this->getCustomerIp()
+			);
+			$this->handlePayload( $paymentDataPayload );
 		}
 	}
-
 	/**
 	 * Customer address simplifier. Renders a correct array depending on the flow.
 	 *
@@ -3768,7 +3840,6 @@ class ResursBank
 		}
 		return $ReturnAddress;
 	}
-
 	/**
 	 * Inject a payload with given array, object or string (defaults to array)
 	 *
@@ -3867,7 +3938,6 @@ class ResursBank
 	public function setDeliveryAddress($fullName, $firstName, $lastName, $addressRow1, $addressRow2, $postalArea, $postalCode, $country) {
 		$this->setAddressPayload("deliveryAddress", $this->renderAddress($fullName, $firstName, $lastName, $addressRow1, $addressRow2, $postalArea, $postalCode, $country));
 	}
-
 	/**
 	 * @param string $governmentId
 	 * @param string $phone
@@ -3875,6 +3945,8 @@ class ResursBank
 	 * @param string $email
 	 * @param string $customerType NATURAL/LEGAL
 	 * @param string $contactgovernmentId
+	 *
+	 * @throws \Exception
 	 */
 	public function setCustomer($governmentId = "", $phone = "", $cellphone = "", $email = "", $customerType = "", $contactgovernmentId = "") {
 		if (!isset($this->Payload['customer'])) {
@@ -3891,14 +3963,25 @@ class ResursBank
 		if (!empty($cellphone)) {
 			$this->Payload['customer']['cellPhone'] = $cellphone;
 		}
-		if (!empty($type)) {
-			$this->Payload['customer']['type'] = !empty($type) && (strtolower($customerType) == "natural" || strtolower($customerType) == "legal") ? $type : "NATURAL";
+		if (!empty($customerType)) {
+			$this->Payload['customer']['type'] = !empty($customerType) && (strtolower($customerType) == "natural" || strtolower($customerType) == "legal") ? strtoupper($customerType) : "NATURAL";
+		} else {
+			// We don't guess on customer types
+			throw new \Exception("No customer type has been set. Use NATURAL or LEGAL to proceed", ResursExceptions::BOOK_CUSTOMERTYPE_MISSING);
 		}
 		if (!empty($contactgovernmentId)) {
 			$this->Payload['customer']['contactGovernmentId'] = $contactgovernmentId;
 		}
 	}
-
+	public function setSigning($successUrl = '', $failUrl = '', $forceSigning = false) {
+		$SigningPayload['signing'] = array(
+			'successUrl' => $successUrl,
+			'failUrl' => $failUrl,
+			'forceSigning' => $forceSigning
+		);
+		$this->handlePayload($SigningPayload);
+	}
+	//// PAYLOAD HANDLER!
 	/**
 	 * Compile user defined payload with payload that may have been pre-set by other calls
 	 *
@@ -3909,7 +3992,17 @@ class ResursBank
 	private function handlePayload($userDefinedPayload = array()) {
 		if ( is_array( $userDefinedPayload ) && count($userDefinedPayload) ) {
 			foreach ( $userDefinedPayload as $payloadKey => $payloadContent ) {
-				$this->Payload[$payloadKey] = $payloadContent;
+				if (!isset($this->Payload[$payloadKey])) {
+					$this->Payload[ $payloadKey ] = $payloadContent;
+				} else {
+					// If the payloadkey already exists, there might be something that wants to share information.
+					// In this case, append more data to the children
+					foreach ($userDefinedPayload[$payloadKey] as $subKey => $subValue) {
+						if (!isset($this->Payload[$payloadKey][$subKey])) {
+							$this->Payload[ $payloadKey ][ $subKey ] = $subValue;
+						}
+					}
+				}
 			}
 		}
 		// Address and deliveryAddress should move to the correct location
@@ -3921,6 +4014,16 @@ class ResursBank
 			$this->Payload['customer']['deliveryAddress'] = $this->Payload['deliveryAddress'];
 			unset($this->Payload['deliveryAddress']);
 		}
+	}
+
+	/**
+	 * Returns the final payload
+	 *
+	 * @return mixed
+	 */
+	public function getPayload() {
+		$this->preparePayload();
+		return $this->Payload;
 	}
 
 	/**
@@ -3943,6 +4046,8 @@ class ResursBank
 	 */
 	public function bookPayment($paymentMethodIdOrPaymentReference = '', $bookData = array(), $getReturnedObjectAsStd = true, $keepReturnObject = false, $externalParameters = array())
 	{
+		return $this->createPayment($paymentMethodIdOrPaymentReference, $bookData);
+
 		/* If the bookData-array seems empty, we'll try to import the internally set bookData */
 		if (is_array($bookData) && !count($bookData)) {
 			if (is_array($this->bookData) && count($this->bookData)) {
