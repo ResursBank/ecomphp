@@ -19,6 +19,69 @@ class TorneLIB_Crypto {
     }
 
     /**
+     * Create a password or salt with different kind of complexity
+     *
+     * 1 = A-Z
+     * 2 = A-Za-z
+     * 3 = A-Za-z0-9
+     * 4 = Full usage
+     * 5 = Full usage and unrestricted $setMax
+     * 6 = Complexity uses full charset of 0-255
+     *
+     * @param int $complexity
+     * @param int $setMax Max string length to use
+     * @param bool $webFriendly Set to true works best with the less complex strings as it only removes characters that could be mistaken by another character (O,0,1,l,I etc)
+     * @return string
+     */
+    /**
+     * @return mixed|null|string
+     */
+    function mkpass ($complexity = 4, $setMax = 8, $webFriendly = false)
+    {
+        $returnString = null;
+        $characterListArray = array(
+            'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+            'abcdefghijklmnopqrstuvwxyz',
+            '0123456789',
+            '!@#$%*?'
+        );
+        // Set complexity to no limit if type 6 is requested
+        if ($complexity == 6)
+        {
+            $characterListArray = array('0'=>'');
+            for ($unlim = 0; $unlim <= 255 ; $unlim++) {
+                $characterListArray[0] .= chr($unlim);
+            }
+            if ($setMax == null) {$setMax = 15;}
+        }
+        // Backward-compatibility in the complexity will still give us captcha-capabilities for simpler users
+        $max = 8;       // Longest complexity
+        if ($complexity == 1) {unset($characterListArray[1], $characterListArray[2], $characterListArray[3]);$max = 6;}
+        if ($complexity == 2) {unset($characterListArray[2], $characterListArray[3]); $max = 10;}
+        if ($complexity == 3) {unset($characterListArray[3]); $max = 10;}
+        if ($setMax > 0) {$max = $setMax;}
+        $chars = array();
+        $numchars = array();
+        $equalityPart = ceil($max / count($characterListArray));
+        for ($i = 0 ; $i < $max ; $i++)
+        {
+            $charListId = rand(0, count($characterListArray)-1);
+            if (!isset($numchars[$charListId])) {
+                $numchars[$charListId] = 0;
+            }
+            $numchars[$charListId] ++;
+            $chars[] = $characterListArray[$charListId]{mt_rand(0, (strlen($characterListArray[$charListId]) - 1))};
+        }
+        shuffle($chars);
+        $returnString = implode("", $chars);
+        if ($webFriendly) {
+            // The lazyness
+            $returnString = preg_replace("/[+\/=IG0ODQR]/i", "", $returnString);
+        }
+        return $returnString;
+    }
+
+    /**
      * Set up key for aes encryption.
      *
      * @param $useKey
