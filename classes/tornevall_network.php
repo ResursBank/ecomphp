@@ -19,6 +19,10 @@ class TorneLIB_Network
     private $proxyHeaders = array('HTTP_VIA','HTTP_X_FORWARDED_FOR', 'HTTP_FORWARDED_FOR','HTTP_X_FORWARDED','HTTP_FORWARDED','HTTP_CLIENT_IP', 'HTTP_FORWARDED_FOR_IP','VIA','X_FORWARDED_FOR','FORWARDED_FOR','X_FORWARDED', 'FORWARDED','CLIENT_IP','FORWARDED_FOR_IP','HTTP_PROXY_CONNECTION');
 	/** @var array Stored list of what the webserver revealed */
     private $clientAddressList = array();
+    private $cookieDefaultPath = "/";
+    private $cookieUseSecure;
+    private $cookieDefaultDomain;
+    private $cookieDefaultPrefix;
 
     function __construct()
     {
@@ -38,7 +42,56 @@ class TorneLIB_Network
         return array($urex[0], $urtype);
     }
 
-	/**
+    /**
+     * Set a cookie
+     * @param string $name
+     * @param string $value
+     * @param int $expire
+     * @param array $overridecookie
+     * @return bool
+     */
+    public function setCookie ($name = '', $value = '', $expire = '', $cookieParams = array())
+    {
+        $this->setCookieParameters();
+        $defaultExpire = time() + 60 * 60 * 24 * 1;
+        if (empty($expire))
+        {
+            $expire = $defaultExpire;
+        } else if (is_string($expire)) {
+            $expire = strtotime($expire);
+        }
+        return setcookie($this->cookieDefaultPrefix . $name, $value, $expire, $this->cookieDefaultPath, $this->cookieDefaultDomain, $this->cookieUseSecure);
+    }
+
+    public function setCookieParameters($path = "/", $prefix = null, $domain = null, $secure = null) {
+        $this->cookieDefaultPath = $path;
+        if (empty($this->cookieDefaultDomain)) {
+            if (is_null($domain)) {
+                $this->cookieDefaultDomain = "." . $_SERVER['HTTP_HOST'];
+            } else {
+                $this->cookieDefaultDomain = $domain;
+            }
+        }
+        if (is_null($secure)) {
+            if (isset($_SERVER['HTTPS'])) {
+                if ($_SERVER['HTTPS'] == "true") {
+                    $this->cookieUseSecure = true;
+                } else {
+                    $this->cookieUseSecure = false;
+                }
+            } else {
+                $this->cookieUseSecure = false;
+            }
+        } else {
+            $this->cookieUseSecure = $secure;
+        }
+        if (!is_null($prefix)) {
+            $this->cookieDefaultPrefix = $prefix;
+        }
+    }
+
+
+    /**
 	 * Render a list of client ip addresses (if exists). This requires that the server exposes the REMOTE_ADDR
 	 */
     private function renderProxyHeaders() {
