@@ -117,7 +117,11 @@ class LibTornevall extends CoreAPI {
      * @return null
      */
     public function Post($Verb = "", $PostData = array()) {
-        $Response = $this->Parse($Verb, $this->Curl->doPost($this->getServiceUrl($Verb), $PostData));
+        if (is_array($PostData)) {
+            $PostData['auth_remote'] = $_SERVER['REMOTE_ADDR'];
+        }
+        $PostService = $this->Curl->doPost($this->getServiceUrl($Verb), $PostData);
+        $Response = $this->Parse($Verb, $PostService);
         return $Response;
     }
 
