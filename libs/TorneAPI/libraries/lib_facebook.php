@@ -15,12 +15,15 @@
  * Graph API Deprecation Schedule (https://developers.facebook.com/docs/apps/changelog)
  * Graph Versioning: https://developers.facebook.com/docs/apps/versions
  *
- * Graph API's that TorneAPI supports (so far):
+ * Graph API EOL
  *
- *      2.2 - March 25, 2017
  *      2.3 - July 8, 2017
  *      2.4 - October 7, 2017
- *      2.5 - April 2018
+ *      2.5 - April 12, 2018
+ *      2.6 - July 13, 2018
+ *      2.7 - October 5, 2018
+ *      2.8 - April 18, 2019
+ *      2.9 - October 2019
  *
  */
 
@@ -45,7 +48,7 @@ namespace TorneLIB\API;
         /** @var \Facebook\Facebook|null The Facebook Interface. As long as it's not loaded, this one is null */
         public $Facebook = null;
         /** @var string What SDK we currently communicating with. Reserved for future use */
-        public $SDK_CURRENT = "5.0";
+        public $SDK_CURRENT = "5.5";
         /** @var string Our version */
         private $version = "1.0.0";
 
