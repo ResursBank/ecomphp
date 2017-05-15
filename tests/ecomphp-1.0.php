@@ -736,21 +736,14 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 			$this->markTestSkipped();
 		}
 		$this->checkEnvironment();
-		if (!$this->hasWsdl) {
-			// If we are running this test in nonWsdl-mode, we can probably pick up an old order from findPayments
-			$paymentList = $this->rb->findPayments();
-			if (is_array($paymentList) && count($paymentList)) {
-				$existingPayment = array_pop( $paymentList );
-				$payment = $this->rb->getPayment($existingPayment->paymentId);
-				$this->assertTrue( $payment->id == $existingPayment->paymentId );
-			}
+		$paymentList = $this->rb->findPayments();
+		if (is_array($paymentList) && count($paymentList)) {
+			$existingPayment = array_pop( $paymentList );
+			$payment = $this->rb->getPayment($existingPayment->paymentId);
+			$this->assertTrue( $payment->id == $existingPayment->paymentId );
 		} else {
-			$bookResult      = $this->doBookPayment( $this->availableMethods['invoice_natural'], true, false, true );
-			$bookedPaymentId = $this->rb->getPreferredPaymentId();
-			$payment         = $this->rb->getPayment( $bookedPaymentId );
-			$this->assertTrue( $bookResult && $payment->id == $bookedPaymentId );
+			$this->markTestSkipped("No payments available to run with getPayment()");
 		}
-
 	}
 
 	/*
@@ -955,7 +948,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 			$this->markTestSkipped();
 		}
 		$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_CHECKOUT );
-		$newReferenceId = $this->rb->generatePreferredId();
+		$newReferenceId = $this->rb->getPreferredPaymentId();
 		$bookResult = $this->doBookPayment( $newReferenceId, true, false, true );
 
 		if ( is_string( $bookResult ) && preg_match( "/iframe src/i", $bookResult ) ) {

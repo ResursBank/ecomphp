@@ -3796,10 +3796,12 @@ class ResursBank
 	 * @return array
 	 */
 	public function createPayment($payment_id_or_method = '', $payload = array()) {
+		$bookPaymentResult = array();
 		$this->preparePayload($payment_id_or_method, $payload);
 		if ($this->enforceService === ResursMethodTypes::METHOD_HOSTED || $this->enforceService === ResursMethodTypes::METHOD_SIMPLIFIED) {
 			if ($this->forceExecute) {
 				$this->createPaymentExecuteCommand = "bookPayment";
+				return array('delayed');
 			} else {
 				$bookPaymentResult = $this->createPaymentExecute( 'bookPayment', $this->Payload );
 			}
