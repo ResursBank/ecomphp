@@ -972,6 +972,10 @@ class TorneLIB_Database {
         $FirstRow = $this->Fetch($Resource, $ColumnArray);
         return $FirstRow;
     }
+    public function Query_Prepare_First($queryString = null, $parameters = array(), $ColumnArray = true) {
+        $TheQuery = $this->Query_Prepare($queryString, $parameters);
+        return $this->Fetch($TheQuery, $ColumnArray);
+    }
 
     /**
      * Fetch a row
