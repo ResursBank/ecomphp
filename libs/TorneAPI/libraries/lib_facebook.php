@@ -52,8 +52,11 @@ namespace TorneLIB\API;
         /** @var string Our version */
         private $version = "1.0.0";
 
+        private $facebookHandlerUrl;
+
         /** @var array Default permissions on login */
         public $permissions = array('user_about_me', 'email');
+        private $requestPermissions = array();
 
         /** @var array Precompiled permission restrictions, decides what api-version we should use, depending on permission setup. This variable has been invented to be able to use more than one API version in the same time. For example user_groups permissions are only available in 2.3 or lesser. */
         private $permission_restrictions = array(
@@ -74,9 +77,11 @@ namespace TorneLIB\API;
 
         /** @var null Current helper */
         private $currentHelper = null;
+        private $currentHelperType;
+        private $LoginURL;
 
         /** @var string Decide what graph version that should be used as default */
-        public $useGraph = "2.2";
+        public $useGraph = "2.9";
 
         /** @var null Facebook user access token, also set in _SESSION */
         private $accessToken = null;
@@ -108,14 +113,11 @@ namespace TorneLIB\API;
             if (!is_null($SDK_PATH) && file_exists($SDK_PATH . "/autoload.php")) {
                 $this->SDK_PATH = $SDK_PATH;
             } else {
-                if (file_exists(__DIR__ . "/sources/facebook-$this->SDK_CURRENT/autoload.php")) {
-                    $this->SDK_PATH = __DIR__ . "/sources/facebook-" . $this->SDK_CURRENT . "/";
-                } elseif (file_exists(__DIR__ . "/sources/sdk_facebook-" . $this->SDK_CURRENT . "/autoload.php")) {
-                    $this->SDK_PATH = __DIR__ . "/sources/sdk_facebook-" . $this->SDK_CURRENT . "/";
-                } elseif (file_exists(__DIR__ . "/../facebook-" . $this->SDK_CURRENT . "/autoload.php")) {
-                    $this->SDK_PATH = __DIR__ . "/../facebook-" . $this->SDK_CURRENT . "/";
-                } elseif (file_exists(__DIR__ . "/../facebook/autoload.php")) {
-                    $this->SDK_PATH = __DIR__ . "/../facebook/";
+                // For SDK 5 and TorneAPI package it should be easy to find the SDK if not touching defaults
+                if (file_exists(__DIR__ . "/Facebook/autoload.php")) {
+                    $this->SDK_PATH = __DIR__ . "/Facebook/";
+                } else if (file_exists(__DIR__ . "/src/Facebook/autoload.php")) {
+                    $this->SDK_PATH = __DIR__ . "/Facebook/";
                 }
             }
             if (!empty($this->SDK_PATH)) {
@@ -138,27 +140,104 @@ namespace TorneLIB\API;
             }
             return $this->SDK_LOADED;
         }
+        public function setCallbackUrl($callbackUrl = "") {
+            $this->facebookHandlerUrl = $callbackUrl;
+        }
 
         /**
-         * @return Current access token if any, null if not
+         * @param string $callbackUrl
          */
-        public function GetAccessToken()
+        public function Initialize($callbackUrl = "", $permissions = array()) {
+           $this->GetCurrentHelper();
+           if (!empty($callbackUrl)) {
+               $this->setCallbackUrl($callbackUrl);
+           }
+           $this->setPermissions($permissions);
+           if (!$this->HasSession()) {
+               $this->GetSession();
+               $this->LoginURL = $this->setLoginUrl();
+           }
+        }
+        private function PrepareRequest($endPoint = "/me?fields=id,name,email", $parameters = array(), $accessToken = '', $RequestType = "post")
         {
-            if (!$this->accessToken) {
+            $FacebookResponse = null;
+            if (empty($accessToken)) {
+                if (!empty($this->ExtendSession())) {
+                    $accessToken = $this->ExtendSession();
+                } else if (!empty($this->GetSession())) {
+                    $accessToken = $this->GetSession();
+                } else {
+                    throw new \Exception("Access token missing", 403);
+                }
+            }
+            try {
+                if ($RequestType == "post") {
+                    $Response = $this->Facebook->post($endPoint, $parameters, $accessToken);
+                } else {
+                    $Response = $this->Facebook->get($endPoint, $accessToken);
+                }
+            } catch (FacebookResponseException $e) {
+                return null;
+            } catch (FacebookSDKException $e) {
                 return null;
             }
-            return $this->accessToken;
+            $DecodedBody = $Response->getDecodedBody();
+            if (isset($DecodedBody['data'])) {
+                return $DecodedBody['data'];
+            } else {
+                return $DecodedBody;
+            }
+        }
+        public function Get($endPoint = "/me?fields=id,name,email", $parameters = array(), $accessToken = '') {
+            return $this->PrepareRequest($endPoint, $parameters, $accessToken, "get");
+        }
+        public function Post($endPoint = "/me?fields=id,name,email", $parameters = array(), $accessToken = '') {
+            return $this->PrepareRequest($endPoint, $parameters, $accessToken, "post");
+        }
+
+        public function setPermissions($userPermissionRequest = array()) {
+            $this->requestPermissions = array();
+            foreach ($this->permissions as $defaults) {
+                $this->requestPermissions[] = $defaults;
+            }
+            if (count($userPermissionRequest)) {
+                foreach ($userPermissionRequest as $additional) {
+                    $this->requestPermissions[] = $additional;
+                }
+            }
         }
 
         /**
-         * Get last error from SDK or API Bridge
-         * @return null|string
+         * Autodetect helper to use $this->currentHelper
+         *
+         * @return \Facebook\Helpers\FacebookRedirectLoginHelper|\Facebook\Helpers\FacebookCanvasHelper|null
+         * @throws \Exception
          */
-        public function GetLastError()
+        public function GetCurrentHelper()
         {
-            return $this->lastException;
+            $this->Facebook->getCanvasHelper();
+            $nonCanvasHelper = $this->Facebook->getRedirectLoginHelper();
+            try {
+                $canvasAccessToken = $nonCanvasHelper->getAccessToken();
+                $this->currentHelper = $nonCanvasHelper;
+                $this->currentHelperType = "redirect";
+            } catch (FacebookResponseException $canvasResponseException) {
+            } catch (FacebookSDKException $SDKException) {
+                throw new \Exception($SDKException->getMessage());
+            }
+            // Continue looking on failure
+            if (is_null($this->currentHelper)) {
+                try {
+                    $canvasAccessToken = $canvasHelper->getAccessToken();
+                    $this->currentHelper = $canvasHelper;
+                    $this->currentHelperType = "canvas";
+                } catch (FacebookResponseException $canvasResponseException) {
+                } catch (FacebookSDKException $SDKException) {
+                    throw new \Exception($SDKException->getMessage());
+                }
+            }
+            return $this->currentHelper;
         }
-
         /**
          * Get an access token if available
          *
@@ -211,36 +290,55 @@ namespace TorneLIB\API;
                 return null;
             }
         }
-
         /**
-         * Set current helper to $this->currentHelper (Experimental)
+         * Internal method to make sure that we have a proper user session before doing anything with the API
+         * @return bool|void
          * @throws \Exception
          */
-        public function GetCurrentHelper()
+        private function HasSession()
         {
-            $canvasHelper = $this->Facebook->getCanvasHelper();
-            $nonCanvasHelper = $this->Facebook->getRedirectLoginHelper();
-            try {
-                $canvasAccessToken = $nonCanvasHelper->getAccessToken();
-                $this->currentHelper = $nonCanvasHelper;
-            } catch (FacebookResponseException $canvasResponseException) {
-            } catch (FacebookSDKException $SDKException) {
-                throw new \Exception($SDKException->getMessage());
-            }
-
-            // Continue looking on failure
-            if (is_null($this->currentHelper)) {
-                try {
-                    $canvasAccessToken = $canvasHelper->getAccessToken();
-                    $this->currentHelper = $canvasHelper;
-                } catch (FacebookResponseException $canvasResponseException) {
-                } catch (FacebookSDKException $SDKException) {
-                    throw new \Exception($SDKException->getMessage());
+            if (is_null($this->accessToken)) {
+                if (is_null($this->GetSession())) {
+                    return;
                 }
             }
-
+            return true;
         }
-
+        /**
+         * Retrieve correct login url for Facebook by testing both canvas- and redirecthelper
+         *
+         * @param $baseCallbackURL
+         * @param array $permissions
+         * @param string $helper
+         * @return string
+         */
+        public function setLoginUrl($baseCallbackURL = null, $permissions = array())
+        {
+            $UseURL = $this->facebookHandlerUrl;
+            if (empty($UseURL) && is_null($baseCallbackURL)) {
+                throw new \Exception("No callback URL defined", 404);
+            }
+            $baseCallbackURL = $UseURL;
+            die($baseCallbackURL);
+            if ($this->currentHelperType != "redirect") {
+                $helper = $this->Facebook->getCanvasHelper();
+            } else {
+                $helper = $this->Facebook->getRedirectLoginHelper();
+            }
+            /*
+             * Graph version requirement checker. This is function only goes backwards, so if you request for permissions that requires both high and low graph versions, the lowest version will win the tests
+             * Used to make user_groups permissions available if that's requested. Otherwise, we will use the highest version set in $useGraph.
+             */
+            $graphVersionTest = $this->useGraph;
+            foreach ($this->requestPermissions as $permission) {
+                if (isset($this->permission_restrictions[$permission])) {
+                    if (version_compare($this->useGraph, $this->permission_restrictions[$permission], ">") && version_compare($graphVersionTest, $this->permission_restrictions[$permission], ">")) {
+                        $graphVersionTest = $this->permission_restrictions[$permission];
+                    }
+                }
+            }
+            return $helper->getLoginUrl($baseCallbackURL, $this->requestPermissions);
+        }
         /**
          * Extending Facebook session.
          * @return \Facebook\Authentication\AccessToken
@@ -252,40 +350,34 @@ namespace TorneLIB\API;
             }
             return false;
         }
+        /**
+         * Get the initialized loginurl for the authentication
+         *
+         * @return mixed
+         */
+        public function getLoginUrl() {
+            return $this->LoginURL;
+        }
 
         /**
-         * Retrieve correct login url for Facebook by testing both canvas- and redirecthelper
-         * @param $baseCallbackURL
-         * @param array $permissions
-         * @param string $helper
-         * @return string
+         * Current access token if any, null if not - same as getSession
+         * @return
          */
-        public function GetLoginUrl($baseCallbackURL, $permissions = array(), $helper = "noncanvas")
+        public function GetAccessToken()
         {
-            if ($helper != "noncanvas") {
-                $helper = $this->Facebook->getCanvasHelper();
-            } else {
-                $helper = $this->Facebook->getRedirectLoginHelper();
+            if (!$this->accessToken) {
+                return null;
             }
-            if (!count($permissions)) {
-                $permissions = $this->permissions;
-            }
+            return $this->accessToken;
+        }
 
-            /*
-             * Graph version requirement checker. This is function only goes backwards, so if you request for permissions that requires both high and low graph versions, the lowest version will win the tests
-             * Used to make user_groups permissions available if that's requested. Otherwise, we will use the highest version set in $useGraph.
-             *
-             */
-            $useGraphTest = $this->useGraph;
-            foreach ($permissions as $permission) {
-                if (isset($this->permission_restrictions[$permission])) {
-                    if (version_compare($this->useGraph, $this->permission_restrictions[$permission], ">") && version_compare($useGraphTest, $this->permission_restrictions[$permission], ">")) {
-                        $useGraphTest = $this->permission_restrictions[$permission];
-                    }
-                }
-            }
-
-            return $helper->getLoginUrl($baseCallbackURL, $permissions);
+        /**
+         * Get last error from SDK or API Bridge
+         * @return null|string
+         */
+        public function GetLastError()
+        {
+            return $this->lastException;
         }
 
         /**
@@ -305,42 +397,6 @@ namespace TorneLIB\API;
         }
 
         /**
-         * If there is plans on changing graph version, this part of our script will re-initialize the API with the right version
-         * @param $useGraph
-         */
-        public function setUseGraph($useGraph)
-        {
-            $this->useGraph = $useGraph;
-            try {
-                $this->Facebook = new \Facebook\Facebook([
-                    'app_id' => $this->appId,
-                    'app_secret' => $this->appSecret,
-                    'default_graph_version' => 'v' . $this->useGraph,
-                ]);
-                $this->SDK_LOADED = true;
-                $this->oAuth2Client = $this->Facebook->getOAuth2Client();
-            } catch (FacebookSDKException $SDKException) {
-                $this->SDK_LOADED = false;
-                $this->lastException = $SDKException->getMessage();
-            }
-        }
-
-        /**
-         * Internal method to make sure that we have a proper user session before doing anything with the API
-         * @return bool|void
-         * @throws \Exception
-         */
-        private function HasSession()
-        {
-            if (is_null($this->accessToken)) {
-                if (is_null($this->GetSession())) {
-                    return;
-                }
-            }
-            return true;
-        }
-
-        /**
          * Get information about the current user from Facebook
          * @param null $getUserInfoFields
          * @param bool|true $returnAsArray Makes this function return userinfo as a dynamic keyed array
@@ -354,7 +410,6 @@ namespace TorneLIB\API;
             if (!$this->HasSession()) {
                 return;
             }
-
             $useFields = (is_array($getUserInfoFields) && count($getUserInfoFields) ? $getUserInfoFields : $this->userInfoFields);
 
             try {
