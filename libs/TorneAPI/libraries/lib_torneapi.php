@@ -72,10 +72,10 @@ class LibTornevall extends CoreAPI {
                     throw new \Exception($ErrorControl->faultstring, $ErrorControl->code);
                 }
             } else {
-                throw new \Exception("Could not parse API response properly", 404);
+                throw new \Exception("Could not parse API response properly in success control", 404);
             }
         } else {
-            throw new \Exception("Could not parse API response properly", 404);
+            throw new \Exception("Could not parse API response properly in response control", 404);
         }
         return $ParsedResponse;
     }
