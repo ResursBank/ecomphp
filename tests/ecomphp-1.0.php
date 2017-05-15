@@ -519,7 +519,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 		$this->assertTrue( ! $this->hasWsdl );
 	}
 
-	public function getSpecLine( $specialSpecline = array() ) {
+	private function getSpecLine( $specialSpecline = array() ) {
 		if ( count( $specialSpecline ) ) {
 			return $specialSpecline;
 		}
@@ -532,7 +532,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 		);
 	}
 
-	public function getSpecLineZero( $specialSpecline = array(), $zeroTax = false ) {
+	private function getSpecLineZero( $specialSpecline = array(), $zeroTax = false ) {
 		if ( count( $specialSpecline ) ) {
 			return $specialSpecline;
 		}
@@ -708,13 +708,13 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 	 * Test booking and always use extendedCustomer.
 	 * Payment Method: Invoice
 	 * Customer Type: NATURAL, GRANTED
+	 * @deprecated No longer in effect as extended customer is always in use
 	 */
 	public function testBookPaymentInvoiceExtendedNatural() {
 		if ( $this->ignoreBookingTests ) {
 			$this->markTestSkipped();
 		}
 		$this->checkEnvironment();
-		$this->rb->alwaysUseExtendedCustomer = true;
 		$bookResult                          = $this->doBookPayment( $this->availableMethods['invoice_natural'], true, false, true );
 		$this->assertTrue( $bookResult );
 	}

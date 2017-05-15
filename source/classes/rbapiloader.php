@@ -130,7 +130,14 @@ class ResursBank
 	public $serviceReturn;
 
 	///// Shop related
-	/** @var bool In tests being made with newer wsdl stubs, extended customer are surprisingly always best practice. It is however settable from here if we need to avoid this. */
+	/** @var bool  */
+	/**
+	 * In tests being made with newer wsdl stubs, extended customer are surprisingly always best practice. It is however settable from here if we need to avoid this.
+	 *
+	 * @var bool
+	 * @deprecated 1.0.2 No longer in use as everything uses extended customer
+	 * @deprecated 1.1.2 No longer in use as everything uses extended customer
+	 */
 	public $alwaysUseExtendedCustomer = true;
 	/** @var bool Always append amount data and ending urls (cost examples) */
 	public $alwaysAppendPriceLast = false;
@@ -139,7 +146,6 @@ class ResursBank
 	/** @var int How many decimals to use with round */
 	public $bookPaymentRoundDecimals = 2;
 	/** @var string Default unit measure. "st" or styck for Sweden. If your plugin is not used for Sweden, use the proper unit for your country. */
-	public $defaultUnitMeasure = "st";
 	/** @var string Customer id used at afterShopFlow */
 	public $customerId = "";
 
@@ -299,6 +305,11 @@ class ResursBank
 	private $externalApiAddress = "https://api.tornevall.net/2.0/";
 	/** @var array An array that defines an url to test and which response codes (OK-200, and errors when for example a digest fails) from the webserver that is expected */
 	private $validateExternalUrl = null;
+
+	/** @var Prepared variable for execution */
+	private $createPaymentExecuteCommand;
+	/** @var bool Enforce the Execute() */
+	private $forceExecute = false;
 	/**
 	 * Defines which way we are actually communicating - if the WSDL stubs are left out of the pacakge, this will remain false.
 	 * If the package do contain the full release packages, this will be switched over to true.
@@ -398,6 +409,10 @@ class ResursBank
 	/** @var array List of available payment method names (for use with getPaymentMethodNames()) */
 	private $paymentMethodNames = array();
 	/** @var array Stored array for booked payments */
+
+	/** @var string Default unit measure */
+	private $defaultUnitMeasure;
+
 
 	/// Internal handlers for bookings (Deprecate in a near future) -- Begin here
 	private $bookData = array();
@@ -3732,6 +3747,9 @@ class ResursBank
 		$paymentSpec = array();
 		if (is_array($this->SpecLines) && count($this->SpecLines)) {
 			foreach ($this->SpecLines as $specIndex => $specRow) {
+				if (!isset($specRow['unitMeasure'])) {
+					$this->SpecLines[$specIndex]['unitMeasure'] = $this->defaultUnitMeasure;
+				}
 				if ($myFlow === ResursMethodTypes::METHOD_SIMPLIFIED) {
 					$this->SpecLines[$specIndex]['id'] = ($specIndex)+1;
 				}
@@ -3780,16 +3798,63 @@ class ResursBank
 	public function createPayment($payment_id_or_method = '', $payload = array()) {
 		$this->preparePayload($payment_id_or_method, $payload);
 		if ($this->enforceService === ResursMethodTypes::METHOD_HOSTED || $this->enforceService === ResursMethodTypes::METHOD_SIMPLIFIED) {
-			$bookPaymentResult = $this->postService( 'bookPayment', $this->Payload );
+			if ($this->forceExecute) {
+				$this->createPaymentExecuteCommand = "bookPayment";
+			} else {
+				$bookPaymentResult = $this->createPaymentExecute( 'bookPayment', $this->Payload );
+			}
 		}
 		return $bookPaymentResult;
 	}
+	private function createPaymentExecute($payment_id_or_method = '', $payload = array()) {
+		return $this->postService( 'bookPayment', $this->Payload );
+	}
+	public function Execute() {
+		if (!empty($this->createPaymentExecuteCommand)) {
+			return $this->createPaymentExecute( $this->createPaymentExecuteCommand, $this->Payload );
+		} else {
+			throw new \Exception("setRequiredExecute() must used before you use this function", 403);
+		}
+	}
+
+	/**
+	 * Pre-set a default unit measure if it is missing in the payment spec. Defaults to "st" if nothing is set.
+	 *
+	 * If no unit measure are set but setCountry() have been used, this function will try to set a matching string depending on the country.
+	 *
+	 * @param null $unitMeasure
+	 */
+	public function setDefaultUnitMeasure($unitMeasure = null) {
+		if (is_null($unitMeasure)) {
+			if (!empty($this->envCountry)) {
+				if ($this->envCountry == ResursCountry::COUNTRY_DK) {
+					$this->defaultUnitMeasure = "st";
+				} else if ($this->envCountry == ResursCountry::COUNTRY_NO) {
+					$this->defaultUnitMeasure = "st";
+				} else if ($this->envCountry == ResursCountry::COUNTRY_FI) {
+					$this->defaultUnitMeasure = "kpl";
+				} else {
+					$this->defaultUnitMeasure = "st";
+				}
+			} else {
+				$this->defaultUnitMeasure = "st";
+			}
+		}
+	}
+
+	/**
+	 * Prepare the payload
+	 *
+	 * @param string $payment_id_or_method
+	 * @param array $payload
+	 *
+	 * @throws Exception
+	 */
 	private function preparePayload($payment_id_or_method = '', $payload = array()) {
 		$this->InitializeServices();
 		$this->handlePayload($payload);
-		if (!$this->enforceService) {
-			$this->setPreferredPaymentService(ResursMethodTypes::METHOD_SIMPLIFIED);
-		}
+		if (empty($this->defaultUnitMeasure)) { $this->setDefaultUnitMeasure(); }
+		if (!$this->enforceService) { $this->setPreferredPaymentService(ResursMethodTypes::METHOD_SIMPLIFIED); }
 		if (empty($payment_id_or_method)) {
 			if ($this->enforceService === ResursMethodTypes::METHOD_CHECKOUT) {
 				throw new \Exception( "A payment method or payment id must be defined", ResursExceptions::CREATEPAYMENT_NO_ID_SET );
@@ -3798,6 +3863,22 @@ class ResursBank
 		if (!count($this->Payload)) {
 			throw new \Exception("No payload are set for this payment", ResursExceptions::BOOKPAYMENT_NO_BOOKDATA);
 		}
+
+		// Obsolete way to handle multidimensional specrows (1.0.0-1.0.1)
+		if (isset($this->Payload['specLine'])) {
+			if (isset($this->Payload['specLine']['artNo'])) {
+				$this->SpecLines[] = $this->Payload['specLine'];
+			} else {
+				if (is_array($this->Payload['specLine'])) {
+					foreach ( $this->Payload['specLine'] as $specRow ) {
+						$this->SpecLines[] = $specRow;
+					}
+				}
+			}
+			unset($this->Payload['specLine']);
+			$this->renderPaymentSpec();
+		}
+
 		if ($this->enforceService === ResursMethodTypes::METHOD_HOSTED || $this->enforceService === ResursMethodTypes::METHOD_SIMPLIFIED) {
 			$paymentDataPayload ['paymentData'] = array(
 				'paymentMethodId'   => $payment_id_or_method,
@@ -3806,6 +3887,20 @@ class ResursBank
 			);
 			$this->handlePayload( $paymentDataPayload );
 		}
+	}
+
+	/**
+	 * Enable execute()-mode on data passed through createPayment()
+	 *
+	 * If you run createPayment() and does not succeed during the primary function, you can enable this function to not fulfill the
+	 * whole part of the payment until doing an execute(). In this case EComPHP will only prepare the required parameters for the payment
+	 * to run. When this function is enabled you can also, before creating the payment do for example a getPayload() to see how it looks
+	 * before completion.
+	 *
+	 * @param bool $enableExecute
+	 */
+	public function setRequiredExecute($enableExecute = false) {
+		$this->forceExecute = $enableExecute;
 	}
 	/**
 	 * Customer address simplifier. Renders a correct array depending on the flow.
