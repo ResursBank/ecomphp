@@ -39,3 +39,11 @@ abstract class ResursMethodTypes
 	 */
     const METHOD_RESURSCHECKOUT = 3;
 }
+
+abstract class ResursCountry {
+	const COUNTRY_UNSET = 0;
+	const COUNTRY_SE = 1;
+	const COUNTRY_DK = 2;
+	const COUNTRY_NO = 3;
+	const COUNTRY_FI = 4;
+}

@@ -233,6 +233,12 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 			if ( isset( $config->signUrl ) ) {
 				$this->signUrl = $config->signUrl;
 			}
+			if ( isset( $config->successUrl ) ) {
+				$this->successUrl = $config->successUrl;
+			}
+			if ( isset( $config->failUrl ) ) {
+				$this->failUrl = $config->failUrl;
+			}
 		}
 	}
 
@@ -1351,19 +1357,104 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 			$quantity
 		);
 	}
+
+	private function doMockSign($URL, $govId) {
+		$MockFormResponse = $this->CURL->doGet($URL);
+		$MockDomain = $this->NETWORK->getUrlDomain($MockFormResponse['URL']);
+		$SignBody = $this->CURL->getResponseBody($this->CURL->doGet($URL));
+		$MockForm = $this->CURL->getResponseBody($MockFormResponse);
+		$MockFormActionPath = preg_replace("/(.*?)action=\"(.*?)\"(.*)/is", '$2', $MockForm);
+		$MockFormToken = preg_replace("/(.*?)resursToken\" value=\"(.*?)\"(.*)/is", '$2', $MockForm);
+		$prepareMockSuccess = $MockDomain[1] . "://" . $MockDomain[0] . $MockFormActionPath . "?resursToken=" . $MockFormToken . "&govId=" . $govId;
+		$ValidateUrl = $this->NETWORK->getUrlDomain($prepareMockSuccess, true);
+		if (!empty($ValidateUrl[0])) {
+			$mockSuccess = $this->CURL->getParsedResponse($this->CURL->doGet($prepareMockSuccess));
+			if (isset($mockSuccess->_GET->success)) {
+				return $mockSuccess->_GET;
+			}
+		}
+		return;
+	}
+
+	/**
+	 * Basic payment
+	 */
 	function testCreatePaymentPayloadSimplified() {
 		$this->checkEnvironment();
 		try {
 			$this->rb->setPreferredPaymentService(ResursMethodTypes::METHOD_SIMPLIFIED);
 			$this->rb->setBillingByGetAddress("198305147715");
-			$this->rb->setBillingAddress("Anders Andersson", "Anders", "Andersson", "Hamngatan 2", null, "12345", "Ingenstans", "SE");
-			$this->rb->setCustomer(null, "0808080808", "0707070707", "test@test.com");
-			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
-			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
+			//$this->rb->setBillingAddress("Anders Andersson", "Anders", "Andersson", "Hamngatan 2", null, "Ingestans", "12345", "SE");
+			$this->rb->setCustomer("198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL");
+			$this->rb->addOrderLine(
+				"HORSE",
+				"Stallponny",
+				4800,
+				25,
+				"st",
+				null,
+				1
+			);
+			//$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
+			//$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
+			//$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
+			//$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
+			$useThisPaymentId = $this->rb->getPreferredId();
+			// Payload that needs to be appended to the rendered one
+			$myPayLoad = array(
+				'paymentData' => array(
+					'waitForFraudControl' => false,
+					'annulIfFrozen' => false,
+					'finalizeIfBooked' => false
+				),
+				'metaData' => array(
+					'key' => 'CustomerId',
+					'value' => 'l33tCustomer'
+				),
+				'customer' => array(
+					'yourCustomerId' => 'DatL33tCustomer'
+				)
+			);
+			$this->rb->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+			//$Payment = $this->rb->createPayment($this->availableMethods['invoice_natural'], $myPayLoad);
+			try {
+				$Payment = $this->rb->createPayment( $this->availableMethods['invoice_natural'] );
+				$this->assertTrue($Payment->bookPaymentStatus == "BOOKED");
+			}
+			catch (\Exception $e) {
+				echo "Fail: " . $e->getMessage();
+			}
+
+		} catch (\Exception $e) {
+			$this->markTestIncomplete($e->getMessage());
+		}
+	}
+
+	/**
+	 * Creating payment with own billing address but happyflow govId
+	 */
+	function testCreatePaymentPayloadForcedSigningSimplified() {
+		$this->checkEnvironment();
+		try {
+			$this->rb->setPreferredPaymentService(ResursMethodTypes::METHOD_SIMPLIFIED);
+			$this->rb->setBillingByGetAddress("198305147715");
+			$this->rb->setCustomer(null, "0808080808", "0707070707", "test@test.com", "NATURAL");
 			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
 			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
 			$useThisPaymentId = $this->rb->getPreferredId();
-			$Payment = $this->rb->createPayment($useThisPaymentId);
+			$this->rb->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', true);
+			try {
+				$Payment = $this->rb->createPayment( $this->availableMethods['invoice_natural'] );
+				if ($Payment->bookPaymentStatus == "SIGNING") {
+					$signUrl = $Payment->signingUrl;
+					$signData = $this->doMockSign($signUrl, "198305147715");
+					$this->assertTrue($signData->success == "true");
+				}
+			}
+			catch (\Exception $e) {
+				echo "Fail: " . $e->getMessage();
+			}
+
 		} catch (\Exception $e) {
 			$this->markTestIncomplete($e->getMessage());
 		}
