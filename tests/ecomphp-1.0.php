@@ -1476,14 +1476,16 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 				if (isset($delayPayment['status']) && $delayPayment['status']== "delayed") {
 					$thePayload = $this->rb->getPayload();
 					$thePayment = $this->rb->Execute();
-					$this->assertTrue($delayPayment->bookPaymentStatus == "SIGNING");
+					$this->assertTrue($thePayment->bookPaymentStatus == "BOOKED");
+					return;
 				}
 			}
-			catch (\Exception $e) {
+			catch (Exception $e) {
 				$this->markTestIncomplete($e->getMessage());
 			}
-		} catch (\Exception $e) {
-			$this->markTestIncomplete($e->getMessage());
+		} catch (Exception $e) {
+
+			$this->markTestIncomplete("Outer exception thrown (".$e->getMessage().")");
 		}
 		$this->markTestIncomplete("CreatePayment via Delayed create failed - never passed through the payload generation.");
 	}
