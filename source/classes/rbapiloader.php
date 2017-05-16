@@ -4802,6 +4802,8 @@ class ResursBank
      * @param array $speclineArray
      * @return null
      * @throws \Exception
+     * @deprecated 1.0.2
+     * @deprecated 1.1.2
      */
     public function updateCart($speclineArray = array())
     {
@@ -4887,6 +4889,8 @@ class ResursBank
      *
      * @param array $specLineArray
      * @throws ResursException
+     * @deprecated 1.0.2
+     * @deprecated 1.1.2
      */
     public function updatePaymentSpec($specLineArray = array())
     {
@@ -4977,6 +4981,8 @@ class ResursBank
     /**
      * Internal handler for carddata
      * @throws \Exception
+     * @deprecated 1.0.2
+     * @deprecated 1.1.2
      */
     private function updateCardData()
     {
