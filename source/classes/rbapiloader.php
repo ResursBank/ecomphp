@@ -145,9 +145,9 @@ class ResursBank
 	public $bookPaymentInternalCalculate = true;
 	/** @var int How many decimals to use with round */
 	public $bookPaymentRoundDecimals = 2;
-	/** @var string Default unit measure. "st" or styck for Sweden. If your plugin is not used for Sweden, use the proper unit for your country. */
 	/** @var string Customer id used at afterShopFlow */
 	public $customerId = "";
+
 
 	///// Public SSL handlers
 	/**
@@ -408,13 +408,18 @@ class ResursBank
 	private $preferredId = null;
 	/** @var array List of available payment method names (for use with getPaymentMethodNames()) */
 	private $paymentMethodNames = array();
-	/** @var array Stored array for booked payments */
+	/** @var bool Defines if the checkout should honor the customer field array */
+	private $checkoutCustomerFieldSupport = false;
 
-	/** @var string Default unit measure */
+	/** @var string Default unit measure. "st" or styck for Sweden. If your plugin is not used for Sweden, use the proper unit for your country. */
 	private $defaultUnitMeasure;
 
-
-	/// Internal handlers for bookings (Deprecate in a near future) -- Begin here
+	/**
+	 * Stored array for booked payments
+	 * @var array
+	 * @deprecated 1.0.2
+	 * @deprecated 1.1.2
+	 */
 	private $bookData = array();
 	/** @var string bookedCallbackUrl that may be set in runtime on bookpayments - has to be null or a string with 1 character or more */
 	private $_bookedCallbackUrl = null;
@@ -3600,7 +3605,7 @@ class ResursBank
 	 */
 	public function getPreferredPaymentId($createIfNotSet = true)
 	{
-		if (!empty($this->preferredId) && $createIfNotSet) {
+		if (empty($this->preferredId) && $createIfNotSet) {
 			$this->getPreferredId();
 		}
 		return $this->preferredId;
@@ -3763,9 +3768,6 @@ class ResursBank
 					$paymentSpec['totalAmount'] += $this->SpecLines[$specIndex]['totalAmount'];
 					$paymentSpec['totalVatAmount'] += $this->SpecLines[$specIndex]['totalVatAmount'];
 				}
-				if ($myFlow === ResursMethodTypes::METHOD_CHECKOUT) {
-					// Reserved for future use
-				}
 			}
 			if ($myFlow === ResursMethodTypes::METHOD_SIMPLIFIED) {
 				$this->Payload['orderData'] = array(
@@ -3774,8 +3776,8 @@ class ResursBank
 					'totalVatAmount' =>$paymentSpec['totalVatAmount']
 				);
 			}
-			if ($myFlow === ResursMethodTypes::METHOD_HOSTED) {
-				$this->Payload['orderData'] = array('orderLines' => array());
+			if ($myFlow === ResursMethodTypes::METHOD_HOSTED || $myFlow === ResursMethodTypes::METHOD_CHECKOUT) {
+				$this->Payload['orderData'] = array('orderLines' => $this->SpecLines);
 			}
 		}
 	}
@@ -3797,19 +3799,27 @@ class ResursBank
 	 */
 	public function createPayment($payment_id_or_method = '', $payload = array()) {
 		$bookPaymentResult = array();
-		$this->preparePayload($payment_id_or_method, $payload);
-		if ($this->enforceService === ResursMethodTypes::METHOD_HOSTED || $this->enforceService === ResursMethodTypes::METHOD_SIMPLIFIED) {
-			if ($this->forceExecute) {
-				$this->createPaymentExecuteCommand = "bookPayment";
-				return array('delayed');
-			} else {
-				$bookPaymentResult = $this->createPaymentExecute( 'bookPayment', $this->Payload );
-			}
+		// Payloads are built here
+		$this->preparePayload( $payment_id_or_method, $payload );
+		if ( $this->forceExecute ) {
+			$this->createPaymentExecuteCommand = "bookPayment";
+			return array('status' => 'delayed' );
+		} else {
+			$bookPaymentResult = $this->createPaymentExecute( 'bookPayment', $this->Payload );
 		}
 		return $bookPaymentResult;
 	}
 	private function createPaymentExecute($payment_id_or_method = '', $payload = array()) {
-		return $this->postService( 'bookPayment', $this->Payload );
+		$myFlow = $this->getPreferredPaymentService();
+		if ($myFlow == ResursMethodTypes::METHOD_SIMPLIFIED) {
+			return $this->postService( 'bookPayment', $this->Payload );
+		} else if ($myFlow == ResursMethodTypes::METHOD_CHECKOUT) {
+			$omniUrl= $this->getCheckoutUrl() . "/checkout/payments/" . $payment_id_or_method;
+			$checkoutResponse = $this->CURL->doPost($omniUrl, $this->Payload, \TorneLIB\CURL_POST_AS::POST_AS_JSON);
+			die();
+		} else if ($myFlow == ResursMethodTypes::METHOD_HOSTED) {
+
+		}
 	}
 	public function Execute() {
 		if (!empty($this->createPaymentExecuteCommand)) {
@@ -3855,8 +3865,10 @@ class ResursBank
 	private function preparePayload($payment_id_or_method = '', $payload = array()) {
 		$this->InitializeServices();
 		$this->handlePayload($payload);
+
 		if (empty($this->defaultUnitMeasure)) { $this->setDefaultUnitMeasure(); }
 		if (!$this->enforceService) { $this->setPreferredPaymentService(ResursMethodTypes::METHOD_SIMPLIFIED); }
+
 		if (empty($payment_id_or_method)) {
 			if ($this->enforceService === ResursMethodTypes::METHOD_CHECKOUT) {
 				throw new \Exception( "A payment method or payment id must be defined", ResursExceptions::CREATEPAYMENT_NO_ID_SET );
@@ -3880,7 +3892,6 @@ class ResursBank
 			unset($this->Payload['specLine']);
 			$this->renderPaymentSpec();
 		}
-
 		if ($this->enforceService === ResursMethodTypes::METHOD_HOSTED || $this->enforceService === ResursMethodTypes::METHOD_SIMPLIFIED) {
 			$paymentDataPayload ['paymentData'] = array(
 				'paymentMethodId'   => $payment_id_or_method,
@@ -3888,7 +3899,33 @@ class ResursBank
 				'customerIpAddress' => $this->getCustomerIp()
 			);
 			$this->handlePayload( $paymentDataPayload );
+		} else if ($this->enforceService == ResursMethodTypes::METHOD_CHECKOUT) {
+			// Convert signing to checkouturls if exists (not receommended as failurl might not always be the backurl)
+			// However, those variables will only be replaced in the correct payload if they are not already there.
+			if (isset($this->Payload['signing'])) {
+				if (!isset($this->Payload['successUrl']) && isset($this->Payload['signing']['successUrl'])) {
+					$this->Payload['successUrl'] = $this->Payload['signing']['successUrl'];
+				}
+				if (!isset($this->Payload['backUrl']) && isset($this->Payload['signing']['failUrl'])) {
+					$this->Payload['backUrl'] = $this->Payload['signing']['failUrl'];
+				}
+				unset($this->Payload['signing']);
+			}
+			if (isset($this->Payload['customer']['address'])) {unset($this->Payload['customer']['address']);}
+			if (isset($this->Payload['customer']['deliveryAddress'])) {unset($this->Payload['customer']['deliveryAddress']);}
+			if ($this->checkoutCustomerFieldSupport === false && isset($this->Payload['customer'])) {unset($this->Payload['customer']);}
+			print_R($this->Payload);
+			die();
 		}
+	}
+
+	/**
+	 * Defines if the checkout should honor the customer field array
+	 *
+	 * @param bool $isCustomerSupported
+	 */
+	public function setCheckoutCustomerSupported($isCustomerSupported = false) {
+		$this->checkoutCustomerFieldSupport = $isCustomerSupported;
 	}
 
 	/**

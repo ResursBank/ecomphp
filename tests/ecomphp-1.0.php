@@ -1452,22 +1452,34 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 			$this->markTestIncomplete($e->getMessage());
 		}
 	}
-	function testCreatePaymentWithPayload() {
+	/**
+	 * Creating payment with own billing address but happyflow govId
+	 */
+	function testCreatePaymentPayloadUseExecuteSimplified() {
 		$this->checkEnvironment();
-		$bookData['address']  = array(
-			'fullName'    => 'Test Testsson',
-			'firstName'   => 'Test',
-			'lastName'    => 'Testsson',
-			'addressRow1' => 'Testgatan 1',
-			'postalArea'  => 'Testort',
-			'postalCode'  => '12121',
-			'country'     => 'SE'
-		);
-		$this->rb->setPreferredPaymentService(ResursMethodTypes::METHOD_CHECKOUT);
 		try {
-			$this->rb->createPayment("A", $bookData);
+			$this->rb->setPreferredPaymentService(ResursMethodTypes::METHOD_SIMPLIFIED);
+			$this->rb->setBillingByGetAddress("198305147715");
+			$this->rb->setCustomer(null, "0808080808", "0707070707", "test@test.com", "NATURAL");
+			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
+			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
+			$useThisPaymentId = $this->rb->getPreferredId();
+			$this->rb->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+			try {
+				$this->rb->setRequiredExecute(true);
+				$delayPayment = $this->rb->createPayment( $this->availableMethods['invoice_natural'] );
+				if (isset($delayPayment['status']) && $delayPayment['status']== "delayed") {
+					$thePayload = $this->rb->getPayload();
+					$thePayment = $this->rb->Execute();
+					$this->assertTrue($delayPayment->bookPaymentStatus == "SIGNING");
+				}
+			}
+			catch (\Exception $e) {
+				$this->markTestIncomplete($e->getMessage());
+			}
 		} catch (\Exception $e) {
 			$this->markTestIncomplete($e->getMessage());
 		}
+		$this->markTestIncomplete("CreatePayment via Delayed create failed - never passed through the payload generation.");
 	}
 }
