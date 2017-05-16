@@ -406,6 +406,7 @@ class ResursBank
 	private $omniFrame = null;
 	/** @var null The preferred payment order reference, set in a shopflow. Reachable through getPreferredPaymentId() */
 	private $preferredId = null;
+	private $paymentSessionId;
 	/** @var array List of available payment method names (for use with getPaymentMethodNames()) */
 	private $paymentMethodNames = array();
 	/** @var bool Defines if the checkout should honor the customer field array */
@@ -3776,8 +3777,11 @@ class ResursBank
 					'totalVatAmount' =>$paymentSpec['totalVatAmount']
 				);
 			}
-			if ($myFlow === ResursMethodTypes::METHOD_HOSTED || $myFlow === ResursMethodTypes::METHOD_CHECKOUT) {
+			if ($myFlow === ResursMethodTypes::METHOD_HOSTED) {
 				$this->Payload['orderData'] = array('orderLines' => $this->SpecLines);
+			}
+			if ($myFlow == ResursMethodTypes::METHOD_CHECKOUT) {
+				$this->Payload['orderLines'] = $this->SpecLines;
 			}
 		}
 	}
@@ -3809,6 +3813,14 @@ class ResursBank
 		}
 		return $bookPaymentResult;
 	}
+
+	/**
+	 * @param string $payment_id_or_method
+	 * @param array $payload
+	 *
+	 * @return array|mixed
+	 * @throws Exception
+	 */
 	private function createPaymentExecute($payment_id_or_method = '', $payload = array()) {
 		$myFlow = $this->getPreferredPaymentService();
 		if ($myFlow == ResursMethodTypes::METHOD_SIMPLIFIED) {
@@ -3816,10 +3828,28 @@ class ResursBank
 		} else if ($myFlow == ResursMethodTypes::METHOD_CHECKOUT) {
 			$omniUrl= $this->getCheckoutUrl() . "/checkout/payments/" . $payment_id_or_method;
 			$checkoutResponse = $this->CURL->doPost($omniUrl, $this->Payload, \TorneLIB\CURL_POST_AS::POST_AS_JSON);
-			die();
+			$parsedResponse = $this->CURL->getParsedResponse($checkoutResponse);
+			$responseCode = $this->CURL->getResponseCode($checkoutResponse);
+			if ($responseCode == 200) {
+				$this->paymentSessionId = $parsedResponse->paymentSessionId;
+				return $parsedResponse->html;
+			} else {
+				$error = array();
+				if (isset($parsedResponse->error)) {
+					$error[] = $parsedResponse->error;
+				}
+				if (isset($parsedResponse->message)) {
+					$error[] = $parsedResponse->message;
+				}
+				throw new \Exception(implode("\n", $error), $responseCode);
+			}
+			return $parsedResponse;
 		} else if ($myFlow == ResursMethodTypes::METHOD_HOSTED) {
 
 		}
+	}
+	public function getPaymentSessionId() {
+		return $this->paymentSessionId;
 	}
 	public function Execute() {
 		if (!empty($this->createPaymentExecuteCommand)) {
@@ -3913,9 +3943,8 @@ class ResursBank
 			}
 			if (isset($this->Payload['customer']['address'])) {unset($this->Payload['customer']['address']);}
 			if (isset($this->Payload['customer']['deliveryAddress'])) {unset($this->Payload['customer']['deliveryAddress']);}
+			if (isset($this->Payload['paymentData'])) {unset($this->Payload['paymentData']);}
 			if ($this->checkoutCustomerFieldSupport === false && isset($this->Payload['customer'])) {unset($this->Payload['customer']);}
-			print_R($this->Payload);
-			die();
 		}
 	}
 
