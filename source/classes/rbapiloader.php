@@ -3681,7 +3681,6 @@ class ResursBank
 	 * Set target country (optional)
 	 *
 	 * @param int $Country
-	 * @param bool $determineOnPaymentMethods
 	 *
 	 * @return string Country code is returned
 	 */
@@ -3823,6 +3822,8 @@ class ResursBank
 	 */
 	private function createPaymentExecute($payment_id_or_method = '', $payload = array()) {
 		$myFlow = $this->getPreferredPaymentService();
+		// Using this function to validate that card data info is properly set up during the deprecation state in >= 1.0.2/1.1.1
+		$this->validateCardData();
 		if ($myFlow == ResursMethodTypes::METHOD_SIMPLIFIED) {
 			return $this->postService( 'bookPayment', $this->Payload );
 		} else if ($myFlow == ResursMethodTypes::METHOD_CHECKOUT) {
@@ -5012,22 +5013,48 @@ class ResursBank
      * @param bool|false $useAmount Set to true when using new cards
      * @param bool|false $setOwnAmount If customer applies for a new card specify the credit amount that is applied for. If $setOwnAmount is not null, this amount will be used instead of the specrow data
      * @throws \Exception
+     * @deprecated 1.0.2 Use setCardData instead
+     * @deprecated 1.1.2 Use setCardData instead
      */
     public function prepareCardData($cardNumber = null, $useAmount = false, $setOwnAmount = null)
     {
-        if (!is_null($cardNumber)) {
-            if (is_numeric($cardNumber)) {
-                $this->cardDataCardNumber = $cardNumber;
-            } else {
-                throw new \Exception(__FUNCTION__ . ": Card number must be numeric", ResursExceptions::PREPARECARD_NUMERIC_EXCEPTION);
-            }
-        }
-        if ($useAmount) {
-            $this->cardDataUseAmount = true;
-            if (!is_null($setOwnAmount) && is_numeric($setOwnAmount)) {
-                $this->cardDataOwnAmount = $setOwnAmount;
-            }
-        }
+    	$this->setCardData($cardNumber, $setOwnAmount);
+    }
+
+	/**
+	 * Set up payload with simplified card data.
+	 *
+	 * Conditions is:
+	 *   - Cards: Use card number only
+	 *   - New cards: No data needed, but could be set as (null, cardAmount). If no data set the applied amount will be the totalAmount.
+	 *
+	 * @param null $cardNumber
+	 * @param null $cardAmount
+	 */
+    public function setCardData($cardNumber = null, $cardAmount = null) {
+    	if (!isset($this->Payload['card'])) { $this->Payload['card'] = array(); }
+	    if (!isset($this->Payload['card']['cardNumber'])) { $this->Payload['card']['cardNumber'] = $cardNumber; }
+    	if ($cardAmount > 0 ) { $this->Payload['card']['amount'] = $cardAmount; }
+    }
+
+	/**
+	 * Payment card validity check for deprecation layer
+	 *
+	 * @since 1.0.2
+	 * @since 1.1.2
+	 */
+    private function validateCardData() {
+	    // Keeps compatibility with card data sets
+	    if ( isset( $this->Payload['orderData']['totalAmount'] ) && $this->getPreferredPaymentService() == ResursMethodTypes::METHOD_SIMPLIFIED ) {
+		    $cardInfo = isset( $this->Payload['card'] ) ? $this->Payload['card'] : array();
+		    if ( ( isset( $cardInfo['cardNumber'] ) && empty( $cardInfo['cardNumber'] ) ) || ! isset( $cardInfo['cardNumber'] ) ) {
+			    if ( ( isset( $cardInfo['amount'] ) && empty( $cardInfo['amount'] ) ) || ! isset( $cardInfo['amount'] ) ) {
+				    // Adding the exact total amount as we do not rule of exchange rates. For example, adding 500 extra to the total
+				    // amount in sweden will work, but will on the other hand be devastating for countries using euro.
+				    $this->Payload['card']['amount'] = $this->Payload['orderData']['totalAmount'];
+			    }
+		    }
+	    }
     }
 
 	/////////// AFTER SHOP ROUTINES
