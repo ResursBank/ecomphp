@@ -1771,9 +1771,12 @@ class Tornevall_cURL {
 				curl_setopt( $this->CurlSession, CURLOPT_SSL_VERIFYHOST, 0 );
 				curl_setopt( $this->CurlSession, CURLOPT_SSL_VERIFYPEER, 0 );
 			} else {
-                                // Keeping compatibility by running with 1 before curl 7.28.1 as we don't know when this option was really changed.
-                                // This warning occurs in libcurl 7.22.0, wo we can without any risk lower the version check to 7.22.0
-				if ( version_compare( $this->CurlVersion, '7.22.0', '>=' ) ) {
+                                // From libcurl 7.28.1 CURLOPT_SSL_VERIFYHOST is deprecated. However, using the value 1 can be used
+                                // as of PHP 5.4.11, where the deprecation notices was added. The deprecation has started before libcurl
+                                // 7.28.1 (this was discovered on a server that was running PHP 5.5 and libcurl-7.22). In full debug
+                                // even libcurl-7.22 was generating this message, so from PHP 5.4.11 we are now enforcing the value 2
+                                // for CURLOPT_SSL_VERIFYHOST instead.
+                                if (version_compare( PHP_VERSION, '5.4.11', "<" )) {
 					curl_setopt( $this->CurlSession, CURLOPT_SSL_VERIFYHOST, 2 );
 				} else {
 					curl_setopt( $this->CurlSession, CURLOPT_SSL_VERIFYHOST, 1 );
