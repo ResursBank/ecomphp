@@ -353,7 +353,7 @@ abstract class TorneLIB_Network_IP {
  * Versioning are based on TorneLIB v5, but follows its own standards in the chain.
  *
  * @package TorneLIB
- * @version 5.0.0/2017.4
+ * @version 5.0.0/2017.1
  * @link https://phpdoc.tornevall.net/TorneLIBv5/source-class-TorneLIB.Tornevall_cURL.html PHPDoc/Staging - Tornevall_cURL
  * @link https://docs.tornevall.net/x/KQCy TorneLIB (PHP) Landing documentation
  * @link https://bitbucket.tornevall.net/projects/LIB/repos/tornelib-php/browse Sources of TorneLIB
@@ -369,11 +369,11 @@ class Tornevall_cURL {
 	private $NETWORK;
 
 	/** @var string Internal version that is being used to find out if we are running the latest version of this library */
-	private $TorneCurlVersion = "5.0.0/2017.4";
+	private $TorneCurlVersion = "5.0.0/2017.1";
 	private $CurlVersion = null;
 
 	/** @var string Internal release snapshot that is being used to find out if we are running the latest version of this library */
-	private $TorneCurlRelease = "20170503";
+	private $TorneCurlRelease = "20170518";
 
 	/**
 	 * Target environment (if target is production some debugging values will be skipped)
