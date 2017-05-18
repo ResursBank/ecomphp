@@ -410,11 +410,13 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 		}
 		if ( isset( $useMethodList['card'] ) && $setMethod == $useMethodList['card'] ) {
 			$useGovId = $this->cardGovId;
-			$this->rb->prepareCardData( $this->cardNumber, false );
+			//$this->rb->prepareCardData( $this->cardNumber, false );
+			$this->rb->setCardData( $this->cardNumber);
 		}
 		if ( isset( $useMethodList['card_new'] ) && $setMethod == $useMethodList['card_new'] ) {
 			$useGovId = $this->cardGovId;
-			$this->rb->prepareCardData( null, true );
+			//$this->rb->prepareCardData( null, true );
+			$this->rb->setCardData( );
 		}
 		$bookData['paymentData']['waitForFraudControl'] = $this->waitForFraudControl;
 		$bookData['signing']                            = array(
@@ -710,12 +712,13 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 	 * Customer Type: NATURAL, GRANTED
 	 * @deprecated No longer in effect as extended customer is always in use
 	 */
-	public function testBookPaymentInvoiceExtendedNatural() {
+	public function testBookPaymentInvoiceHostedNatural() {
 		if ( $this->ignoreBookingTests ) {
 			$this->markTestSkipped();
 		}
 		$this->checkEnvironment();
-		$bookResult                          = $this->doBookPayment( $this->availableMethods['invoice_natural'], true, false, true );
+		$this->rb->setPreferredPaymentService(ResursMethodTypes::METHOD_HOSTED);
+		$bookResult = $this->doBookPayment( $this->availableMethods['invoice_natural'], true, false, true );
 		$this->assertTrue( $bookResult );
 	}
 
