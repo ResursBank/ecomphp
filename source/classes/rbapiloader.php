@@ -967,7 +967,7 @@ class ResursBank
             $this->env_test = $newUrl;
         } else if ($FlowType == ResursMethodTypes::METHOD_HOSTED) {
             $this->env_hosted_test = $newUrl;
-        } else if ($FlowType == ResursMethodTypes::METHOD_OMNI) {
+        } else if ($FlowType == ResursMethodTypes::METHOD_CHECKOUT) {
             $this->env_omni_test = $newUrl;
         } else {
             /*
@@ -3777,7 +3777,11 @@ class ResursBank
 				);
 			}
 			if ($myFlow === ResursMethodTypes::METHOD_HOSTED) {
-				$this->Payload['orderData'] = array('orderLines' => $this->SpecLines);
+				$this->Payload['orderData'] = array(
+					'orderLines' => $this->SpecLines,
+					'totalAmount' => $paymentSpec['totalAmount'],
+					'totalVatAmount' =>$paymentSpec['totalVatAmount']
+				);
 			}
 			if ($myFlow == ResursMethodTypes::METHOD_CHECKOUT) {
 				$this->Payload['orderLines'] = $this->SpecLines;
@@ -3808,7 +3812,7 @@ class ResursBank
 			$this->createPaymentExecuteCommand = "bookPayment";
 			return array('status' => 'delayed' );
 		} else {
-			$bookPaymentResult = $this->createPaymentExecute( 'bookPayment', $this->Payload );
+			$bookPaymentResult = $this->createPaymentExecute( $payment_id_or_method, $this->Payload );
 		}
 		return $bookPaymentResult;
 	}
@@ -3821,21 +3825,24 @@ class ResursBank
 	 * @throws Exception
 	 */
 	private function createPaymentExecute($payment_id_or_method = '', $payload = array()) {
+		if (trim(strtolower($this->username)) == "exshop") {
+			throw new \Exception("The use of exshop is no longer supported", ResursExceptions::EXSHOP_PROHIBITED);
+		}
+		$error = array();
 		$myFlow = $this->getPreferredPaymentService();
 		// Using this function to validate that card data info is properly set up during the deprecation state in >= 1.0.2/1.1.1
 		$this->validateCardData();
 		if ($myFlow == ResursMethodTypes::METHOD_SIMPLIFIED) {
 			return $this->postService( 'bookPayment', $this->Payload );
 		} else if ($myFlow == ResursMethodTypes::METHOD_CHECKOUT) {
-			$omniUrl= $this->getCheckoutUrl() . "/checkout/payments/" . $payment_id_or_method;
-			$checkoutResponse = $this->CURL->doPost($omniUrl, $this->Payload, \TorneLIB\CURL_POST_AS::POST_AS_JSON);
+			$checkoutUrl= $this->getCheckoutUrl() . "/checkout/payments/" . $payment_id_or_method;
+			$checkoutResponse = $this->CURL->doPost($checkoutUrl, $this->Payload, \TorneLIB\CURL_POST_AS::POST_AS_JSON);
 			$parsedResponse = $this->CURL->getParsedResponse($checkoutResponse);
 			$responseCode = $this->CURL->getResponseCode($checkoutResponse);
 			if ($responseCode == 200) {
 				$this->paymentSessionId = $parsedResponse->paymentSessionId;
 				return $parsedResponse->html;
 			} else {
-				$error = array();
 				if (isset($parsedResponse->error)) {
 					$error[] = $parsedResponse->error;
 				}
@@ -3846,7 +3853,22 @@ class ResursBank
 			}
 			return $parsedResponse;
 		} else if ($myFlow == ResursMethodTypes::METHOD_HOSTED) {
-
+			$hostedUrl = $this->getHostedUrl();
+			$hostedResponse = $this->CURL->doPost($hostedUrl, $this->Payload, \TorneLIB\CURL_POST_AS::POST_AS_JSON);
+			$parsedResponse = $this->CURL->getParsedResponse($hostedResponse);
+			if (isset($parsedResponse->location)) {
+				return $parsedResponse->location;
+			} else {
+				if (isset($parsedResponse->error)) {
+					$error[] = $parsedResponse->error;
+				}
+				if (isset($parsedResponse->message)) {
+					$error[] = $parsedResponse->message;
+				}
+				$responseCode = $this->CURL->getResponseCode($hostedResponse);
+				throw new \Exception(implode("\n", $error), $responseCode);
+			}
+			die();
 		}
 	}
 	public function getPaymentSessionId() {
@@ -3930,10 +3952,22 @@ class ResursBank
 				'customerIpAddress' => $this->getCustomerIp()
 			);
 			$this->handlePayload( $paymentDataPayload );
-		} else if ($this->enforceService == ResursMethodTypes::METHOD_CHECKOUT) {
+		}
+		if (($this->enforceService == ResursMethodTypes::METHOD_CHECKOUT || $this->enforceService == ResursMethodTypes::METHOD_HOSTED)) {
 			// Convert signing to checkouturls if exists (not receommended as failurl might not always be the backurl)
 			// However, those variables will only be replaced in the correct payload if they are not already there.
 			if (isset($this->Payload['signing'])) {
+				if ($this->enforceService == ResursMethodTypes::METHOD_HOSTED) {
+					if (isset($this->Payload['signing']['forceSigning'])) {
+						$this->Payload['forceSigning'] = $this->Payload['signing']['forceSigning'];
+					}
+					if (!isset($this->Payload['failUrl']) && isset($this->Payload['signing']['failUrl'])) {
+						$this->Payload['failUrl'] = $this->Payload['signing']['failUrl'];
+					}
+					if (!isset($this->Payload['backUrl']) && isset($this->Payload['signing']['backUrl'])) {
+						$this->Payload['backUrl'] = $this->Payload['signing']['backUrl'];
+					}
+				}
 				if (!isset($this->Payload['successUrl']) && isset($this->Payload['signing']['successUrl'])) {
 					$this->Payload['successUrl'] = $this->Payload['signing']['successUrl'];
 				}
@@ -3942,10 +3976,15 @@ class ResursBank
 				}
 				unset($this->Payload['signing']);
 			}
-			if (isset($this->Payload['customer']['address'])) {unset($this->Payload['customer']['address']);}
-			if (isset($this->Payload['customer']['deliveryAddress'])) {unset($this->Payload['customer']['deliveryAddress']);}
-			if (isset($this->Payload['paymentData'])) {unset($this->Payload['paymentData']);}
-			if ($this->checkoutCustomerFieldSupport === false && isset($this->Payload['customer'])) {unset($this->Payload['customer']);}
+			// Rules for customer only applies to checkout. As this also involves the hosted flow (see above) this must only specifically occur on the checkout
+			if ($this->enforceService == ResursMethodTypes::METHOD_CHECKOUT) {
+				if (isset($this->Payload['paymentData'])) {unset($this->Payload['paymentData']);}
+				if (isset($this->Payload['customer']['address'])) {unset($this->Payload['customer']['address']);}
+				if (isset($this->Payload['customer']['deliveryAddress'])) {unset($this->Payload['customer']['deliveryAddress']);}
+				if ( $this->checkoutCustomerFieldSupport === false && isset( $this->Payload['customer'] ) ) {
+					unset( $this->Payload['customer'] );
+				}
+			}
 		}
 	}
 
@@ -4154,6 +4193,7 @@ class ResursBank
 	 * @since 1.1.2
 	 */
 	private function handlePayload($userDefinedPayload = array()) {
+		$myFlow = $this->getPreferredPaymentService();
 		if ( is_array( $userDefinedPayload ) && count($userDefinedPayload) ) {
 			foreach ( $userDefinedPayload as $payloadKey => $payloadContent ) {
 				if (!isset($this->Payload[$payloadKey])) {
@@ -4172,10 +4212,16 @@ class ResursBank
 		// Address and deliveryAddress should move to the correct location
 		if (isset($this->Payload['address'])) {
 			$this->Payload['customer']['address'] = $this->Payload['address'];
+			if ($myFlow == ResursMethodTypes::METHOD_HOSTED && isset($this->Payload['customer']['address']['country'])) {
+				$this->Payload['customer']['address']['countryCode'] = $this->Payload['customer']['address']['country'];
+			}
 			unset($this->Payload['address']);
 		}
 		if (isset($this->Payload['deliveryAddress'])) {
 			$this->Payload['customer']['deliveryAddress'] = $this->Payload['deliveryAddress'];
+			if ($myFlow == ResursMethodTypes::METHOD_HOSTED && isset($this->Payload['customer']['deliveryAddress']['country'])) {
+				$this->Payload['customer']['deliveryAddress']['countryCode'] = $this->Payload['customer']['deliveryAddress']['country'];
+			}
 			unset($this->Payload['deliveryAddress']);
 		}
 	}

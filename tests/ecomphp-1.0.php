@@ -42,6 +42,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 		if ( ! isset( $_SERVER['HTTP_HOST'] ) ) {
 			$_SERVER['HTTP_HOST'] = "localhost";
 		}
+		$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_SIMPLIFIED );
 	}
 
 	////////// Public variables
@@ -246,9 +247,6 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 	 * Initialization of environment with ability to change into others.
 	 */
 	private function checkEnvironment() {
-/*		if ( $this->environmentName === "nonmock" ) {
-			$this->rb->setNonMock();
-		}*/
 		$this->initServices();
 	}
 
@@ -420,8 +418,9 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 		}
 		$bookData['paymentData']['waitForFraudControl'] = $this->waitForFraudControl;
 		$bookData['signing']                            = array(
-			'successUrl'   => $this->signUrl . '&success=true',
-			'failUrl'      => $this->signUrl . "&success=false",
+			'successUrl'   => $this->signUrl . '&success=true&preferredService=' . $this->rb->getPreferredPaymentService(),
+			'failUrl'      => $this->signUrl . '&success=false&preferredService=' . $this->rb->getPreferredPaymentService(),
+			'backUrl'      => $this->signUrl . '&success=backurl&preferredService=' . $this->rb->getPreferredPaymentService(),
 			'forceSigning' => $forceSigning
 		);
 
@@ -953,7 +952,6 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 		$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_CHECKOUT );
 		$newReferenceId = $this->rb->getPreferredPaymentId();
 		$bookResult = $this->doBookPayment( $newReferenceId, true, false, true );
-
 		if ( is_string( $bookResult ) && preg_match( "/iframe src/i", $bookResult ) ) {
 			$iFrameUrl     = $this->rb->getIframeSrc( $bookResult );
 			$iframeContent = $this->CURL->doGet( $iFrameUrl );
@@ -974,17 +972,17 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 	/**
 	 * Try to fetch the iframe (Resurs Checkout). When the iframe url has been received, check if there's content.
 	 */
-	public function testGetCheckoutFrame() {
+	public function testGetIFrame() {
 		$this->checkEnvironment();
 		try {
 			$getFrameUrl = $this->getCheckoutFrame( true );
 		} catch (\Exception $e) {
-			$this->markTestIncomplete($e->getMessage());
+			$this->markTestIncomplete("getCheckoutFrameException: " . $e->getMessage());
 		}
 		//$SessionID = $this->rb->getPaymentSessionId();
 		$UrlDomain = $this->NETWORK->getUrlDomain($getFrameUrl);
 		// If there is no https defined in the frameUrl, the test might have failed
-		if (array_pop($UrlDomain) == "https") {
+		if ($UrlDomain[1] == "https") {
 			$FrameContent = $this->CURL->doGet($getFrameUrl);
 			$this->assertTrue($FrameContent['code'] == 200 && strlen($FrameContent['body']) > 1024);
 		}
