@@ -1776,7 +1776,7 @@ class Tornevall_cURL {
                                 // 7.28.1 (this was discovered on a server that was running PHP 5.5 and libcurl-7.22). In full debug
                                 // even libcurl-7.22 was generating this message, so from PHP 5.4.11 we are now enforcing the value 2
                                 // for CURLOPT_SSL_VERIFYHOST instead.
-                                if (version_compare( PHP_VERSION, '5.4.11', "<" )) {
+                                if (version_compare( PHP_VERSION, '5.4.11', ">=" )) {
 					curl_setopt( $this->CurlSession, CURLOPT_SSL_VERIFYHOST, 2 );
 				} else {
 					curl_setopt( $this->CurlSession, CURLOPT_SSL_VERIFYHOST, 1 );
