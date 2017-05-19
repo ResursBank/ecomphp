@@ -12,7 +12,7 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.0
- * @version 1.0.1
+ * @version 1.0.2
  * @deprecated Maintenance version only
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
@@ -26,13 +26,10 @@ if (!defined('RB_API_PATH')) {
     define('RB_API_PATH', __DIR__);
 }
 require_once(RB_API_PATH . '/thirdparty/network.php');
-require_once(RB_API_PATH . '/rbapiloader/ResursAfterShopRenderTypes.php');
-require_once(RB_API_PATH . '/rbapiloader/ResursCallbackTypes.php');
-require_once(RB_API_PATH . '/rbapiloader/ResursCheckoutCallTypes.php');
+require_once(RB_API_PATH . '/rbapiloader/ResursTypeClasses.php');
 require_once(RB_API_PATH . '/rbapiloader/ResursCurlMethods.php');
 require_once(RB_API_PATH . '/rbapiloader/ResursEnvironments.php');
 require_once(RB_API_PATH . '/rbapiloader/ResursException.php');
-require_once(RB_API_PATH . '/rbapiloader/ResursMethodTypes.php');
 
 /**
  * Class ResursBank Primary class for EComPHP
@@ -196,9 +193,9 @@ class ResursBank
 	////////// Private variables
 	///// Client Specific Settings
 	/** @var string The version of this gateway */
-	private $version = "1.0.1";
+	private $version = "1.0.2";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20170504";
+	private $lastUpdate = "20170519";
 	/** @var string This. */
     private $clientName = "EComPHP";
     /** @var string Replacing $clientName on usage of setClientNAme */
@@ -1373,6 +1370,37 @@ class ResursBank
 		}
 		return false;
 	}
+    /**
+     * Simplifies removal of callbacks even when they does not exist at first.
+     * @param int $callbackType
+     *
+     * @return bool
+     * @since 1.0.1
+     * @since 1.1.1
+     */
+    public function unregisterEventCallback($callbackType = ResursCallbackTypes::UNDEFINED) {
+        $callbackType = $this->getCallbackTypeString($callbackType);
+
+        if (!empty($callbackType)) {
+            if ( $this->registerCallbacksViaRest ) {
+                $this->InitializeServices();
+                $serviceUrl        = $this->getCheckoutUrl() . "/callbacks";
+                $renderCallbackUrl = $serviceUrl . "/" . $callbackType;
+                $curlResponse = $this->CURL->doDelete($renderCallbackUrl);
+                if ($curlResponse['code'] >= 200 && $curlResponse['code'] <= 250) {
+                    return true;
+                }
+            } else {
+                $this->InitializeServices();
+                // Not using postService here, since we're
+                $curlResponse = $this->CURL->doGet($this->getServiceUrl('unregisterEventCallback'))->unregisterEventCallback(array('eventType' => $callbackType));
+                if ($curlResponse['code'] >= 200 && $curlResponse['code'] <= 250) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 	/**
 	 * Simplifed callback registrator. Also handles re-registering of callbacks in case of already found in system.
 	 *
@@ -1520,37 +1548,7 @@ class ResursBank
 	{
 		return $this->unregisterEventCallback($callbackType);
 	}
-	/**
-	 * Simplifies removal of callbacks even when they does not exist at first.
-	 * @param int $callbackType
-	 *
-	 * @return bool
-	 * @since 1.0.1
-	 * @since 1.1.1
-	 */
-	public function unregisterEventCallback($callbackType = ResursCallbackTypes::UNDEFINED) {
-		$callbackType = $this->getCallbackTypeString($callbackType);
 
-		if (!empty($callbackType)) {
-			if ( $this->registerCallbacksViaRest ) {
-				$this->InitializeServices();
-				$serviceUrl        = $this->getCheckoutUrl() . "/callbacks";
-				$renderCallbackUrl = $serviceUrl . "/" . $callbackType;
-				$curlResponse = $this->CURL->doDelete($renderCallbackUrl);
-				if ($curlResponse['code'] >= 200 && $curlResponse['code'] <= 250) {
-					return true;
-				}
-			} else {
-				$this->InitializeServices();
-				// Not using postService here, since we're
-				$curlResponse = $this->CURL->doGet($this->getServiceUrl('unregisterEventCallback'))->unregisterEventCallback(array('eventType' => $callbackType));
-				if ($curlResponse['code'] >= 200 && $curlResponse['code'] <= 250) {
-					return true;
-				}
-			}
-		}
-		return false;
-	}
 	/**
 	 * Trigger registered callback event TEST
 	 *
@@ -1768,6 +1766,41 @@ class ResursBank
 	public function getPayment($paymentId = '') {
 		return $this->postService("getPayment", array('paymentId' => $paymentId));
 	}
+    /**
+     * Make sure a payment will always be returned correctly. If string, getPayment will run first. If array/object, it will continue to look like one.
+     *
+     * @param array $paymentArrayOrPaymentId
+     * @return array|mixed|null
+     * @since 1.0.2
+     * @since 1.1.2
+     */
+    private function getCorrectPaymentContent($paymentArrayOrPaymentId = array()) {
+        if (is_string($paymentArrayOrPaymentId) && !empty($paymentArrayOrPaymentId)) {
+            return $this->getPayment($paymentArrayOrPaymentId);
+        } else if (is_object($paymentArrayOrPaymentId)) {
+            return $paymentArrayOrPaymentId;
+        } else if (is_array($paymentArrayOrPaymentId)) {
+            // This is wrong, but we'll return it anyway.
+            return $paymentArrayOrPaymentId;
+        }
+        return null;
+    }
+    /**
+     * Get the correct key value from a payment (or a paymentobject directly)
+     *
+     * @param array $paymentArrayOrPaymentId
+     * @param string $paymentKey
+     * @return null
+     * @since 1.0.2
+     * @since 1.1.2
+     */
+    private function getPaymentContent($paymentArrayOrPaymentId = array(), $paymentKey = "") {
+        $Payment = $this->getCorrectPaymentContent($paymentArrayOrPaymentId);
+        if (isset($Payment->$paymentKey)) {
+            return $Payment->$paymentKey;
+        }
+        return null;
+    }
 	/**
 	 * Find/search payments
 	 *
@@ -5111,21 +5144,12 @@ class ResursBank
 	 */
 	public function canCredit($paymentArrayOrPaymentId = array())
 	{
-		if ((!is_array($paymentArrayOrPaymentId) && !is_object($paymentArrayOrPaymentId)) && !empty($paymentArrayOrPaymentId)) {
-			$paymentArrayOrPaymentId = $this->getPayment($paymentArrayOrPaymentId);
-		}
-		if (isset($paymentArrayOrPaymentId->status)) {
-			if (is_array($paymentArrayOrPaymentId->status)) {
-				if (in_array("CREDITABLE", $paymentArrayOrPaymentId->status)) {
-					return true;
-				}
-			} else {
-				if ($paymentArrayOrPaymentId->status == "CREDITABLE") {
-					return true;
-				}
-			}
-		}
-		return false;
+        $Status = (array)$this->getPaymentContent($paymentArrayOrPaymentId, "status");
+        // IS_CREDITED - CREDITABLE
+        if (in_array("CREDITABLE", $Status)) {
+            return true;
+        }
+        return false;
 	}
 	/**
 	 * Find out if a payment is debitable
@@ -5134,22 +5158,27 @@ class ResursBank
 	 */
 	public function canDebit($paymentArrayOrPaymentId = array())
 	{
-		if ((!is_array($paymentArrayOrPaymentId) && !is_object($paymentArrayOrPaymentId)) && !empty($paymentArrayOrPaymentId)) {
-			$paymentArrayOrPaymentId = $this->getPayment($paymentArrayOrPaymentId);
-		}
-		if (isset($paymentArrayOrPaymentId->status)) {
-			if (is_array($paymentArrayOrPaymentId->status)) {
-				if (in_array("DEBITABLE", $paymentArrayOrPaymentId->status)) {
-					return true;
-				}
-			} else {
-				if ($paymentArrayOrPaymentId->status == "DEBITABLE") {
-					return true;
-				}
-			}
-		}
+	    $Status = (array)$this->getPaymentContent($paymentArrayOrPaymentId, "status");
+	    // IS_DEBITED - DEBITABLE
+        if (in_array("DEBITABLE", $Status)) {
+            return true;
+        }
 		return false;
 	}
+
+    /**
+     * A payment is annullable if the payment is debitable
+     *
+     * @param array $paymentArrayOrPaymentId
+     * @return bool
+     * @since 1.0.2
+     * @since 1.1.2
+     */
+	public function canAnnul($paymentArrayOrPaymentId = array()) {
+	    return $this->canDebit($paymentArrayOrPaymentId);
+    }
+
+
 	/**
 	 * Automatically cancel (credit or annul) a payment with "best practice".
 	 *
