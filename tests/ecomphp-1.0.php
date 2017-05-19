@@ -375,8 +375,6 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 				$this->markTestIncomplete();
 			}
 		}
-		/* Set unit amount higher (than 500 as before) so we may pass boundaries in tests */
-		//$bookData['type'] = "hosted";
 		if ( $this->zeroSpecLine ) {
 			if ( ! $this->zeroSpecLineZeroTax ) {
 				$bookData['specLine'] = $this->getSpecLineZero();
@@ -426,6 +424,13 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 
 		if ( $paymentServiceSet !== ResursMethodTypes::METHOD_CHECKOUT ) {
 			$res = $this->rb->bookPayment( $setMethod, $bookData );
+            if ($paymentServiceSet == ResursMethodTypes::METHOD_HOSTED) {
+                $domainInfo = $this->NETWORK->getUrlDomain($res);
+                if (preg_match("/^http/i", $domainInfo[1])) {
+                    $hostedContent = $this->CURL->getResponseBody($this->CURL->doGet($res));
+                    return $hostedContent;
+                }
+            }
 		} else {
 			$res = $this->rb->bookPayment( $this->rb->getPreferredPaymentId(), $bookData );
 		}
@@ -718,7 +723,8 @@ class ResursBankTest extends PHPUnit_Framework_TestCase {
 		$this->checkEnvironment();
 		$this->rb->setPreferredPaymentService(ResursMethodTypes::METHOD_HOSTED);
 		$bookResult = $this->doBookPayment( $this->availableMethods['invoice_natural'], true, false, true );
-		$this->assertTrue( $bookResult );
+		// Can't do bookings yet, since this is a forwarder. We would like to emulate browser clicking here, to complete the order.
+		$this->assertTrue( strlen($bookResult) > 1024);
 	}
 
 	/**

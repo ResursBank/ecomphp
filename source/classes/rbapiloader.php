@@ -3868,7 +3868,7 @@ class ResursBank
 				$responseCode = $this->CURL->getResponseCode($hostedResponse);
 				throw new \Exception(implode("\n", $error), $responseCode);
 			}
-			die();
+			throw new \Exception("Could not parse location of hosted flow (missing)", 404);
 		}
 	}
 	public function getPaymentSessionId() {
