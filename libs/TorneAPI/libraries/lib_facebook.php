@@ -94,6 +94,12 @@ class LibFacebook
     /** @var array What fields to retrieve by default from GetUserInfo. Setting this value to null, will fetch all fields available from Facebook. Note: In newer graph-interfaces, fields must be defined to return info. In 2.2, null will return all fields */
     public $userInfoFields = array('id', 'name', 'email');
 
+    /** @var array What facebook returns */
+    private $facebookReturnResponse;
+    /** @var string Last requested feed id */
+    private $lastFacebookId;
+
+
     /**
      * The constructor where initializing the API is being made. If string is empty, we're trying to autodetect the API in some default paths. Otherwise, we'll try the path you give us.
      * @param string $SDK_PATH
@@ -170,7 +176,8 @@ class LibFacebook
         $this->LoginURL = $this->setLoginUrl();
     }
 
-    public function Reauthorize($Code = "", $RedirectURL = "") {
+    public function Reauthorize($Code = "", $RedirectURL = "")
+    {
         $token_url = "https://graph.facebook.com/oauth/access_token?client_id="
             . $this->appId . "&redirect_uri=" . urlencode($RedirectURL)
             . "&client_secret=" . $this->appSecret
@@ -207,11 +214,13 @@ class LibFacebook
             throw new \Exception($e->getMessage(), $e->getCode(), $e);
         }
         $DecodedBody = $Response->getDecodedBody();
-        if (isset($DecodedBody['data'])) {
-            return $DecodedBody['data'];
-        } else {
-            return $DecodedBody;
-        }
+        $this->facebookReturnResponse = $DecodedBody;
+        return $DecodedBody;
+        /*        if (isset($DecodedBody['data'])) {
+                    return $DecodedBody['data'];
+                } else {
+                    return $DecodedBody;
+                }*/
     }
 
     public function Get($endPoint = "/me?fields=id,name,email", $accessToken = '')
@@ -242,6 +251,22 @@ class LibFacebook
             }
         }
     }
+
+    /**
+     * @param array $handleArray
+     * @return array|mixed
+     */
+    public function getData($handleArray = array())
+    {
+        if (count($handleArray) && isset($handleArray['data'])) {
+            return $handleArray['data'];
+        } else if (count($this->facebookReturnResponse) && isset($this->facebookReturnResponse['data'])) {
+            return $this->facebookReturnResponse['data'];
+        } else {
+            return array();
+        }
+    }
+
 
     /**
      * Autodetect helper to use $this->currentHelper
@@ -393,7 +418,8 @@ class LibFacebook
         return $helper->getLoginUrl($baseCallbackURL, $this->requestPermissions);
     }
 
-    public function getAccessTokenByCode() {
+    public function getAccessTokenByCode()
+    {
 
     }
 
@@ -438,7 +464,8 @@ class LibFacebook
         return $this->lastException;
     }
 
-    public function Revoke() {
+    public function Revoke()
+    {
         return $this->Facebook->delete("/me/permissions", array(), $this->accessToken);
     }
 
@@ -562,6 +589,8 @@ class LibFacebook
     }
 
     /**
+     * Post a message on a feed (where you are authorized)
+     *
      * @param string $destination
      * @param string $message
      * @param string $link
@@ -569,11 +598,14 @@ class LibFacebook
      * @param string $privacy Currently not in use
      * @param string $attachmentId
      */
-    public function PostFeed($destination = "me", $message = "", $link = "", $userTags = "", $privacy = "", $attachmentId = "") {
+    public function postFeed($destination = "me", $message = "", $link = "", $userTags = "", $privacy = "", $attachmentId = "")
+    {
         $postDataArray = array(
             'message' => $message,
         );
-        if (!empty($link)) { $postDataArray['link'] = $link; }
+        if (!empty($link)) {
+            $postDataArray['link'] = $link;
+        }
         if (!empty($userTags)) {
             if (is_string($userTags)) {
                 $userTags = explode(",", $userTags);
@@ -587,5 +619,39 @@ class LibFacebook
         }
         $endPointDestination = "/" . (!empty($destination) ? $destination : "me") . "/feed";
         return $this->Post($endPointDestination, $postDataArray);
+    }
+
+    /**
+     * Fetch a feed from a node (group, user, etc)
+     *
+     * @param string $target
+     * @return array
+     */
+    public function getFeed($target = "me")
+    {
+        $this->lastFacebookId = $target;
+        $returnResponse = $this->Get("/" . $target . "/feed?fields=name,link,created_time,message,id");
+        return $returnResponse;
+    }
+
+    /**
+     * Extract a proper URL from a facebook node
+     * @param string $id
+     * @return array
+     */
+    public function getProperUrl($id = "") {
+        if (empty($id) && !empty($this->lastFacebookId)) {
+            $id = $this->lastFacebookId;
+        }
+        $testId = explode("_", $id);
+        $useId = $id;
+        if (isset($testId[0])) {
+            $useId = $testId[0];
+        }
+        return $this->get("/" . $useId . "?fields=id,name,link");
+    }
+
+    public function getGroups($id = "me") {
+        return $this->Get("/".$id."/groups");
     }
 }
