@@ -65,8 +65,13 @@ class LibTornevall extends CoreAPI {
             if (isset($ErrorControl->success)) {
                 if ($ErrorControl->success === true || $ErrorControl->success === "1") {
                     $fromVerb = $verb . "Response";
+                    $newParsedResponse = null;
                     if (isset($ParsedResponse->$fromVerb)) {
-                        $ParsedResponse = $ParsedResponse->$fromVerb;
+                        $newParsedResponse = $ParsedResponse->$fromVerb;
+                    } else if (count($ParsedResponse) == 1) {
+                        $keyedParsedResponse = key($ParsedResponse);
+                        $newParsedResponse = isset($ParsedResponse->$keyedParsedResponse) ? $ParsedResponse : null;
+                        $ParsedResponse = $newParsedResponse;
                     }
                 } else {
                     throw new \Exception($ErrorControl->faultstring, $ErrorControl->code);

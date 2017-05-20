@@ -560,4 +560,32 @@ class LibFacebook
     {
         return $this->version;
     }
+
+    /**
+     * @param string $destination
+     * @param string $message
+     * @param string $link
+     * @param string $userTags
+     * @param string $privacy Currently not in use
+     * @param string $attachmentId
+     */
+    public function PostFeed($destination = "me", $message = "", $link = "", $userTags = "", $privacy = "", $attachmentId = "") {
+        $postDataArray = array(
+            'message' => $message,
+        );
+        if (!empty($link)) { $postDataArray['link'] = $link; }
+        if (!empty($userTags)) {
+            if (is_string($userTags)) {
+                $userTags = explode(",", $userTags);
+            }
+            if (is_array($userTags) && count($userTags)) {
+                $postDataArray['tags'] = implode(",", $userTags);
+            }
+        }
+        if (!empty($attachmentId)) {
+            $postDataArray['object_attachments'] = $attachmentId;
+        }
+        $endPointDestination = "/" . (!empty($destination) ? $destination : "me") . "/feed";
+        return $this->Post($endPointDestination, $postDataArray);
+    }
 }
