@@ -31,6 +31,7 @@ namespace TorneLIB\API;
 
 use Facebook\Exceptions\FacebookResponseException;
 use Facebook\Exceptions\FacebookSDKException;
+use TorneLIB\Tornevall_cURL;
 
 /**
  * Class FacebookBridge
@@ -53,6 +54,7 @@ class LibFacebook
     private $version = "1.0.0";
 
     private $facebookHandlerUrl;
+    private $CURL;
 
     /** @var array Default permissions on login */
     public $permissions = array('user_about_me', 'email');
@@ -130,6 +132,7 @@ class LibFacebook
                     'default_graph_version' => 'v' . $this->useGraph,
                 ]);
                 $this->SDK_LOADED = true;
+                $this->CURL = new Tornevall_cURL();
                 $this->oAuth2Client = $this->Facebook->getOAuth2Client();
             } catch (FacebookSDKException $SDKException) {
                 $this->SDK_LOADED = false;
@@ -167,6 +170,19 @@ class LibFacebook
         $this->LoginURL = $this->setLoginUrl();
     }
 
+    public function Reauthorize($Code = "", $RedirectURL = "") {
+        $token_url = "https://graph.facebook.com/oauth/access_token?client_id="
+            . $this->appId . "&redirect_uri=" . urlencode($RedirectURL)
+            . "&client_secret=" . $this->appSecret
+            . "&code=" . $Code . "&display=popup";
+        $RequestToken = $this->CURL->getParsedResponse($this->CURL->doGet($token_url));
+        if (isset($RequestToken->access_token)) {
+            $this->setAccessToken($RequestToken->access_token);
+            return true;
+        }
+        return false;
+    }
+
     private function PrepareRequest($endPoint = "/me?fields=id,name,email", $parameters = array(), $accessToken = '', $RequestType = "post")
     {
         $FacebookResponse = null;
@@ -180,15 +196,15 @@ class LibFacebook
             }
         }
         try {
-            if ($RequestType == "post") {
+            if (strtolower($RequestType) == "post") {
                 $Response = $this->Facebook->post($endPoint, $parameters, $accessToken);
             } else {
                 $Response = $this->Facebook->get($endPoint, $accessToken);
             }
         } catch (FacebookResponseException $e) {
-            return null;
+            throw new \Exception($e->getMessage(), $e->getCode(), $e);
         } catch (FacebookSDKException $e) {
-            return null;
+            throw new \Exception($e->getMessage(), $e->getCode(), $e);
         }
         $DecodedBody = $Response->getDecodedBody();
         if (isset($DecodedBody['data'])) {
@@ -422,13 +438,17 @@ class LibFacebook
         return $this->lastException;
     }
 
+    public function Revoke() {
+        return $this->Facebook->delete("/me/permissions", array(), $this->accessToken);
+    }
+
     /**
      * Prepare for logging out
      * @param $baseCallbackURL
      * @return mixed
      * @throws \Exception
      */
-    public function GetLogoutURL($baseCallbackURL)
+    public function GetLogoutURL($baseCallbackURL = "")
     {
         if ($this->accessToken) {
             $this->GetCurrentHelper();
