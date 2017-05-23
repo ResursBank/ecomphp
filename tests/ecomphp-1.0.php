@@ -788,14 +788,21 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
         }
     }
 
-    private function getAPayment($paymentId = null, $paymentType = null)
+    private function getAPayment($paymentId = null, $randomize = false, $paymentType = null)
     {
         $this->checkEnvironment();
-        $paymentList = $this->rb->findPayments();
+        $paymentList = $this->rb->findPayments(array(), 1, 100);
         if (is_null($paymentId)) {
             if (is_array($paymentList) && count($paymentList)) {
-                $existingPayment = array_pop($paymentList);
-                $paymentId = $existingPayment->paymentId;
+            	if (!$randomize) {
+		            $existingPayment = array_pop( $paymentList );
+		            $paymentId       = $existingPayment->paymentId;
+	            } else {
+            		$paymentIdIndex = rand(0, count($paymentList));
+            		if (isset($paymentList[$paymentIdIndex])) {
+            			$paymentId = $paymentList[$paymentIdIndex]->paymentId;
+		            }
+	            }
             }
         }
         return $this->rb->getPayment($paymentId);
@@ -1525,6 +1532,16 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
         }
     }
 
+    function testGetPaymentSpecByTypes() {
+    	//$Payment = $this->getAPayment(null, false)->id;
+	    $Payment = "20170519125223-9587503794";  // Authorize only
+	    $Payment = "20170519125725-8589567180";  // AUTH + ANNUL
+	    $Payment = "20170519125216-8830457943";  // DEBIT ONLY
+    	echo "Payment $Payment\n";
+    	$PaymentSpec = $this->rb->getPaymentSpecByStatus($Payment);
+
+    }
+
     /**
      * Creating payment with own billing address but happyflow govId
      */
@@ -1593,7 +1610,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
         $payment = $this->getAPayment();
         // Make sure we don't step over this magic number
         while ($payment == "20170519070836-6799421526") {
-            $payment = $this->getAPayment();
+            $payment = $this->getAPayment(true);
         }
         $this->assertTrue($this->rb->canDebit($payment));
     }
