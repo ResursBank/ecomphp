@@ -611,7 +611,7 @@ class Tornevall_cURL
             $this->sslCurlDriver = false;
         }
         $this->CurlResolve = CURL_RESOLVER::RESOLVER_DEFAULT;
-        $this->CurlUserAgent = 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; .NET CLR 1.0.3705; .NET CLR 1.1.4322; Media Center PC 4.0; TorneLIB+cUrl ' . $this->TorneCurlVersion . '/' . $this->TorneCurlRelease . ')';
+        $this->CurlUserAgent = 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; .NET CLR 1.0.3705; .NET CLR 1.1.4322; Media Center PC 4.0; +TorneLIB+cUrl ' . $this->TorneCurlVersion . '/' . $this->TorneCurlRelease . ')';
         if (class_exists('TorneLIB\TorneLIB_Network')) {
             $this->NETWORK = new TorneLIB_Network();
         }
