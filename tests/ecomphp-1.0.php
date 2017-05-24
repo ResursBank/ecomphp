@@ -1614,4 +1614,44 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
         }
         $this->assertTrue($this->rb->canDebit($payment));
     }
+
+    private function generateOrderByClientChoice($orderLines = 8, $quantity = 1, $minAmount = 1000, $maxAmount = 2000)
+    {
+        $this->rb->setPreferredPaymentService(ResursMethodTypes::METHOD_SIMPLIFIED);
+        $this->rb->setBillingByGetAddress("198305147715");
+        $this->rb->setCustomer("198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL");
+        while ($orderLines-- > 0) {
+            $this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), rand($minAmount,$maxAmount), 25, null, $quantity);
+        }
+        $this->rb->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+        try {
+            $Payment = $this->rb->createPayment($this->availableMethods['invoice_natural']);
+        } catch (\Exception $e) {
+            echo $e->getMessage();
+        }
+        if ($Payment->bookPaymentStatus == "BOOKED") {
+            return $Payment;
+        }
+    }
+    function testHugeQuantity()
+    {
+        $this->checkEnvironment();
+        try {
+            $hasOrder = $this->generateOrderByClientChoice(2, 16000, 1,1);
+            $this->assertTrue($hasOrder->bookPaymentStatus == "BOOKED");
+        } catch (\Exception $e) {
+        }
+    }
+
+    function testFullDebit()
+    {
+        $this->checkEnvironment();
+        try {
+            $hasOrder = $this->generateOrderByClientChoice();
+            $paymentId = $hasOrder->paymentId;
+            echo $paymentId . "\n";
+        } catch (\Exception $e) {
+        }
+    }
+
 }
