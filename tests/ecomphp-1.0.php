@@ -794,15 +794,15 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
         $paymentList = $this->rb->findPayments(array(), 1, 100);
         if (is_null($paymentId)) {
             if (is_array($paymentList) && count($paymentList)) {
-            	if (!$randomize) {
-		            $existingPayment = array_pop( $paymentList );
-		            $paymentId       = $existingPayment->paymentId;
-	            } else {
-            		$paymentIdIndex = rand(0, count($paymentList));
-            		if (isset($paymentList[$paymentIdIndex])) {
-            			$paymentId = $paymentList[$paymentIdIndex]->paymentId;
-		            }
-	            }
+                if (!$randomize) {
+                    $existingPayment = array_pop($paymentList);
+                    $paymentId = $existingPayment->paymentId;
+                } else {
+                    $paymentIdIndex = rand(0, count($paymentList));
+                    if (isset($paymentList[$paymentIdIndex])) {
+                        $paymentId = $paymentList[$paymentIdIndex]->paymentId;
+                    }
+                }
             }
         }
         return $this->rb->getPayment($paymentId);
@@ -1532,16 +1532,6 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
         }
     }
 
-    function testGetPaymentSpecByTypes() {
-    	//$Payment = $this->getAPayment(null, false)->id;
-	    $Payment = "20170519125223-9587503794";  // Authorize only
-	    $Payment = "20170519125725-8589567180";  // AUTH + ANNUL
-	    $Payment = "20170519125216-8830457943";  // DEBIT ONLY
-    	echo "Payment $Payment\n";
-    	$PaymentSpec = $this->rb->getPaymentSpecByStatus($Payment);
-
-    }
-
     /**
      * Creating payment with own billing address but happyflow govId
      */
@@ -1621,7 +1611,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
         $this->rb->setBillingByGetAddress("198305147715");
         $this->rb->setCustomer("198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL");
         while ($orderLines-- > 0) {
-            $this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), rand($minAmount,$maxAmount), 25, null, $quantity);
+            $this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), rand($minAmount, $maxAmount), 25, null, $quantity);
         }
         $this->rb->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
         try {
@@ -1633,11 +1623,12 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
             return $Payment;
         }
     }
+
     function testHugeQuantity()
     {
         $this->checkEnvironment();
         try {
-            $hasOrder = $this->generateOrderByClientChoice(2, 16000, 1,1);
+            $hasOrder = $this->generateOrderByClientChoice(2, 16000, 1, 1);
             $this->assertTrue($hasOrder->bookPaymentStatus == "BOOKED");
         } catch (\Exception $e) {
         }
@@ -1652,6 +1643,16 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
             echo $paymentId . "\n";
         } catch (\Exception $e) {
         }
+    }
+
+    function testGetPaymentSpecByTypes() {
+        //$Payment = $this->getAPayment(null, false)->id;
+        $Payment = "20170519125223-9587503794";  // Authorize only
+        $Payment = "20170519125725-8589567180";  // AUTH + ANNUL
+        $Payment = "20170519125216-8830457943";  // DEBIT ONLY
+        echo "Payment $Payment\n";
+        $PaymentSpec = $this->rb->getPaymentSpecByStatus($Payment);
+
     }
 
 }
