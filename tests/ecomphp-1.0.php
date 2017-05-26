@@ -38,6 +38,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
         } else {
             $this->rb = new \ResursBank($overrideUsername, $overridePassword);
         }
+	    $this->rb->setUserAgent("EcomPHP/TestSuite");
         /*
          * If HTTP_HOST is not set, Resurs Checkout will not run properly, since the iFrame requires a valid internet connection (actually browser vs http server).
          */
@@ -1623,6 +1624,10 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
             return $Payment;
         }
     }
+    private function getPaymentIdFromOrderByClientChoice($orderLines = 8, $quantity = 1, $minAmount = 1000, $maxAmount = 2000) {
+    	$Payment = $this->generateOrderByClientChoice();
+    	return $Payment->paymentId;
+    }
 
     function testHugeQuantity()
     {
@@ -1653,6 +1658,24 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
         echo "Payment $Payment\n";
         $PaymentSpec = $this->rb->getPaymentSpecByStatus($Payment);
 
+    }
+    function testAnullFullPayment() {
+    	$paymentId = $this->getPaymentIdFromOrderByClientChoice();
+	    $this->assertTrue($this->rb->annulPayment($paymentId));
+    }
+    function testDebitFullPayment() {
+    	$paymentId = $this->getPaymentIdFromOrderByClientChoice();
+	    $this->assertTrue($this->rb->finalizePayment($paymentId));
+    }
+    function testCreditFullPayment() {
+    	$paymentId = $this->getPaymentIdFromOrderByClientChoice();
+	    $this->rb->finalizePayment($paymentId);
+	    $this->assertTrue($this->rb->creditPayment($paymentId));
+    }
+    function testCancelFullPayment() {
+    	$paymentId = $this->getPaymentIdFromOrderByClientChoice();
+	    $this->rb->finalizePayment($paymentId);
+	    $this->assertTrue($this->rb->cancelPayment($paymentId));
     }
 
 }

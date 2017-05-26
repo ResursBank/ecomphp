@@ -195,7 +195,7 @@ class ResursBank
     /** @var string The version of this gateway */
     private $version = "1.0.2";
     /** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-    private $lastUpdate = "20170519";
+    private $lastUpdate = "20170524";
     /** @var string This. */
     private $clientName = "EComPHP";
     /** @var string Replacing $clientName on usage of setClientNAme */
@@ -287,6 +287,9 @@ class ResursBank
     /** @var int Default current environment. Always set to test (security reasons) */
     private $current_environment_updated = false;
 
+    /** @var string How EcomPHP should identify with the web services*/
+    private $myUserAgent = null;
+
 	/**
 	 * @var null
 	 */
@@ -312,6 +315,9 @@ class ResursBank
         'getPayment' => 'AfterShopFlowService',
         'findPayments' => 'AfterShopFlowService',
         'addMetaData' => 'AfterShopFlowService',
+        'annulPayment' => 'AfterShopFlowService',
+        'creditPayment' => 'AfterShopFlowService',
+        'finalizePayment' => 'AfterShopFlowService',
         'registerEventCallback' => 'ConfigurationService',
         'unregisterEventCallback' => 'ConfigurationService',
         'getRegisteredEventCallback' => 'ConfigurationService',
@@ -655,6 +661,7 @@ class ResursBank
         if ($targetEnvironment != ResursEnvironments::ENVIRONMENT_NOT_SET) {
             $this->setEnvironment($targetEnvironment);
         }
+	    $this->setUserAgent();
     }
 
     /**
@@ -810,7 +817,7 @@ class ResursBank
             $this->environment = $this->env_prod;
         }
         $this->hasCertFile = false;
-        $this->soapOptions = $this->sslGetOptionsStream($this->soapOptions, array('http' => array("user_agent" => $this->getVersionFull())));
+        $this->soapOptions = $this->sslGetOptionsStream($this->soapOptions, array('http' => array("user_agent" => $this->myUserAgent)));
 
         if ($this->hasWsdl) {
             /*
@@ -875,6 +882,7 @@ class ResursBank
             $this->CURL = new \TorneLIB\Tornevall_cURL();
             $this->CURL->setStoreSessionExceptions(true);
             $this->CURL->setAuthentication($this->soapOptions['login'], $this->soapOptions['password']);
+            $this->CURL->setUserAgent($this->myUserAgent);
         }
         if (class_exists('TorneLIB\TorneLIB_Network')) {
             $this->NETWORK = new \TorneLIB\TorneLIB_Network();
@@ -891,6 +899,22 @@ class ResursBank
         }
         return true;
     }
+
+	/**
+	 * Set up a user-agent to identify with webservices.
+	 *
+	 * @param string $MyUserAgent
+	 * @since 1.0.2
+	 * @since 1.1.2
+	 */
+	public function setUserAgent($MyUserAgent='') {
+    	if (!empty($MyUserAgent)) {
+		    $this->myUserAgent = $MyUserAgent . " +" . $this->getVersionFull();
+	    } else {
+    		$this->myUserAgent = $this->getVersionFull();
+	    }
+	}
+
 
     /**
      * Find classes
@@ -1716,7 +1740,7 @@ class ResursBank
         $serviceUrl = $this->env_test . "DeveloperWebService?wsdl";
         $CURL = new \TorneLIB\Tornevall_cURL();
         $CURL->setAuthentication($this->username, $this->password);
-        $CURL->setUserAgent("EComPHP " . $this->version);
+        $CURL->setUserAgent($this->myUserAgent);
         $eventRequest = $CURL->doGet($serviceUrl);
         $eventParameters = array(
             'eventType' => 'TEST',
@@ -2559,10 +2583,12 @@ class ResursBank
     /**
      * Adds your client name to the current client name string which is used as User-Agent when communicating with ecommerce.
      * @param string $clientNameString
+     * @deprecated 1.0.2 Use setUserAgent
+     * @deprecated 1.1.2 Use setUserAgent
      */
-    public function setClientName($clientNameString = "")
+    public function setClientName($clientNameString = null)
     {
-        $this->clientName = $clientNameString . "/" . $this->realClientName;
+        $this->setUserAgent($clientNameString);
     }
 
     /**
@@ -2819,7 +2845,7 @@ class ResursBank
         }
         $CurlLibResponse = null;
         $this->CURL->setAuthentication($this->username, $this->password);
-        $this->CURL->setUserAgent("EComPHP " . $this->version);
+        $this->CURL->setUserAgent($this->myUserAgent);
 
         if ($curlMethod == ResursCurlMethods::METHOD_POST) {
             $CurlLibResponse = $this->CURL->doPost($url, $jsonData, \TorneLIB\CURL_POST_AS::POST_AS_JSON);
@@ -5552,6 +5578,7 @@ class ResursBank
 	 * Get a payment spec for a specific order in which we see what state each orderline is in for the moment
 	 *
 	 * @param $paymentIdOrSpec
+	 * @return array
 	 */
     public function getPaymentSpecByStatus($paymentIdOrSpec) {
     	$usePayment = $paymentIdOrSpec;
@@ -5621,10 +5648,7 @@ class ResursBank
             if (empty($this->customerId)) {
                 $this->customerId = "-";
             }
-            /** @noinspection PhpParamsInspection */
-            $metaSetup = new resurs_addMetaData($paymentId, "CustomerId");
-            $metaSetup->value = $this->customerId;
-            $this->afterShopFlowService->addMetaData($metaSetup);
+	        $this->addMetaData($paymentId, "CustomerId", $this->customerId);
         } catch (\Exception $metaResponseException) {
 
         }
@@ -5660,7 +5684,7 @@ class ResursBank
             } else {
                 $creditPaymentContainer = $this->renderPaymentSpecContainer($paymentId, ResursAfterShopRenderTypes::CREDIT, $creditSpecLines, $clientPaymentSpec, $cancelParams, $quantityMatch, $useSpecifiedQuantity);
             }
-            $this->afterShopFlowService->creditPayment($creditPaymentContainer);
+	        $Result = $this->postService("creditPayment", $creditPaymentContainer);
             $creditStateSuccess = true;
         } catch (\Exception $e) {
             $creditStateSuccess = false;
@@ -5674,7 +5698,7 @@ class ResursBank
                 $annulPaymentContainer = $this->renderPaymentSpecContainer($paymentId, ResursAfterShopRenderTypes::ANNUL, $annulSpecLines, $clientPaymentSpec, $cancelParams, $quantityMatch, $useSpecifiedQuantity);
             }
             if (is_array($annulPaymentContainer) && count($annulPaymentContainer)) {
-                $this->afterShopFlowService->annulPayment($annulPaymentContainer);
+	            $Result = $this->postService("annulPayment", $annulPaymentContainer);
                 $annulStateSuccess = true;
             }
         } catch (\Exception $e) {
@@ -5728,10 +5752,7 @@ class ResursBank
             if (empty($this->customerId)) {
                 $this->customerId = "-";
             }
-            /** @noinspection PhpParamsInspection */
-            $metaSetup = new resurs_addMetaData($paymentId, "CustomerId");
-            $metaSetup->value = $this->customerId;
-            $this->afterShopFlowService->addMetaData($metaSetup);
+	        $this->addMetaData($paymentId, "CustomerId", $this->customerId);
         } catch (\Exception $metaResponseException) {
 
         }
@@ -5745,7 +5766,7 @@ class ResursBank
         $finalizePaymentContainer = $this->renderPaymentSpecContainer($paymentId, ResursAfterShopRenderTypes::FINALIZE, $paymentArray, $clientPaymentSpec, $finalizeParams, $quantityMatch, $useSpecifiedQuantity);
         if (isset($paymentArray->id)) {
             try {
-                $this->afterShopFlowService->finalizePayment($finalizePaymentContainer);
+	            $Result = $this->postService("finalizePayment", $finalizePaymentContainer);
                 $finalizeResult = true;
             } catch (\Exception $e) {
                 throw new \Exception(__FUNCTION__ . ": " . $e->getMessage(), 500, __FUNCTION__);
@@ -5774,10 +5795,7 @@ class ResursBank
             if (empty($this->customerId)) {
                 $this->customerId = "-";
             }
-            /** @noinspection PhpParamsInspection */
-            $metaSetup = new resurs_addMetaData($paymentId, "CustomerId");
-            $metaSetup->value = $this->customerId;
-            $this->afterShopFlowService->addMetaData($metaSetup);
+	        $this->addMetaData($paymentId, "CustomerId", $this->customerId);
         } catch (\Exception $metaResponseException) {
 
         }
@@ -5791,7 +5809,7 @@ class ResursBank
         $creditPaymentContainer = $this->renderPaymentSpecContainer($paymentId, ResursAfterShopRenderTypes::CREDIT, $paymentArray, $clientPaymentSpec, $creditParams, $quantityMatch, $useSpecifiedQuantity);
         if (isset($paymentArray->id)) {
             try {
-                $this->afterShopFlowService->creditPayment($creditPaymentContainer);
+	            $Result = $this->postService("creditPayment", $creditPaymentContainer);
                 $creditResult = true;
             } catch (\Exception $e) {
                 throw new \Exception(__FUNCTION__ . ": " . $e->getMessage(), $e->getCode());
@@ -5819,12 +5837,7 @@ class ResursBank
             if (empty($this->customerId)) {
                 $this->customerId = "-";
             }
-            if (class_exists('resurs_addMetaData')) {
-                /** @noinspection PhpParamsInspection */
-                $metaSetup = new resurs_addMetaData($paymentId, "CustomerId");
-                $metaSetup->value = $this->customerId;
-                $this->afterShopFlowService->addMetaData($metaSetup);
-            }
+	        $this->addMetaData($paymentId, "CustomerId", $this->customerId);
         } catch (\Exception $metaResponseException) {
 
         }
@@ -5838,7 +5851,7 @@ class ResursBank
         $annulPaymentContainer = $this->renderPaymentSpecContainer($paymentId, ResursAfterShopRenderTypes::ANNUL, $paymentArray, $clientPaymentSpec, $annulParams, $quantityMatch, $useSpecifiedQuantity);
         if (isset($paymentArray->id)) {
             try {
-                $this->afterShopFlowService->annulPayment($annulPaymentContainer);
+	            $Result = $this->postService("annulPayment", $annulPaymentContainer);
                 $annulResult = true;
             } catch (\Exception $e) {
                 throw new \Exception(__FUNCTION__ . ": " . $e->getMessage(), $e->getCode());
