@@ -24,14 +24,10 @@ namespace Resursbank\RBEcomPHP;
 if ( ! defined( 'RB_API_PATH' ) ) {
 	define( 'RB_API_PATH', __DIR__ );
 }
-require_once( RB_API_PATH . '/thirdparty/network.php' );
-require_once( RB_API_PATH . '/rbapiloader/ResursAfterShopRenderTypes.php' );
-require_once( RB_API_PATH . '/rbapiloader/ResursCallbackTypes.php' );
-require_once( RB_API_PATH . '/rbapiloader/ResursCheckoutCallTypes.php' );
-require_once( RB_API_PATH . '/rbapiloader/ResursCurlMethods.php' );
-require_once( RB_API_PATH . '/rbapiloader/ResursEnvironments.php' );
-require_once( RB_API_PATH . '/rbapiloader/ResursException.php' );
-require_once( RB_API_PATH . '/rbapiloader/ResursMethodTypes.php' );
+require_once(RB_API_PATH . '/thirdparty/network.php');
+require_once(RB_API_PATH . '/rbapiloader/ResursTypeClasses.php');
+require_once(RB_API_PATH . '/rbapiloader/ResursEnvironments.php');
+require_once(RB_API_PATH . '/rbapiloader/ResursException.php');
 
 
 /**
