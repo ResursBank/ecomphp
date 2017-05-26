@@ -27,7 +27,6 @@ if (!defined('RB_API_PATH')) {
 }
 require_once(RB_API_PATH . '/thirdparty/network.php');
 require_once(RB_API_PATH . '/rbapiloader/ResursTypeClasses.php');
-require_once(RB_API_PATH . '/rbapiloader/ResursCurlMethods.php');
 require_once(RB_API_PATH . '/rbapiloader/ResursEnvironments.php');
 require_once(RB_API_PATH . '/rbapiloader/ResursException.php');
 
@@ -195,7 +194,7 @@ class ResursBank
     /** @var string The version of this gateway */
     private $version = "1.0.2";
     /** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-    private $lastUpdate = "20170524";
+    private $lastUpdate = "20170526";
     /** @var string This. */
     private $clientName = "EComPHP";
     /** @var string Replacing $clientName on usage of setClientNAme */
@@ -5861,14 +5860,3 @@ class ResursBank
     }
 }
 
-/**
- * Class ResursCallbackReachability While using external controls on url reachability, this is required
- */
-abstract class ResursCallbackReachability
-{
-    const IS_REACHABLE_NOT_AVAILABLE = 0;
-    const IS_FULLY_REACHABLE = 1;
-    const IS_REACHABLE_WITH_PROBLEMS = 2;
-    const IS_NOT_REACHABLE = 3;
-    const IS_REACHABLE_NOT_KNOWN = 4;
-}

@@ -127,3 +127,28 @@ abstract class ResursAfterShopRenderTypes
     const ANNUL = 3;
     const UPDATE = 4;
 }
+
+/**
+ * Class ResursCurlMethods (Those are types, but class is not named as this)
+ *
+ * How CURL should handle calls
+ */
+abstract class ResursCurlMethods
+{
+	const METHOD_GET = 0;
+	const METHOD_POST = 1;
+	const METHOD_PUT = 2;
+	const METHOD_DELETE = 3;
+}
+
+/**
+ * Class ResursCallbackReachability While using external controls on url reachability, this is required (also types)
+ */
+abstract class ResursCallbackReachability
+{
+	const IS_REACHABLE_NOT_AVAILABLE = 0;
+	const IS_FULLY_REACHABLE = 1;
+	const IS_REACHABLE_WITH_PROBLEMS = 2;
+	const IS_NOT_REACHABLE = 3;
+	const IS_REACHABLE_NOT_KNOWN = 4;
+}
