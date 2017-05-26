@@ -1667,6 +1667,14 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	    $this->rb->finalizePayment($paymentId);
 	    $this->assertTrue($this->rb->cancelPayment($paymentId));
     }
+    function testAdditionalDebit() {
+	    $paymentId = $this->getPaymentIdFromOrderByClientChoice();
+	    $this->rb->annulPayment($paymentId);
+    	$this->rb->addOrderLine("myExtraOrderLine-1", "One orderline added with additionalDebitOfPayment", 100, 25);
+    	$this->rb->addOrderLine("myExtraOrderLine-2", "One orderline added with additionalDebitOfPayment", 200, 25);
+    	$this->assertTrue($this->rb->setAdditionalDebitOfPayment($paymentId));
+    }
+
     // Incomplete test for rebuilding of aftershop-paymentspec-compiler
 	function testGetPaymentSpecByTypes() {
 		//$Payment = $this->getAPayment(null, false)->id;

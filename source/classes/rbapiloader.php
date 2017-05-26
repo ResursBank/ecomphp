@@ -192,7 +192,7 @@ class ResursBank
     ////////// Private variables
     ///// Client Specific Settings
     /** @var string The version of this gateway */
-    private $version = "1.0.2";
+    private $version = "1.0.3";
     /** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
     private $lastUpdate = "20170526";
     /** @var string This. */
@@ -316,6 +316,7 @@ class ResursBank
         'addMetaData' => 'AfterShopFlowService',
         'annulPayment' => 'AfterShopFlowService',
         'creditPayment' => 'AfterShopFlowService',
+        'additionalDebitOfPayment' => 'AfterShopFlowService',
         'finalizePayment' => 'AfterShopFlowService',
         'registerEventCallback' => 'ConfigurationService',
         'unregisterEventCallback' => 'ConfigurationService',
@@ -1837,13 +1838,18 @@ class ResursBank
      *
      * @return array|mixed|null
      */
-    private function postService($serviceName = "", $resursParameters = array())
+    private function postService($serviceName = "", $resursParameters = array(), $getResponseCode = false)
     {
         $this->InitializeServices();
         $Service = $this->CURL->doGet($this->getServiceUrl($serviceName));
         $RequestService = $Service->$serviceName($resursParameters);
         $ParsedResponse = $Service->getParsedResponse($RequestService);
-        return $this->getDataObject($ParsedResponse);
+        $ResponseCode = $Service->getResponseCode();
+        if (!$getResponseCode) {
+	        return $this->getDataObject( $ParsedResponse );
+        } else {
+        	return $ResponseCode;
+        }
     }
 
     /**
@@ -4050,9 +4056,12 @@ class ResursBank
         $this->renderPaymentSpec();
     }
 
-    private function renderPaymentSpec()
+    private function renderPaymentSpec($overrideFlow = ResursMethodTypes::METHOD_UNDEFINED)
     {
         $myFlow = $this->getPreferredPaymentService();
+        if ($overrideFlow !== ResursMethodTypes::METHOD_UNDEFINED) {
+        	$myFlow = $overrideFlow;
+        }
         $paymentSpec = array();
         if (is_array($this->SpecLines) && count($this->SpecLines)) {
             foreach ($this->SpecLines as $specIndex => $specRow) {
@@ -4095,6 +4104,7 @@ class ResursBank
                 $this->Payload['orderLines'] = $this->SpecLines;
             }
         }
+        return $this->Payload;
     }
 
     ////// MASTER SHOPFLOWS - PRIMARY BOOKING FUNCTIONS
@@ -4144,7 +4154,9 @@ class ResursBank
         // Using this function to validate that card data info is properly set up during the deprecation state in >= 1.0.2/1.1.1
         $this->validateCardData();
         if ($myFlow == ResursMethodTypes::METHOD_SIMPLIFIED) {
-            return $this->postService('bookPayment', $this->Payload);
+            $myFlowResponse =  $this->postService('bookPayment', $this->Payload);
+	        $this->SpecLines = array();
+	        return $myFlowResponse;
         } else if ($myFlow == ResursMethodTypes::METHOD_CHECKOUT) {
             $checkoutUrl = $this->getCheckoutUrl() . "/checkout/payments/" . $payment_id_or_method;
             $checkoutResponse = $this->CURL->doPost($checkoutUrl, $this->Payload, \TorneLIB\CURL_POST_AS::POST_AS_JSON);
@@ -4152,6 +4164,7 @@ class ResursBank
             $responseCode = $this->CURL->getResponseCode($checkoutResponse);
             if ($responseCode == 200) {
                 $this->paymentSessionId = $parsedResponse->paymentSessionId;
+	            $this->SpecLines = array();
                 return $parsedResponse->html;
             } else {
                 if (isset($parsedResponse->error)) {
@@ -4168,6 +4181,7 @@ class ResursBank
             $hostedResponse = $this->CURL->doPost($hostedUrl, $this->Payload, \TorneLIB\CURL_POST_AS::POST_AS_JSON);
             $parsedResponse = $this->CURL->getParsedResponse($hostedResponse);
             if (isset($parsedResponse->location)) {
+	            $this->SpecLines = array();
                 return $parsedResponse->location;
             } else {
                 if (isset($parsedResponse->error)) {
@@ -5858,5 +5872,32 @@ class ResursBank
         }
         return $annulResult;
     }
-}
 
+	/**
+	 *
+	 * setLoggedInUser
+	 *
+	 * @param string $paymentId
+	 * @return bool
+	 * @since 1.0.3
+	 * @since 1.1.3
+	 */
+    public function setAdditionalDebitOfPayment($paymentId = "") {
+    	$createdBy = $this->username;
+    	if (!empty($this->loggedInuser)) {
+    		$createdBy = $this->loggedInuser;
+	    }
+	    $this->renderPaymentSpec(ResursMethodTypes::METHOD_SIMPLIFIED);
+	    $additionalDataArray = array(
+	    	'paymentId' => $paymentId,
+		    'paymentSpec' => $this->Payload['orderData'],
+		    'createdBy' => $createdBy
+	    );
+	    $Result = $this->postService("additionalDebitOfPayment", $additionalDataArray, true);
+	    if ($Result >= 200 && $Result <= 250) {
+	    	return true;
+	    } else {
+	    	return false;
+	    }
+    }
+}
