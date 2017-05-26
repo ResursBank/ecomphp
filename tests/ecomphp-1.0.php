@@ -1649,16 +1649,6 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
         } catch (\Exception $e) {
         }
     }
-
-    function testGetPaymentSpecByTypes() {
-        //$Payment = $this->getAPayment(null, false)->id;
-        $Payment = "20170519125223-9587503794";  // Authorize only
-        $Payment = "20170519125725-8589567180";  // AUTH + ANNUL
-        $Payment = "20170519125216-8830457943";  // DEBIT ONLY
-        echo "Payment $Payment\n";
-        $PaymentSpec = $this->rb->getPaymentSpecByStatus($Payment);
-
-    }
     function testAnullFullPayment() {
     	$paymentId = $this->getPaymentIdFromOrderByClientChoice();
 	    $this->assertTrue($this->rb->annulPayment($paymentId));
@@ -1677,5 +1667,14 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	    $this->rb->finalizePayment($paymentId);
 	    $this->assertTrue($this->rb->cancelPayment($paymentId));
     }
+    // Incomplete test for rebuilding of aftershop-paymentspec-compiler
+	function testGetPaymentSpecByTypes() {
+		//$Payment = $this->getAPayment(null, false)->id;
+		$Payment = "20170519125223-9587503794";  // Authorize only
+		$Payment = "20170519125725-8589567180";  // AUTH + ANNUL
+		$Payment = "20170519125216-8830457943";  // DEBIT ONLY
+		echo "Payment $Payment\n";
+		$PaymentSpec = $this->rb->getPaymentSpecByStatus($Payment);
+	}
 
 }
