@@ -5874,8 +5874,9 @@ class ResursBank
     }
 
 	/**
+	 * Add an additional orderline to a payment
 	 *
-	 * setLoggedInUser
+	 * With setLoggedInUser() you can also set up a user identification for the createdBy-parameter sent with the additional debig. If not set, EComPHP will use the merchant credentials.
 	 *
 	 * @param string $paymentId
 	 * @return bool
