@@ -1279,7 +1279,7 @@ class Tornevall_cURL
             if (class_exists('SimpleXMLElement')) {
                 if (!empty($trimmedContent)) {
                     $simpleXML = new \SimpleXMLElement($content);
-                    if (isset($simpleXML) && is_object($simpleXML)) {
+                    if (isset($simpleXML) && (is_object($simpleXML) || is_array($simpleXML))) {
                         return $simpleXML;
                     }
                 } else {
@@ -1320,7 +1320,6 @@ class Tornevall_cURL
                 throw new \Exception("Can not parse DOMDocuments without the DOMDocuments class");
             }
         }
-
         return $parsedContent;
     }
 

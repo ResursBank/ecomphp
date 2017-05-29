@@ -81,6 +81,8 @@ class LibFacebook
     private $currentHelper = null;
     private $currentHelperType;
     private $LoginURL;
+    /** @var bool Set to true if this has been runned through the initializer */
+    private $hasInitializer = false;
 
     /** @var string Decide what graph version that should be used as default */
     public $useGraph = "2.9";
@@ -165,6 +167,7 @@ class LibFacebook
      */
     public function Initialize($callbackUrl = "", $permissions = array())
     {
+        $this->hasInitializer = true;
         $this->GetCurrentHelper();
         if (!empty($callbackUrl)) {
             $this->setCallbackUrl($callbackUrl);
