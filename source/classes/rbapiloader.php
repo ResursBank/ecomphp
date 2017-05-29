@@ -2741,7 +2741,6 @@ class ResursBank {
 					$newDataContainer['shopUrl'] = "http" . ( isset( $_SERVER['HTTPS'] ) && $_SERVER['HTTPS'] === true ? "s" : "" ) . "://" . $_SERVER['HTTP_HOST'];
 				}
 
-
 				$orderlineProps = array(
 					"artNo",
 					"vatPcs",
@@ -4399,14 +4398,52 @@ class ResursBank {
 				if ( $this->checkoutCustomerFieldSupport === false && isset( $this->Payload['customer'] ) ) {
 					unset( $this->Payload['customer'] );
 				}
+				// Making sure sloppy developers uses shopUrl properly.
+				if (!isset($this->Payload['shopUrl'])) {
+					$this->Payload['shopUrl'] = $this->hasHttps(true) . "://" . $_SERVER['HTTP_HOST'];
+				}
 			}
 		}
 	}
 
+	private function hasHttps($returnProtocol = false) {
+		if (isset($_SERVER['HTTPS'])) {
+			if ($_SERVER['HTTPS'] == "on") {
+				if (!$returnProtocol) {
+					return true;
+				} else {
+					return "https";
+				}
+			} else {
+				if (!$returnProtocol) {
+					return false;
+				} else {
+					return "http";
+				}
+			}
+		}
+		if (!$returnProtocol) {
+			return false;
+		} else {
+			return "http";
+		}
+	}
+
 	/**
-	 * Make sure that the payment spec only contains the required data
+	 * Make sure that the payment spec only contains the data that each payment flow needs.
+	 *
+	 * This function has been created for keeping backwards compatibility from older payment spec renderers. EComPHP is allowing
+	 * same content in the payment spec for all flows, so to keep this steady, this part of EComPHP will sanitize each spec
+	 * so it only contains data that it really needs when push out the payload to ecommerce.
+	 *
+	 * @param array $specLines
+	 * @param int $myFlowOverrider
+	 *
+	 * @return array
+	 * @since 1.0.4
+	 * @since 1.1.4
 	 */
-	private function sanitizePaymentSpec($specLines = array()) {
+	public function sanitizePaymentSpec($specLines = array(), $myFlowOverrider = ResursMethodTypes::METHOD_UNDEFINED) {
 		$specRules = array(
 			'checkout' => array(
 				'artNo', 'description', 'quantity', 'unitMeasure', 'unitAmountWithoutVat', 'vatPct', 'type'
@@ -4420,6 +4457,9 @@ class ResursBank {
 		);
 		if (is_array($specLines)) {
 			$myFlow = $this->getPreferredPaymentService();
+			if ($myFlowOverrider !== ResursMethodTypes::METHOD_UNDEFINED) {
+				$myFlow = $myFlowOverrider;
+			}
 			$mySpecRules = array();
 			if ($myFlow == ResursMethodTypes::METHOD_SIMPLIFIED) {
 				$mySpecRules = $specRules['simplified'];
@@ -4698,7 +4738,6 @@ class ResursBank {
 	 */
 	public function getPayload() {
 		$this->preparePayload();
-
 		return $this->Payload;
 	}
 
