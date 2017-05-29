@@ -4090,10 +4090,10 @@ class ResursBank {
 	 * @param int $unitAmountWithoutVat
 	 * @param int $vatPct
 	 * @param string $unitMeasure
-	 * @param string $articleType
+	 * @param string $articleType ORDER_LINE, DISCOUNT, SHIPPING_FEE
 	 * @param int $quantity
 	 */
-	public function addOrderLine( $articleNumberOrId = '', $description = '', $unitAmountWithoutVat = 0, $vatPct = 0, $unitMeasure = 'st', $articleType = "", $quantity = 1 ) {
+	public function addOrderLine( $articleNumberOrId = '', $description = '', $unitAmountWithoutVat = 0, $vatPct = 0, $unitMeasure = 'st', $articleType = "ORDER_LINE", $quantity = 1 ) {
 		if ( ! is_array( $this->SpecLines ) ) {
 			$this->SpecLines = array();
 		}
@@ -4449,10 +4449,10 @@ class ResursBank {
 				'artNo', 'description', 'quantity', 'unitMeasure', 'unitAmountWithoutVat', 'vatPct', 'type'
 			),
 			'hosted' => array(
-				'artNo', 'description', 'quantity', 'unitMeasure', 'unitAmountWithoutVat', 'vatPct', 'totalVatAmount', 'totalAmount', 'type'
+				'artNo', 'description', 'quantity', 'unitMeasure', 'unitAmountWithoutVat', 'vatPct', 'totalVatAmount', 'totalAmount'
 			),
 			'simplified' => array(
-				'id', 'artNo', 'description', 'quantity', 'unitMeasure', 'unitAmountWithoutVat', 'vatPct', 'totalVatAmount', 'totalAmount', 'type'
+				'id', 'artNo', 'description', 'quantity', 'unitMeasure', 'unitAmountWithoutVat', 'vatPct', 'totalVatAmount', 'totalAmount'
 			)
 		);
 		if (is_array($specLines)) {
