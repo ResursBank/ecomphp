@@ -12,7 +12,7 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.0
- * @version 1.0.5
+ * @version 1.0.6
  * @deprecated Maintenance version only
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
@@ -202,9 +202,9 @@ class ResursBank {
 	////////// Private variables
 	///// Client Specific Settings
 	/** @var string The version of this gateway */
-	private $version = "1.1.5";
+	private $version = "1.0.6";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20170530";
+	private $lastUpdate = "20170601";
 	/** @var string This. */
 	private $clientName = "EComPHP";
 	/** @var string Replacing $clientName on usage of setClientNAme */
@@ -663,7 +663,12 @@ class ResursBank {
 		if ( defined( 'RB_API_PATH' ) ) {
 			$this->classPath = RB_API_PATH;
 		}
-		$this->checkoutShopUrl = $this->hasHttps(true) . "://" . $_SERVER['HTTP_HOST'];
+		if (isset($_SERVER['HTTP_HOST'])) {
+			$theHost = $_SERVER['HTTP_HOST'];
+		} else {
+			$theHost = "nohost.localhost";
+		}
+		$this->checkoutShopUrl = $this->hasHttps(true) . "://" . $theHost;
 		$this->soapOptions['cache_wsdl'] = ( defined( 'WSDL_CACHE_BOTH' ) ? WSDL_CACHE_BOTH : true );
 		$this->soapOptions['ssl_method'] = ( defined( 'SOAP_SSL_METHOD_TLS' ) ? SOAP_SSL_METHOD_TLS : false );
 		if ( ! is_null( $login ) ) {
@@ -4269,7 +4274,7 @@ class ResursBank {
 		// Using this function to validate that card data info is properly set up during the deprecation state in >= 1.0.2/1.1.1
 		if ( $myFlow == ResursMethodTypes::METHOD_SIMPLIFIED ) {
 			$paymentMethodInfo = $this->getPaymentMethodSpecific($payment_id_or_method);
-			if ($paymentMethodInfo->specificType == "CARD" || $paymentMethodInfo == "NEWCARD") {
+			if ($paymentMethodInfo->specificType == "CARD" || $paymentMethodInfo->specificType == "NEWCARD" || $paymentMethodInfo->specificType == "REVOLVING_CREDIT") {
 				$this->validateCardData();
 			}
 			$myFlowResponse  = $this->postService( 'bookPayment', $this->Payload );
