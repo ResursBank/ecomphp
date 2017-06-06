@@ -197,9 +197,11 @@ class LibFacebook
     {
         $FacebookResponse = null;
         if (empty($accessToken)) {
-            if (!empty($this->ExtendSession())) {
+            $regularSessionToken = $this->GetSession();
+            $extendSessionToken = $this->ExtendSession();
+            if (!empty($extendSessionToken)) {
                 $accessToken = $this->ExtendSession();
-            } else if (!empty($this->GetSession())) {
+            } else if (!empty($regularSessionToken)) {
                 $accessToken = $this->GetSession();
             } else {
                 throw new \Exception("Access token missing", 403);

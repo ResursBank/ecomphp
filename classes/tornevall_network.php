@@ -1313,7 +1313,8 @@ class Tornevall_cURL
 
             $overrideXmlSerializer = false;
             if ($this->useXmlSerializer) {
-                if (!empty(stream_resolve_include_path('XML/Unserializer.php'))) {
+		$serializerPath = stream_resolve_include_path('XML/Unserializer.php');
+                if (!empty($serializerPath)) {
                     $overrideXmlSerializer = true;
                     require_once('XML/Unserializer.php');
                 }

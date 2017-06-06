@@ -33,7 +33,10 @@ class TorneLIB_Pluggable {
             $this->setConfig($jsonConfig);
         }
         $this->config = new TorneLIB_Configuration();
-        $this->PluggableAutoPath = $this->config->getConfigurationObject()->config->PluggableAutoPath;
+        $configurationObject = $this->config->getConfigurationObject();
+        if (isset($configurationObject)) {
+            $this->PluggableAutoPath = $configurationObject->config->PluggableAutoPath;
+        }
     }
 
     /**
