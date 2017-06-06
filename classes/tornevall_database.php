@@ -1036,16 +1036,19 @@ class TorneLIB_Database {
                                 $meta = $preparedStatement->result_metadata();
                                 $resultArray = array();
                                 $dataArray = array();
-                                while ($field = $meta->fetch_field()) {
-                                    $resultArray[] = &$dataArray[$field->name];
-                                }
-                                call_user_func_array(array($preparedStatement, 'bind_result'), $resultArray);
-                                $i = 0;
-                                while ($preparedStatement->fetch()) {
-                                    $array[$i] = array();
-                                    foreach ($dataArray as $dataKey => $dataValue) {
-                                        $array[$i][$dataKey] = $dataValue;
-                                        $i++;
+                                // If there is no meta, there is probably nothing to fetch either.
+                                if (isset($meta) && !empty($meta)) {
+                                    while ($field = $meta->fetch_field()) {
+                                        $resultArray[] = &$dataArray[$field->name];
+                                    }
+                                    call_user_func_array(array($preparedStatement, 'bind_result'), $resultArray);
+                                    $i = 0;
+                                    while ($preparedStatement->fetch()) {
+                                        $array[$i] = array();
+                                        foreach ($dataArray as $dataKey => $dataValue) {
+                                            $array[$i][$dataKey] = $dataValue;
+                                            $i++;
+                                        }
                                     }
                                 }
                                 if (count($dataArray)) {
