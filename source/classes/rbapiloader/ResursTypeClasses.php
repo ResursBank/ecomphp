@@ -1,22 +1,57 @@
 <?php
-/**
- * Resurs Bank Passthrough API - A pretty silent ShopFlowSimplifier for Resurs Bank.
- * Last update: See the lastUpdate variable
- * @package RBEcomPHP
- * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
- * @version 1.0-beta
- * @branch 1.0
- * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
- * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
- * @license Not set
- */
 
 namespace Resursbank\RBEcomPHP;
 
 /**
+ * Class ResursMethodTypes
+ * Preferred payment method types if called.
+ */
+abstract class ResursMethodTypes
+{
+    /** Default method */
+    const METHOD_UNDEFINED = 0;
+    const METHOD_SIMPLIFIED = 1;
+    const METHOD_HOSTED = 2;
+    const METHOD_CHECKOUT = 3;
+
+    /**
+     * @deprecated 1.0.0 Use METHOD_CHECKOUT instead
+     */
+    const METHOD_OMNI = 3;
+    /**
+     * @deprecated 1.0.0 Use METHOD_CHECKOUT instead
+     */
+    const METHOD_RESURSCHECKOUT = 3;
+}
+
+/**
+ * Class ResursCountry
+ * @since 1.0.2
+ */
+abstract class ResursCountry {
+    const COUNTRY_UNSET = 0;
+    const COUNTRY_SE = 1;
+    const COUNTRY_DK = 2;
+    const COUNTRY_NO = 3;
+    const COUNTRY_FI = 4;
+}
+
+/**
+ * Class ResursOmniCallTypes
+ * Omnicheckout callback types
+ * @since 1.0.2
+ */
+abstract class ResursCheckoutCallTypes
+{
+    const METHOD_PAYMENTS = 0;
+    const METHOD_CALLBACK = 1;
+}
+
+/**
  * Class ResursCallbackTypes Callbacks that can be registered with Resurs Bank.
  */
-abstract class ResursCallbackTypes {
+abstract class ResursCallbackTypes
+{
 
     /**
      * Resurs Callback Types. Callback types available from Resurs Ecommerce.
@@ -80,4 +115,42 @@ abstract class ResursCallbackTypes {
      * @link https://test.resurs.com/docs/display/ecom/BOOKED
      */
     const BOOKED = 7;
+}
+
+
+/**
+ * Class ResursAfterShopRenderTypes
+ */
+abstract class ResursAfterShopRenderTypes
+{
+    const NONE = 0;
+    const FINALIZE = 1;
+    const CREDIT = 2;
+    const ANNUL = 3;
+    const UPDATE = 4;
+}
+
+/**
+ * Class ResursCurlMethods (Those are types, but class is not named as this)
+ *
+ * How CURL should handle calls
+ */
+abstract class ResursCurlMethods
+{
+	const METHOD_GET = 0;
+	const METHOD_POST = 1;
+	const METHOD_PUT = 2;
+	const METHOD_DELETE = 3;
+}
+
+/**
+ * Class ResursCallbackReachability While using external controls on url reachability, this is required (also types)
+ */
+abstract class ResursCallbackReachability
+{
+	const IS_REACHABLE_NOT_AVAILABLE = 0;
+	const IS_FULLY_REACHABLE = 1;
+	const IS_REACHABLE_WITH_PROBLEMS = 2;
+	const IS_NOT_REACHABLE = 3;
+	const IS_REACHABLE_NOT_KNOWN = 4;
 }

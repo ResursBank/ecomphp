@@ -2,6 +2,7 @@
 
 namespace TorneLIB;
 
+/** @noinspection PhpUndefinedClassInspection */
 /**
  * Libraries for handling network related things (currently not sockets). Conversion of Legacy TorneEngine and family.
  * As this library may run as stand alone code, exceptions are thrown as regular \Exception instead of a TorneLIB_Exception.
@@ -14,25 +15,159 @@ namespace TorneLIB;
  */
 class TorneLIB_Network
 {
+    /** @var array Headers from the webserver that may contain potential proxies */
+    private $proxyHeaders = array(
+        'HTTP_VIA',
+        'HTTP_X_FORWARDED_FOR',
+        'HTTP_FORWARDED_FOR',
+        'HTTP_X_FORWARDED',
+        'HTTP_FORWARDED',
+        'HTTP_CLIENT_IP',
+        'HTTP_FORWARDED_FOR_IP',
+        'VIA',
+        'X_FORWARDED_FOR',
+        'FORWARDED_FOR',
+        'X_FORWARDED',
+        'FORWARDED',
+        'CLIENT_IP',
+        'FORWARDED_FOR_IP',
+        'HTTP_PROXY_CONNECTION'
+    );
+    /** @var array Stored list of what the webserver revealed */
+    private $clientAddressList = array();
+    private $cookieDefaultPath = "/";
+    private $cookieUseSecure;
+    private $cookieDefaultDomain;
+    private $cookieDefaultPrefix;
+
     function __construct()
     {
+        // Initiate and get client headers.
+        $this->renderProxyHeaders();
     }
 
     /**
-     * Extract domain from URL-based string
-     * @param string $url
+     * Extract domain from URL-based string.
+     *
+     * To make a long story short: This is a very unclever function from the birth of the developer (in a era when documentation was not "necessary" to read and stupidity ruled the world).
+     * As some functions still uses this, we chose to keep it, but do it "right".
+     *
+     * @param string $urlIn
+     * @param bool $validateHost Validate that the hostname do exist
+     *
      * @return array
      */
-    public function getUrlDomain($url = '')
+    public function getUrlDomain($urlIn = '', $validateHost = false)
     {
-        $urex = explode("/", preg_replace("[^(.*?)//(.*?)/(.*)]", '$2', $url . "/"));
-        $urtype = preg_replace("[^(.*?)://(.*)]", '$1', $url . "/");
-        return array($urex[0], $urtype);
+        $urlParsed = parse_url($urlIn);
+
+        if (!isset($urlParsed['host']) || !$urlParsed['scheme']) {
+            return array(null, null, null);
+        }
+
+        // Make sure that the host is not invalid
+        if ($validateHost) {
+            $hostRecord = dns_get_record($urlParsed['host'], DNS_ANY);
+            if (!count($hostRecord)) {
+                return array(null, null, null);
+            }
+        }
+
+        return array(
+            isset($urlParsed['host']) ? $urlParsed['host'] : null,
+            isset($urlParsed['scheme']) ? $urlParsed['scheme'] : null,
+            isset($urlParsed['path']) ? $urlParsed['path'] : null
+        );
+    }
+
+    /**
+     * Set a cookie
+     *
+     * @param string $name
+     * @param string $value
+     * @param string $expire
+     * @return bool
+     */
+    public function setCookie($name = '', $value = '', $expire = '')
+    {
+        $this->setCookieParameters();
+        $defaultExpire = time() + 60 * 60 * 24 * 1;
+        if (empty($expire)) {
+            $expire = $defaultExpire;
+        } else if (is_string($expire)) {
+            $expire = strtotime($expire);
+        }
+
+        return setcookie($this->cookieDefaultPrefix . $name, $value, $expire, $this->cookieDefaultPath, $this->cookieDefaultDomain, $this->cookieUseSecure);
+    }
+
+    /**
+     * Prepare addon parameters for setting a cookie
+     *
+     * @param string $path
+     * @param null $prefix
+     * @param null $domain
+     * @param null $secure
+     */
+    public function setCookieParameters($path = "/", $prefix = null, $domain = null, $secure = null)
+    {
+        $this->cookieDefaultPath = $path;
+        if (empty($this->cookieDefaultDomain)) {
+            if (is_null($domain)) {
+                $this->cookieDefaultDomain = "." . $_SERVER['HTTP_HOST'];
+            } else {
+                $this->cookieDefaultDomain = $domain;
+            }
+        }
+        if (is_null($secure)) {
+            if (isset($_SERVER['HTTPS'])) {
+                if ($_SERVER['HTTPS'] == "true") {
+                    $this->cookieUseSecure = true;
+                } else {
+                    $this->cookieUseSecure = false;
+                }
+            } else {
+                $this->cookieUseSecure = false;
+            }
+        } else {
+            $this->cookieUseSecure = $secure;
+        }
+        if (!is_null($prefix)) {
+            $this->cookieDefaultPrefix = $prefix;
+        }
+    }
+
+
+    /**
+     * Render a list of client ip addresses (if exists). This requires that the server exposes the REMOTE_ADDR
+     */
+    private function renderProxyHeaders()
+    {
+        if (isset($_SERVER['REMOTE_ADDR'])) {
+            $this->clientAddressList = array('REMOTE_ADDR' => $_SERVER['REMOTE_ADDR']);
+            foreach ($this->proxyHeaders as $proxyVar) {
+                if (isset($_SERVER[$proxyVar])) {
+                    $this->clientAddressList[$proxyVar] = $_SERVER[$proxyVar];
+                }
+            }
+        }
+    }
+
+    /**
+     * Returns a list of header where the browser client might reveal anything about proxy usage.
+     *
+     * @return array
+     */
+    public function getProxyHeaders()
+    {
+        return $this->clientAddressList;
     }
 
     /**
      * Extract domain name (zone name) from hostname
+     *
      * @param string $useHost Alternative hostname than the HTTP_HOST
+     *
      * @return string
      */
     public function getDomainName($useHost = "")
@@ -50,37 +185,41 @@ class TorneLIB_Network
             $thisdomainArray = explode(".", $currentHost);
             $thisdomain = $thisdomainArray[sizeof($thisdomainArray) - 2] . "." . $thisdomainArray[sizeof($thisdomainArray) - 1];
         }
+
         return (!empty($thisdomain) ? $thisdomain : null);
     }
 
-	/**
-	 * base64_encode
-	 *
-	 * @param $data
-	 * @return string
-	 */
-	public function base64url_encode($data)
-	{
-		return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
-	}
+    /**
+     * base64_encode
+     *
+     * @param $data
+     *
+     * @return string
+     */
+    public function base64url_encode($data)
+    {
+        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+    }
 
-	/**
-	 * base64_decode
-	 *
-	 * @param $data
-	 * @return string
-	 */
-	public function base64url_decode($data)
-	{
-		return base64_decode(str_pad(strtr($data, '-_', '+/'), strlen($data) % 4, '=', STR_PAD_RIGHT));
-	}
+    /**
+     * base64_decode
+     *
+     * @param $data
+     *
+     * @return string
+     */
+    public function base64url_decode($data)
+    {
+        return base64_decode(str_pad(strtr($data, '-_', '+/'), strlen($data) % 4, '=', STR_PAD_RIGHT));
+    }
 
 
-	/**
+    /**
      * Get reverse octets from ip address
      *
      * @param string $ipAddr
      * @param bool $returnIpType
+     *
      * @return int|string
      */
     public function getArpaFromAddr($ipAddr = '', $returnIpType = false)
@@ -107,6 +246,7 @@ class TorneLIB_Network
                 return TorneLIB_Network_IP::IPTYPE_NONE;
             }
         }
+
         return "";
     }
 
@@ -114,6 +254,7 @@ class TorneLIB_Network
      * Get IP range from netmask
      *
      * @param null $mask
+     *
      * @return array
      */
     function getRangeFromMask($mask = null)
@@ -122,8 +263,11 @@ class TorneLIB_Network
         @list($ip, $len) = explode('/', $mask);
         if (($min = ip2long($ip)) !== false) {
             $max = ($min | (1 << (32 - $len)) - 1);
-            for ($i = $min; $i < $max; $i++) $addresses[] = long2ip($i);
+            for ($i = $min; $i < $max; $i++) {
+                $addresses[] = long2ip($i);
+            }
         }
+
         return $addresses;
     }
 
@@ -132,6 +276,7 @@ class TorneLIB_Network
      *
      * @param $IP
      * @param $CIDR
+     *
      * @return bool
      */
     public function isIpInRange($IP, $CIDR)
@@ -141,13 +286,14 @@ class TorneLIB_Network
         $ip_mask = ~((1 << (32 - $mask)) - 1);
         $ip_ip = ip2long($IP);
         $ip_ip_net = $ip_ip & $ip_mask;
+
         return ($ip_ip_net == $ip_net);
     }
 
     /**
      * Translate ipv6 address to reverse octets
      *
-     * @param string $ip
+     * @param string $ipAddr
      * @return string
      */
     public function getArpaFromIpv6($ipAddr = '::')
@@ -157,6 +303,7 @@ class TorneLIB_Network
         }
         $unpackedAddr = @unpack('H*hex', inet_pton($ipAddr));
         $hex = $unpackedAddr['hex'];
+
         return implode('.', array_reverse(str_split($hex)));
     }
 
@@ -164,6 +311,7 @@ class TorneLIB_Network
      * Translate ipv4 address to reverse octets
      *
      * @param string $ipAddr
+     *
      * @return string
      */
     public function getArpaFromIpv4($ipAddr = '127.0.0.1')
@@ -171,6 +319,7 @@ class TorneLIB_Network
         if (filter_var($ipAddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
             return implode(".", array_reverse(explode(".", $ipAddr)));
         }
+
         return null;
     }
 
@@ -178,6 +327,7 @@ class TorneLIB_Network
      * Translate ipv6 reverse octets to ipv6 address
      *
      * @param string $arpaOctets
+     *
      * @return string
      */
     public function getIpv6FromOctets($arpaOctets = '0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0')
@@ -193,11 +343,10 @@ class TorneLIB_Network
 
 }
 
+/** @noinspection PhpUndefinedClassInspection */
+
 /**
- * Class TorneLIB_Network_IP
- *
- * IP Address Types class
- *
+ * Class TorneLIB_Network_IP IP Address Types class
  * @package TorneLIB
  */
 abstract class TorneLIB_Network_IP
@@ -207,6 +356,8 @@ abstract class TorneLIB_Network_IP
     const IPTYPE_V6 = 6;
 }
 
+
+/** @noinspection PhpUndefinedClassInspection */
 
 /**
  * Class Tornevall_cURL
@@ -218,7 +369,7 @@ abstract class TorneLIB_Network_IP
  * Versioning are based on TorneLIB v5, but follows its own standards in the chain.
  *
  * @package TorneLIB
- * @version 5.0.0/2017.4
+ * @version 5.0.0/2017.1
  * @link https://phpdoc.tornevall.net/TorneLIBv5/source-class-TorneLIB.Tornevall_cURL.html PHPDoc/Staging - Tornevall_cURL
  * @link https://docs.tornevall.net/x/KQCy TorneLIB (PHP) Landing documentation
  * @link https://bitbucket.tornevall.net/projects/LIB/repos/tornelib-php/browse Sources of TorneLIB
@@ -235,11 +386,11 @@ class Tornevall_cURL
     private $NETWORK;
 
     /** @var string Internal version that is being used to find out if we are running the latest version of this library */
-    private $TorneCurlVersion = "5.0.0/2017.4";
+    private $TorneCurlVersion = "5.0.0/2017.1";
     private $CurlVersion = null;
 
     /** @var string Internal release snapshot that is being used to find out if we are running the latest version of this library */
-    private $TorneCurlRelease = "20170503";
+    private $TorneCurlRelease = "20170603";
 
     /**
      * Target environment (if target is production some debugging values will be skipped)
@@ -271,7 +422,6 @@ class Tornevall_cURL
     /** @var bool If there are problems with certificates bound to a host/peer, set this to false if necessary. Default is to always try to verify them */
     private $sslVerify = true;
 
-    private $sslDriver = false;
     private $sslDriverError = array();
     private $sslCurlDriver = false;
 
@@ -395,6 +545,8 @@ class Tornevall_cURL
     private $CurlHeaders = array();
     private $CurlHeadersSystem = array();
     private $CurlHeadersUserDefined = array();
+    private $allowCdata = false;
+    private $useXmlSerializer = false;
 
     /**
      * Set up if this library can throw exceptions, whenever it needs to do that.
@@ -421,7 +573,11 @@ class Tornevall_cURL
     public $SoapTryOnce = true;
 
     /**
-     * TorneLIB_CURL constructor.
+     * Tornevall_cURL constructor.
+     * @param string $PreferredURL
+     * @param array $PreparedPostData
+     * @param int $PreferredMethod
+     * @throws \Exception
      */
     public function __construct($PreferredURL = '', $PreparedPostData = array(), $PreferredMethod = CURL_METHODS::METHOD_POST)
     {
@@ -459,7 +615,7 @@ class Tornevall_cURL
             $this->sslCurlDriver = false;
         }
         $this->CurlResolve = CURL_RESOLVER::RESOLVER_DEFAULT;
-        $this->CurlUserAgent = 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; .NET CLR 1.0.3705; .NET CLR 1.1.4322; Media Center PC 4.0; TorneLIB+cUrl ' . $this->TorneCurlVersion . '/' . $this->TorneCurlRelease . ')';
+        $this->CurlUserAgent = 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; .NET CLR 1.0.3705; .NET CLR 1.1.4322; Media Center PC 4.0; +TorneLIB+cUrl ' . $this->TorneCurlVersion . '/' . $this->TorneCurlRelease . ')';
         if (class_exists('TorneLIB\TorneLIB_Network')) {
             $this->NETWORK = new TorneLIB_Network();
         }
@@ -467,6 +623,7 @@ class Tornevall_cURL
         register_shutdown_function(array($this, 'tornecurl_terminate'));
 
         if (!empty($PreferredURL)) {
+            $InstantResponse = null;
             if ($PreferredMethod == CURL_METHODS::METHOD_GET) {
                 $InstantResponse = $this->doGet($PreferredURL);
             } else if ($PreferredMethod == CURL_METHODS::METHOD_POST) {
@@ -478,6 +635,7 @@ class Tornevall_cURL
             }
             return $InstantResponse;
         }
+        return null;
     }
 
     /**
@@ -491,6 +649,26 @@ class Tornevall_cURL
         if (!count(glob($this->CookiePath . "/*")) && $this->CookiePathCreated) {
             @rmdir($this->CookiePath);
         }
+    }
+
+    /**
+     * When using soap/xml fields returned as CDATA will be returned as text nodes if this is disabled (default: diabled)
+     *
+     * @param bool $enabled
+     */
+    public function setCdata($enabled = true)
+    {
+        $this->allowCdata = $enabled;
+    }
+
+    /**
+     * Get current state of the setCdata
+     *
+     * @return bool
+     */
+    public function getCdata()
+    {
+        return $this->allowCdata;
     }
 
     /**
@@ -509,6 +687,7 @@ class Tornevall_cURL
      * Enforce a response type if you're not happy with the default returned array.
      *
      * @param int $ResponseType
+     *
      * @since 5.0.0/2017.4
      */
     public function setResponseType($ResponseType = TORNELIB_CURL_RESPONSETYPE::RESPONSETYPE_ARRAY)
@@ -520,9 +699,11 @@ class Tornevall_cURL
      * Enforces CURLOPT_FOLLOWLOCATION to act different if not matching with the internal rules
      *
      * @param bool $setEnabled
+     *
      * @since 5.0.0/2017.4
      */
-    public function setEnforceFollowLocation($setEnabled = true) {
+    public function setEnforceFollowLocation($setEnabled = true)
+    {
         $this->followLocationEnforce = true;
         $this->followLocationSet = $setEnabled;
     }
@@ -576,6 +757,7 @@ class Tornevall_cURL
 
     /**
      * @param string $libName
+     *
      * @return string
      */
     private function getHasUpdateState($libName = 'tornelib_curl')
@@ -596,10 +778,12 @@ class Tornevall_cURL
                 return "";
             }
         }
+
         return "";
     }
 
-    public function getStoredExceptionInformation() {
+    public function getStoredExceptionInformation()
+    {
         return $this->sessionsExceptions;
     }
 
@@ -607,6 +791,7 @@ class Tornevall_cURL
      * Check against Tornevall Networks API if there are updates for this module
      *
      * @param string $libName
+     *
      * @return string
      */
     public function hasUpdate($libName = 'tornelib_curl')
@@ -614,6 +799,7 @@ class Tornevall_cURL
         if (!defined('TORNELIB_ALLOW_VERSION_REQUESTS')) {
             define('TORNELIB_ALLOW_VERSION_REQUESTS', true);
         }
+
         return $this->getHasUpdateState($libName);
     }
 
@@ -633,8 +819,24 @@ class Tornevall_cURL
         }
     }
 
-    public function getUserAgent() {
+    /**
+     * Returns the current set user agent
+     *
+     * @return string
+     */
+    public function getUserAgent()
+    {
         return $this->CurlUserAgent;
+    }
+
+    /**
+     * If XML/Serializer exists in system, use that parser instead of SimpleXML
+     *
+     * @param bool $useIfExists
+     */
+    public function setXmlSerializer($useIfExists = true)
+    {
+        $this->useXmlSerializer = $useIfExists;
     }
 
     /**
@@ -645,6 +847,7 @@ class Tornevall_cURL
     public function init()
     {
         $this->CurlSession = curl_init($this->CurlURL);
+
         return $this->CurlSession;
     }
 
@@ -735,6 +938,7 @@ class Tornevall_cURL
                 'allow_self_signed' => true
             );
         }
+
         return $sslSetup;
     }
 
@@ -747,6 +951,7 @@ class Tornevall_cURL
      *
      * @param array $optionsArray
      * @param array $selfContext
+     *
      * @return array
      * @link http://developer.tornevall.net/apigen/TorneLIB-5.0/class-TorneLIB.Tornevall_cURL.html sslGetOptionsStream() is a part of TorneLIB 5.0, described here
      */
@@ -768,6 +973,7 @@ class Tornevall_cURL
         }
         $optionsArray['stream_context'] = stream_context_create($streamContextOptions);
         $this->sslopt = $optionsArray;
+
         return $optionsArray;
     }
 
@@ -789,6 +995,7 @@ class Tornevall_cURL
      * The method is untested in Windows server environments when using OpenSSL.
      *
      * @param bool $forceTesting Force testing even if $testssl is disabled
+     *
      * @link https://docs.tornevall.net/x/KwCy#TheNetworkandcURLclass(tornevall_network.php)-SSLCertificatesandverification
      * @return bool
      */
@@ -864,8 +1071,10 @@ class Tornevall_cURL
         } else {
             // Assume there is a valid certificate if jailed by open_basedir
             $this->hasCertFile = true;
+
             return true;
         }
+
         return $this->hasCertFile;
     }
 
@@ -888,6 +1097,7 @@ class Tornevall_cURL
      * Enable/disable SSL Peer/Host verification, if problems occur with certificates. If setCertAuto is enabled, this function will use best practice.
      *
      * @param bool $enabledFlag
+     *
      * @throws \Exception
      */
     public function setSslVerify($enabledFlag = true)
@@ -907,6 +1117,7 @@ class Tornevall_cURL
      * MUST use this function.
      *
      * @since 5.0.0-20170210
+     *
      * @param bool $enabledFlag
      */
     public function setSslUnverified($enabledFlag = false)
@@ -954,20 +1165,24 @@ class Tornevall_cURL
      * Extract domain name from URL
      *
      * @param string $url
+     *
      * @return array
      */
     private function ExtractDomain($url = '')
     {
         $urex = explode("/", preg_replace("[^(.*?)//(.*?)/(.*)]", '$2', $url . "/"));
         $urtype = preg_replace("[^(.*?)://(.*)]", '$1', $url . "/");
+
         return array($urex[0], $urtype);
     }
 
+    /** @noinspection PhpUnusedPrivateMethodInspection */
     /**
      * Translate ipv4 to reverse octets
      *
      * @param string $ip
      * @param bool $getiptype
+     *
      * @return string
      */
     private function v4arpa($ip = '', $getiptype = false)
@@ -975,10 +1190,12 @@ class Tornevall_cURL
         return $this->NETWORK->getArpaFromIpv4($ip, $getiptype);
     }
 
+    /** @noinspection PhpUnusedPrivateMethodInspection */
     /**
      * ipv6-to-arpa-format-conversion
      *
      * @param string $ip
+     *
      * @return string
      */
     private function v6arpa($ip = '::')
@@ -986,10 +1203,12 @@ class Tornevall_cURL
         return $this->NETWORK->getArpaFromAddr($ip);
     }
 
+    /** @noinspection PhpUnusedPrivateMethodInspection */
     /**
      * Translate ipv6-octets to ipv6-address
      *
      * @param string $arpaOctets
+     *
      * @return string
      */
     private function fromv6arpa($arpaOctets = '')
@@ -997,11 +1216,13 @@ class Tornevall_cURL
         return $this->NETWORK->getIpv6FromOctets($arpaOctets);
     }
 
+    /** @noinspection PhpUnusedPrivateMethodInspection */
     /**
      * Get reverse octets from ip address
      *
      * @param string $ip
      * @param bool $getiptype
+     *
      * @return int|string
      */
     private function toarpa($ip = '', $getiptype = false)
@@ -1068,6 +1289,7 @@ class Tornevall_cURL
      * @param string $content
      * @param bool $isFullRequest
      * @param null $contentType
+     *
      * @return array|mixed|null
      * @throws \Exception
      */
@@ -1093,10 +1315,24 @@ class Tornevall_cURL
         }
         if (is_null($parsedContent) && (preg_match("/xml version/", $content) || preg_match("/rss version/", $content) || preg_match("/xml/i", $contentType))) {
             $trimmedContent = trim($content); // PHP 5.3: Can't use function return value in write context
-            if (class_exists('SimpleXMLElement')) {
+
+            $overrideXmlSerializer = false;
+            if ($this->useXmlSerializer) {
+                $serializerPath = stream_resolve_include_path('XML/Unserializer.php');
+                if (!empty($serializerPath)) {
+                    $overrideXmlSerializer = true;
+                    require_once('XML/Unserializer.php');
+                }
+            }
+
+            if (class_exists('SimpleXMLElement') && !$overrideXmlSerializer) {
                 if (!empty($trimmedContent)) {
-                    $simpleXML = new \SimpleXMLElement($content);
-                    if (isset($simpleXML) && is_object($simpleXML)) {
+                    if (!$this->allowCdata) {
+                        $simpleXML = new \SimpleXMLElement($content, LIBXML_NOCDATA);
+                    } else {
+                        $simpleXML = new \SimpleXMLElement($content);
+                    }
+                    if (isset($simpleXML) && (is_object($simpleXML) || is_array($simpleXML))) {
                         return $simpleXML;
                     }
                 } else {
@@ -1106,6 +1342,11 @@ class Tornevall_cURL
                 /*
                  * Returns empty class if the SimpleXMLElement is missing.
                  */
+                if ($overrideXmlSerializer) {
+                    $xmlSerializer = new \XML_Unserializer();
+                    $xmlSerializer->unserialize($content);
+                    return $xmlSerializer->getUnserializedData();
+                }
                 return new \stdClass();
             }
         }
@@ -1145,14 +1386,15 @@ class Tornevall_cURL
      *
      * @param array $childNode
      * @param string $getAs
-     * @param bool $hasParent
+     *
      * @return array
      */
-    private function getChildNodes($childNode = array(), $getAs = '', $hasParent = false)
+    private function getChildNodes($childNode = array(), $getAs = '')
     {
         $childNodeArray = array();
         $childAttributeArray = array();
         $childIdArray = array();
+        $returnContext = "";
         if (is_object($childNode)) {
             foreach ($childNode as $nodeItem) {
                 if (is_object($nodeItem)) {
@@ -1165,7 +1407,7 @@ class Tornevall_cURL
                         $elementData['name'] = $nodeItem->getAttribute('name');
                         $elementData['context'] = $nodeItem->nodeValue;
                         if ($nodeItem->hasChildNodes()) {
-                            $elementData['childElement'] = $this->getChildNodes($nodeItem->childNodes, $getAs, true);
+                            $elementData['childElement'] = $this->getChildNodes($nodeItem->childNodes, $getAs);
                         }
                         $identificationName = $nodeItem->tagName;
                         if (empty($identificationName) && !empty($elementData['name'])) {
@@ -1198,6 +1440,7 @@ class Tornevall_cURL
         } else if ($getAs == "id") {
             $returnContext = $childIdArray;
         }
+
         return $returnContext;
     }
 
@@ -1205,16 +1448,19 @@ class Tornevall_cURL
      * Get head and body from a request parsed
      *
      * @param string $content
+     *
      * @return array
      */
     public function getHeader($content = "")
     {
-        return $this->ParseResponse($content . "\r\n\r\n", null);
+        return $this->ParseResponse($content . "\r\n\r\n");
     }
 
     /**
      * Extract a parsed response from a webrequest
+     *
      * @param null $ResponseContent
+     *
      * @return null
      */
     public function getParsedResponse($ResponseContent = null)
@@ -1224,32 +1470,39 @@ class Tornevall_cURL
         } else if (isset($ResponseContent['parsed'])) {
             return $ResponseContent['parsed'];
         }
+
         return null;
     }
 
     /**
      * @param null $ResponseContent
+     *
      * @return int
      */
-    public function getResponseCode($ResponseContent = null) {
+    public function getResponseCode($ResponseContent = null)
+    {
         if (is_null($ResponseContent) && !empty($this->TemporaryResponse)) {
             return (int)$this->TemporaryResponse['code'];
         } else if (isset($ResponseContent['code'])) {
             return (int)$ResponseContent['code'];
         }
+
         return 0;
     }
 
     /**
      * @param null $ResponseContent
+     *
      * @return null
      */
-    public function getResponseBody($ResponseContent = null) {
+    public function getResponseBody($ResponseContent = null)
+    {
         if (is_null($ResponseContent) && !empty($this->TemporaryResponse)) {
             return $this->TemporaryResponse['body'];
         } else if (isset($ResponseContent['body'])) {
             return $ResponseContent['body'];
         }
+
         return null;
     }
 
@@ -1258,6 +1511,7 @@ class Tornevall_cURL
      *
      * @param $KeyName
      * @param null $ResponseContent
+     *
      * @return mixed|null
      * @throws \Exception
      */
@@ -1313,6 +1567,7 @@ class Tornevall_cURL
                 }
             }
         }
+
         return null;
     }
 
@@ -1320,7 +1575,8 @@ class Tornevall_cURL
      * Parse response, in case of there is any followed traces from the curl engine, so we'll always land on the right ending stream
      *
      * @param string $content
-     * @return array
+     *
+     * @return array|string|TORNELIB_CURLOBJECT
      */
     private function ParseResponse($content = '')
     {
@@ -1333,7 +1589,7 @@ class Tornevall_cURL
         $code = isset($response[1]) ? $response[1] : -1;
         // If the first row of the body contains a HTTP/-string, we'll try to reparse it
         if (preg_match("/^HTTP\//", $body)) {
-            $newBody = $this->ParseResponse($body, true);
+            $newBody = $this->ParseResponse($body);
             $header = $newBody['header'];
             $body = $newBody['body'];
         }
@@ -1345,7 +1601,7 @@ class Tornevall_cURL
                 'body' => $body,
                 'code' => $code
             );
-            $redirectContent = $this->ParseContent($body, false);
+            //$redirectContent = $this->ParseContent($body, false);
         }
         $headerInfo = $this->GetHeaderKeyArray($rows);
         $returnResponse = array(
@@ -1370,9 +1626,11 @@ class Tornevall_cURL
             $returnResponseObject->parsed = $returnResponse['parsed'];
             $returnResponseObject->url = $returnResponse['URL'];
             $returnResponseObject->ip = $returnResponse['ip'];
+
             return $returnResponseObject;
         }
         $this->TemporaryResponse = $returnResponse;
+
         return $returnResponse;
     }
 
@@ -1380,6 +1638,7 @@ class Tornevall_cURL
      * Create an array of a header, with keys and values
      *
      * @param $HeaderRows
+     *
      * @return array
      */
     private function GetHeaderKeyArray($HeaderRows)
@@ -1398,6 +1657,7 @@ class Tornevall_cURL
                 }
             }
         }
+
         return $headerInfo;
     }
 
@@ -1416,7 +1676,8 @@ class Tornevall_cURL
      *
      * @param bool $Activate
      */
-    public function setStoreSessionExceptions($Activate = false) {
+    public function setStoreSessionExceptions($Activate = false)
+    {
         $this->canStoreSessionException = $Activate;
     }
 
@@ -1426,12 +1687,14 @@ class Tornevall_cURL
      * @param string $url
      * @param array $postData
      * @param int $postAs
+     *
      * @return array
      */
     public function doPost($url = '', $postData = array(), $postAs = CURL_POST_AS::POST_AS_NORMAL)
     {
         $content = $this->handleUrlCall($url, $postData, CURL_METHODS::METHOD_POST, $postAs);
         $ResponseArray = $this->ParseResponse($content);
+
         return $ResponseArray;
     }
 
@@ -1439,12 +1702,14 @@ class Tornevall_cURL
      * @param string $url
      * @param array $postData
      * @param int $postAs
+     *
      * @return array
      */
     public function doPut($url = '', $postData = array(), $postAs = CURL_POST_AS::POST_AS_NORMAL)
     {
         $content = $this->handleUrlCall($url, $postData, CURL_METHODS::METHOD_PUT, $postAs);
         $ResponseArray = $this->ParseResponse($content);
+
         return $ResponseArray;
     }
 
@@ -1452,12 +1717,14 @@ class Tornevall_cURL
      * @param string $url
      * @param array $postData
      * @param int $postAs
+     *
      * @return array
      */
     public function doDelete($url = '', $postData = array(), $postAs = CURL_POST_AS::POST_AS_NORMAL)
     {
         $content = $this->handleUrlCall($url, $postData, CURL_METHODS::METHOD_DELETE, $postAs);
         $ResponseArray = $this->ParseResponse($content);
+
         return $ResponseArray;
     }
 
@@ -1466,12 +1733,14 @@ class Tornevall_cURL
      *
      * @param string $url
      * @param int $postAs
+     *
      * @return array
      */
     public function doGet($url = '', $postAs = CURL_POST_AS::POST_AS_NORMAL)
     {
         $content = $this->handleUrlCall($url, array(), CURL_METHODS::METHOD_GET, $postAs);
         $ResponseArray = $this->ParseResponse($content);
+
         return $ResponseArray;
     }
 
@@ -1499,7 +1768,6 @@ class Tornevall_cURL
      * Fix problematic header data by converting them to proper outputs.
      *
      * @param array $headerList
-     * @return array
      */
     private function fixHttpHeaders($headerList = array())
     {
@@ -1507,26 +1775,27 @@ class Tornevall_cURL
             foreach ($headerList as $headerKey => $headerValue) {
                 $testHead = explode(":", $headerValue, 2);
                 if (isset($testHead[1])) {
-	                $this->CurlHeaders[] = $headerValue;
+                    $this->CurlHeaders[] = $headerValue;
                 } else {
                     if (!is_numeric($headerKey)) {
-	                    $this->CurlHeaders[] = $headerKey . ": " . $headerValue;
+                        $this->CurlHeaders[] = $headerKey . ": " . $headerValue;
                     }
                 }
             }
         }
     }
 
-	/**
-	 * Add extra curl headers
-	 *
-	 * @param string $key
-	 * @param string $value
-	 */
-    public function setCurlHeader($key = '', $value = '') {
-    	if (!empty($key)) {
-    		$this->CurlHeadersUserDefined[$key] = $value;
-	    }
+    /**
+     * Add extra curl headers
+     *
+     * @param string $key
+     * @param string $value
+     */
+    public function setCurlHeader($key = '', $value = '')
+    {
+        if (!empty($key)) {
+            $this->CurlHeadersUserDefined[$key] = $value;
+        }
     }
 
     /**
@@ -1536,6 +1805,7 @@ class Tornevall_cURL
      * @param array $postData
      * @param int $CurlMethod
      * @param int $postAs
+     *
      * @return mixed
      * @throws \Exception
      */
@@ -1544,12 +1814,13 @@ class Tornevall_cURL
         if (!empty($url)) {
             $this->CurlURL = $url;
         }
-	    $this->CurlHeaders = array();
+        $this->CurlHeaders = array();
         if (preg_match("/\?wsdl$|\&wsdl$/i", $this->CurlURL) || $postAs == CURL_POST_AS::POST_AS_SOAP) {
             $Soap = new Tornevall_SimpleSoap($this->CurlURL, $this->curlopt);
             $Soap->setThrowableState($this->canThrow);
             $Soap->setSoapAuthentication($this->AuthData);
             $Soap->SoapTryOnce = $this->SoapTryOnce;
+
             return $Soap->getSoap();
         }
         $this->initCookiePath();
@@ -1631,10 +1902,13 @@ class Tornevall_cURL
                 curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYHOST, 0);
                 curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYPEER, 0);
             } else {
-                /*
-                 * Keeping compatibility by running with 1 before curl 7.28.1 as we don't know when this option was really changed.
-                 */
-                if (version_compare($this->CurlVersion, '7.28.1', '>=')) {
+                // From libcurl 7.28.1 CURLOPT_SSL_VERIFYHOST is deprecated. However, using the value 1 can be used
+                // as of PHP 5.4.11, where the deprecation notices was added. The deprecation has started before libcurl
+                // 7.28.1 (this was discovered on a server that was running PHP 5.5 and libcurl-7.22). In full debug
+                // even libcurl-7.22 was generating this message, so from PHP 5.4.11 we are now enforcing the value 2
+                // for CURLOPT_SSL_VERIFYHOST instead. The reason of why we are using the value 1 before this version
+                // is actually a lazy thing, as we don't want to break anything that might be unsupported before this version.
+                if (version_compare(PHP_VERSION, '5.4.11', ">=")) {
                     curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYHOST, 2);
                 } else {
                     curl_setopt($this->CurlSession, CURLOPT_SSL_VERIFYHOST, 1);
@@ -1673,9 +1947,9 @@ class Tornevall_cURL
         $this->fixHttpHeaders($this->CurlHeadersUserDefined);
         $this->fixHttpHeaders($this->CurlHeadersSystem);
 
-	    if (isset($this->CurlHeaders) && is_array($this->CurlHeaders) && count($this->CurlHeaders)) {
-		    curl_setopt($this->CurlSession, CURLOPT_HTTPHEADER, $this->CurlHeaders);
-	    }
+        if (isset($this->CurlHeaders) && is_array($this->CurlHeaders) && count($this->CurlHeaders)) {
+            curl_setopt($this->CurlSession, CURLOPT_HTTPHEADER, $this->CurlHeaders);
+        }
         if (isset($this->CurlUserAgent) && !empty($this->CurlUserAgent)) {
             curl_setopt($this->CurlSession, CURLOPT_USERAGENT, $this->CurlUserAgent);
         }
@@ -1753,13 +2027,17 @@ class Tornevall_cURL
                 if ($this->CurlIpType == 4) {
                     $this->CurlResolve = CURL_RESOLVER::RESOLVER_IPV6;
                 }
+
                 return $this->handleUrlCall($this->CurlURL, $postData, $CurlMethod);
             }
             throw new \Exception("PHPException at " . __FUNCTION__ . ": " . curl_error($this->CurlSession), curl_errno($this->CurlSession));
         }
+
         return $returnContent;
     }
 }
+
+/** @noinspection PhpUndefinedClassInspection */
 
 /**
  * Class TorneLIB_SimpleSoap Simple SOAP client.
@@ -1790,8 +2068,14 @@ class Tornevall_SimpleSoap extends Tornevall_cURL
     public $SoapFaultCode = 0;
     public $SoapTryOnce = true;
 
+    /**
+     * Tornevall_SimpleSoap constructor.
+     * @param string $Url
+     * @param array $SoapOptions
+     */
     function __construct($Url, $SoapOptions = array())
     {
+        parent::__construct();
         $this->setUserAgent("TorneLIB-cUrlClient/SimpleSoap");
         $this->soapUrl = $Url;
         $this->sslGetOptionsStream();
@@ -1874,6 +2158,7 @@ class Tornevall_SimpleSoap extends Tornevall_cURL
                 }
             }
         }
+
         return $this;
     }
 
@@ -1893,9 +2178,13 @@ class Tornevall_SimpleSoap extends Tornevall_cURL
                 $SoapClientResponse = $this->soapClient->$name();
             }
         } catch (\SoapFault $e) {
+            /** @noinspection PhpUndefinedMethodInspection */
             $this->soapRequest = $this->soapClient->__getLastRequest();
+            /** @noinspection PhpUndefinedMethodInspection */
             $this->soapRequestHeaders = $this->soapClient->__getLastRequestHeaders();
+            /** @noinspection PhpUndefinedMethodInspection */
             $this->soapResponse = $this->soapClient->__getLastResponse();
+            /** @noinspection PhpUndefinedMethodInspection */
             $this->soapResponseHeaders = $this->soapClient->__getLastResponseHeaders();
             $parsedHeader = $this->getHeader($this->soapResponseHeaders);
             $returnResponse['header'] = $parsedHeader['header'];
@@ -1912,9 +2201,13 @@ class Tornevall_SimpleSoap extends Tornevall_cURL
             $this->SoapFaultCode = $e->getCode();
         }
 
+        /** @noinspection PhpUndefinedMethodInspection */
         $this->soapRequest = $this->soapClient->__getLastRequest();
+        /** @noinspection PhpUndefinedMethodInspection */
         $this->soapRequestHeaders = $this->soapClient->__getLastRequestHeaders();
+        /** @noinspection PhpUndefinedMethodInspection */
         $this->soapResponse = $this->soapClient->__getLastResponse();
+        /** @noinspection PhpUndefinedMethodInspection */
         $this->soapResponseHeaders = $this->soapClient->__getLastResponseHeaders();
         $parsedHeader = $this->getHeader($this->soapResponseHeaders);
         $returnResponse['header'] = $parsedHeader['header'];
@@ -1925,6 +2218,7 @@ class Tornevall_SimpleSoap extends Tornevall_cURL
             $returnResponse['parsed'] = $SoapClientResponse->return;
         }
         $this->libResponse = $returnResponse;
+
         return $returnResponse;
     }
 
@@ -1939,6 +2233,8 @@ class Tornevall_SimpleSoap extends Tornevall_cURL
     }
 }
 
+/** @noinspection PhpUndefinedClassInspection */
+
 /**
  * Class CURL_METHODS List of methods available in this library
  *
@@ -1952,6 +2248,8 @@ abstract class CURL_METHODS
     const METHOD_DELETE = 3;
 }
 
+/** @noinspection PhpUndefinedClassInspection */
+
 /**
  * Class CURL_RESOLVER Resolver methods that is available when trying to connect
  *
@@ -1964,6 +2262,8 @@ abstract class CURL_RESOLVER
     const RESOLVER_IPV6 = 2;
 }
 
+/** @noinspection PhpUndefinedClassInspection */
+
 /**
  * Class CURL_POST_AS Prepared formatting for POST-content in this library (Also available from for example PUT)
  *
@@ -1975,6 +2275,8 @@ abstract class CURL_POST_AS
     const POST_AS_JSON = 1;
     const POST_AS_SOAP = 2;
 }
+
+/** @noinspection PhpUndefinedClassInspection */
 
 /**
  * Class CURL_AUTH_TYPES Available authentication types for use with password protected sites
@@ -1989,6 +2291,8 @@ abstract class CURL_AUTH_TYPES
     const AUTHTYPE_BASIC = 1;
 }
 
+/** @noinspection PhpUndefinedClassInspection */
+
 /**
  * Class TORNELIB_CURL_ENVIRONMENT
  *
@@ -2002,12 +2306,24 @@ abstract class TORNELIB_CURL_ENVIRONMENT
     const ENVIRONMENT_TEST = 1;
 }
 
+/** @noinspection PhpUndefinedClassInspection */
+
+/**
+ * Class TORNELIB_CURL_RESPONSETYPE
+ * @package TorneLIB
+ */
 abstract class TORNELIB_CURL_RESPONSETYPE
 {
     const RESPONSETYPE_ARRAY = 0;
     const RESPONSETYPE_OBJECT = 1;
 }
 
+/** @noinspection PhpUndefinedClassInspection */
+
+/**
+ * Class TORNELIB_CURLOBJECT
+ * @package TorneLIB
+ */
 class TORNELIB_CURLOBJECT
 {
     public $header;
