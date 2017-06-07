@@ -3,3 +3,6 @@
 .svn
 /tests/test.json
 docs
+source/Makefile
+source/testwsdl.sh
+source/classes/thirdparty/Makefile
