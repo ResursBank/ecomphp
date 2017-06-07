@@ -1353,6 +1353,7 @@ class Tornevall_cURL
         if ($this->allowParseHtml && empty($parsedContent)) {
             if (class_exists('DOMDocument')) {
                 $DOM = new \DOMDocument();
+                libxml_use_internal_errors(true);
                 $DOM->loadHTML($content);
                 if (isset($DOM->childNodes->length) && $DOM->childNodes->length > 0) {
                     $elementsByTagName = $DOM->getElementsByTagName('*');
