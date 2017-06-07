@@ -344,6 +344,7 @@ class TorneLIB_Network
 }
 
 /** @noinspection PhpUndefinedClassInspection */
+
 /**
  * Class TorneLIB_Network_IP IP Address Types class
  * @package TorneLIB
@@ -357,6 +358,7 @@ abstract class TorneLIB_Network_IP
 
 
 /** @noinspection PhpUndefinedClassInspection */
+
 /**
  * Class Tornevall_cURL
  *
@@ -654,7 +656,8 @@ class Tornevall_cURL
      *
      * @param bool $enabled
      */
-    public function setCdata($enabled = true) {
+    public function setCdata($enabled = true)
+    {
         $this->allowCdata = $enabled;
     }
 
@@ -663,7 +666,8 @@ class Tornevall_cURL
      *
      * @return bool
      */
-    public function getCdata() {
+    public function getCdata()
+    {
         return $this->allowCdata;
     }
 
@@ -830,7 +834,8 @@ class Tornevall_cURL
      *
      * @param bool $useIfExists
      */
-    public function setXmlSerializer($useIfExists = true) {
+    public function setXmlSerializer($useIfExists = true)
+    {
         $this->useXmlSerializer = $useIfExists;
     }
 
@@ -1313,7 +1318,7 @@ class Tornevall_cURL
 
             $overrideXmlSerializer = false;
             if ($this->useXmlSerializer) {
-		$serializerPath = stream_resolve_include_path('XML/Unserializer.php');
+                $serializerPath = stream_resolve_include_path('XML/Unserializer.php');
                 if (!empty($serializerPath)) {
                     $overrideXmlSerializer = true;
                     require_once('XML/Unserializer.php');
@@ -2033,6 +2038,7 @@ class Tornevall_cURL
 }
 
 /** @noinspection PhpUndefinedClassInspection */
+
 /**
  * Class TorneLIB_SimpleSoap Simple SOAP client.
  *
@@ -2228,6 +2234,7 @@ class Tornevall_SimpleSoap extends Tornevall_cURL
 }
 
 /** @noinspection PhpUndefinedClassInspection */
+
 /**
  * Class CURL_METHODS List of methods available in this library
  *
@@ -2242,6 +2249,7 @@ abstract class CURL_METHODS
 }
 
 /** @noinspection PhpUndefinedClassInspection */
+
 /**
  * Class CURL_RESOLVER Resolver methods that is available when trying to connect
  *
@@ -2255,6 +2263,7 @@ abstract class CURL_RESOLVER
 }
 
 /** @noinspection PhpUndefinedClassInspection */
+
 /**
  * Class CURL_POST_AS Prepared formatting for POST-content in this library (Also available from for example PUT)
  *
@@ -2268,6 +2277,7 @@ abstract class CURL_POST_AS
 }
 
 /** @noinspection PhpUndefinedClassInspection */
+
 /**
  * Class CURL_AUTH_TYPES Available authentication types for use with password protected sites
  *
@@ -2282,6 +2292,7 @@ abstract class CURL_AUTH_TYPES
 }
 
 /** @noinspection PhpUndefinedClassInspection */
+
 /**
  * Class TORNELIB_CURL_ENVIRONMENT
  *
@@ -2296,6 +2307,7 @@ abstract class TORNELIB_CURL_ENVIRONMENT
 }
 
 /** @noinspection PhpUndefinedClassInspection */
+
 /**
  * Class TORNELIB_CURL_RESPONSETYPE
  * @package TorneLIB
@@ -2307,6 +2319,7 @@ abstract class TORNELIB_CURL_RESPONSETYPE
 }
 
 /** @noinspection PhpUndefinedClassInspection */
+
 /**
  * Class TORNELIB_CURLOBJECT
  * @package TorneLIB

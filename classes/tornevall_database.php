@@ -19,8 +19,8 @@ namespace TorneLIB;
  * @package TorneLIB
  */
 
-class TorneLIB_Database {
-
+class TorneLIB_Database
+{
     /**
      * @var Parent
      */
@@ -39,9 +39,9 @@ class TorneLIB_Database {
     private $overriders = array();
 
     /** @var bool Determine if our database connection is ready */
-    private $dbServerConnection= false;
+    private $dbServerConnection = false;
     /** @var bool Determine if our schema is ready */
-    private $dbDataConnection= false;
+    private $dbDataConnection = false;
 
     /** @var array Connection configuration */
     private $dbconfig = array();
@@ -90,7 +90,8 @@ class TorneLIB_Database {
      * @param null $databaseName
      * @throws TorneLIB_Exception
      */
-    public function __construct($connectorOptions = array(), $connectorHost = null, $connectorUser = null, $connectorPassword = null, $connectorType = 'mysql', $connectorPort = 3306, $databaseName = null) {
+    public function __construct($connectorOptions = array(), $connectorHost = null, $connectorUser = null, $connectorPassword = null, $connectorType = 'mysql', $connectorPort = 3306, $databaseName = null)
+    {
         $this->setConnectorOptions($connectorOptions);
 
         /* Skip the configuration and set up a connector directly on init */
@@ -122,7 +123,8 @@ class TorneLIB_Database {
      * Set up connector options on fly
      * @param array $connectorOptions
      */
-    public function setConnectorOptions($connectorOptions = array()) {
+    public function setConnectorOptions($connectorOptions = array())
+    {
         if (is_array($connectorOptions) && count($connectorOptions)) {
             foreach ($connectorOptions as $connectorOption => $connectorValue) {
                 $this->connectorOptions[$connectorOption] = $connectorValue;
@@ -140,7 +142,9 @@ class TorneLIB_Database {
     private function ConfigInit($overrideConfig = false)
     {
         /* Read only once */
-        if (!$overrideConfig && count($this->dbconfig) && isset($this->dbconfig->database) && isset($this->dbconfig->database->config)) { return; }
+        if (!$overrideConfig && count($this->dbconfig) && isset($this->dbconfig->database) && isset($this->dbconfig->database->config)) {
+            return;
+        }
 
         /**
          * If /etc/tornevall_config exists, this file will get the highest priority.
@@ -150,18 +154,24 @@ class TorneLIB_Database {
             $etcFile = TE_DATABASES;
         }
         $jsonCfg = '';
-        if (file_exists($etcFile . ".json") && !file_exists($etcFile)) { $etcFile .= ".json"; }
+        if (file_exists($etcFile . ".json") && !file_exists($etcFile)) {
+            $etcFile .= ".json";
+        }
         if (file_exists($etcFile)) {
             /* JSON-style config */
             $jsonCfg = trim(file_get_contents($etcFile));
             if (!empty($jsonCfg)) {
                 $dbAssoc = json_decode($jsonCfg, true);
-                if (isset($dbAssoc['database']['servers']['override'])) { unset($dbAssoc['database']['servers']['override']); }
+                if (isset($dbAssoc['database']['servers']['override'])) {
+                    unset($dbAssoc['database']['servers']['override']);
+                }
             }
         }
         if (!empty($this->privateConnector) && is_array($this->privateConnector) && count($this->privateConnector) >= 5) {
             /* Always make overriders throw exceptions if user has not disabled it */
-            if (!isset($this->privateConnector['exceptions'])) { $this->privateConnector['exceptions'] = true; }
+            if (!isset($this->privateConnector['exceptions'])) {
+                $this->privateConnector['exceptions'] = true;
+            }
             $dbAssoc['database']['servers']['override'] = $this->privateConnector;
             $jsonCfg = json_encode($dbAssoc);
         }
@@ -180,7 +190,8 @@ class TorneLIB_Database {
      *
      * @return bool
      */
-    private function hasPrivateConnector() {
+    private function hasPrivateConnector()
+    {
         $this->ConfigInit();
         $privateConnectorName = $this->getPrivateConnectorName();
         if (!empty($privateConnectorName) && is_array($this->privateConnector) && count($this->privateConnector) >= 5) {
@@ -206,9 +217,12 @@ class TorneLIB_Database {
      *
      * @return string
      */
-    private function getPrivateConnectorName() {
+    private function getPrivateConnectorName()
+    {
         $serverName = null;
-        if (!empty($this->privateConnector) && is_array($this->privateConnector)) { $serverName = "override"; }
+        if (!empty($this->privateConnector) && is_array($this->privateConnector)) {
+            $serverName = "override";
+        }
         return $serverName;
     }
 
@@ -217,7 +231,8 @@ class TorneLIB_Database {
      *
      * @return string
      */
-    public function getCurrentConnection() {
+    public function getCurrentConnection()
+    {
         return $this->current;
     }
 
@@ -234,7 +249,8 @@ class TorneLIB_Database {
      * @return bool
      * @throws TorneLIB_Exception
      */
-    public function Connect($serverName = '', $connectorOptions = array(), $connectorHost = null, $connectorUser = null, $connectorPassword = null, $connectorType = 'mysql', $connectorPort = 3306, $databaseName = '') {
+    public function Connect($serverName = '', $connectorOptions = array(), $connectorHost = null, $connectorUser = null, $connectorPassword = null, $connectorType = 'mysql', $connectorPort = 3306, $databaseName = '')
+    {
         $connectionResult = false;
         if (!empty($connectorHost)) {
             $this->privateConnector = array(
@@ -249,7 +265,9 @@ class TorneLIB_Database {
             $this->ConfigInit(true);        // Finding private connectors requires rereading of configuration
         }
 
-        if (empty($serverName)) { $serverName = "localhost"; }
+        if (empty($serverName)) {
+            $serverName = "localhost";
+        }
         if ($this->hasPrivateConnector()) {
             $serverName = $this->getPrivateConnectorName();
         }
@@ -278,12 +296,12 @@ class TorneLIB_Database {
 
     /**
      * Connect to a chosen database/schema
-     * 
+     *
      * @param string $DatabaseName
      * @return null
      * @throws TorneLIB_Exception
      */
-    public function db($DatabaseName='')
+    public function db($DatabaseName = '')
     {
         $choiceResult = false;
         if (empty($DatabaseName)) {
@@ -319,7 +337,8 @@ class TorneLIB_Database {
      * Fetch configuration from configarray (located in the config-file)
      * @param string $connectName
      */
-    private function getConfig($connectName = 'localhost') {
+    private function getConfig($connectName = 'localhost')
+    {
         if (!isset($this->tdbconfig[$connectName])) {
             return;
         }
@@ -346,11 +365,18 @@ class TorneLIB_Database {
      * @param string $serverType
      * @return int
      */
-    private function getDbTypeId($serverType = 'mysql') {
+    private function getDbTypeId($serverType = 'mysql')
+    {
         $serverType = strtolower($serverType);
-        if ($serverType == "mysql") {return TORNEVALL_DATABASE_TYPES::MYSQL;}
-        if ($serverType == "pgsql") {return TORNEVALL_DATABASE_TYPES::PGSQL;}
-        if ($serverType == "pdo") { return TORNEVALL_DATABASE_TYPES::PDO; }
+        if ($serverType == "mysql") {
+            return TORNEVALL_DATABASE_TYPES::MYSQL;
+        }
+        if ($serverType == "pgsql") {
+            return TORNEVALL_DATABASE_TYPES::PGSQL;
+        }
+        if ($serverType == "pdo") {
+            return TORNEVALL_DATABASE_TYPES::PDO;
+        }
         return TORNEVALL_DATABASE_TYPES::NONE;
     }
 
@@ -369,7 +395,8 @@ class TorneLIB_Database {
         $returnString = null;
         try {
             $returnType = $this->getDbTypeId($this->getServerCredentials($serverName, "type"));
-        } catch (\Exception $e) {}
+        } catch (\Exception $e) {
+        }
         if (!$returnType) {
             $returnType = TORNEVALL_DATABASE_TYPES::MYSQL;
             $returnString = 'mysql';
@@ -414,16 +441,19 @@ class TorneLIB_Database {
 
     /**
      * MySQL driver priority configurator.
-     * 
+     *
      * @param string $serverName
      * @return bool
      * @throws TorneLIB_Exception
      */
-    private function getMysqlDriverPriority($serverName = '') {
+    private function getMysqlDriverPriority($serverName = '')
+    {
         $this->existingDrivers = $this->getCurrentDriverSet($serverName);
         $prioList = $this->getOverride('mysqldriverpriority', $serverName);
         $pickExistingDriver = array_reverse($this->existingDrivers);
-        if (!count($pickExistingDriver)) { throw new TorneLIB_Exception("There are no MySQL drivers available", TORNELIB_EXCEPTIONS::TORNELIB_DB_NO_DRIVER_MYSQL); }
+        if (!count($pickExistingDriver)) {
+            throw new TorneLIB_Exception("There are no MySQL drivers available", TORNELIB_EXCEPTIONS::TORNELIB_DB_NO_DRIVER_MYSQL);
+        }
 
         $nextAvailable = array_pop($pickExistingDriver);
         $hasPriorityDriver = false;
@@ -458,11 +488,19 @@ class TorneLIB_Database {
         }
         return false;
     }
-    public function getCurrentDriverSet($serverName = '') {
+
+    public function getCurrentDriverSet($serverName = '')
+    {
         $this->existingDrivers = array();
-        if (function_exists('mysqli_connect')) {$this->existingDrivers[] = "mysqli";}
-        if (function_exists('mysql_connect')) {$this->existingDrivers[] = "deprecated";}
-        if (class_exists('PDO')) { $this->existingDrivers[] = 'pdo'; }
+        if (function_exists('mysqli_connect')) {
+            $this->existingDrivers[] = "mysqli";
+        }
+        if (function_exists('mysql_connect')) {
+            $this->existingDrivers[] = "deprecated";
+        }
+        if (class_exists('PDO')) {
+            $this->existingDrivers[] = 'pdo';
+        }
         return $this->existingDrivers;
     }
 
@@ -470,18 +508,20 @@ class TorneLIB_Database {
      * Find out if we are running in mysql-failover-mode (which occurs when the prioritized mysql driver can not be found)
      * @return bool
      */
-    public function isMySqlFailover() {
+    public function isMySqlFailover()
+    {
         return $this->mysqlFailover;
     }
 
     /**
      * Call this function to override connector defaults or connector configuration
-     * 
+     *
      * @param string $variable
      * @param string $value
      * @throws TorneLIB_Exception
      */
-    public function setOverride($variable = '', $value = '') {
+    public function setOverride($variable = '', $value = '')
+    {
         $blockers = $this->getServerCredentials(null, 'blockoverride');
         if (is_array($blockers) && in_array($variable, $blockers)) {
             throw new TorneLIB_Exception("Database overriders not allowed", TORNELIB_EXCEPTIONS::TORNELIB_DB_OVERRIDE_DENIED, __FUNCTION__);
@@ -502,7 +542,8 @@ class TorneLIB_Database {
      * @return null
      * @throws TorneLIB_Exception
      */
-    private function getOverride($variable = '', $serverName = '') {
+    private function getOverride($variable = '', $serverName = '')
+    {
         return $this->getServerCredentials($serverName, $variable);
     }
 
@@ -577,10 +618,14 @@ class TorneLIB_Database {
             return false;
         }
     }
-    private function Connect_PGSQL() {
+
+    private function Connect_PGSQL()
+    {
 
     }
-    private function Connect_sqlite() {
+
+    private function Connect_sqlite()
+    {
 
     }
 
@@ -589,7 +634,8 @@ class TorneLIB_Database {
      * @param string $pdoDriver
      * @return bool
      */
-    private function hasPDO($pdoDriver = '') {
+    private function hasPDO($pdoDriver = '')
+    {
         if (class_exists('PDO')) {
             $pdoDrivers = \PDO::getAvailableDrivers();
             if (is_array($pdoDrivers)) {
@@ -609,6 +655,7 @@ class TorneLIB_Database {
             }
         }
     }
+
     private function Connect_PDO($serverName = '', $connectorOptions = array())
     {
         if (!$this->hasPDO()) {
@@ -667,10 +714,13 @@ class TorneLIB_Database {
      * @return bool
      * @throws TorneLIB_Exception
      */
-    private function canThrow($serverName = '') {
+    private function canThrow($serverName = '')
+    {
         $returnValue = false;
         /* Get the global value */
-        if (isset($this->dbconfig->database->config->exceptions)) { $returnValue = $this->dbconfig->database->config->exceptions; }
+        if (isset($this->dbconfig->database->config->exceptions)) {
+            $returnValue = $this->dbconfig->database->config->exceptions;
+        }
         /* Get the local value */
         if (!empty($serverName)) {
             $returnValue = $this->getServerCredentials($serverName, "exceptions");
@@ -697,8 +747,12 @@ class TorneLIB_Database {
         $this->ConfigInit();
 
         /* Look for a global overrider */
-        if (isset($this->overriders[$return])) {return $this->overriders[$return];}
-        if (empty($serverName) && $this->current) { $serverName = $this->current; }
+        if (isset($this->overriders[$return])) {
+            return $this->overriders[$return];
+        }
+        if (empty($serverName) && $this->current) {
+            $serverName = $this->current;
+        }
         if (!is_null($serverName)) {
             if (!empty($serverName)) {
                 if (isset($this->dbconfig) && is_object($this->dbconfig)) {
@@ -739,12 +793,13 @@ class TorneLIB_Database {
      * @param array $parameterArray
      * @throws \Exception
      */
-    private function parseParameters($parameterArray = array()) {
+    private function parseParameters($parameterArray = array())
+    {
         if (is_array($parameterArray)) {
             foreach ($parameterArray as $parameter => $value) {
-                $parameterName = '`'.$parameter.'`';
+                $parameterName = '`' . $parameter . '`';
                 $parameterValue = "''" . $this->injection($value) . "''";
-                $updateValue = "`".$this->injection($parameter)."` = '".$this->injection($value)."'";
+                $updateValue = "`" . $this->injection($parameter) . "` = '" . $this->injection($value) . "'";
             }
         }
     }
@@ -758,7 +813,8 @@ class TorneLIB_Database {
      * @param null $injectionString
      * @return null|string
      */
-    private function escape_deprecated($injectionString = null) {
+    private function escape_deprecated($injectionString = null)
+    {
         if (version_compare(phpversion(), '5.3.0', '<=')) {
             if (function_exists('get_magic_quotes_gpc')) {
                 if (get_magic_quotes_gpc()) {
@@ -771,7 +827,6 @@ class TorneLIB_Database {
 
     /**
      * SQL Injection parser
-
      * @param null $injectionString
      * @return mixed|string
      * @throws TorneLIB_Exception
@@ -791,7 +846,7 @@ class TorneLIB_Database {
             if ($isPDO) {
                 /* The weakest form of protection */
                 $returnString = $this->db->quote($injectionString);
-                $returnString = substr(substr($returnString, 0, strlen($returnString)-1),1);
+                $returnString = substr(substr($returnString, 0, strlen($returnString) - 1), 1);
                 // TODO: Fix this
                 throw new TorneLIBException("Stupid developer has not finished function", TORNELIB_EXCEPTIONS::TORNELIB_GENERAL, __FUNCTION__);
                 //echo $returnString;
@@ -815,7 +870,8 @@ class TorneLIB_Database {
      * Configure module to not accept direct calls to the Query()-function (Set this to false, only if you are sure on what you're doing)
      * @param bool|true $preventEnabled
      */
-    public function setPreventRaw($preventEnabled = true) {
+    public function setPreventRaw($preventEnabled = true)
+    {
         $this->preventRawQueries = $preventEnabled;
     }
 
@@ -827,7 +883,8 @@ class TorneLIB_Database {
      * @return bool|null|resource
      * @throws TorneLIB_Exception
      */
-    private function Query_Raw($queryString = null, $ColumnArray = true) {
+    private function Query_Raw($queryString = null, $ColumnArray = true)
+    {
         if (is_null($this->db)) {
             throw new TorneLIB_Exception("No database connection has been established", TORNELIB_EXCEPTIONS::TORNELIB_DB_QUERY_NO_CONNECTION, __FUNCTION__);
         }
@@ -843,7 +900,7 @@ class TorneLIB_Database {
         /*
          * The query may start here, if anything above passed the test. 
          */
-        
+
         $ErrorMessage = null;
         $ErrorCode = 0;
         $dbType = $this->getDbType($this->current);
@@ -908,7 +965,8 @@ class TorneLIB_Database {
      *
      * @return null
      */
-    public function getLastInsertId() {
+    public function getLastInsertId()
+    {
         return (!empty($this->real_last_insert_id) ? $this->real_last_insert_id : 0);
     }
 
@@ -916,7 +974,8 @@ class TorneLIB_Database {
      * Sets last insert id from database driver if exists
      * @param int $insertID
      */
-    private function setLastInsertId($insertID = 0) {
+    private function setLastInsertId($insertID = 0)
+    {
         $this->last_insert_id = $insertID;
         $this->real_last_insert_id = $insertID;
     }
@@ -925,7 +984,8 @@ class TorneLIB_Database {
      * TODO: Fix affected rows issues
      * @param int $affectedRows
      */
-    private function setAffectedRows($affectedRows = 0) {
+    private function setAffectedRows($affectedRows = 0)
+    {
         $this->affected_rows = $affectedRows;
     }
 
@@ -938,7 +998,8 @@ class TorneLIB_Database {
      * @return bool
      * @throws TorneLIB_Exception
      */
-    public function Query($queryString = null, $ColumnArray = true) {
+    public function Query($queryString = null, $ColumnArray = true)
+    {
         $Resource = $this->Query_Raw($queryString, $ColumnArray);
         return $Resource;
     }
@@ -947,7 +1008,8 @@ class TorneLIB_Database {
      * Get last function called in this stream
      * @return mixed
      */
-    private function GetLastFunction() {
+    private function GetLastFunction()
+    {
         if (function_exists('debug_backtrace')) {
             $backTrace = debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT, 3);
             try {
@@ -967,12 +1029,15 @@ class TorneLIB_Database {
      * @param bool $ColumnArray
      * @return array|null|object|\stdClass
      */
-    public function Query_First($queryString = null, $ColumnArray = true) {
+    public function Query_First($queryString = null, $ColumnArray = true)
+    {
         $Resource = $this->Query($queryString, $ColumnArray);
         $FirstRow = $this->Fetch($Resource, $ColumnArray);
         return $FirstRow;
     }
-    public function Query_Prepare_First($queryString = null, $parameters = array(), $ColumnArray = true) {
+
+    public function Query_Prepare_First($queryString = null, $parameters = array(), $ColumnArray = true)
+    {
         $TheQuery = $this->Query_Prepare($queryString, $parameters);
         return $this->Fetch($TheQuery, $ColumnArray);
     }
@@ -1015,7 +1080,8 @@ class TorneLIB_Database {
      * @param array $parameters
      * @throws TorneLIB_Exception
      */
-    public function Query_Prepare($queryString, $parameters = array()) {
+    public function Query_Prepare($queryString, $parameters = array())
+    {
         $dbType = $this->getDbType($this->current);
         $parameterTypes = str_pad("", count($parameters), "s");
         if ($dbType == TORNEVALL_DATABASE_TYPES::MYSQL) {
@@ -1023,9 +1089,13 @@ class TorneLIB_Database {
                 $preparedStatement = mysqli_prepare($this->db, $queryString);
                 if (!empty($preparedStatement)) {
                     $refArgs = array($preparedStatement, $parameterTypes);
-                    foreach ($parameters as $key => $value) { $refArgs[] =& $parameters[$key];}
+                    foreach ($parameters as $key => $value) {
+                        $refArgs[] =& $parameters[$key];
+                    }
                     if (version_compare(phpversion(), "5.3.0", ">=")) {
-                        if (count($parameters)) { call_user_func_array("mysqli_stmt_bind_param", $refArgs); }
+                        if (count($parameters)) {
+                            call_user_func_array("mysqli_stmt_bind_param", $refArgs);
+                        }
                         if (mysqli_stmt_execute($preparedStatement)) {
                             $returnResult = array();
                             if (method_exists($preparedStatement, "get_result")) {
@@ -1079,16 +1149,19 @@ class TorneLIB_Database {
             }
         }
     }
-    
-    public function hasConnection() {
+
+    public function hasConnection()
+    {
         return $this->hasServerConnection;
     }
+
     /**
      * Tells the client whether we are connected or not
      *
      * @return bool
      */
-    public function isConnected() {
+    public function isConnected()
+    {
         return $this->dbServerConnection;
     }
 
@@ -1097,7 +1170,8 @@ class TorneLIB_Database {
      *
      * @return bool
      */
-    public function hasDbConnection() {
+    public function hasDbConnection()
+    {
         return $this->dbDataConnection;
     }
 }
@@ -1106,7 +1180,8 @@ class TorneLIB_Database {
  * Class TORNEVALL_MYSQL_TYPES
  * @package TorneLIB
  */
-abstract class TORNEVALL_MYSQL_TYPES {
+abstract class TORNEVALL_MYSQL_TYPES
+{
     const MYSQL_TYPE_NONE = 0;
     const MYSQL_TYPE_IMPROVED = 1;
     const MYSQL_TYPE_PDO = 2;
@@ -1117,7 +1192,8 @@ abstract class TORNEVALL_MYSQL_TYPES {
  * Class TORNEVALL_IMPLODE_TYPES
  * @package TorneLIB
  */
-abstract class TORNEVALL_IMPLODE_TYPES {
+abstract class TORNEVALL_IMPLODE_TYPES
+{
     const IMPLODE_INSERT = 0;
     const IMPLODE_UPDATE = 1;
     const IMPLODE_AND = 2;
@@ -1128,7 +1204,8 @@ abstract class TORNEVALL_IMPLODE_TYPES {
  * Class TORNEVALL_DATABASE_TYPES
  * @package TorneLIB
  */
-abstract class TORNEVALL_DATABASE_TYPES {
+abstract class TORNEVALL_DATABASE_TYPES
+{
     const NONE = 0;
     const MYSQL = 1;
     const SQLITE3 = 2;
