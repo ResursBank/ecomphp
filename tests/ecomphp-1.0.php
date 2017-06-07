@@ -1590,10 +1590,9 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
                 $this->markTestIncomplete($e->getMessage());
             }
         } catch (Exception $e) {
-
-            $this->markTestIncomplete("Outer exception thrown (" . $e->getMessage() . ")");
+	        $this->assertTrue(false, "Outer exception thrown (" . $e->getMessage() . ")");
         }
-        $this->markTestIncomplete("CreatePayment via Delayed create failed - never passed through the payload generation.");
+	    $this->assertTrue(false, "CreatePayment via Delayed create failed - never passed through the payload generation.");
     }
 
     function testCanDebit()
