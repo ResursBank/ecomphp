@@ -2,15 +2,12 @@
 /**
  * Resurs Bank Passthrough API - A pretty silent ShopFlowSimplifier for Resurs Bank.
  * Compatible with simplifiedFlow, hostedFlow and Resurs Checkout.
- * Requirements: WSDL stubs from WSDL2PHPGenerator (deprecated edition)
- * Important notes: As the WSDL files are generated, it is highly important to run tests before release.
- * Differences between 1.0 and 1.1 is primarily the namespacing, to be compatible with Magento Marketplace.
  *
  * Last update: See the lastUpdate variable
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
- * @branch 1.1
- * @version 1.1.7
+ * @branch 1.2
+ * @version 1.2.0
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @license Apache License
@@ -2168,169 +2165,6 @@ class ResursBank {
 
 		return $paymentContainer;
 	}
-
-
-
-
-	/////// SSL Related deprecations
-
-	/**
-	 * Generate a correctified stream context depending on what happened in openssl_guess(), which also is running in this operation.
-	 *
-	 * Function created for moments when ini_set() fails in openssl_guess() and you don't want to "recalculate" the location of a valid certificates.
-	 * This normally occurs in improper configured environments (where this bulk of functions actually also has been tested in).
-	 * Recommendation of Usage: Do not copy only those functions, use the full version of tornevall_curl.php since there may be dependencies in it.
-	 *
-	 * @return array
-	 * @link http://developer.tornevall.net/apigen/TorneLIB-5.0/class-TorneLIB.Tornevall_cURL.html sslStreamContextCorrection() is a part of TorneLIB 5.0, described here
-	 */
-	public function sslStreamContextCorrection() {
-		if ( ! $this->openSslGuessed ) {
-			$this->openssl_guess( true );
-		}
-		$caCert    = $this->getCertFile();
-		$sslVerify = true;
-		$sslSetup  = array();
-		if ( isset( $this->sslVerify ) ) {
-			$sslVerify = $this->sslVerify;
-		}
-		if ( ! empty( $caCert ) ) {
-			$sslSetup = array(
-				'cafile'            => $caCert,
-				'verify_peer'       => $sslVerify,
-				'verify_peer_name'  => $sslVerify,
-				'verify_host'       => $sslVerify,
-				'allow_self_signed' => true
-			);
-		}
-
-		return $sslSetup;
-	}
-
-	/**
-	 * Automatically generates stream_context and appends it to whatever you need it for.
-	 *
-	 * Example:
-	 *  $appendArray = array('http' => array("user_agent" => "MyUserAgent"));
-	 *  $this->soapOptions = sslGetDefaultStreamContext($this->soapOptions, $appendArray);
-	 *
-	 * @param array $optionsArray
-	 * @param array $selfContext
-	 *
-	 * @return array
-	 * @link http://developer.tornevall.net/apigen/TorneLIB-5.0/class-TorneLIB.Tornevall_cURL.html sslGetOptionsStream() is a part of TorneLIB 5.0, described here
-	 */
-	public function sslGetOptionsStream( $optionsArray = array(), $selfContext = array() ) {
-		$streamContextOptions = array();
-		$sslCorrection        = $this->sslStreamContextCorrection();
-		if ( count( $sslCorrection ) ) {
-			$streamContextOptions['ssl'] = $this->sslStreamContextCorrection();
-		}
-		foreach ( $selfContext as $contextKey => $contextValue ) {
-			$streamContextOptions[ $contextKey ] = $contextValue;
-		}
-		$optionsArray['stream_context'] = stream_context_create( $streamContextOptions );
-
-		return $optionsArray;
-	}
-
-	/**
-	 * SSL Cerificate Handler
-	 *
-	 * This method tries to handle SSL Certification locations where PHP can't handle that part itself. In some environments (normally customized), PHP sometimes have
-	 * problems with finding certificates, in case for example where they are not placed in standard locations. When running the testing, we will also try to set up
-	 * a correct location for the certificates, if any are found somewhere else.
-	 *
-	 * The default configuration for this method is to not run any test, since there should be no problems of running in properly installed environments.
-	 * If there are known problems in the environment that is being used, you can try to set $testssl to true.
-	 *
-	 * At first, the variable $testssl is used to automatically try to find out if there is valid certificate bundles installed on the running system. In PHP 5.6.0 and higher
-	 * this procedure is simplified with the help of openssl_get_cert_locations(), which gives us a default path to installed certificates. In this case we will first look there
-	 * for the certificate bundle. If we do fail there, or if your system is running something older, the testing are running in guessing mode.
-	 *
-	 * The method is untested in Windows server environments when using OpenSSL.
-	 *
-	 * @param bool $forceTesting Force testing even if $testssl is disabled
-	 *
-	 * @link https://phpdoc.tornevall.net/TorneLIBv5/class-TorneLIB.Tornevall_cURL.html openssl_guess() is a part of TorneLIB 5.0, described here
-	 * @return bool
-	 */
-	private function openssl_guess( $forceTesting = false ) {
-		$pemLocation = "";
-		if ( ini_get( 'open_basedir' ) == '' ) {
-			if ( $this->testssl || $forceTesting ) {
-				$this->openSslGuessed = true;
-				if ( version_compare( PHP_VERSION, "5.6.0", ">=" ) && function_exists( "openssl_get_cert_locations" ) ) {
-					$locations = openssl_get_cert_locations();
-					if ( is_array( $locations ) ) {
-						if ( isset( $locations['default_cert_file'] ) ) {
-							/* If it exists don't bother */
-							if ( file_exists( $locations['default_cert_file'] ) ) {
-								$this->hasCertFile        = true;
-								$this->useCertFile        = $locations['default_cert_file'];
-								$this->hasDefaultCertFile = true;
-							}
-							if ( file_exists( $locations['default_cert_dir'] ) ) {
-								$this->hasCertDir = true;
-							}
-							/* Sometimes certificates are located in a default location, which is /etc/ssl/certs - this part scans through such directories for a proper cert-file */
-							if ( ! $this->hasCertFile && is_array( $this->sslPemLocations ) && count( $this->sslPemLocations ) ) {
-								/* Loop through suggested locations and set a cafile if found */
-								foreach ( $this->sslPemLocations as $pemLocation ) {
-									if ( file_exists( $pemLocation ) ) {
-										ini_set( 'openssl.cafile', $pemLocation );
-										$this->useCertFile = $pemLocation;
-										$this->hasCertFile = true;
-									}
-								}
-							}
-						}
-					}
-					/* On guess, disable verification if failed */
-					if ( ! $this->hasCertFile ) {
-						$this->setSslVerify( false );
-					}
-				} else {
-					/* If we run on other PHP versions than 5.6.0 or higher, try to fall back into a known directory */
-					if ( $this->testssldeprecated ) {
-						if ( ! $this->hasCertFile && is_array( $this->sslPemLocations ) && count( $this->sslPemLocations ) ) {
-							/* Loop through suggested locations and set a cafile if found */
-							foreach ( $this->sslPemLocations as $pemLocation ) {
-								if ( file_exists( $pemLocation ) ) {
-									ini_set( 'openssl.cafile', $pemLocation );
-									$this->useCertFile = $pemLocation;
-									$this->hasCertFile = true;
-								}
-							}
-						}
-						if ( ! $this->hasCertFile ) {
-							$this->setSslVerify( false );
-						}
-					}
-				}
-			}
-		} else {
-			// Assume there is a valid certificate if jailed by open_basedir
-			$this->hasCertFile = true;
-
-			return true;
-		}
-
-		return $this->hasCertFile;
-	}
-
-	/**
-	 * Return the current certificate bundle file, chosen by autodetection
-	 * @return string
-	 */
-	public function getCertFile() {
-		return $this->useCertFile;
-	}
-
-
-
-
-
 
 
 
