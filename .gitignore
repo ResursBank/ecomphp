@@ -6,3 +6,4 @@ docs
 source/Makefile
 source/testwsdl.sh
 source/classes/thirdparty/Makefile
+source/classes/thirdparty/merger
