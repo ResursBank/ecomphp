@@ -95,7 +95,7 @@ class ResursBank {
 	/** @var string The version of this gateway */
 	private $version = "1.2.0";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20170608";
+	private $lastUpdate = "20170616";
 	/** @var string This. */
 	private $clientName = "EComPHP";
 	/** @var string Replacing $clientName on usage of setClientNAme */
@@ -1691,8 +1691,6 @@ class ResursBank {
 	 * @param array $arrSkipIndices
 	 *
 	 * @return array
-	 * @deprecated 1.0.8 Can be removed when the aftershop flow and payment specs are fixed
-	 * @deprecated 1.1.8 Can be removed when the aftershop flow and payment specs are fixed
 	 */
 	private function objectsIntoArray( $arrObjData, $arrSkipIndices = array() ) {
 		$arrData = array();
@@ -2575,8 +2573,24 @@ class ResursBank {
 		} else {
 			$this->envCountry = null;
 		}
-
 		return $this->envCountry;
+	}
+
+	/**
+	 * Set up a country based on a country code string. Supported countries are SE, DK, NO and FI. Anything else than this defaults to SE
+	 *
+	 * @param string $countryCodeString
+	 */
+	public function setCountryByCountryCode($countryCodeString = "") {
+		if (strtolower($countryCodeString) == "dk") {
+			$this->setCountry(ResursCountry::COUNTRY_DK);
+		} else if (strtolower($countryCodeString) == "no") {
+			$this->setCountry(ResursCountry::COUNTRY_NO);
+		} else if (strtolower($countryCodeString) == "fi") {
+			$this->setCountry(ResursCountry::COUNTRY_FI);
+		} else {
+			$this->setCountry(ResursCountry::COUNTRY_SE);
+		}
 	}
 
 	/**
@@ -3028,6 +3042,9 @@ class ResursBank {
 					if (!in_array(strtolower($key), array_map("strtolower", $mySpecRules))) {
 						unset($specArray[$key]);
 					}
+					if (strtolower($key) == "unitmeasure" && empty($value)) {
+						$specArray[$key] = $this->defaultUnitMeasure;
+					}
 				}
 				$specLines[$specIndex] = $specArray;
 			}
@@ -3399,25 +3416,44 @@ class ResursBank {
 	}
 
 	/**
-	 * @param $jsonData
-	 * @param string $paymentId
+	 * Update the Checkout iframe
 	 *
-	 * @return mixed
+	 * Backwards compatible so the formatting of the orderLines will be accepted in folllowing formats:
+	 *  - $orderLines is accepted as a json string
+	 *  - $orderLines can be sent in as array('orderLines' => $yourOrderlines)
+	 *  - $orderLines can be sent in as array($yourOrderlines)
+	 *
+	 * @param string $paymentId
+	 * @param array $orderLines
+	 * @return array
 	 * @throws \Exception
-	 * @deprecated 1.0.2
-	 * @deprecated 1.1.2
+	 * @since 1.0.8
+	 * @since 1.1.8
 	 */
-	public function omniUpdateOrder( $jsonData, $paymentId = '' ) {
-		// TODO: MUST BE FIXED!!
+	public function setCheckoutFrameOrderLines($paymentId = '', $orderLines = array()) {
 		if ( empty( $paymentId ) ) {
 			throw new \Exception( "Payment id not set" );
 		}
-		$omniUrl        = $this->getCheckoutUrl();
-		$omniRefUrl     = $omniUrl . "/checkout/payments/" . $paymentId;
-		$engineResponse = $this->createJsonEngine( $omniRefUrl, $jsonData, ResursCurlMethods::METHOD_PUT );
-		return $engineResponse;
+		if ( ! $this->hasServicesInitialization ) {
+			$this->InitializeServices();
+		}
+		$outputOrderLines = array();
+		if (is_string($orderLines)) {
+			// If this is a string, it might be an json string from older systems. We need, in that case make sure it is returned as an array.
+			// This will destroy the content going to the PUT call, if it is not the case. However, sending a string to this point has no effect in the flow whatsoever.
+			$orderLines = $this->objectsIntoArray(json_decode($orderLines));
+		}
+		// Make sure that the payment spec are clean up and set correctly to a non-recursive array
+		if (isset($orderLines['orderLines'])) {
+			$outputOrderLines = $orderLines['orderLines'];
+		} else if (isset($orderLines['specLines'])) {
+			$outputOrderLines = $orderLines['specLines'];
+		} else {
+			$outputOrderLines = $orderLines;
+		}
+		$sanitizedOutputOrderLines = $this->sanitizePaymentSpec($outputOrderLines,ResursMethodTypes::METHOD_CHECKOUT);
+		return $this->CURL->doPut($this->getCheckoutUrl() . "/checkout/payments/" . $paymentId, array('orderLines' => $sanitizedOutputOrderLines), CURL_POST_AS::POST_AS_JSON);
 	}
-
 
 	////// HOSTED FLOW
 
