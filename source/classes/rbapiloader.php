@@ -12,7 +12,7 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.0
- * @version 1.0.8
+ * @version 1.0.9
  * @deprecated Maintenance version only
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
@@ -202,9 +202,9 @@ class ResursBank {
 	////////// Private variables
 	///// Client Specific Settings
 	/** @var string The version of this gateway */
-	private $version = "1.0.8";
+	private $version = "1.0.9";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20170615";
+	private $lastUpdate = "20170616";
 	/** @var string This. */
 	private $clientName = "EComPHP";
 	/** @var string Replacing $clientName on usage of setClientNAme */
@@ -4213,6 +4213,23 @@ class ResursBank {
 	}
 
 	/**
+	 * Set up a country based on a country code string. Supported countries are SE, DK, NO and FI. Anything else than this defaults to SE
+	 *
+	 * @param string $countryCodeString
+	 */
+	public function setCountryByCountryCode($countryCodeString = "") {
+		if (strtolower($countryCodeString) == "dk") {
+			$this->setCountry(ResursCountry::COUNTRY_DK);
+		} else if (strtolower($countryCodeString) == "no") {
+			$this->setCountry(ResursCountry::COUNTRY_NO);
+		} else if (strtolower($countryCodeString) == "fi") {
+			$this->setCountry(ResursCountry::COUNTRY_FI);
+		} else {
+			$this->setCountry(ResursCountry::COUNTRY_SE);
+		}
+	}
+
+	/**
 	 * Returns true if updateCart has interfered with the specRows (this is a good way to indicate if something went wrong with the handling)
 	 *
 	 * @return bool
@@ -4673,6 +4690,9 @@ class ResursBank {
 				foreach ($specArray as $key => $value) {
 					if (!in_array(strtolower($key), array_map("strtolower", $mySpecRules))) {
 						unset($specArray[$key]);
+					}
+					if (strtolower($key) == "unitmeasure" && empty($value)) {
+						$specArray[$key] = $this->defaultUnitMeasure;
 					}
 				}
 				$specLines[$specIndex] = $specArray;
@@ -5544,14 +5564,22 @@ class ResursBank {
 		if ( ! $this->hasServicesInitialization ) {
 			$this->InitializeServices();
 		}
-		$defaultOrderLines = $orderLines;
+		$outputOrderLines = array();
 		if (is_string($orderLines)) {
 			// If this is a string, it might be an json string from older systems. We need, in that case make sure it is returned as an array.
 			// This will destroy the content going to the PUT call, if it is not the case. However, sending a string to this point has no effect in the flow whatsoever.
 			$orderLines = $this->objectsIntoArray(json_decode($orderLines));
-			$defaultOrderLines = isset($orderLines['orderLines']) ? array('orderLines'=>$orderLines['orderLines']) : $orderLines;
 		}
-		return $this->CURL->doPut($this->getCheckoutUrl() . "/checkout/payments/" . $paymentId, $defaultOrderLines, CURL_POST_AS::POST_AS_JSON);
+		// Make sure that the payment spec are clean up and set correctly to a non-recursive array
+		if (isset($orderLines['orderLines'])) {
+			$outputOrderLines = $orderLines['orderLines'];
+		} else if (isset($orderLines['specLines'])) {
+			$outputOrderLines = $orderLines['specLines'];
+		} else {
+			$outputOrderLines = $orderLines;
+		}
+		$sanitizedOutputOrderLines = $this->sanitizePaymentSpec($outputOrderLines,ResursMethodTypes::METHOD_CHECKOUT);
+		return $this->CURL->doPut($this->getCheckoutUrl() . "/checkout/payments/" . $paymentId, array('orderLines' => $sanitizedOutputOrderLines), CURL_POST_AS::POST_AS_JSON);
 	}
 
 	////// HOSTED FLOW
