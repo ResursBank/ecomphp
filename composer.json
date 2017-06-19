@@ -1,7 +1,6 @@
 {
   "name": "resursbank/ecomphp",
   "description": "ECommerce Library for Resurs Bank shop flows",
-  "minimum-stability": "stable",
   "license": "Apache-2.0",
   "version": "1.1.9",
   "require": {
