@@ -13,7 +13,7 @@
     }
   ],
   "autoload": {
-    "files": [ "vendor/resursbank/ecomphp/source/classes/rbapiloader.php" ],
+    "files": [ "source/classes/rbapiloader.php" ],
     "psr-4": {
       "\\Resursbank\\RBEcomPHP\\": "source/classes/rbapiloader.php"
     }
