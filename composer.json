@@ -11,5 +11,11 @@
       "name": "Tomas Tornevall",
       "email": "tomas.tornevall@resurs.se"
     }
-  ]
+  ],
+  "autoload": {
+    "files": [ "vendor/resursbank/ecomphp/source/classes/rbapiloader.php" ],
+    "psr-4": {
+      "\\Resursbank\\RBEcomPHP\\": ""
+    }
+  }
 }
