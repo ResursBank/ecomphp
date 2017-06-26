@@ -1218,7 +1218,7 @@ class ResursBank {
 	 *
 	 * @return string
 	 */
-	private function getSaltKey( $complexity = 1, $setmax = null ) {
+	public function getSaltKey( $complexity = 1, $setmax = null ) {
 		$retp               = null;
 		$characterListArray = array(
 			'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
