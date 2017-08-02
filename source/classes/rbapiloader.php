@@ -95,7 +95,7 @@ class ResursBank {
 	/** @var string The version of this gateway */
 	private $version = "1.2.0";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20170616";
+	private $lastUpdate = "20170802";
 	/** @var string This. */
 	private $clientName = "EComPHP";
 	/** @var string Replacing $clientName on usage of setClientNAme */
@@ -572,7 +572,7 @@ class ResursBank {
 	 *
 	 * @return string
 	 */
-	private function getSaltKey( $complexity = 1, $setmax = null ) {
+	public function getSaltKey( $complexity = 1, $setmax = null ) {
 		$retp               = null;
 		$characterListArray = array(
 			'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
@@ -1319,13 +1319,13 @@ class ResursBank {
 		if ( empty( $paymentId ) || empty( $to ) ) {
 			throw new \Exception( "Payment id and to must be set" );
 		}
+		$this->InitializeServices();
 		$url          = $this->getCheckoutUrl() . '/checkout/payments/' . $paymentId . '/updatePaymentReference';
-		$response     = $this->CURL->getParsedResponse( $this->createJsonEngine( $url, json_encode( array( 'paymentReference' => $to ) ), ResursCurlMethods::METHOD_PUT ) );
-		$ResponseCode = $this->CURL->getResponseCode();
+		$result = $this->CURL->doPut($url, array( 'paymentReference' => $to), \TorneLIB\CURL_POST_AS::POST_AS_JSON);
+		$ResponseCode = $this->CURL->getResponseCode($result);
 		if ( $ResponseCode >= 200 && $ResponseCode <= 250 ) {
 			return true;
 		}
-
 		return false;
 	}
 
@@ -3455,7 +3455,7 @@ class ResursBank {
 			$outputOrderLines = $orderLines;
 		}
 		$sanitizedOutputOrderLines = $this->sanitizePaymentSpec($outputOrderLines,ResursMethodTypes::METHOD_CHECKOUT);
-		return $this->CURL->doPut($this->getCheckoutUrl() . "/checkout/payments/" . $paymentId, array('orderLines' => $sanitizedOutputOrderLines), CURL_POST_AS::POST_AS_JSON);
+		return $this->CURL->doPut($this->getCheckoutUrl() . "/checkout/payments/" . $paymentId, array('orderLines' => $sanitizedOutputOrderLines),\TorneLIB\CURL_POST_AS::POST_AS_JSON);
 	}
 
 	////// HOSTED FLOW
@@ -3886,4 +3886,26 @@ class ResursBank {
 			return false;
 		}
 	}
-}
+
+	/**
+	 * Returns all invoice numbers for a specific payment
+	 *
+	 * @param string $paymentId
+	 *
+	 * @return array
+	 * @since 1.0.11
+	 * @since 1.1.11
+	 * @since 1.2.0
+	 */
+	public function getPaymentInvoices($paymentId = '') {
+		$invoices = array();
+		$paymentData = $this->getPayment($paymentId);
+		if (!empty($paymentData) && isset($paymentData->paymentDiffs)) {
+			foreach ($paymentData->paymentDiffs as $paymentRow) {
+				if (isset($paymentRow->type) && $paymentRow->type == "DEBIT" && isset($paymentRow->invoiceId)) {
+					$invoices[] = $paymentRow->invoiceId;
+				}
+			}
+		}
+		return $invoices;
+	}}
