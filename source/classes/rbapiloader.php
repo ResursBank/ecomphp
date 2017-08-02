@@ -10,7 +10,7 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.1
- * @version 1.1.10
+ * @version 1.1.11
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @license Apache License
@@ -201,7 +201,7 @@ class ResursBank {
 	////////// Private variables
 	///// Client Specific Settings
 	/** @var string The version of this gateway */
-	private $version = "1.1.10";
+	private $version = "1.1.11";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
 	private $lastUpdate = "20170802";
 	/** @var string This. */
@@ -2015,13 +2015,14 @@ class ResursBank {
 		if ( empty( $paymentId ) || empty( $to ) ) {
 			throw new \Exception( "Payment id and to must be set" );
 		}
+		$this->InitializeServices();
 		$url          = $this->getCheckoutUrl() . '/checkout/payments/' . $paymentId . '/updatePaymentReference';
-		$response     = $this->CURL->getParsedResponse( $this->createJsonEngine( $url, json_encode( array( 'paymentReference' => $to ) ), ResursCurlMethods::METHOD_PUT ) );
-		$ResponseCode = $this->CURL->getResponseCode();
+		$result = $this->CURL->doPut($url, array( 'paymentReference' => $to), \TorneLIB\CURL_POST_AS::POST_AS_JSON);
+		$ResponseCode = $this->CURL->getResponseCode($result);
+		print_R($result);
 		if ( $ResponseCode >= 200 && $ResponseCode <= 250 ) {
 			return true;
 		}
-
 		return false;
 	}
 
@@ -6303,5 +6304,28 @@ class ResursBank {
 		} else {
 			return false;
 		}
+	}
+
+	/**
+	 * Returns all invoice numbers for a specific payment
+	 *
+	 * @param string $paymentId
+	 *
+	 * @return array
+	 * @since 1.0.11
+	 * @since 1.1.11
+	 * @since 1.2.0
+	 */
+	public function getPaymentInvoices($paymentId = '') {
+		$invoices = array();
+		$paymentData = $this->getPayment($paymentId);
+		if (!empty($paymentData) && isset($paymentData->paymentDiffs)) {
+			foreach ($paymentData->paymentDiffs as $paymentRow) {
+				if (isset($paymentRow->type) && $paymentRow->type == "DEBIT" && isset($paymentRow->invoiceId)) {
+					$invoices[] = $paymentRow->invoiceId;
+				}
+			}
+		}
+		return $invoices;
 	}
 }

@@ -787,10 +787,37 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 		$paymentList = $this->rb->findPayments();
 		if (is_array($paymentList) && count($paymentList)) {
 			$existingPayment = array_pop($paymentList);
+			$existingPayment->paymentId;
 			$payment = $this->rb->getPayment($existingPayment->paymentId);
 			$this->assertTrue($payment->id == $existingPayment->paymentId);
 		} else {
 			$this->markTestSkipped("No payments available to run with getPayment()");
+		}
+	}
+	/**
+	 * Book and see if there is a payment registered at Resurs Bank
+	 */
+	public function testGetPaymentInvoices()
+	{
+		if ($this->ignoreBookingTests) {
+			$this->markTestSkipped();
+		}
+		$this->checkEnvironment();
+		try {
+			$invoicesArray = $this->rb->getPaymentInvoices( "20170802114006-2638609880" );
+		} catch (\Exception $e) {
+			$this->markTestSkipped("This test requires an order that contains one or more debits (it's a very special test) and the payment used to test this does not seem to exist here.");
+			return;
+		}
+		//$invoicesArray = $this->rb->getPaymentInvoices("20170802112051-7018398597");
+		$hasInvoices = false;
+		if (count($invoicesArray)>0) {
+			$hasInvoices = true;
+		}
+		if ($hasInvoices) {
+			$this->assertTrue($hasInvoices);
+		} else {
+			$this->markTestSkipped("No debits available in current test");
 		}
 	}
 
@@ -1083,13 +1110,14 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 		$iframePaymentReference = $this->rb->getPreferredPaymentId();
 		$Success = false;
 		if (!empty($iframePaymentReference) && !empty($iFrameUrl) && !empty($iframeContent) && strlen($iframeContent) > 1024) {
-			$newReference = $this->rb->generatePreferredId();
+			$newReference = $this->rb->generatePreferredId(30, "UPDREF", true);
 			try {
 				$Success = $this->rb->updatePaymentReference($iframePaymentReference, $newReference);
 			} catch (Exception $e) {
 				$this->markTestIncomplete("Exception: " . $e->getCode() . ": " . $e->getMessage());
 			}
 		}
+		echo $iFrameUrl;
 		$this->assertTrue($Success === true);
 	}
 
@@ -1504,10 +1532,10 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 				null,
 				1
 			);
-			//$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
-			//$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
-			//$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
-			//$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
+			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
+			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
+			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
+			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
 			$useThisPaymentId = $this->rb->getPreferredId();
 			// Payload that needs to be appended to the rendered one
 			$myPayLoad = array(
@@ -1548,6 +1576,8 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 			$this->rb->setPreferredPaymentService(\Resursbank\RBEcomPHP\ResursMethodTypes::METHOD_SIMPLIFIED);
 			$this->rb->setBillingByGetAddress("198305147715");
 			$this->rb->setCustomer(null, "0808080808", "0707070707", "test@test.com", "NATURAL");
+			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
+			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
 			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
 			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
 			$useThisPaymentId = $this->rb->getPreferredId();
