@@ -349,7 +349,7 @@ class ResursBank {
 	 */
 	private function testWrappers() {
 		if ( ! in_array( 'https', @stream_get_wrappers() ) ) {
-			throw new \Exception( __FUNCTION__ . ": HTTPS wrapper can not be found", ResursExceptions::SSL_WRAPPER_MISSING );
+			throw new \Exception( __FUNCTION__ . ": HTTPS wrapper can not be found", \ResursExceptions::SSL_WRAPPER_MISSING );
 		}
 	}
 
@@ -827,7 +827,7 @@ class ResursBank {
 		// DEFAULT SETUP
 		$renderCallback['eventType'] = $this->getCallbackTypeString( $callbackType );
 		if ( empty( $renderCallback['eventType'] ) ) {
-			throw new \Exception( __FUNCTION__ . ": The callback type you are trying to register is not supported by EComPHP", ResursExceptions::CALLBACK_TYPE_UNSUPPORTED );
+			throw new \Exception( __FUNCTION__ . ": The callback type you are trying to register is not supported by EComPHP", \ResursExceptions::CALLBACK_TYPE_UNSUPPORTED );
 		}
 		$renderCallback['uriTemplate'] = $callbackUriTemplate;
 
@@ -860,7 +860,7 @@ class ResursBank {
 			$renderCallback['digestConfiguration']['digestSalt'] = $this->digestKey['eventType'];
 		}
 		if ( empty( $renderCallback['digestConfiguration']['digestSalt'] ) ) {
-			throw new \Exception( "Can not continue without a digest salt key", ResursExceptions::CALLBACK_SALTDIGEST_MISSING );
+			throw new \Exception( "Can not continue without a digest salt key", \ResursExceptions::CALLBACK_SALTDIGEST_MISSING );
 		}
 		////// DIGEST CONFIGURATION FINISH
 		if ( $this->registerCallbacksViaRest ) {
@@ -2057,7 +2057,7 @@ class ResursBank {
 
 		if ( ! count( $paymentSpecLine ) ) {
 			/* Should occur when you for example try to annul an order that is already debited or credited */
-			throw new \Exception( __FUNCTION__ . ": No articles was added during the renderingprocess (RenderType $renderType)", ResursExceptions::PAYMENTSPEC_EMPTY );
+			throw new \Exception( __FUNCTION__ . ": No articles was added during the renderingprocess (RenderType $renderType)", \ResursExceptions::PAYMENTSPEC_EMPTY );
 		}
 
 		if ( is_array( $paymentSpecLine ) && count( $paymentSpecLine ) ) {
@@ -2121,7 +2121,7 @@ class ResursBank {
 			 * Note: If the paymentspec are rendered without speclines, this may be caused by for example a finalization where the speclines already are finalized.
 			 */
 			if ( ! count( $newSpecLine ) ) {
-				throw new \Exception( __FUNCTION__ . ": No articles has been added to the paymentspec due to mismatching clientPaymentSpec", ResursExceptions::PAYMENTSPEC_EMPTY );
+				throw new \Exception( __FUNCTION__ . ": No articles has been added to the paymentspec due to mismatching clientPaymentSpec", \ResursExceptions::PAYMENTSPEC_EMPTY );
 			}
 
 			/* If no invoice id is set, we are assuming that Resurs Bank Invoice numbering sequence is the right one - Enforcing an invoice number if not exists */
@@ -2326,10 +2326,10 @@ class ResursBank {
 		$returnRegEx  = $templateRule['regexp'];
 
 		if ( empty( $countryCode ) ) {
-			throw new \Exception( __FUNCTION__ . ": Country code is missing in getRegEx-request for form fields", ResursExceptions::REGEX_COUNTRYCODE_MISSING );
+			throw new \Exception( __FUNCTION__ . ": Country code is missing in getRegEx-request for form fields", \ResursExceptions::REGEX_COUNTRYCODE_MISSING );
 		}
 		if ( empty( $customerType ) ) {
-			throw new \Exception( __FUNCTION__ . ": Customer type is missing in getRegEx-request for form fields", ResursExceptions::REGEX_CUSTOMERTYPE_MISSING );
+			throw new \Exception( __FUNCTION__ . ": Customer type is missing in getRegEx-request for form fields", \ResursExceptions::REGEX_CUSTOMERTYPE_MISSING );
 		}
 
 		if ( ! empty( $countryCode ) && isset( $returnRegEx[ strtoupper( $countryCode ) ] ) ) {
@@ -2388,7 +2388,7 @@ class ResursBank {
 		}
 
 		if ( $canThrow && ! $canHideSet ) {
-			throw new \Exception( __FUNCTION__ . ": templateFieldsByMethodResponse is empty. You have to run getTemplateFieldsByMethodType first", ResursExceptions::FORMFIELD_CANHIDE_EXCEPTION );
+			throw new \Exception( __FUNCTION__ . ": templateFieldsByMethodResponse is empty. You have to run getTemplateFieldsByMethodType first", \ResursExceptions::FORMFIELD_CANHIDE_EXCEPTION );
 		}
 
 		return $canHideSet;
@@ -2729,7 +2729,7 @@ class ResursBank {
 	 */
 	private function createPaymentExecute( $payment_id_or_method = '', $payload = array() ) {
 		if ( trim( strtolower( $this->username ) ) == "exshop" ) {
-			throw new \Exception( "The use of exshop is no longer supported", ResursExceptions::EXSHOP_PROHIBITED );
+			throw new \Exception( "The use of exshop is no longer supported", \ResursExceptions::EXSHOP_PROHIBITED );
 		}
 		$error  = array();
 		$myFlow = $this->getPreferredPaymentService();
@@ -2872,12 +2872,12 @@ class ResursBank {
 		}
 		if ( $this->enforceService === ResursMethodTypes::METHOD_CHECKOUT ) {
 			if ( empty( $payment_id_or_method ) && empty($this->preferredId)) {
-				throw new \Exception( "A payment method or payment id must be defined", ResursExceptions::CREATEPAYMENT_NO_ID_SET );
+				throw new \Exception( "A payment method or payment id must be defined", \ResursExceptions::CREATEPAYMENT_NO_ID_SET );
 			}
 			$payment_id_or_method = $this->preferredId;
 		}
 		if ( ! count( $this->Payload ) ) {
-			throw new \Exception( "No payload are set for this payment", ResursExceptions::BOOKPAYMENT_NO_BOOKDATA );
+			throw new \Exception( "No payload are set for this payment", \ResursExceptions::BOOKPAYMENT_NO_BOOKDATA );
 		}
 
 		// Obsolete way to handle multidimensional specrows (1.0.0-1.0.1)
@@ -3255,7 +3255,7 @@ class ResursBank {
 			$this->Payload['customer']['type'] = ! empty( $customerType ) && ( strtolower( $customerType ) == "natural" || strtolower( $customerType ) == "legal" ) ? strtoupper( $customerType ) : "NATURAL";
 		} else {
 			// We don't guess on customer types
-			throw new \Exception( "No customer type has been set. Use NATURAL or LEGAL to proceed", ResursExceptions::BOOK_CUSTOMERTYPE_MISSING );
+			throw new \Exception( "No customer type has been set. Use NATURAL or LEGAL to proceed", \ResursExceptions::BOOK_CUSTOMERTYPE_MISSING );
 		}
 		if ( ! empty( $contactgovernmentId ) ) {
 			$this->Payload['customer']['contactGovernmentId'] = $contactgovernmentId;
