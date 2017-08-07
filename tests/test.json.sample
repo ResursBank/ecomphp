@@ -21,5 +21,7 @@
     "card_new": "card_new"
   },
   "callbackUrl": "https://test.resurs.com/signdummy/index.php?isCallback=1",
-  "signUrl": "https://test.resurs.com/signdummy/index.php?isSigningUrl=1"
+  "signUrl": "https://test.resurs.com/signdummy/index.php?isSigningUrl=1",
+  "callbackUrlBackup": "http://signdummy.ecommerceweb.se/index.php?isCallback=1",
+  "signUrlBackup": "http://signdummy.ecommerceweb.se/index.php?isSigningUrl=1"
 }

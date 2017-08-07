@@ -16,6 +16,8 @@
  * @license Apache License
  */
 
+namespace Resursbank\RBEcomPHP;
+
 /**
  * Class ResursExceptions Exception handling for EComPHP
  */
