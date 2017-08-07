@@ -1034,12 +1034,13 @@ class ResursBank {
 	}
 
 	/**
-	 * WebServicesLight.
+	 * Speak with webservices
 	 *
 	 * @param string $serviceName
 	 * @param array $resursParameters
+	 * @param bool $getResponseCode
 	 *
-	 * @return array|mixed|null
+	 * @return array
 	 * @since 1.0.2
 	 * @since 1.1.2
 	 */
