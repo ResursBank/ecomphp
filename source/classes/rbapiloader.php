@@ -1590,7 +1590,7 @@ class ResursBank {
 			$Expect           = $this->validateExternalUrl['http_accept'];
 			$UnExpect         = $this->validateExternalUrl['http_error'];
 			$useUrl           = $this->validateExternalUrl['url'];
-			$ExternalPostData = array( 'link' => $this->NETWORK->base64url_encode( $useUrl ) );
+			$ExternalPostData = array( 'link' => $this->NETWORK->base64url_encode( $useUrl ), "returnEncoded"=>true );
 			try {
 				$this->CURL->doPost( $ExternalAPI, $ExternalPostData, \TorneLIB\CURL_POST_AS::POST_AS_JSON );
 				$WebResponse = $this->CURL->getParsedResponse();
@@ -1606,10 +1606,11 @@ class ResursBank {
 					throw new \Exception( "No response returned from API", 500 );
 				}
 			}
-			if ( isset( $ParsedResponse->{$useUrl}->exceptiondata->errorcode ) && ! empty( $ParsedResponse->{$useUrl}->exceptiondata->errorcode ) ) {
+			$base64url = $this->base64url_encode($useUrl);
+			if (isset($ParsedResponse->{$base64url}) && isset( $ParsedResponse->{$base64url}->exceptiondata->errorcode ) && ! empty( $ParsedResponse->{$base64url}->exceptiondata->errorcode ) ) {
 				return ResursCallbackReachability::IS_NOT_REACHABLE;
 			}
-			$UrlResult         = $ParsedResponse->{$useUrl}->result;
+			$UrlResult         = $ParsedResponse->{$base64url}->result;
 			$totalResults      = 0;
 			$expectedResults   = 0;
 			$unExpectedResults = 0;
@@ -1637,7 +1638,6 @@ class ResursBank {
 				return ResursCallbackReachability::IS_NOT_REACHABLE;
 			}
 		}
-
 		return ResursCallbackReachability::IS_REACHABLE_NOT_KNOWN;
 	}
 
@@ -2708,7 +2708,7 @@ class ResursBank {
 		// Payloads are built here
 		$this->preparePayload( $payment_id_or_method, $payload );
 		if ( $this->forceExecute ) {
-			$this->createPaymentExecuteCommand = "bookPayment";
+			$this->createPaymentExecuteCommand = $payment_id_or_method;
 			return array( 'status' => 'delayed' );
 		} else {
 			$bookPaymentResult = $this->createPaymentExecute( $payment_id_or_method, $this->Payload );
@@ -2869,10 +2869,11 @@ class ResursBank {
 		if ( ! $this->enforceService ) {
 			$this->setPreferredPaymentService( ResursMethodTypes::METHOD_SIMPLIFIED );
 		}
-		if ( empty( $payment_id_or_method ) ) {
-			if ( $this->enforceService === ResursMethodTypes::METHOD_CHECKOUT ) {
+		if ( $this->enforceService === ResursMethodTypes::METHOD_CHECKOUT ) {
+			if ( empty( $payment_id_or_method ) && empty($this->preferredId)) {
 				throw new \Exception( "A payment method or payment id must be defined", ResursExceptions::CREATEPAYMENT_NO_ID_SET );
 			}
+			$payment_id_or_method = $this->preferredId;
 		}
 		if ( ! count( $this->Payload ) ) {
 			throw new \Exception( "No payload are set for this payment", ResursExceptions::BOOKPAYMENT_NO_BOOKDATA );
@@ -3749,7 +3750,7 @@ class ResursBank {
 				$Result         = $this->postService( "finalizePayment", $finalizePaymentContainer );
 				$finalizeResult = true;
 			} catch ( \Exception $e ) {
-				throw new \Exception( __FUNCTION__ . ": " . $e->getMessage(), 500, __FUNCTION__ );
+				throw new \Exception( __FUNCTION__ . ": " . $e->getMessage(), 500 );
 			}
 		}
 
