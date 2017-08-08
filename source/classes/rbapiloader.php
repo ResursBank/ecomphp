@@ -203,7 +203,7 @@ class ResursBank {
 	/** @var string The version of this gateway */
 	private $version = "1.1.12";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20170807";
+	private $lastUpdate = "20170808";
 	/** @var string This. */
 	private $clientName = "EComPHP";
 	/** @var string Replacing $clientName on usage of setClientNAme */
@@ -706,7 +706,7 @@ class ResursBank {
 	 */
 	private function testWrappers() {
 		if ( ! in_array( 'https', @stream_get_wrappers() ) ) {
-			throw new \Exception( __FUNCTION__ . ": HTTPS wrapper can not be found", ResursExceptions::SSL_WRAPPER_MISSING );
+			throw new \Exception( __FUNCTION__ . ": HTTPS wrapper can not be found", \ResursExceptions::SSL_WRAPPER_MISSING );
 		}
 	}
 
@@ -875,7 +875,7 @@ class ResursBank {
 				}
 			} catch ( \Exception $e ) {
 				/** Adds the $currentService to the message, to show which service that failed */
-				throw new \Exception( __FUNCTION__ . ": " . $e->getMessage() . "\nStuck on service: " . $currentService, ResursExceptions::WSDL_APILOAD_EXCEPTION, $e );
+				throw new \Exception( __FUNCTION__ . ": " . $e->getMessage() . "\nStuck on service: " . $currentService, \ResursExceptions::WSDL_APILOAD_EXCEPTION, $e );
 			}
 		}
 
@@ -1008,7 +1008,7 @@ class ResursBank {
 					$returnObject        = $this->shopFlowService->$func( $instance );
 				}
 			} catch ( \Exception $e ) {
-				throw new \Exception( __FUNCTION__ . "/" . $func . "/" . $classfunc . ": " . $e->getMessage(), ResursExceptions::WSDL_PASSTHROUGH_EXCEPTION );
+				throw new \Exception( __FUNCTION__ . "/" . $func . "/" . $classfunc . ": " . $e->getMessage(), \ResursExceptions::WSDL_PASSTHROUGH_EXCEPTION );
 			}
 		}
 		try {
@@ -1493,7 +1493,7 @@ class ResursBank {
 		// DEFAULT SETUP
 		$renderCallback['eventType'] = $this->getCallbackTypeString( $callbackType );
 		if ( empty( $renderCallback['eventType'] ) ) {
-			throw new \Exception( __FUNCTION__ . ": The callback type you are trying to register is not supported by EComPHP", ResursExceptions::CALLBACK_TYPE_UNSUPPORTED );
+			throw new \Exception( __FUNCTION__ . ": The callback type you are trying to register is not supported by EComPHP", \ResursExceptions::CALLBACK_TYPE_UNSUPPORTED );
 		}
 		$renderCallback['uriTemplate'] = $callbackUriTemplate;
 
@@ -1526,7 +1526,7 @@ class ResursBank {
 			$renderCallback['digestConfiguration']['digestSalt'] = $this->digestKey['eventType'];
 		}
 		if ( empty( $renderCallback['digestConfiguration']['digestSalt'] ) ) {
-			throw new \Exception( "Can not continue without a digest salt key", ResursExceptions::CALLBACK_SALTDIGEST_MISSING );
+			throw new \Exception( "Can not continue without a digest salt key", \ResursExceptions::CALLBACK_SALTDIGEST_MISSING );
 		}
 		////// DIGEST CONFIGURATION FINISH
 		if ( $this->registerCallbacksViaRest ) {
@@ -3156,7 +3156,7 @@ class ResursBank {
 
 		if ( ! count( $paymentSpecLine ) ) {
 			/* Should occur when you for example try to annul an order that is already debited or credited */
-			throw new \Exception( __FUNCTION__ . ": No articles was added during the renderingprocess (RenderType $renderType)", ResursExceptions::PAYMENTSPEC_EMPTY );
+			throw new \Exception( __FUNCTION__ . ": No articles was added during the renderingprocess (RenderType $renderType)", \ResursExceptions::PAYMENTSPEC_EMPTY );
 		}
 
 		if ( is_array( $paymentSpecLine ) && count( $paymentSpecLine ) ) {
@@ -3220,7 +3220,7 @@ class ResursBank {
 			 * Note: If the paymentspec are rendered without speclines, this may be caused by for example a finalization where the speclines already are finalized.
 			 */
 			if ( ! count( $newSpecLine ) ) {
-				throw new \Exception( __FUNCTION__ . ": No articles has been added to the paymentspec due to mismatching clientPaymentSpec", ResursExceptions::PAYMENTSPEC_EMPTY );
+				throw new \Exception( __FUNCTION__ . ": No articles has been added to the paymentspec due to mismatching clientPaymentSpec", \ResursExceptions::PAYMENTSPEC_EMPTY );
 			}
 
 			/* If no invoice id is set, we are assuming that Resurs Bank Invoice numbering sequence is the right one - Enforcing an invoice number if not exists */
@@ -3592,10 +3592,10 @@ class ResursBank {
 		$returnRegEx  = $templateRule['regexp'];
 
 		if ( empty( $countryCode ) ) {
-			throw new \Exception( __FUNCTION__ . ": Country code is missing in getRegEx-request for form fields", ResursExceptions::REGEX_COUNTRYCODE_MISSING );
+			throw new \Exception( __FUNCTION__ . ": Country code is missing in getRegEx-request for form fields", \ResursExceptions::REGEX_COUNTRYCODE_MISSING );
 		}
 		if ( empty( $customerType ) ) {
-			throw new \Exception( __FUNCTION__ . ": Customer type is missing in getRegEx-request for form fields", ResursExceptions::REGEX_CUSTOMERTYPE_MISSING );
+			throw new \Exception( __FUNCTION__ . ": Customer type is missing in getRegEx-request for form fields", \ResursExceptions::REGEX_CUSTOMERTYPE_MISSING );
 		}
 
 		if ( ! empty( $countryCode ) && isset( $returnRegEx[ strtoupper( $countryCode ) ] ) ) {
@@ -3654,7 +3654,7 @@ class ResursBank {
 		}
 
 		if ( $canThrow && ! $canHideSet ) {
-			throw new \Exception( __FUNCTION__ . ": templateFieldsByMethodResponse is empty. You have to run getTemplateFieldsByMethodType first", ResursExceptions::FORMFIELD_CANHIDE_EXCEPTION );
+			throw new \Exception( __FUNCTION__ . ": templateFieldsByMethodResponse is empty. You have to run getTemplateFieldsByMethodType first", \ResursExceptions::FORMFIELD_CANHIDE_EXCEPTION );
 		}
 
 		return $canHideSet;
@@ -3873,7 +3873,7 @@ class ResursBank {
 				return $this->objectsIntoArray( $this->getPaymentMethods() );
 			}
 		}
-		throw new \Exception( __FUNCTION__ . ": Can not fetch payment methods from cache. You must enable internal caching first.", ResursExceptions::PAYMENT_METHODS_CACHE_DISABLED );
+		throw new \Exception( __FUNCTION__ . ": Can not fetch payment methods from cache. You must enable internal caching first.", \ResursExceptions::PAYMENT_METHODS_CACHE_DISABLED );
 	}
 
 	/**
@@ -3911,7 +3911,7 @@ class ResursBank {
 				return $this->objectsIntoArray( $this->getAnnuityFactors( $paymentMethod ) );
 			}
 		} else {
-			throw new \Exception( __FUNCTION__ . ": Can not fetch annuity factors from cache. You must enable internal caching first.", ResursExceptions::ANNUITY_FACTORS_CACHE_DISABLED );
+			throw new \Exception( __FUNCTION__ . ": Can not fetch annuity factors from cache. You must enable internal caching first.", \ResursExceptions::ANNUITY_FACTORS_CACHE_DISABLED );
 		}
 	}
 
@@ -3937,7 +3937,7 @@ class ResursBank {
 				$firstMethod     = array_pop( $methodsAvailable );
 				$paymentMethodId = isset( $firstMethod->id ) ? $firstMethod->id : null;
 				if ( empty( $paymentMethodId ) ) {
-					throw new \Exception( __FUNCTION__ . ": getAnnuityFactorsException  No available payment method", ResursExceptions::ANNUITY_FACTORS_METHOD_UNAVAILABLE );
+					throw new \Exception( __FUNCTION__ . ": getAnnuityFactorsException  No available payment method", \ResursExceptions::ANNUITY_FACTORS_METHOD_UNAVAILABLE );
 				}
 			}
 		}
@@ -3968,24 +3968,11 @@ class ResursBank {
 	 * @return string
 	 * @since 1.0.0
 	 * @since 1.1.0
+	 * @deprecated 1.0.12 Will be replaced with getPreferredPaymentId
+	 * @deprecated 1.1.12 Will be replaced with getPreferredPaymentId
 	 */
 	public function getPreferredId( $maxLength = 25, $prefix = "", $dualUniq = true ) {
-		$timestamp = strftime( "%Y%m%d%H%M%S", time() );
-		if ( $dualUniq ) {
-			$uniq = uniqid( sha1( uniqid( rand(), true ) ), true );
-		} else {
-			$uniq = uniqid( rand(), true );
-		}
-		$uniq       = preg_replace( '/\D/i', '', $uniq );
-		$uniqLength = strlen( $uniq );
-		if ( ! empty( $prefix ) ) {
-			$uniq = substr( $prefix . $uniq, 0, $uniqLength );
-		}
-		$preferredId       = $timestamp . "-" . $uniq;
-		$preferredId       = substr( $preferredId, 0, $maxLength );
-		$this->preferredId = $preferredId;
-
-		return $this->preferredId;
+		return $this->getPreferredPaymentId($maxLength, $prefix, $dualUniq);
 	}
 
 	/**
@@ -4001,20 +3988,37 @@ class ResursBank {
 	}
 
 	/**
-	 * Returns a default automatically set payment reference. If the preferred id is not set, you can ask to create one
+	 * Generates a unique "preferredId" (term from simplified and referes to orderReference) out of a datestamp
 	 *
-	 * @param bool $createIfNotSet Set for backwards compatibility
+	 * @param int $maxLength The maximum recommended length of a preferred id is currently 25. The order numbers may be shorter (the minimum length is 14, but in that case only the timestamp will be returned)
+	 * @param string $prefix Prefix to prepend at unique id level
+	 * @param bool $dualUniq Be paranoid and sha1-encrypt the first random uniq id first.
+	 * @param bool $force Force a new payment id
 	 *
-	 * @return null
+	 * @return string
+	 * @since 1.0.2
+	 * @since 1.1.2
 	 */
-	public function getPreferredPaymentId( $createIfNotSet = true ) {
-		if ( empty( $this->preferredId ) && $createIfNotSet ) {
-			$this->getPreferredId();
+	public function getPreferredPaymentId( $maxLength = 25, $prefix = "", $dualUniq = true, $force = false ) {
+		if ( ! empty( $this->preferredId ) && !$force ) {
+			return $this->preferredId;
 		}
-
+		$timestamp = strftime( "%Y%m%d%H%M%S", time() );
+		if ( $dualUniq ) {
+			$uniq = uniqid( sha1( uniqid( rand(), true ) ), true );
+		} else {
+			$uniq = uniqid( rand(), true );
+		}
+		$uniq       = preg_replace( '/\D/i', '', $uniq );
+		$uniqLength = strlen( $uniq );
+		if ( ! empty( $prefix ) ) {
+			$uniq = substr( $prefix . $uniq, 0, $uniqLength );
+		}
+		$preferredId       = $timestamp . "-" . $uniq;
+		$preferredId       = substr( $preferredId, 0, $maxLength );
+		$this->preferredId = $preferredId;
 		return $this->preferredId;
 	}
-
 	/**
 	 * Generates a unique "preferredId" out of a datestamp
 	 *
@@ -4291,7 +4295,7 @@ class ResursBank {
 	 */
 	private function createPaymentExecute( $payment_id_or_method = '', $payload = array() ) {
 		if ( trim( strtolower( $this->username ) ) == "exshop" ) {
-			throw new \Exception( "The use of exshop is no longer supported", ResursExceptions::EXSHOP_PROHIBITED );
+			throw new \Exception( "The use of exshop is no longer supported", \ResursExceptions::EXSHOP_PROHIBITED );
 		}
 		$error  = array();
 		$myFlow = $this->getPreferredPaymentService();
@@ -4438,12 +4442,12 @@ class ResursBank {
 		}
 		if ( $this->enforceService === ResursMethodTypes::METHOD_CHECKOUT ) {
 			if ( empty( $payment_id_or_method ) && empty($this->preferredId)) {
-				throw new \Exception( "A payment method or payment id must be defined", ResursExceptions::CREATEPAYMENT_NO_ID_SET );
+				throw new \Exception( "A payment method or payment id must be defined", \ResursExceptions::CREATEPAYMENT_NO_ID_SET );
 			}
 			$payment_id_or_method = $this->preferredId;
 		}
 		if ( ! count( $this->Payload ) ) {
-			throw new \Exception( "No payload are set for this payment", ResursExceptions::BOOKPAYMENT_NO_BOOKDATA );
+			throw new \Exception( "No payload are set for this payment", \ResursExceptions::BOOKPAYMENT_NO_BOOKDATA );
 		}
 
 		// Obsolete way to handle multidimensional specrows (1.0.0-1.0.1)
@@ -4851,7 +4855,7 @@ class ResursBank {
 			$this->Payload['customer']['type'] = ! empty( $customerType ) && ( strtolower( $customerType ) == "natural" || strtolower( $customerType ) == "legal" ) ? strtoupper( $customerType ) : "NATURAL";
 		} else {
 			// We don't guess on customer types
-			throw new \Exception( "No customer type has been set. Use NATURAL or LEGAL to proceed", ResursExceptions::BOOK_CUSTOMERTYPE_MISSING );
+			throw new \Exception( "No customer type has been set. Use NATURAL or LEGAL to proceed", \ResursExceptions::BOOK_CUSTOMERTYPE_MISSING );
 		}
 		if ( ! empty( $contactgovernmentId ) ) {
 			$this->Payload['customer']['contactGovernmentId'] = $contactgovernmentId;
@@ -4959,7 +4963,7 @@ class ResursBank {
 			if ( is_array( $this->bookData ) && count( $this->bookData ) ) {
 				$bookData = $this->bookData;
 			} else {
-				throw new \Exception( __FUNCTION__ . ": There is no bookData available for the booking", ResursExceptions::BOOKPAYMENT_NO_BOOKDATA );
+				throw new \Exception( __FUNCTION__ . ": There is no bookData available for the booking", \ResursExceptions::BOOKPAYMENT_NO_BOOKDATA );
 			}
 		}
 		$returnBulk = $this->bookPaymentBulk( $paymentMethodIdOrPaymentReference, $bookData, $getReturnedObjectAsStd, $keepReturnObject, $externalParameters );
@@ -5065,7 +5069,7 @@ class ResursBank {
 			 * throw an execption here.
 			 */
 			if ( ! $this->isOmniFlow && ! $this->isHostedFlow ) {
-				throw new \Exception( __FUNCTION__ . ": bookPaymentClass not found, and this is neither an omni nor hosted flow", ResursExceptions::BOOKPAYMENT_NO_BOOKPAYMENT_CLASS );
+				throw new \Exception( __FUNCTION__ . ": bookPaymentClass not found, and this is neither an omni nor hosted flow", \ResursExceptions::BOOKPAYMENT_NO_BOOKPAYMENT_CLASS );
 			}
 		}
 		if ( ! empty( $this->cardDataCardNumber ) || $this->cardDataUseAmount ) {
@@ -5674,7 +5678,7 @@ class ResursBank {
 	public function updateCart( $speclineArray = array() ) {
 		if ( ! $this->isOmniFlow && ! $this->isHostedFlow ) {
 			if ( ! class_exists( 'Resursbank\RBEcomPHP\resurs_specLine' ) && ! class_exists( 'resurs_specLine' ) ) {
-				throw new \Exception( __FUNCTION__ . ": Class specLine does not exist", ResursExceptions::UPDATECART_NOCLASS_EXCEPTION );
+				throw new \Exception( __FUNCTION__ . ": Class specLine does not exist", \ResursExceptions::UPDATECART_NOCLASS_EXCEPTION );
 			}
 		}
 		$this->InitializeServices();
@@ -5869,7 +5873,7 @@ class ResursBank {
 			}
 		}
 		if ( ! empty( $this->cardDataCardNumber ) && ! empty( $this->cardDataUseAmount ) ) {
-			throw new \Exception( __FUNCTION__ . ": Card number and amount can not be set at the same time", ResursExceptions::UPDATECARD_DOUBLE_DATA_EXCEPTION );
+			throw new \Exception( __FUNCTION__ . ": Card number and amount can not be set at the same time", \ResursExceptions::UPDATECARD_DOUBLE_DATA_EXCEPTION );
 		}
 
 		return $this->_paymentCardData;
