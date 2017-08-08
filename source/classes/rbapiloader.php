@@ -2486,17 +2486,21 @@ class ResursBank {
 	/////////// PRIMARY INTERNAL SHOPFLOW SECTION
 	////// HELPERS
 	/**
-	 * Generates a unique "preferredId" out of a datestamp
+	 * Generates a unique "preferredId" (term from simplified and referes to orderReference) out of a datestamp
 	 *
 	 * @param int $maxLength The maximum recommended length of a preferred id is currently 25. The order numbers may be shorter (the minimum length is 14, but in that case only the timestamp will be returned)
 	 * @param string $prefix Prefix to prepend at unique id level
 	 * @param bool $dualUniq Be paranoid and sha1-encrypt the first random uniq id first.
+	 * @param bool $force Force a new payment id
 	 *
 	 * @return string
-	 * @since 1.0.0
-	 * @since 1.1.0
+	 * @since 1.0.2
+	 * @since 1.1.2
 	 */
-	public function getPreferredId( $maxLength = 25, $prefix = "", $dualUniq = true ) {
+	public function getPreferredPaymentId( $maxLength = 25, $prefix = "", $dualUniq = true, $force = false ) {
+		if ( ! empty( $this->preferredId ) && !$force ) {
+			return $this->preferredId;
+		}
 		$timestamp = strftime( "%Y%m%d%H%M%S", time() );
 		if ( $dualUniq ) {
 			$uniq = uniqid( sha1( uniqid( rand(), true ) ), true );
@@ -2511,7 +2515,6 @@ class ResursBank {
 		$preferredId       = $timestamp . "-" . $uniq;
 		$preferredId       = substr( $preferredId, 0, $maxLength );
 		$this->preferredId = $preferredId;
-
 		return $this->preferredId;
 	}
 
@@ -2525,22 +2528,6 @@ class ResursBank {
 	 */
 	public function setPreferredId( $myPreferredId ) {
 		$this->preferredId = $myPreferredId;
-	}
-
-	/**
-	 * Returns a default automatically set payment reference. If the preferred id is not set, you can ask to create one
-	 *
-	 * @param bool $createIfNotSet Set for backwards compatibility
-	 *
-	 * @return null
-	 * @since 1.0.2
-	 * @since 1.1.2
-	 */
-	public function getPreferredPaymentId( $createIfNotSet = true ) {
-		if ( empty( $this->preferredId ) && $createIfNotSet ) {
-			$this->getPreferredId();
-		}
-		return $this->preferredId;
 	}
 
 	/**
