@@ -445,7 +445,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 		);
 
 		if ($paymentServiceSet !== \Resursbank\RBEcomPHP\ResursMethodTypes::METHOD_CHECKOUT) {
-			$res = $this->rb->bookPayment($setMethod, $bookData);
+			$res = $this->rb->createPayment($setMethod, $bookData);
 			if ($paymentServiceSet == \Resursbank\RBEcomPHP\ResursMethodTypes::METHOD_HOSTED) {
 				$domainInfo = $this->NETWORK->getUrlDomain($res);
 				if (preg_match("/^http/i", $domainInfo[1])) {
@@ -454,7 +454,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 				}
 			}
 		} else {
-			$res = $this->rb->bookPayment($this->rb->getPreferredPaymentId(), $bookData);
+			$res = $this->rb->createPayment($this->rb->getPreferredPaymentId(), $bookData);
 		}
 
 		/*
@@ -1026,7 +1026,8 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 		$newReferenceId = $this->rb->getPreferredPaymentId();
 		$bookResult = $this->doBookPayment($newReferenceId, true, false, true);
 		if (is_string($bookResult) && preg_match("/iframe src/i", $bookResult)) {
-			$iFrameUrl = $this->rb->getIframeSrc($bookResult);
+			$iframeUrls = $this->NETWORK->getUrlsFromHtml($bookResult,0,1);
+			$iFrameUrl = array_pop($iframeUrls);
 			$iframeContent = $this->CURL->doGet($iFrameUrl);
 			if (!empty($iframeContent['body'])) {
 				$assumeThis = true;
@@ -1068,6 +1069,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	public function testUpdatePaymentReference()
 	{
 		$this->checkEnvironment();
+		$iframePaymentReference = $this->rb->getPreferredPaymentId(30, "FIRST-");
 		try {
 			$iFrameUrl = $this->getCheckoutFrame(true);
 		} catch (\Exception $e) {
@@ -1076,17 +1078,15 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 		$this->CURL->setLocalCookies(true);
 		$iframeRequest = $this->CURL->doGet($iFrameUrl);
 		$iframeContent = $iframeRequest['body'];
-		$iframePaymentReference = $this->rb->getPreferredPaymentId();
 		$Success = false;
 		if (!empty($iframePaymentReference) && !empty($iFrameUrl) && !empty($iframeContent) && strlen($iframeContent) > 1024) {
-			$newReference = $this->rb->generatePreferredId(30, "UPDREF", true);
+			$newReference = $this->rb->getPreferredPaymentId(30, "UPDATE-", true);
 			try {
 				$Success = $this->rb->updatePaymentReference($iframePaymentReference, $newReference);
 			} catch (\Exception $e) {
 				$this->markTestIncomplete("Exception: " . $e->getCode() . ": " . $e->getMessage());
 			}
 		}
-		echo $iFrameUrl;
 		$this->assertTrue($Success === true);
 	}
 
@@ -1508,7 +1508,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
 			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
 			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
-			$useThisPaymentId = $this->rb->getPreferredId();
+			$useThisPaymentId = $this->rb->getPreferredPaymentId();
 			// Payload that needs to be appended to the rendered one
 			$myPayLoad = array(
 				'paymentData' => array(
@@ -1552,7 +1552,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
 			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
 			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
-			$useThisPaymentId = $this->rb->getPreferredId();
+			$useThisPaymentId = $this->rb->getPreferredPaymentId();
 			$this->rb->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', true);
 			try {
 				$Payment = $this->rb->createPayment($this->availableMethods['invoice_natural']);
@@ -1582,7 +1582,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 			$this->rb->setCustomer(null, "0808080808", "0707070707", "test@test.com", "NATURAL");
 			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
 			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
-			$useThisPaymentId = $this->rb->getPreferredId();
+			$useThisPaymentId = $this->rb->getPreferredPaymentId();
 			$this->rb->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
 			try {
 				$this->rb->setRequiredExecute(true);
@@ -1614,7 +1614,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 			$this->rb->setCustomer(null, "0808080808", "0707070707", "test@test.com", "NATURAL");
 			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, 'ORDER_LINE', 10);
 			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, 'ORDER_LINE', 10);
-			$useThisPaymentId = $this->rb->getPreferredId();
+			$useThisPaymentId = $this->rb->getPreferredPaymentId();
 			$this->rb->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
 			try {
 				$this->rb->setRequiredExecute(true);
