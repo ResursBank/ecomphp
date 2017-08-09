@@ -15,6 +15,9 @@
  * Load EcomPHP
  */
 require_once('../source/classes/rbapiloader.php');
+if (!isset($_SERVER['HTTP_USER_AGENT'])) {
+	$_SERVER['HTTP_USER_AGENT'] = "EComPHP/Test-InternalClient";
+}
 
 /**
  * Class ResursBankTest: Primary test client
@@ -45,6 +48,8 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 			    $this->rb = new \Resursbank\RBEcomPHP\ResursBank( $overrideUsername, $overridePassword );
 		    }
 	    }
+		$this->rb->setPushCustomerUserAgent(true);
+		$this->rb->setUserAgent("EComPHP/TestSuite");
         /*
          * If HTTP_HOST is not set, Resurs Checkout will not run properly, since the iFrame requires a valid internet connection (actually browser vs http server).
          */
