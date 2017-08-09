@@ -10,7 +10,7 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.1
- * @version 1.1.12
+ * @version 1.1.13
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @license Apache License
@@ -205,9 +205,9 @@ class ResursBank {
 	////////// Private variables
 	///// Client Specific Settings
 	/** @var string The version of this gateway */
-	private $version = "1.1.12";
+	private $version = "1.1.13";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20170808";
+	private $lastUpdate = "20170809";
 	/** @var string This. */
 	private $clientName = "EComPHP";
 	/** @var string Replacing $clientName on usage of setClientNAme */
@@ -250,8 +250,8 @@ class ResursBank {
 	private $NETWORK;
 	/**
 	 * @var \TorneLIB\TorneLIB_Crypto Class for handling data encoding/encryption
-	 * @since 1.0.12
-	 * @since 1.1.12
+	 * @since 1.0.13
+	 * @since 1.1.13
 	 * @since 1.2.0
 	 */
 	private $T_CRYPTO;
@@ -1795,8 +1795,8 @@ class ResursBank {
 	 * Special function for pushing user-agent from customer into our ecommerce communication. This must be enabled before setUserAgent.
 	 *
 	 * @param bool $enableCustomerUserAgent
-	 * @since 1.0.12
-	 * @since 1.1.12
+	 * @since 1.0.13
+	 * @since 1.1.13
 	 * @since 1.2.0
 	 */
 	public function setPushCustomerUserAgent($enableCustomerUserAgent = false) {
@@ -4000,8 +4000,8 @@ class ResursBank {
 	 * @return string
 	 * @since 1.0.0
 	 * @since 1.1.0
-	 * @deprecated 1.0.12 Will be replaced with getPreferredPaymentId
-	 * @deprecated 1.1.12 Will be replaced with getPreferredPaymentId
+	 * @deprecated 1.0.13 Will be replaced with getPreferredPaymentId
+	 * @deprecated 1.1.13 Will be replaced with getPreferredPaymentId
 	 */
 	public function getPreferredId( $maxLength = 25, $prefix = "", $dualUniq = true ) {
 		return $this->getPreferredPaymentId($maxLength, $prefix, $dualUniq);
