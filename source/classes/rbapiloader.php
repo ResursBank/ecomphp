@@ -25,6 +25,7 @@ if ( ! defined( 'RB_API_PATH' ) ) {
 	define( 'RB_API_PATH', __DIR__ );
 }
 require_once(RB_API_PATH . '/thirdparty/network.php');
+require_once(RB_API_PATH . '/thirdparty/crypto.php');
 require_once(RB_API_PATH . '/rbapiloader/ResursTypeClasses.php');
 require_once(RB_API_PATH . '/rbapiloader/ResursEnvironments.php');
 require_once(RB_API_PATH . '/rbapiloader/ResursException.php');
@@ -149,6 +150,9 @@ class ResursBank {
 	/** @var string Customer id used at afterShopFlow */
 	public $customerId = "";
 
+	/** @var bool Enable the possibility to push over User-Agent from customer into header (debugging related) */
+	private $customerUserAgentPush = false;
+
 
 	///// Public SSL handlers
 	/**
@@ -244,6 +248,13 @@ class ResursBank {
 	 * @since 1.1.1
 	 */
 	private $NETWORK;
+	/**
+	 * @var \TorneLIB\TorneLIB_Crypto Class for handling data encoding/encryption
+	 * @since 1.0.12
+	 * @since 1.1.12
+	 * @since 1.2.0
+	 */
+	private $T_CRYPTO;
 	/**
 	 * The payload rendered out from CreatePayment()
 	 * @var
@@ -695,7 +706,6 @@ class ResursBank {
 			$this->setEnvironment( $targetEnvironment );
 		}
 		$this->setUserAgent();
-
 	}
 
 	/**
@@ -879,13 +889,13 @@ class ResursBank {
 			}
 		}
 
-		if ( class_exists( 'TorneLIB\Tornevall_cURL' ) ) {
+		if ( class_exists( '\TorneLIB\Tornevall_cURL' ) ) {
 			$this->CURL = new \TorneLIB\Tornevall_cURL();
 			$this->CURL->setStoreSessionExceptions( true );
 			$this->CURL->setAuthentication( $this->soapOptions['login'], $this->soapOptions['password'] );
 			$this->CURL->setUserAgent( $this->myUserAgent );
 		}
-		if ( class_exists( 'TorneLIB\TorneLIB_Network' ) ) {
+		if ( class_exists( '\TorneLIB\TorneLIB_Network' ) ) {
 			$this->NETWORK = new \TorneLIB\TorneLIB_Network();
 		}
 		// Prepare services URL in case of nonWsdl mode.
@@ -912,11 +922,14 @@ class ResursBank {
 	 * @since 1.0.2
 	 * @since 1.1.2
 	 */
-	public function setUserAgent( $MyUserAgent = '' ) {
+	public function setUserAgent( $MyUserAgent = '') {
 		if ( ! empty( $MyUserAgent ) ) {
 			$this->myUserAgent = $MyUserAgent . " +" . $this->getVersionFull();
 		} else {
 			$this->myUserAgent = $this->getVersionFull();
+		}
+		if ($this->customerUserAgentPush && isset($_SERVER['HTTP_USER_AGENT'])) {
+			$this->myUserAgent .= " +CLI-" . $this->T_CRYPTO->base64_compress($_SERVER['HTTP_USER_AGENT']);
 		}
 	}
 
@@ -1779,6 +1792,23 @@ class ResursBank {
 	}
 
 	/**
+	 * Special function for pushing user-agent from customer into our ecommerce communication. This must be enabled before setUserAgent.
+	 *
+	 * @param bool $enableCustomerUserAgent
+	 * @since 1.0.12
+	 * @since 1.1.12
+	 * @since 1.2.0
+	 */
+	public function setPushCustomerUserAgent($enableCustomerUserAgent = false) {
+		if ( class_exists( '\TorneLIB\TorneLIB_Crypto' ) ) {
+			$this->T_CRYPTO = new \TorneLIB\TorneLIB_Crypto();
+		}
+		if (!empty($this->T_CRYPTO)) {
+			$this->customerUserAgentPush = $enableCustomerUserAgent;
+		}
+	}
+
+	/**
 	 * Get next invoice number - and initialize if not set.
 	 *
 	 * @param bool $initInvoice Allow to set a new invoice number if not set (if not set, this is set to 1 if nothing else is set)
@@ -2605,8 +2635,10 @@ class ResursBank {
 	 * @deprecated 1.0.2 Use setUserAgent
 	 * @deprecated 1.1.2 Use setUserAgent
 	 */
-	public function setClientName( $clientNameString = null ) {
-		$this->setUserAgent( $clientNameString );
+	public function setClientName( $clientNameString = "" ) {
+		if (!empty($clientNameString)) {
+			$this->setUserAgent( $clientNameString );
+		}
 	}
 
 	/**
