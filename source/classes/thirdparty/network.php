@@ -220,7 +220,8 @@ class TorneLIB_Network
             $extractHost = $this->getUrlDomain($useHost);
             $currentHost = $extractHost[0];
         }
-        if (!empty($currentHost)) {
+        // Do this, only if it's a real domain (if scripts are running from console, there might be a loss of this hostname (or if it is a single name, like localhost)
+        if (!empty($currentHost) && preg_match("/\./", $currentHost)) {
             $thisdomainArray = explode(".", $currentHost);
             $thisdomain = $thisdomainArray[sizeof($thisdomainArray) - 2] . "." . $thisdomainArray[sizeof($thisdomainArray) - 1];
         }

@@ -22,6 +22,7 @@ if ( ! defined( 'RB_API_PATH' ) ) {
 	define( 'RB_API_PATH', __DIR__ );
 }
 require_once(RB_API_PATH . '/thirdparty/network.php');
+require_once(RB_API_PATH . '/thirdparty/crypto.php');
 require_once(RB_API_PATH . '/rbapiloader/ResursTypeClasses.php');
 require_once(RB_API_PATH . '/rbapiloader/ResursEnvironments.php');
 require_once(RB_API_PATH . '/rbapiloader/ResursException.php');
@@ -90,12 +91,15 @@ class ResursBank {
 	/** @var string Customer id used at afterShopFlow */
 	public $customerId = "";
 
+	/** @var bool Enable the possibility to push over User-Agent from customer into header (debugging related) */
+	private $customerUserAgentPush = false;
+
 	////////// Private variables
 	///// Client Specific Settings
 	/** @var string The version of this gateway */
 	private $version = "1.2.0";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20170802";
+	private $lastUpdate = "20170809";
 	/** @var string This. */
 	private $clientName = "EComPHP";
 	/** @var string Replacing $clientName on usage of setClientNAme */
@@ -121,6 +125,13 @@ class ResursBank {
 	 * @since 1.1.1
 	 */
 	private $NETWORK;
+	/**
+	 * @var \TorneLIB\TorneLIB_Crypto Class for handling data encoding/encryption
+	 * @since 1.0.13
+	 * @since 1.1.13
+	 * @since 1.2.0
+	 */
+	private $T_CRYPTO;
 	/**
 	 * The payload rendered out from CreatePayment()
 	 * @var
@@ -395,11 +406,14 @@ class ResursBank {
 	 * @since 1.0.2
 	 * @since 1.1.2
 	 */
-	public function setUserAgent( $MyUserAgent = '' ) {
+	public function setUserAgent( $MyUserAgent = '') {
 		if ( ! empty( $MyUserAgent ) ) {
 			$this->myUserAgent = $MyUserAgent . " +" . $this->getVersionFull();
 		} else {
 			$this->myUserAgent = $this->getVersionFull();
+		}
+		if ($this->customerUserAgentPush && isset($_SERVER['HTTP_USER_AGENT'])) {
+			$this->myUserAgent .= " +CLI-" . $this->T_CRYPTO->base64_compress($_SERVER['HTTP_USER_AGENT']);
 		}
 	}
 
@@ -1066,6 +1080,23 @@ class ResursBank {
 	 */
 	public function getStoredCurlExceptionInformation() {
 		return $this->CURL->getStoredExceptionInformation();
+	}
+
+	/**
+	 * Special function for pushing user-agent from customer into our ecommerce communication. This must be enabled before setUserAgent.
+	 *
+	 * @param bool $enableCustomerUserAgent
+	 * @since 1.0.13
+	 * @since 1.1.13
+	 * @since 1.2.0
+	 */
+	public function setPushCustomerUserAgent($enableCustomerUserAgent = false) {
+		if ( class_exists( '\TorneLIB\TorneLIB_Crypto' ) ) {
+			$this->T_CRYPTO = new \TorneLIB\TorneLIB_Crypto();
+		}
+		if (!empty($this->T_CRYPTO)) {
+			$this->customerUserAgentPush = $enableCustomerUserAgent;
+		}
 	}
 
 	/**
@@ -2647,26 +2678,30 @@ class ResursBank {
 				}
 			}
 			if ( $myFlow === ResursMethodTypes::METHOD_SIMPLIFIED ) {
+				// Do not forget to pass over $myFlow-overriders to sanitizer as it might be sent from additionalDebitOfPayment rather than a regular bookPayment sometimes
 				$this->Payload['orderData'] = array(
-					'specLines'      => $this->sanitizePaymentSpec( $this->SpecLines ),
+					'specLines'      => $this->sanitizePaymentSpec( $this->SpecLines, $myFlow ),
 					'totalAmount'    => $paymentSpec['totalAmount'],
 					'totalVatAmount' => $paymentSpec['totalVatAmount']
 				);
 			}
 			if ( $myFlow === ResursMethodTypes::METHOD_HOSTED ) {
+				// Do not forget to pass over $myFlow-overriders to sanitizer as it might be sent from additionalDebitOfPayment rather than a regular bookPayment sometimes
 				$this->Payload['orderData'] = array(
-					'orderLines'     => $this->sanitizePaymentSpec( $this->SpecLines ),
+					'orderLines'     => $this->sanitizePaymentSpec( $this->SpecLines, $myFlow ),
 					'totalAmount'    => $paymentSpec['totalAmount'],
 					'totalVatAmount' => $paymentSpec['totalVatAmount']
 				);
 			}
 			if ( $myFlow == ResursMethodTypes::METHOD_CHECKOUT ) {
-				$this->Payload['orderLines'] = $this->sanitizePaymentSpec( $this->SpecLines );
+				// Do not forget to pass over $myFlow-overriders to sanitizer as it might be sent from additionalDebitOfPayment rather than a regular bookPayment sometimes
+				$this->Payload['orderLines'] = $this->sanitizePaymentSpec( $this->SpecLines, $myFlow );
 			}
 		} else {
 			// If there are no array for the speclines yet, check if we could update one from the payload
 			if ( isset( $this->Payload['orderLines'] ) && is_array( $this->Payload['orderLines'] ) ) {
-				$this->Payload['orderLines'] = $this->sanitizePaymentSpec( $this->Payload['orderLines'] );
+				// Do not forget to pass over $myFlow-overriders to sanitizer as it might be sent from additionalDebitOfPayment rather than a regular bookPayment sometimes
+				$this->Payload['orderLines'] = $this->sanitizePaymentSpec( $this->Payload['orderLines'], $myFlow );
 				$this->SpecLines             = $this->Payload['orderLines'];
 			}
 		}
