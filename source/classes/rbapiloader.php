@@ -268,7 +268,6 @@ class ResursBank {
 	 * @since 1.1.2
 	 */
 	private $SpecLines;
-	private $SpecLinesSimplifiedFlow;
 
 	/**
 	 * Simple web engine built on CURL, used for hosted flow
@@ -4257,6 +4256,7 @@ class ResursBank {
 				}
 			}
 			if ( $myFlow === ResursMethodTypes::METHOD_SIMPLIFIED ) {
+				// Do not forget to pass over $myFlow-overriders to sanitizer as it might be sent from additionalDebitOfPayment rather than a regular bookPayment sometimes
 				$this->Payload['orderData'] = array(
 					'specLines'      => $this->sanitizePaymentSpec( $this->SpecLines, $myFlow ),
 					'totalAmount'    => $paymentSpec['totalAmount'],
@@ -4264,6 +4264,7 @@ class ResursBank {
 				);
 			}
 			if ( $myFlow === ResursMethodTypes::METHOD_HOSTED ) {
+				// Do not forget to pass over $myFlow-overriders to sanitizer as it might be sent from additionalDebitOfPayment rather than a regular bookPayment sometimes
 				$this->Payload['orderData'] = array(
 					'orderLines'     => $this->sanitizePaymentSpec( $this->SpecLines, $myFlow ),
 					'totalAmount'    => $paymentSpec['totalAmount'],
@@ -4271,11 +4272,13 @@ class ResursBank {
 				);
 			}
 			if ( $myFlow == ResursMethodTypes::METHOD_CHECKOUT ) {
+				// Do not forget to pass over $myFlow-overriders to sanitizer as it might be sent from additionalDebitOfPayment rather than a regular bookPayment sometimes
 				$this->Payload['orderLines'] = $this->sanitizePaymentSpec( $this->SpecLines, $myFlow );
 			}
 		} else {
 			// If there are no array for the speclines yet, check if we could update one from the payload
 			if ( isset( $this->Payload['orderLines'] ) && is_array( $this->Payload['orderLines'] ) ) {
+				// Do not forget to pass over $myFlow-overriders to sanitizer as it might be sent from additionalDebitOfPayment rather than a regular bookPayment sometimes
 				$this->Payload['orderLines'] = $this->sanitizePaymentSpec( $this->Payload['orderLines'], $myFlow );
 				$this->SpecLines             = $this->Payload['orderLines'];
 			}
@@ -4637,7 +4640,6 @@ class ResursBank {
 				'totalAmount'
 			)
 		);
-
 		if ( is_array( $specLines ) ) {
 			$myFlow = $this->getPreferredPaymentService();
 			if ( $myFlowOverrider !== ResursMethodTypes::METHOD_UNDEFINED ) {
@@ -4651,15 +4653,7 @@ class ResursBank {
 			} else if ( $myFlow == ResursMethodTypes::METHOD_CHECKOUT ) {
 				$mySpecRules = $specRules['checkout'];
 			}
-			$simplifiedSpecRules = $specRules['simplified'];
 			foreach ( $specLines as $specIndex => $specArray ) {
-				// Copy the array to a simplified version, as this is needed in sidefunctions as the aftershopFlow/additionalDebitOfPayment
-				$simplifiedSpecArray = $specArray;
-				foreach ($simplifiedSpecArray as $key => $value) {
-					if ( strtolower( $key ) == "unitmeasure" && empty( $value ) ) { $simplifiedSpecArray[ $key ] = $this->defaultUnitMeasure;	}
-					if ( ! in_array( strtolower( $key ), array_map( "strtolower", $simplifiedSpecRules ) ) ) { unset( $simplifiedSpecArray[ $key ] );	}
-				}
-				$this->SpecLinesSimplifiedFlow = $simplifiedSpecArray;
 				foreach ( $specArray as $key => $value ) {
 					if ( strtolower( $key ) == "unitmeasure" && empty( $value ) ) { $specArray[ $key ] = $this->defaultUnitMeasure;	}
 					if ( ! in_array( strtolower( $key ), array_map( "strtolower", $mySpecRules ) ) ) { unset( $specArray[ $key ] );	}
@@ -6331,7 +6325,6 @@ class ResursBank {
 		if ( ! empty( $this->loggedInuser ) ) {
 			$createdBy = $this->loggedInuser;
 		}
-		$this->Payload['orderLines'] = $this->SpecLinesSimplifiedFlow;
 		$this->renderPaymentSpec( ResursMethodTypes::METHOD_SIMPLIFIED );
 		$additionalDataArray = array(
 			'paymentId'   => $paymentId,
