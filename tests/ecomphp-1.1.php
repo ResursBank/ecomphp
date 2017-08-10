@@ -15,6 +15,7 @@
  * Load EcomPHP
  */
 require_once('../source/classes/rbapiloader.php');
+// Automatically set to test the pushCustomerUserAgent
 if (!isset($_SERVER['HTTP_USER_AGENT'])) {
 	$_SERVER['HTTP_USER_AGENT'] = "EComPHP/Test-InternalClient";
 }
@@ -1723,6 +1724,14 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	function testAdditionalDebit() {
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
 		$this->rb->annulPayment($paymentId);
+		$this->rb->addOrderLine("myExtraOrderLine-1", "One orderline added with additionalDebitOfPayment", 100, 25);
+		$this->rb->addOrderLine("myExtraOrderLine-2", "One orderline added with additionalDebitOfPayment", 200, 25);
+		$this->assertTrue($this->rb->setAdditionalDebitOfPayment($paymentId));
+	}
+	function testAdditionalDebitResursCheckout() {
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
+		$this->rb->annulPayment($paymentId);
+		$this->rb->setPreferredPaymentService(\Resursbank\RBEcomPHP\ResursMethodTypes::METHOD_CHECKOUT);
 		$this->rb->addOrderLine("myExtraOrderLine-1", "One orderline added with additionalDebitOfPayment", 100, 25);
 		$this->rb->addOrderLine("myExtraOrderLine-2", "One orderline added with additionalDebitOfPayment", 200, 25);
 		$this->assertTrue($this->rb->setAdditionalDebitOfPayment($paymentId));
