@@ -36,19 +36,11 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
      * The heart of this unit. To make tests "nicely" compatible with 1.1, this should be placed on top of this class as it looks different there.
      */
 	private function initServices($overrideUsername = null, $overridePassword = null) {
-	    $wsdlPath = __DIR__ . "/../source/rbwsdl/";
-	    if (file_exists(realpath($wsdlPath))) {
-		    $this->hasWsdl = true;
-	    } else {
-		    $this->hasWsdl = false;
-	    }
-	    if ($this->hasWsdl) {
-		    if ( empty( $overrideUsername ) ) {
-			    $this->rb = new \Resursbank\RBEcomPHP\ResursBank( $this->username, $this->password );
-		    } else {
-			    $this->rb = new \Resursbank\RBEcomPHP\ResursBank( $overrideUsername, $overridePassword );
-		    }
-	    }
+		if ( empty( $overrideUsername ) ) {
+			$this->rb = new \Resursbank\RBEcomPHP\ResursBank( $this->username, $this->password );
+		} else {
+			$this->rb = new \Resursbank\RBEcomPHP\ResursBank( $overrideUsername, $overridePassword );
+		}
 		$this->rb->setPushCustomerUserAgent(true);
 		$this->rb->setUserAgent("EComPHP/TestSuite");
         /*
@@ -89,6 +81,27 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	/** Before each test, invoke this */
 	public function setUp()
 	{
+		$this->CURL = new \TorneLIB\Tornevall_cURL();
+		$this->NETWORK = new \TorneLIB\TorneLIB_Network();
+
+		if (version_compare(PHP_VERSION, '5.3.0', "<")) {
+			if (!$this->allowObsoletePHP) {
+				throw new \Exception("PHP 5.3 or later are required for this module to work. If you feel safe with running this with an older version, please see ");
+			}
+		}
+
+		register_shutdown_function(array($this, 'shutdownSuite'));
+		if ($this->environmentName === "nonmock") {
+			$this->username = $this->usernameNonmock;
+			$this->password = $this->passwordNonmock;
+		}
+
+		$this->setupConfig();
+
+		/* Set up default government id for bookings */
+		$this->testGovId = $this->govIdNatural;
+		$this->testGovIdNorway = $this->govIdNaturalNorway;
+		$this->initServices();
 	}
 
 	/** After each test, invoke this */
@@ -102,7 +115,6 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	private $environmentName = "mock";
 	/** @var null|ResursBank API Connector */
 	private $rb = null;
-	private $hasWsdl;
 	/** @var string Username to web services */
 	private $username = "";
 	/** @var string Similar username, but for nonmock */
@@ -170,36 +182,6 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	private $zeroSpecLineZeroTax = false;
 	private $alwaysUseExtendedCustomer = true;
 	private $allowObsoletePHP = false;
-
-
-	/**
-	 * Prepare by initializing API Loader and stubs
-	 *
-	 */
-	public function __construct()
-	{
-		$this->CURL = new \TorneLIB\Tornevall_cURL();
-		$this->NETWORK = new \TorneLIB\TorneLIB_Network();
-
-		if (version_compare(PHP_VERSION, '5.3.0', "<")) {
-			if (!$this->allowObsoletePHP) {
-				throw new \Exception("PHP 5.3 or later are required for this module to work. If you feel safe with running this with an older version, please see ");
-			}
-		}
-
-		register_shutdown_function(array($this, 'shutdownSuite'));
-		if ($this->environmentName === "nonmock") {
-			$this->username = $this->usernameNonmock;
-			$this->password = $this->passwordNonmock;
-		}
-
-		$this->setupConfig();
-
-		/* Set up default government id for bookings */
-		$this->testGovId = $this->govIdNatural;
-		$this->testGovIdNorway = $this->govIdNaturalNorway;
-		$this->initServices();
-	}
 
 	private function setupConfig()
 	{
