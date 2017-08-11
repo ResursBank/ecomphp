@@ -81,43 +81,44 @@ class TorneLIB_Network
         );
     }
 
-	public function getUrlsFromHtml( $stringWithUrls, $offset = - 1, $urlLimit = - 1, $protocols = array( "http" ) ) {
-		$returnArray = array();
-		// Pick up all urls
-		foreach ( $protocols as $protocol ) {
-			preg_match_all( "/src=\"$protocol(.*?)\"|src='$protocol(.*?)'/is", $stringWithUrls, $matches );
-			if ( isset( $matches[1] ) && count( $matches[1] ) ) {
-				$urls = $matches[1];
-			}
-			if ( count( $urls ) ) {
-				foreach ( $urls as $url ) {
-					$prependUrl    = $protocol . $url;
-					$returnArray[] = $prependUrl;
-				}
-			}
-		}
-		// Start at a specific offset if defined
-		if ( count( $returnArray ) && $offset > - 1 && $offset <= $returnArray ) {
-			$allowedOffset  = 0;
-			$returnNewArray = array();
-			$urlCount       = 0;
-			for ( $offsetIndex = 0; $offsetIndex < count( $returnArray ); $offsetIndex ++ ) {
-				if ( $offsetIndex == $offset ) {
-					$allowedOffset = true;
-				}
-				if ( $allowedOffset ) {
-					// Break when requested limit has beenreached
-					$urlCount ++;
-					if ( $urlLimit > - 1 && $urlCount > $urlLimit ) {
-						break;
-					}
-					$returnNewArray[] = $returnArray[ $offsetIndex ];
-				}
-			}
-			$returnArray = $returnNewArray;
-		}
-		return $returnArray;
-	}
+    public function getUrlsFromHtml($stringWithUrls, $offset = -1, $urlLimit = -1, $protocols = array("http"))
+    {
+        $returnArray = array();
+        // Pick up all urls
+        foreach ($protocols as $protocol) {
+            preg_match_all("/src=\"$protocol(.*?)\"|src='$protocol(.*?)'/is", $stringWithUrls, $matches);
+            if (isset($matches[1]) && count($matches[1])) {
+                $urls = $matches[1];
+            }
+            if (count($urls)) {
+                foreach ($urls as $url) {
+                    $prependUrl = $protocol . $url;
+                    $returnArray[] = $prependUrl;
+                }
+            }
+        }
+        // Start at a specific offset if defined
+        if (count($returnArray) && $offset > -1 && $offset <= $returnArray) {
+            $allowedOffset = 0;
+            $returnNewArray = array();
+            $urlCount = 0;
+            for ($offsetIndex = 0; $offsetIndex < count($returnArray); $offsetIndex++) {
+                if ($offsetIndex == $offset) {
+                    $allowedOffset = true;
+                }
+                if ($allowedOffset) {
+                    // Break when requested limit has beenreached
+                    $urlCount++;
+                    if ($urlLimit > -1 && $urlCount > $urlLimit) {
+                        break;
+                    }
+                    $returnNewArray[] = $returnArray[$offsetIndex];
+                }
+            }
+            $returnArray = $returnNewArray;
+        }
+        return $returnArray;
+    }
 
     /**
      * Set a cookie
@@ -430,7 +431,7 @@ class Tornevall_cURL
     private $CurlVersion = null;
 
     /** @var string Internal release snapshot that is being used to find out if we are running the latest version of this library */
-    private $TorneCurlRelease = "20170603";
+    private $TorneCurlRelease = "20170809";
 
     /**
      * Target environment (if target is production some debugging values will be skipped)
@@ -568,7 +569,10 @@ class Tornevall_cURL
     public $CurlUseCookies = true;
     private $CurlResolveForced = false;
     private $CurlResolveRetry = 0;
-    private $CurlUserAgent = null;
+    /** @var string Custom User-Agent sent in the HTTP-HEADER */
+    private $CurlUserAgent;
+    /** @var string Custom User-Agent Memory */
+    private $CustomUserAgent;
 
     /** @var bool Try to automatically parse the retrieved body content. Supports, amongst others json, serialization, etc */
     public $CurlAutoParse = true;
@@ -624,7 +628,6 @@ class Tornevall_cURL
         if (!function_exists('curl_init')) {
             throw new \Exception("curl library not found");
         }
-
         // Common ssl checkers (if they fail, there is a sslDriverError to recall
         if (!in_array('https', @stream_get_wrappers())) {
             $this->sslDriverError[] = "SSL Failure: HTTPS wrapper can not be found";
@@ -632,6 +635,8 @@ class Tornevall_cURL
         if (!extension_loaded('openssl')) {
             $this->sslDriverError[] = "SSL Failure: HTTPS extension can not be found";
         }
+        // Initial setup
+        $this->CurlUserAgent = 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; .NET CLR 1.0.3705; .NET CLR 1.1.4322; Media Center PC 4.0; +TorneLIB+cUrl ' . $this->TorneCurlVersion . '/' . $this->TorneCurlRelease . ')';
         if (function_exists('curl_version')) {
             $CurlVersionRequest = curl_version();
             $this->CurlVersion = $CurlVersionRequest['version'];
@@ -655,7 +660,6 @@ class Tornevall_cURL
             $this->sslCurlDriver = false;
         }
         $this->CurlResolve = CURL_RESOLVER::RESOLVER_DEFAULT;
-        $this->CurlUserAgent = 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; .NET CLR 1.0.3705; .NET CLR 1.1.4322; Media Center PC 4.0; +TorneLIB+cUrl ' . $this->TorneCurlVersion . '/' . $this->TorneCurlRelease . ')';
         if (class_exists('TorneLIB\TorneLIB_Network')) {
             $this->NETWORK = new TorneLIB_Network();
         }
@@ -850,10 +854,11 @@ class Tornevall_cURL
      *
      * @param null $CustomUserAgent
      */
-    public function setUserAgent($CustomUserAgent = null)
+    public function setUserAgent($CustomUserAgent = "")
     {
         if (!empty($CustomUserAgent)) {
-            $this->CurlUserAgent = $CustomUserAgent . " +TorneLIB+cUrl " . $this->TorneCurlVersion . '/' . $this->TorneCurlRelease;
+            $this->CustomUserAgent .= preg_replace("/\s+$/", '', $CustomUserAgent);
+            $this->CurlUserAgent = $this->CustomUserAgent . " +TorneLIB+cUrl " . $this->TorneCurlVersion . '/' . $this->TorneCurlRelease;
         } else {
             $this->CurlUserAgent = 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; .NET CLR 1.0.3705; .NET CLR 1.1.4322; Media Center PC 4.0; TorneLIB+cUrl ' . $this->TorneCurlVersion . '/' . $this->TorneCurlRelease . ')';
         }
@@ -867,6 +872,11 @@ class Tornevall_cURL
     public function getUserAgent()
     {
         return $this->CurlUserAgent;
+    }
+
+    public function getCustomUserAgent()
+    {
+        return $this->CustomUserAgent;
     }
 
     /**
@@ -1858,6 +1868,7 @@ class Tornevall_cURL
         $this->CurlHeaders = array();
         if (preg_match("/\?wsdl$|\&wsdl$/i", $this->CurlURL) || $postAs == CURL_POST_AS::POST_AS_SOAP) {
             $Soap = new Tornevall_SimpleSoap($this->CurlURL, $this->curlopt);
+            $Soap->setCustomUserAgent($this->CustomUserAgent);
             $Soap->setThrowableState($this->canThrow);
             $Soap->setSoapAuthentication($this->AuthData);
             $Soap->SoapTryOnce = $this->SoapTryOnce;
@@ -2104,6 +2115,7 @@ class Tornevall_SimpleSoap extends Tornevall_cURL
     private $soapResponseHeaders;
     private $libResponse;
     private $canThrowSoapFaults = true;
+    private $CustomUserAgent;
 
     public $SoapFaultString = null;
     public $SoapFaultCode = 0;
@@ -2117,7 +2129,6 @@ class Tornevall_SimpleSoap extends Tornevall_cURL
     function __construct($Url, $SoapOptions = array())
     {
         parent::__construct();
-        $this->setUserAgent("TorneLIB-cUrlClient/SimpleSoap");
         $this->soapUrl = $Url;
         $this->sslGetOptionsStream();
         if (!count($SoapOptions)) {
@@ -2144,6 +2155,13 @@ class Tornevall_SimpleSoap extends Tornevall_cURL
         }
     }
 
+    public function setCustomUserAgent($userAgentString)
+    {
+        $this->CustomUserAgent = preg_replace("/\s+$/", '', $userAgentString);
+        $this->setUserAgent($userAgentString . " +TorneLIB-SimpleSoap");
+        $this->sslGetOptionsStream();
+    }
+
     /**
      * Set up this class so that it can throw exceptions
      *
@@ -2166,7 +2184,6 @@ class Tornevall_SimpleSoap extends Tornevall_cURL
         if (gettype($this->sslopt['stream_context']) == "resource") {
             $this->soapOptions['stream_context'] = $this->sslopt['stream_context'];
         }
-
         if ($this->SoapTryOnce) {
             $this->soapClient = new \SoapClient($this->soapUrl, $this->soapOptions);
         } else {
