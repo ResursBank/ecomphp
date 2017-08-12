@@ -15,6 +15,9 @@
  * Load EcomPHP
  */
 require_once('../source/classes/rbapiloader.php');
+
+use PHPUnit\Framework\TestCase;
+
 // Automatically set to test the pushCustomerUserAgent
 if (!isset($_SERVER['HTTP_USER_AGENT'])) {
 	$_SERVER['HTTP_USER_AGENT'] = "EComPHP/Test-InternalClient";
@@ -24,7 +27,7 @@ if (!isset($_SERVER['HTTP_USER_AGENT'])) {
  * Class ResursBankTest: Primary test client
  *
  */
-class ResursBankTest extends PHPUnit_Framework_TestCase
+class ResursBankTest extends TestCase
 {
     /**
      * Resurs Bank API Gateway, PHPUnit Test Client
