@@ -15,6 +15,9 @@
  * Load EcomPHP
  */
 require_once('../source/classes/rbapiloader.php');
+
+use PHPUnit\Framework\TestCase;
+
 // Automatically set to test the pushCustomerUserAgent
 if (!isset($_SERVER['HTTP_USER_AGENT'])) {
 	$_SERVER['HTTP_USER_AGENT'] = "EComPHP/Test-InternalClient";
@@ -24,7 +27,7 @@ if (!isset($_SERVER['HTTP_USER_AGENT'])) {
  * Class ResursBankTest: Primary test client
  *
  */
-class ResursBankTest extends PHPUnit_Framework_TestCase
+class ResursBankTest extends TestCase
 {
     /**
      * Resurs Bank API Gateway, PHPUnit Test Client
@@ -81,6 +84,27 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	/** Before each test, invoke this */
 	public function setUp()
 	{
+		$this->CURL = new \Resursbank\RBEcomPHP\Tornevall_cURL();
+		$this->NETWORK = new \Resursbank\RBEcomPHP\TorneLIB_Network();
+
+		if (version_compare(PHP_VERSION, '5.3.0', "<")) {
+			if (!$this->allowObsoletePHP) {
+				throw new \Exception("PHP 5.3 or later are required for this module to work. If you feel safe with running this with an older version, please see ");
+			}
+		}
+
+		register_shutdown_function(array($this, 'shutdownSuite'));
+		if ($this->environmentName === "nonmock") {
+			$this->username = $this->usernameNonmock;
+			$this->password = $this->passwordNonmock;
+		}
+
+		$this->setupConfig();
+
+		/* Set up default government id for bookings */
+		$this->testGovId = $this->govIdNatural;
+		$this->testGovIdNorway = $this->govIdNaturalNorway;
+		$this->initServices();
 	}
 
 	/** After each test, invoke this */
@@ -94,7 +118,6 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	private $environmentName = "mock";
 	/** @var null|ResursBank API Connector */
 	private $rb = null;
-	private $hasWsdl;
 	/** @var string Username to web services */
 	private $username = "";
 	/** @var string Similar username, but for nonmock */
@@ -162,36 +185,6 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	private $zeroSpecLineZeroTax = false;
 	private $alwaysUseExtendedCustomer = true;
 	private $allowObsoletePHP = false;
-
-
-	/**
-	 * Prepare by initializing API Loader and stubs
-	 *
-	 */
-	public function __construct()
-	{
-		$this->CURL = new \TorneLIB\Tornevall_cURL();
-		$this->NETWORK = new \TorneLIB\TorneLIB_Network();
-
-		if (version_compare(PHP_VERSION, '5.3.0', "<")) {
-			if (!$this->allowObsoletePHP) {
-				throw new \Exception("PHP 5.3 or later are required for this module to work. If you feel safe with running this with an older version, please see ");
-			}
-		}
-
-		register_shutdown_function(array($this, 'shutdownSuite'));
-		if ($this->environmentName === "nonmock") {
-			$this->username = $this->usernameNonmock;
-			$this->password = $this->passwordNonmock;
-		}
-
-		$this->setupConfig();
-
-		/* Set up default government id for bookings */
-		$this->testGovId = $this->govIdNatural;
-		$this->testGovIdNorway = $this->govIdNaturalNorway;
-		$this->initServices();
-	}
 
 	private function setupConfig()
 	{
@@ -471,7 +464,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 				/* Pick up the signing url */
 				$signUrl = $res->signingUrl;
 				$getSigningPage = file_get_contents($signUrl);
-				$Network = new \TorneLIB\TorneLIB_Network();
+				$Network = new \Resursbank\RBEcomPHP\TorneLIB_Network();
 				$signUrlHostInfo = $Network->getUrlDomain($signUrl);
 				$getUrlHost = $signUrlHostInfo[1] . "://" . $signUrlHostInfo[0];
 				$mockSuccessUrl = preg_replace("/\/$/", '', $getUrlHost . preg_replace('/(.*?)\<a href=\"(.*?)\">(.*?)\>Mock success(.*)/is', '$2', $getSigningPage));

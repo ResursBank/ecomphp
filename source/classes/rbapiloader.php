@@ -27,6 +27,8 @@ require_once(RB_API_PATH . '/rbapiloader/ResursTypeClasses.php');
 require_once(RB_API_PATH . '/rbapiloader/ResursEnvironments.php');
 require_once(RB_API_PATH . '/rbapiloader/ResursException.php');
 
+use Resursbank\RBEcomPHP\CURL_POST_AS;
+
 /**
  * Class ResursBank Primary class for EComPHP
  * Works with dynamic data arrays. By default, the API-gateway will connect to Resurs Bank test environment, so to use production mode this must be configured at runtime.
@@ -114,19 +116,19 @@ class ResursBank {
 	///// Communication
 	/**
 	 * Primary class for handling all HTTP calls
-	 * @var \TorneLIB\Tornevall_cURL
+	 * @var Tornevall_cURL
 	 * @since 1.0.1
 	 * @since 1.1.1
 	 */
 	private $CURL;
 	/**
-	 * @var \TorneLIB\TorneLIB_Network Class for handling Network related checks
+	 * @var TorneLIB_Network Class for handling Network related checks
 	 * @since 1.0.1
 	 * @since 1.1.1
 	 */
 	private $NETWORK;
 	/**
-	 * @var \TorneLIB\TorneLIB_Crypto Class for handling data encoding/encryption
+	 * @var TorneLIB_Crypto Class for handling data encoding/encryption
 	 * @since 1.0.13
 	 * @since 1.1.13
 	 * @since 1.2.0
@@ -391,14 +393,12 @@ class ResursBank {
 		} else {
 			$this->environment = $this->env_prod;
 		}
-		if ( class_exists( 'TorneLIB\Tornevall_cURL' ) ) {
-			$this->CURL = new \TorneLIB\Tornevall_cURL();
+		if ( class_exists( '\Resursbank\RBEcomPHP\Tornevall_cURL' ) ) {
+			$this->CURL = new Tornevall_cURL();
 			$this->CURL->setStoreSessionExceptions( true );
 			$this->CURL->setAuthentication( $this->soapOptions['login'], $this->soapOptions['password'] );
 			$this->CURL->setUserAgent( $this->myUserAgent );
-		}
-		if ( class_exists( 'TorneLIB\TorneLIB_Network' ) ) {
-			$this->NETWORK = new \TorneLIB\TorneLIB_Network();
+			$this->NETWORK = new TorneLIB_Network();
 		}
 		$this->wsdlServices = array();
 		foreach ($this->ServiceRequestList as $reqType => $reqService) { $this->wsdlServices[$reqService] = true;}
@@ -891,7 +891,7 @@ class ResursBank {
 			if ( isset( $renderCallback['eventType'] ) ) {
 				unset( $renderCallback['eventType'] );
 			}
-			$renderedResponse = $this->CURL->doPost( $renderCallbackUrl, $renderCallback, \TorneLIB\CURL_POST_AS::POST_AS_JSON );
+			$renderedResponse = $this->CURL->doPost( $renderCallbackUrl, $renderCallback, \Resursbank\RBEcomPHP\CURL_POST_AS::POST_AS_JSON );
 			$code             = $this->CURL->getResponseCode();
 		} else {
 			$renderCallbackUrl = $this->getServiceUrl( "registerEventCallback" );
@@ -956,7 +956,7 @@ class ResursBank {
 	 */
 	public function triggerCallback() {
 		$serviceUrl = $this->env_test . "DeveloperWebService?wsdl";
-		$CURL       = new \TorneLIB\Tornevall_cURL();
+		$CURL       = new Tornevall_cURL();
 		$CURL->setAuthentication( $this->username, $this->password );
 		$CURL->setUserAgent( $this->myUserAgent );
 		$eventRequest    = $CURL->doGet( $serviceUrl );
@@ -1099,8 +1099,8 @@ class ResursBank {
 	 * @since 1.2.0
 	 */
 	public function setPushCustomerUserAgent($enableCustomerUserAgent = false) {
-		if ( class_exists( '\TorneLIB\TorneLIB_Crypto' ) ) {
-			$this->T_CRYPTO = new \TorneLIB\TorneLIB_Crypto();
+		if ( class_exists( '\Resursbank\RBEcomPHP\TorneLIB_Crypto' ) ) {
+			$this->T_CRYPTO = new \Resursbank\RBEcomPHP\TorneLIB_Crypto();
 		}
 		if (!empty($this->T_CRYPTO)) {
 			$this->customerUserAgentPush = $enableCustomerUserAgent;
@@ -1347,7 +1347,7 @@ class ResursBank {
 		}
 		$this->InitializeServices();
 		$url          = $this->getCheckoutUrl() . '/checkout/payments/' . $paymentId . '/updatePaymentReference';
-		$result = $this->CURL->doPut($url, array( 'paymentReference' => $to), \TorneLIB\CURL_POST_AS::POST_AS_JSON);
+		$result = $this->CURL->doPut($url, array( 'paymentReference' => $to), CURL_POST_AS::POST_AS_JSON);
 		$ResponseCode = $this->CURL->getResponseCode($result);
 		if ( $ResponseCode >= 200 && $ResponseCode <= 250 ) {
 			return true;
@@ -1632,7 +1632,7 @@ class ResursBank {
 			$useUrl           = $this->validateExternalUrl['url'];
 			$ExternalPostData = array( 'link' => $this->NETWORK->base64url_encode( $useUrl ), "returnEncoded"=>true );
 			try {
-				$this->CURL->doPost( $ExternalAPI, $ExternalPostData, \TorneLIB\CURL_POST_AS::POST_AS_JSON );
+				$this->CURL->doPost( $ExternalAPI, $ExternalPostData, CURL_POST_AS::POST_AS_JSON );
 				$WebResponse = $this->CURL->getParsedResponse();
 			} catch ( \Exception $e ) {
 				return ResursCallbackReachability::IS_REACHABLE_NOT_KNOWN;
@@ -2776,14 +2776,14 @@ class ResursBank {
 		if ( $myFlow == ResursMethodTypes::METHOD_SIMPLIFIED ) {
 			$paymentMethodInfo = $this->getPaymentMethodSpecific( $payment_id_or_method );
 			if ( $paymentMethodInfo->specificType == "CARD" || $paymentMethodInfo->specificType == "NEWCARD" || $paymentMethodInfo->specificType == "REVOLVING_CREDIT" ) {
-				this->validateCardData($paymentMethodInfo->specificType);
+				$this->validateCardData($paymentMethodInfo->specificType);
 			}
 			$myFlowResponse  = $this->postService( 'bookPayment', $this->Payload );
 			$this->SpecLines = array();
 			return $myFlowResponse;
 		} else if ( $myFlow == ResursMethodTypes::METHOD_CHECKOUT ) {
 			$checkoutUrl      = $this->getCheckoutUrl() . "/checkout/payments/" . $payment_id_or_method;
-			$checkoutResponse = $this->CURL->doPost( $checkoutUrl, $this->Payload, \TorneLIB\CURL_POST_AS::POST_AS_JSON );
+			$checkoutResponse = $this->CURL->doPost( $checkoutUrl, $this->Payload, CURL_POST_AS::POST_AS_JSON );
 			$parsedResponse   = $this->CURL->getParsedResponse( $checkoutResponse );
 			$responseCode     = $this->CURL->getResponseCode( $checkoutResponse );
 			// Do not trust response codes!
@@ -2803,7 +2803,7 @@ class ResursBank {
 			return $parsedResponse;
 		} else if ( $myFlow == ResursMethodTypes::METHOD_HOSTED ) {
 			$hostedUrl      = $this->getHostedUrl();
-			$hostedResponse = $this->CURL->doPost( $hostedUrl, $this->Payload, \TorneLIB\CURL_POST_AS::POST_AS_JSON );
+			$hostedResponse = $this->CURL->doPost( $hostedUrl, $this->Payload, CURL_POST_AS::POST_AS_JSON );
 			$parsedResponse = $this->CURL->getParsedResponse( $hostedResponse );
 			$responseCode   = $this->CURL->getResponseCode( $hostedResponse );
 			// Do not trust response codes!
@@ -3489,7 +3489,7 @@ class ResursBank {
 			$outputOrderLines = $orderLines;
 		}
 		$sanitizedOutputOrderLines = $this->sanitizePaymentSpec( $outputOrderLines, ResursMethodTypes::METHOD_CHECKOUT );
-		return $this->CURL->doPut( $this->getCheckoutUrl() . "/checkout/payments/" . $paymentId, array( 'orderLines' => $sanitizedOutputOrderLines ), \TorneLIB\CURL_POST_AS::POST_AS_JSON );
+		return $this->CURL->doPut( $this->getCheckoutUrl() . "/checkout/payments/" . $paymentId, array( 'orderLines' => $sanitizedOutputOrderLines ), CURL_POST_AS::POST_AS_JSON );
 	}
 
 	////// HOSTED FLOW
