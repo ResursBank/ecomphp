@@ -77,20 +77,23 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 	/** Before each test, invoke this */
 	public function setUp()
 	{
-		$this->CURL = new \TorneLIB\Tornevall_cURL();
-		$this->NETWORK = new \TorneLIB\TorneLIB_Network();
+		$this->CURL = new \Resursbank\RBEcomPHP\Tornevall_cURL();
+		$this->NETWORK = new \Resursbank\RBEcomPHP\TorneLIB_Network();
 
 		if (version_compare(PHP_VERSION, '5.3.0', "<")) {
 			if (!$this->allowObsoletePHP) {
 				throw new \Exception("PHP 5.3 or later are required for this module to work. If you feel safe with running this with an older version, please see ");
 			}
 		}
+
 		register_shutdown_function(array($this, 'shutdownSuite'));
 		if ($this->environmentName === "nonmock") {
 			$this->username = $this->usernameNonmock;
 			$this->password = $this->passwordNonmock;
 		}
+
 		$this->setupConfig();
+
 		/* Set up default government id for bookings */
 		$this->testGovId = $this->govIdNatural;
 		$this->testGovIdNorway = $this->govIdNaturalNorway;
@@ -454,7 +457,7 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 				/* Pick up the signing url */
 				$signUrl = $res->signingUrl;
 				$getSigningPage = file_get_contents($signUrl);
-				$Network = new \TorneLIB\TorneLIB_Network();
+				$Network = new \Resursbank\RBEcomPHP\TorneLIB_Network();
 				$signUrlHostInfo = $Network->getUrlDomain($signUrl);
 				$getUrlHost = $signUrlHostInfo[1] . "://" . $signUrlHostInfo[0];
 				$mockSuccessUrl = preg_replace("/\/$/", '', $getUrlHost . preg_replace('/(.*?)\<a href=\"(.*?)\">(.*?)\>Mock success(.*)/is', '$2', $getSigningPage));
