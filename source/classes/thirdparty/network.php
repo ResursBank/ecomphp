@@ -1,9 +1,9 @@
 <?php
 
-namespace TorneLIB;
+namespace Resursbank\RBEcomPHP;
 
-// Make sure we are not colliding
-if (class_exists('TorneLIB_Network')) {
+// Make sure this library won't conflict with others
+if ( ! class_exists( 'TorneLIB_Network' ) ) {
 	/**
 	 * Libraries for handling network related things (currently not sockets). Conversion of Legacy TorneEngine and family.
 	 * As this library may run as stand alone code, exceptions are thrown as regular \Exception instead of a TorneLIB_Exception.
@@ -643,9 +643,7 @@ if (class_exists('TorneLIB_Network')) {
 				$this->sslCurlDriver = false;
 			}
 			$this->CurlResolve = CURL_RESOLVER::RESOLVER_DEFAULT;
-			if ( class_exists( 'TorneLIB\TorneLIB_Network' ) ) {
-				$this->NETWORK = new TorneLIB_Network();
-			}
+			$this->NETWORK     = new TorneLIB_Network();
 			$this->openssl_guess();
 			register_shutdown_function( array( $this, 'tornecurl_terminate' ) );
 
@@ -667,11 +665,11 @@ if (class_exists('TorneLIB_Network')) {
 			return null;
 		}
 
-		public function getVersion($fullRelease = false) {
-			if (!$fullRelease) {
+		public function getVersion( $fullRelease = false ) {
+			if ( ! $fullRelease ) {
 				return $this->TorneCurlVersion;
 			} else {
-				return $this->ToreCurlVersion . "-". $this->TorneCurlRelease;
+				return $this->TorneCurlVersion . "-" . $this->TorneCurlRelease;
 			}
 		}
 

@@ -25,19 +25,18 @@ if (!isset($_SERVER['HTTP_USER_AGENT'])) {
 
 /**
  * Class ResursBankTest: Primary test client
- *
  */
 class ResursBankTest extends TestCase
 {
-    /**
-     * Resurs Bank API Gateway, PHPUnit Test Client
-     *
-     * @subpackage EcomPHPClient
-     */
+	/**
+	 * Resurs Bank API Gateway, PHPUnit Test Client
+	 *
+	 * @subpackage EcomPHPClient
+	 */
 
-    /**
-     * The heart of this unit. To make tests "nicely" compatible with 1.1, this should be placed on top of this class as it looks different there.
-     */
+	/**
+	 * The heart of this unit. To make tests "nicely" compatible with 1.1, this should be placed on top of this class as it looks different there.
+	 */
 	private function initServices($overrideUsername = null, $overridePassword = null) {
 		if ( empty( $overrideUsername ) ) {
 			$this->rb = new \Resursbank\RBEcomPHP\ResursBank( $this->username, $this->password );
@@ -46,13 +45,13 @@ class ResursBankTest extends TestCase
 		}
 		$this->rb->setPushCustomerUserAgent(true);
 		$this->rb->setUserAgent("EComPHP/TestSuite");
-        /*
-         * If HTTP_HOST is not set, Resurs Checkout will not run properly, since the iFrame requires a valid internet connection (actually browser vs http server).
-         */
-        if (!isset($_SERVER['HTTP_HOST'])) {
-            $_SERVER['HTTP_HOST'] = "localhost";
-        }
-    }
+		/*
+		 * If HTTP_HOST is not set, Resurs Checkout will not run properly, since the iFrame requires a valid internet connection (actually browser vs http server).
+		 */
+		if (!isset($_SERVER['HTTP_HOST'])) {
+			$_SERVER['HTTP_HOST'] = "localhost";
+		}
+	}
 
 	////////// Public variables
 	public $ignoreDefaultTests = false;
@@ -84,8 +83,8 @@ class ResursBankTest extends TestCase
 	/** Before each test, invoke this */
 	public function setUp()
 	{
-		$this->CURL = new \TorneLIB\Tornevall_cURL();
-		$this->NETWORK = new \TorneLIB\TorneLIB_Network();
+		$this->CURL = new \Resursbank\RBEcomPHP\Tornevall_cURL();
+		$this->NETWORK = new \Resursbank\RBEcomPHP\TorneLIB_Network();
 
 		if (version_compare(PHP_VERSION, '5.3.0', "<")) {
 			if (!$this->allowObsoletePHP) {
@@ -464,7 +463,7 @@ class ResursBankTest extends TestCase
 				/* Pick up the signing url */
 				$signUrl = $res->signingUrl;
 				$getSigningPage = file_get_contents($signUrl);
-				$Network = new \TorneLIB\TorneLIB_Network();
+				$Network = new \Resursbank\RBEcomPHP\TorneLIB_Network();
 				$signUrlHostInfo = $Network->getUrlDomain($signUrl);
 				$getUrlHost = $signUrlHostInfo[1] . "://" . $signUrlHostInfo[0];
 				$mockSuccessUrl = preg_replace("/\/$/", '', $getUrlHost . preg_replace('/(.*?)\<a href=\"(.*?)\">(.*?)\>Mock success(.*)/is', '$2', $getSigningPage));

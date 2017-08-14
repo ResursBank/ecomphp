@@ -6,6 +6,5 @@ docs
 source/Makefile
 source/testwsdl.sh
 source/classes/thirdparty/Makefile
-composer.lock
-vendor
 wsdl-archive.tar
+source/classes/thirdparty/setnamespace.sh
