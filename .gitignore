@@ -6,3 +6,5 @@ docs
 source/Makefile
 source/testwsdl.sh
 source/classes/thirdparty/Makefile
+wsdl-archive.tar
+source/classes/thirdparty/setnamespace.sh
