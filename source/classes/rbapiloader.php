@@ -3474,6 +3474,10 @@ class ResursBank {
 		if ( ! $this->hasServicesInitialization ) {
 			$this->InitializeServices();
 		}
+		// Make sure that unit measures are set if not handled by external plugin before
+		if (empty($this->defaultUnitMeasure)) {
+			$this->setDefaultUnitMeasure();
+		}
 		$outputOrderLines = array();
 		if ( is_string( $orderLines ) ) {
 			// If this is a string, it might be an json string from older systems. We need, in that case make sure it is returned as an array.
