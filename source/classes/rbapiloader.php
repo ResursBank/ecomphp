@@ -209,7 +209,7 @@ class ResursBank {
 	/** @var string The version of this gateway */
 	private $version = "1.0.13";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20170814";
+	private $lastUpdate = "20170815";
 	/** @var string This. */
 	private $clientName = "EComPHP";
 	/** @var string Replacing $clientName on usage of setClientNAme */
@@ -4686,7 +4686,6 @@ class ResursBank {
 				$specLines[ $specIndex ] = $specArray;
 			}
 		}
-
 		return $specLines;
 	}
 
@@ -5563,6 +5562,9 @@ class ResursBank {
 		if ( ! $this->hasServicesInitialization ) {
 			$this->InitializeServices();
 		}
+		if (empty($this->defaultUnitMeasure)) {
+			$this->setDefaultUnitMeasure();
+		}
 		$outputOrderLines = array();
 		if ( is_string( $orderLines ) ) {
 			// If this is a string, it might be an json string from older systems. We need, in that case make sure it is returned as an array.
@@ -5578,7 +5580,6 @@ class ResursBank {
 			$outputOrderLines = $orderLines;
 		}
 		$sanitizedOutputOrderLines = $this->sanitizePaymentSpec( $outputOrderLines, ResursMethodTypes::METHOD_CHECKOUT );
-
 		return $this->CURL->doPut( $this->getCheckoutUrl() . "/checkout/payments/" . $paymentId, array( 'orderLines' => $sanitizedOutputOrderLines ), CURL_POST_AS::POST_AS_JSON );
 	}
 
