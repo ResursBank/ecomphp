@@ -208,7 +208,7 @@ class ResursBank {
 	/** @var string The version of this gateway */
 	private $version = "1.1.13";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20170815";
+	private $lastUpdate = "20170817";
 	/** @var string This. */
 	private $clientName = "EComPHP";
 	/** @var string Replacing $clientName on usage of setClientNAme */
@@ -6046,7 +6046,6 @@ class ResursBank {
 		if ( in_array( "DEBITABLE", $Status ) ) {
 			return true;
 		}
-
 		return false;
 	}
 
@@ -6061,6 +6060,60 @@ class ResursBank {
 	 */
 	public function canAnnul( $paymentArrayOrPaymentId = array() ) {
 		return $this->canDebit( $paymentArrayOrPaymentId );
+	}
+
+	/**
+	 * Return true if order is debited
+	 *
+	 * @param array $paymentArrayOrPaymentId
+	 *
+	 * @return bool
+	 * @since 1.0.13
+	 * @since 1.1.13
+	 * @since 1.2.0
+	 */
+	public function getIsDebited( $paymentArrayOrPaymentId = array() ) {
+		$Status = (array) $this->getPaymentContent( $paymentArrayOrPaymentId, "status" );
+		if ( in_array( "IS_DEBITED", $Status ) ) {
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Return true if order is credited
+	 *
+	 * @param array $paymentArrayOrPaymentId
+	 *
+	 * @return bool
+	 * @since 1.0.13
+	 * @since 1.1.13
+	 * @since 1.2.0
+	 */
+	public function getIsCredited( $paymentArrayOrPaymentId = array() ) {
+		$Status = (array) $this->getPaymentContent( $paymentArrayOrPaymentId, "status" );
+		if ( in_array( "IS_CREDITED", $Status ) ) {
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Return true if order is annulled
+	 *
+	 * @param array $paymentArrayOrPaymentId
+	 *
+	 * @return bool
+	 * @since 1.0.13
+	 * @since 1.1.13
+	 * @since 1.2.0
+	 */
+	public function getIsAnnulled( $paymentArrayOrPaymentId = array() ) {
+		$Status = (array) $this->getPaymentContent( $paymentArrayOrPaymentId, "status" );
+		if ( in_array( "IS_ANNULLED", $Status ) ) {
+			return true;
+		}
+		return false;
 	}
 
 	/**
