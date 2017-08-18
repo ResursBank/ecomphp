@@ -8,3 +8,5 @@ source/testwsdl.sh
 source/classes/thirdparty/Makefile
 wsdl-archive.tar
 source/classes/thirdparty/setnamespace.sh
+composer.phar
+/vendor/
