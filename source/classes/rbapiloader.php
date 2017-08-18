@@ -1285,7 +1285,8 @@ class ResursBank {
 		$numchars = array();
 		for ( $i = 0; $i < $max; $i ++ ) {
 			$charListId = rand( 0, count( $characterListArray ) - 1 );
-			$numchars[ $charListId ] ++;
+			// Set $numchars[ $charListId ] to a zero a value if not set before. This might render ugly notices about undefined offsets in some cases.
+			if (!isset($numchars[ $charListId ])) {$numchars[ $charListId ] = 0;}			$numchars[ $charListId ] ++;
 			$chars[] = $characterListArray[ $charListId ]{mt_rand( 0, ( strlen( $characterListArray[ $charListId ] ) - 1 ) )};
 		}
 		shuffle( $chars );
