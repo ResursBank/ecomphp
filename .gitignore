@@ -9,4 +9,5 @@ source/classes/thirdparty/Makefile
 source/classes/thirdparty/merger
 composer.lock
 vendor
+source/classes/thirdparty/setnamespace.sh
 
