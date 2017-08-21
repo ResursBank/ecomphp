@@ -10,7 +10,7 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.1
- * @version 1.1.13
+ * @version 1.1.14
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @license Apache License
@@ -206,7 +206,7 @@ class ResursBank {
 	////////// Private variables
 	///// Client Specific Settings
 	/** @var string The version of this gateway */
-	private $version = "1.1.13";
+	private $version = "1.1.14";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
 	private $lastUpdate = "20170817";
 	/** @var string This. */
