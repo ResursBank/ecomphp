@@ -6,5 +6,8 @@ docs
 source/Makefile
 source/testwsdl.sh
 source/classes/thirdparty/Makefile
-wsdl-archive.tar
+source/classes/thirdparty/merger
+composer.lock
+vendor
 source/classes/thirdparty/setnamespace.sh
+composer.phar
