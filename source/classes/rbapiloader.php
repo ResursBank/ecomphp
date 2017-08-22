@@ -10,7 +10,7 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.1
- * @version 1.1.14
+ * @version 1.1.15
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @license Apache License
@@ -206,9 +206,9 @@ class ResursBank {
 	////////// Private variables
 	///// Client Specific Settings
 	/** @var string The version of this gateway */
-	private $version = "1.1.14";
+	private $version = "1.1.15";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20170817";
+	private $lastUpdate = "20170822";
 	/** @var string This. */
 	private $clientName = "EComPHP";
 	/** @var string Replacing $clientName on usage of setClientNAme */
@@ -1286,7 +1286,8 @@ class ResursBank {
 		for ( $i = 0; $i < $max; $i ++ ) {
 			$charListId = rand( 0, count( $characterListArray ) - 1 );
 			// Set $numchars[ $charListId ] to a zero a value if not set before. This might render ugly notices about undefined offsets in some cases.
-			if (!isset($numchars[ $charListId ])) {$numchars[ $charListId ] = 0;}			$numchars[ $charListId ] ++;
+			if (!isset($numchars[ $charListId ])) {$numchars[ $charListId ] = 0;}
+			$numchars[ $charListId ] ++;
 			$chars[] = $characterListArray[ $charListId ]{mt_rand( 0, ( strlen( $characterListArray[ $charListId ] ) - 1 ) )};
 		}
 		shuffle( $chars );
@@ -4743,7 +4744,8 @@ class ResursBank {
 			'postalArea'  => $postalArea,
 			'postalCode'  => $postalCode
 		);
-		if ( ! empty( trim( $addressRow2 ) ) ) {
+		$trimAddress = trim($addressRow2); // PHP Compatibility
+		if ( ! empty( $trimAddress ) ) {
 			$ReturnAddress['addressRow2'] = $addressRow2;
 		}
 		if ( $this->enforceService === ResursMethodTypes::METHOD_SIMPLIFIED ) {
@@ -4751,7 +4753,6 @@ class ResursBank {
 		} else {
 			$ReturnAddress['countryCode'] = $country;
 		}
-
 		return $ReturnAddress;
 	}
 
@@ -6007,7 +6008,8 @@ class ResursBank {
 					// If the key belongs to extendedCustomer, is mandatory for the specificType and is empty,
 					// this means we can not deliver this data as a null value to ecommerce. Therefore, we have to remove it.
 					// The control being made here will skip the address object as we will only check the non-recursive data strings.
-					if ( ! is_array($customerValue) &&  ! in_array( $customerKey, $mandatoryExtendedCustomerFields ) && empty( trim( $customerValue ) ) ) {
+					$trimmedCustomerValue = trim($customerValue);  // PHP Compat
+					if ( ! is_array($customerValue) &&  ! in_array( $customerKey, $mandatoryExtendedCustomerFields ) && empty( $trimmedCustomerValue ) ) {
 						unset( $this->Payload['customer'][ $customerKey ] );
 					}
 				}
@@ -6445,7 +6447,7 @@ class ResursBank {
 	 *
 	 * @return array
 	 * @since 1.0.11
-	 * @since 1.1.112017
+	 * @since 1.1.11
 	 * @since 1.2.0
 	 */
 	public function getPaymentInvoices($paymentId = '') {
