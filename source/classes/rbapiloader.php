@@ -1551,7 +1551,7 @@ class ResursBank {
 			throw new \Exception( "Can not continue without a digest salt key", \ResursExceptions::CALLBACK_SALTDIGEST_MISSING );
 		}
 		////// DIGEST CONFIGURATION FINISH
-		if ( $this->registerCallbacksViaRest ) {
+		if ( $this->registerCallbacksViaRest && $callbackType !== ResursCallbackTypes::UPDATE ) {
 			$serviceUrl        = $this->getCheckoutUrl() . "/callbacks";
 			$renderCallbackUrl = $serviceUrl . "/" . $renderCallback['eventType'];
 			if ( isset( $renderCallback['eventType'] ) ) {
