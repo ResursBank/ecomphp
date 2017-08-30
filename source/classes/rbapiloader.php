@@ -101,7 +101,7 @@ class ResursBank {
 	/** @var string The version of this gateway */
 	private $version = "1.2.0";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20170817";
+	private $lastUpdate = "20170830";
 	/** @var string This. */
 	private $clientName = "EComPHP";
 	/** @var string Replacing $clientName on usage of setClientNAme */
@@ -320,7 +320,6 @@ class ResursBank {
 	 */
 	private $templateFieldsByMethodResponse = array();
 
-	///////////////////////////////////////// REFACTOR SECTION ENDS HERE
 
 	/////////// INITIALIZERS
 	/**
@@ -621,7 +620,8 @@ class ResursBank {
 		$numchars = array();
 		for ( $i = 0; $i < $max; $i ++ ) {
 			$charListId = rand( 0, count( $characterListArray ) - 1 );
-			$numchars[ $charListId ] ++;
+			// Set $numchars[ $charListId ] to a zero a value if not set before. This might render ugly notices about undefined offsets in some cases.
+			if (!isset($numchars[ $charListId ])) {$numchars[ $charListId ] = 0;}			$numchars[ $charListId ] ++;
 			$chars[] = $characterListArray[ $charListId ]{mt_rand( 0, ( strlen( $characterListArray[ $charListId ] ) - 1 ) )};
 		}
 		shuffle( $chars );
@@ -793,11 +793,48 @@ class ResursBank {
 					}
 				}
 			}
-
+			// Redmine #78124 workaround
+			if (!isset($ResursResponseArray['UPDATE'])) {
+				$updateResponse = $this->getRegisteredEventCallback(ResursCallbackTypes::UPDATE);
+				if (is_object($updateResponse) && isset($updateResponse->uriTemplate)) {
+					$ResursResponseArray['UPDATE'] = $updateResponse->uriTemplate;
+				}
+			}
 			return $ResursResponseArray;
 		}
-
+		$hasUpdate = false;
+		foreach ($ResursResponse as $responseObject) {
+			if (isset($responseObject->eventType) && $responseObject->eventType == "UPDATE") {
+				$hasUpdate = true;
+			}
+		}
+		if (!$hasUpdate) {
+			$updateResponse = $this->getRegisteredEventCallback(ResursCallbackTypes::UPDATE);
+			if (isset($updateResponse->uriTemplate) && !empty($updateResponse->uriTemplate)) {
+				if (!isset($updateResponse->eventType)) {
+					$updateResponse->eventType = "UPDATE";
+				}
+				$ResursResponse[] = $updateResponse;
+			}
+		}
 		return $ResursResponse;
+	}
+
+	/**
+	 * Reimplementation of getRegisteredEventCallback due to #78124
+	 *
+	 * @param int $callbackType
+	 * @return mixed
+	 * @since 1.x.x
+	 */
+	public function getRegisteredEventCallback( $callbackType = ResursCallbackTypes::UNDEFINED ) {
+		$this->InitializeServices();
+		$fetchThisCallback        = $this->getCallbackTypeString( $callbackType );
+		$getRegisteredCallbackUrl = $this->getServiceUrl( "getRegisteredEventCallback" );
+		// We are not using postService here, since we are dependent on the response code rather than the response itself
+		$renderedResponse = $this->CURL->doPost( $getRegisteredCallbackUrl )->getRegisteredEventCallback( array( 'eventType' => $fetchThisCallback ) );
+		$parsedResponse = $this->CURL->getParsedResponse($renderedResponse);
+		return $parsedResponse;
 	}
 
 	/**
@@ -885,7 +922,7 @@ class ResursBank {
 			throw new \Exception( "Can not continue without a digest salt key", \ResursExceptions::CALLBACK_SALTDIGEST_MISSING );
 		}
 		////// DIGEST CONFIGURATION FINISH
-		if ( $this->registerCallbacksViaRest ) {
+		if ( $this->registerCallbacksViaRest && $callbackType !== ResursCallbackTypes::UPDATE ) {
 			$serviceUrl        = $this->getCheckoutUrl() . "/callbacks";
 			$renderCallbackUrl = $serviceUrl . "/" . $renderCallback['eventType'];
 			if ( isset( $renderCallback['eventType'] ) ) {
@@ -3141,7 +3178,8 @@ class ResursBank {
 			'postalArea'  => $postalArea,
 			'postalCode'  => $postalCode
 		);
-		if ( ! empty( trim( $addressRow2 ) ) ) {
+		$trimAddress = trim($addressRow2); // PHP Compatibility
+		if ( ! empty( $trimAddress ) ) {
 			$ReturnAddress['addressRow2'] = $addressRow2;
 		}
 		if ( $this->enforceService === ResursMethodTypes::METHOD_SIMPLIFIED ) {
@@ -3149,7 +3187,6 @@ class ResursBank {
 		} else {
 			$ReturnAddress['countryCode'] = $country;
 		}
-
 		return $ReturnAddress;
 	}
 
@@ -3567,7 +3604,8 @@ class ResursBank {
 					// If the key belongs to extendedCustomer, is mandatory for the specificType and is empty,
 					// this means we can not deliver this data as a null value to ecommerce. Therefore, we have to remove it.
 					// The control being made here will skip the address object as we will only check the non-recursive data strings.
-					if ( ! is_array($customerValue) &&  ! in_array( $customerKey, $mandatoryExtendedCustomerFields ) && empty( trim( $customerValue ) ) ) {
+					$trimmedCustomerValue = trim($customerValue);  // PHP Compat
+					if ( ! is_array($customerValue) &&  ! in_array( $customerKey, $mandatoryExtendedCustomerFields ) && empty( $trimmedCustomerValue ) ) {
 						unset( $this->Payload['customer'][ $customerKey ] );
 					}
 				}
