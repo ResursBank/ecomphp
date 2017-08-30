@@ -1085,7 +1085,8 @@ class ResursBankTest extends TestCase
 	 */
 	public function testGetCallbackListByRest()
 	{
-		$this->assertGreaterThan(0, count($this->rb->getCallBacksByRest()));
+		$cbr = $this->rb->getCallBacksByRest();
+		$this->assertGreaterThan(0, count($cbr));
 	}
 
 	/**
@@ -1093,7 +1094,8 @@ class ResursBankTest extends TestCase
 	 */
 	public function testGetCallbackListAsArrayByRest()
 	{
-		$this->assertGreaterThan(0, count($this->rb->getCallBacksByRest(true)));
+		$cbr = $this->rb->getCallBacksByRest(true);
+		$this->assertGreaterThan(0, count($cbr));
 	}
 
 	/**
@@ -1170,6 +1172,7 @@ class ResursBankTest extends TestCase
 			'ANNULMENT' => array('paymentId'),
 			'FINALIZATION' => array('paymentId'),
 			'UNFREEZE' => array('paymentId'),
+			'UPDATE' => array('paymentId'),
 			'AUTOMATIC_FRAUD_CONTROL' => array('paymentId', 'result')
 		);
 		foreach ($parameter as $callbackType => $parameterArray) {
@@ -1179,16 +1182,19 @@ class ResursBankTest extends TestCase
 				'digestParameters' => $parameterArray
 			);
 			if ($callbackType == "ANNULMENT") {
-				$setCallbackType = \ResursCallbackTypes::ANNULMENT;
+				$setCallbackType = \Resursbank\RBEcomPHP\ResursCallbackTypes::ANNULMENT;
 			}
 			if ($callbackType == "AUTOMATIC_FRAUD_CONTROL") {
-				$setCallbackType = \ResursCallbackTypes::AUTOMATIC_FRAUD_CONTROL;
+				$setCallbackType = \Resursbank\RBEcomPHP\ResursCallbackTypes::AUTOMATIC_FRAUD_CONTROL;
 			}
 			if ($callbackType == "FINALIZATION") {
-				$setCallbackType = \ResursCallbackTypes::FINALIZATION;
+				$setCallbackType = \Resursbank\RBEcomPHP\ResursCallbackTypes::FINALIZATION;
 			}
 			if ($callbackType == "UNFREEZE") {
-				$setCallbackType = \ResursCallbackTypes::UNFREEZE;
+				$setCallbackType = \Resursbank\RBEcomPHP\ResursCallbackTypes::UNFREEZE;
+			}
+			if ($callbackType == "UPDATE") {
+				$setCallbackType = \Resursbank\RBEcomPHP\ResursCallbackTypes::UPDATE;
 			}
 			$renderArray = array();
 			if (is_array($parameterArray)) {

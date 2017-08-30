@@ -10,7 +10,7 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.1
- * @version 1.1.15
+ * @version 1.1.17
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @license Apache License
@@ -206,9 +206,9 @@ class ResursBank {
 	////////// Private variables
 	///// Client Specific Settings
 	/** @var string The version of this gateway */
-	private $version = "1.1.15";
+	private $version = "1.1.17";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20170822";
+	private $lastUpdate = "20170830";
 	/** @var string This. */
 	private $clientName = "EComPHP";
 	/** @var string Replacing $clientName on usage of setClientNAme */
@@ -1459,11 +1459,48 @@ class ResursBank {
 					}
 				}
 			}
-
+			// Redmine #78124 workaround
+			if (!isset($ResursResponseArray['UPDATE'])) {
+				$updateResponse = $this->getRegisteredEventCallback(ResursCallbackTypes::UPDATE);
+				if (is_object($updateResponse) && isset($updateResponse->uriTemplate)) {
+					$ResursResponseArray['UPDATE'] = $updateResponse->uriTemplate;
+				}
+			}
 			return $ResursResponseArray;
 		}
-
+		$hasUpdate = false;
+		foreach ($ResursResponse as $responseObject) {
+			if (isset($responseObject->eventType) && $responseObject->eventType == "UPDATE") {
+				$hasUpdate = true;
+			}
+		}
+		if (!$hasUpdate) {
+			$updateResponse = $this->getRegisteredEventCallback(ResursCallbackTypes::UPDATE);
+			if (isset($updateResponse->uriTemplate) && !empty($updateResponse->uriTemplate)) {
+				if (!isset($updateResponse->eventType)) {
+					$updateResponse->eventType = "UPDATE";
+				}
+				$ResursResponse[] = $updateResponse;
+			}
+		}
 		return $ResursResponse;
+	}
+
+	/**
+	 * Reimplementation of getRegisteredEventCallback due to #78124
+	 *
+	 * @param int $callbackType
+	 * @return mixed
+	 * @since 1.x.x
+	 */
+	public function getRegisteredEventCallback( $callbackType = ResursCallbackTypes::UNDEFINED ) {
+		$this->InitializeServices();
+		$fetchThisCallback        = $this->getCallbackTypeString( $callbackType );
+		$getRegisteredCallbackUrl = $this->getServiceUrl( "getRegisteredEventCallback" );
+		// We are not using postService here, since we are dependent on the response code rather than the response itself
+		$renderedResponse = $this->CURL->doPost( $getRegisteredCallbackUrl )->getRegisteredEventCallback( array( 'eventType' => $fetchThisCallback ) );
+		$parsedResponse = $this->CURL->getParsedResponse($renderedResponse);
+		return $parsedResponse;
 	}
 
 	/**

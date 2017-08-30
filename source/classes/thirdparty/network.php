@@ -413,7 +413,7 @@ if ( ! class_exists( 'TorneLIB_Network' ) ) {
 		private $CurlVersion = null;
 
 		/** @var string Internal release snapshot that is being used to find out if we are running the latest version of this library */
-		private $TorneCurlRelease = "20170814";
+		private $TorneCurlRelease = "20170828";
 
 		/**
 		 * Target environment (if target is production some debugging values will be skipped)
@@ -1980,18 +1980,24 @@ if ( ! class_exists( 'TorneLIB_Network' ) ) {
 			curl_setopt( $this->CurlSession, CURLOPT_AUTOREFERER, true );
 			curl_setopt( $this->CurlSession, CURLINFO_HEADER_OUT, true );
 
-			/*
-         * Find out if CURLOPT_FOLLOWLOCATION can be set or not.
-         * If you need to enforce this setting to something very specific, setEnforceFollowLocation([bool]) is available for this.
-         */
+			// Find out if CURLOPT_FOLLOWLOCATION can be set by user/developer or not.
+			// If you need to enforce this setting to something very specific, setEnforceFollowLocation([bool]) is available for this.
+			// Note: This should only be possible to do, if security for PHP is not set too high. For this curl module we normally
+			// like to follow redirects as scripts that fetches some kind of content sometimes lands on redirect-pages. However,
+			// this is set to false by default in the curl library.
 			if ( ! $this->followLocationEnforce ) {
-				if ( ini_get( 'open_basedir' ) == '' && ini_get( 'safe_mode' == 'Off' ) ) {
+				if ( ini_get( 'open_basedir' ) == '' && ! ini_get( 'safe_mode' ) ) {
 					curl_setopt( $this->CurlSession, CURLOPT_FOLLOWLOCATION, true );
 				} else {
 					curl_setopt( $this->CurlSession, CURLOPT_FOLLOWLOCATION, false );
 				}
 			} else {
-				curl_setopt( $this->CurlSession, CURLOPT_FOLLOWLOCATION, $this->followLocationSet );
+				// Make sure the safety control occurs even when the enforcing parameter is false.
+				// This should prevent problems when $this->>followLocationSet is set to anything else than false
+				// and security settings are higher for PHP
+				if ( ini_get( 'open_basedir' ) == '' && ! ini_get( 'safe_mode' ) ) {
+					curl_setopt( $this->CurlSession, CURLOPT_FOLLOWLOCATION, $this->followLocationSet );
+				}
 			}
 
 			$returnContent = curl_exec( $this->CurlSession );
