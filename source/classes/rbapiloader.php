@@ -1702,7 +1702,7 @@ class ResursBank {
 	 */
 	public function triggerCallback() {
 		$serviceUrl = $this->env_test . "DeveloperWebService?wsdl";
-		$CURL       = new Tornevall_cURL();
+		$CURL       = new \Resursbank\RBEcomPHP\Tornevall_cURL();
 		$CURL->setAuthentication( $this->username, $this->password );
 		$CURL->setUserAgent( $this->myUserAgent );
 		$eventRequest    = $CURL->doGet( $serviceUrl );
