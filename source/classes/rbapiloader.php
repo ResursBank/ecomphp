@@ -10,7 +10,7 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.1
- * @version 1.1.17
+ * @version 1.1.18
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @license Apache License
@@ -206,9 +206,9 @@ class ResursBank {
 	////////// Private variables
 	///// Client Specific Settings
 	/** @var string The version of this gateway */
-	private $version = "1.1.17";
+	private $version = "1.1.18";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20170830";
+	private $lastUpdate = "20170831";
 	/** @var string This. */
 	private $clientName = "EComPHP";
 	/** @var string Replacing $clientName on usage of setClientNAme */
@@ -1702,7 +1702,7 @@ class ResursBank {
 	 */
 	public function triggerCallback() {
 		$serviceUrl = $this->env_test . "DeveloperWebService?wsdl";
-		$CURL       = new Tornevall_cURL();
+		$CURL       = new \Resursbank\RBEcomPHP\Tornevall_cURL();
 		$CURL->setAuthentication( $this->username, $this->password );
 		$CURL->setUserAgent( $this->myUserAgent );
 		$eventRequest    = $CURL->doGet( $serviceUrl );
