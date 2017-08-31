@@ -8,3 +8,6 @@ source/testwsdl.sh
 source/classes/thirdparty/Makefile
 wsdl-archive.tar
 source/classes/thirdparty/setnamespace.sh
+source/classes/thirdparty/merger
+composer.lock
+vendor

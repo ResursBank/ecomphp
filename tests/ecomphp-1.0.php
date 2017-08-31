@@ -26,26 +26,26 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
     private $CURL;
     private $NETWORK;
 
-    /**
-     * The heart of this unit. To make tests "nicely" compatible with 1.1, this should be placed on top of this class as it looks different there.
-     */
+	/**
+	 * The heart of this unit. To make tests "nicely" compatible with 1.1, this should be placed on top of this class as it looks different there.
+	 */
     private function initServices($overrideUsername = null, $overridePassword = null)
     {
-        if (empty($overrideUsername)) {
+		if ( empty( $overrideUsername ) ) {
             $this->rb = new \ResursBank($this->username, $this->password);
-        } else {
+		} else {
             $this->rb = new \ResursBank($overrideUsername, $overridePassword);
-        }
-	    $this->rb->setPushCustomerUserAgent(true);
-	    $this->rb->setUserAgent("EComPHP/TestSuite");
-        /*
-         * If HTTP_HOST is not set, Resurs Checkout will not run properly, since the iFrame requires a valid internet connection (actually browser vs http server).
-         */
-        if (!isset($_SERVER['HTTP_HOST'])) {
-            $_SERVER['HTTP_HOST'] = "localhost";
-        }
+		}
+		$this->rb->setPushCustomerUserAgent(true);
+		$this->rb->setUserAgent("EComPHP/TestSuite");
+		/*
+		 * If HTTP_HOST is not set, Resurs Checkout will not run properly, since the iFrame requires a valid internet connection (actually browser vs http server).
+		 */
+		if (!isset($_SERVER['HTTP_HOST'])) {
+			$_SERVER['HTTP_HOST'] = "localhost";
+		}
         $this->rb->setPreferredPaymentService(ResursMethodTypes::METHOD_SIMPLIFIED);
-    }
+	}
 
 	////////// Public variables
 	public $ignoreDefaultTests = false;
@@ -1183,6 +1183,9 @@ class ResursBankTest extends PHPUnit_Framework_TestCase
 			}
 			if ($callbackType == "UNFREEZE") {
 				$setCallbackType = \ResursCallbackTypes::UNFREEZE;
+			}
+			if ($callbackType == "UPDATE") {
+				$setCallbackType = \ResursCallbackTypes::UPDATE;
 			}
 			$renderArray = array();
 			if (is_array($parameterArray)) {

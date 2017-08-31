@@ -12,7 +12,7 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.0
- * @version 1.0.13
+ * @version 1.0.17
  * @deprecated Maintenance version only
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
@@ -22,14 +22,13 @@
 /**
  * Location of RBEcomPHP class files.
  */
-if (!defined('RB_API_PATH')) {
-    define('RB_API_PATH', __DIR__);
+if ( ! defined( 'RB_API_PATH' ) ) {
+	define( 'RB_API_PATH', __DIR__ );
 }
-require_once(RB_API_PATH . '/thirdparty/network.php');
-require_once(RB_API_PATH . '/thirdparty/crypto.php');
-require_once(RB_API_PATH . '/rbapiloader/ResursTypeClasses.php');
-require_once(RB_API_PATH . '/rbapiloader/ResursEnvironments.php');
-require_once(RB_API_PATH . '/rbapiloader/ResursException.php');
+require_once( RB_API_PATH . '/thirdparty/network.php' );
+require_once( RB_API_PATH . '/rbapiloader/ResursTypeClasses.php' );
+require_once( RB_API_PATH . '/rbapiloader/ResursEnvironments.php' );
+require_once( RB_API_PATH . '/rbapiloader/ResursException.php' );
 
 use Resursbank\RBEcomPHP\CURL_POST_AS;
 
@@ -207,9 +206,9 @@ class ResursBank {
 	////////// Private variables
 	///// Client Specific Settings
 	/** @var string The version of this gateway */
-	private $version = "1.0.13";
+	private $version = "1.0.17";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20170817";
+	private $lastUpdate = "20170830";
 	/** @var string This. */
 	private $clientName = "EComPHP";
 	/** @var string Replacing $clientName on usage of setClientNAme */
@@ -930,14 +929,14 @@ class ResursBank {
 	 * @since 1.0.2
 	 * @since 1.1.2
 	 */
-	public function setUserAgent( $MyUserAgent = '') {
+	public function setUserAgent( $MyUserAgent = '' ) {
 		if ( ! empty( $MyUserAgent ) ) {
 			$this->myUserAgent = $MyUserAgent . " +" . $this->getVersionFull();
 		} else {
 			$this->myUserAgent = $this->getVersionFull();
 		}
-		if ($this->customerUserAgentPush && isset($_SERVER['HTTP_USER_AGENT'])) {
-			$this->myUserAgent .= " +CLI-" . $this->T_CRYPTO->base64_compress($_SERVER['HTTP_USER_AGENT']);
+		if ( $this->customerUserAgentPush && isset( $_SERVER['HTTP_USER_AGENT'] ) ) {
+			$this->myUserAgent .= " +CLI-" . $this->T_CRYPTO->base64_compress( $_SERVER['HTTP_USER_AGENT'] );
 		}
 	}
 
@@ -1286,6 +1285,10 @@ class ResursBank {
 		$numchars = array();
 		for ( $i = 0; $i < $max; $i ++ ) {
 			$charListId = rand( 0, count( $characterListArray ) - 1 );
+			// Set $numchars[ $charListId ] to a zero a value if not set before. This might render ugly notices about undefined offsets in some cases.
+			if ( ! isset( $numchars[ $charListId ] ) ) {
+				$numchars[ $charListId ] = 0;
+			}
 			$numchars[ $charListId ] ++;
 			$chars[] = $characterListArray[ $charListId ]{mt_rand( 0, ( strlen( $characterListArray[ $charListId ] ) - 1 ) )};
 		}
@@ -1458,11 +1461,52 @@ class ResursBank {
 					}
 				}
 			}
+			// Redmine #78124 workaround
+			if ( ! isset( $ResursResponseArray['UPDATE'] ) ) {
+				$updateResponse = $this->getRegisteredEventCallback( ResursCallbackTypes::UPDATE );
+				if ( is_object( $updateResponse ) && isset( $updateResponse->uriTemplate ) ) {
+					$ResursResponseArray['UPDATE'] = $updateResponse->uriTemplate;
+				}
+			}
 
 			return $ResursResponseArray;
 		}
+		$hasUpdate = false;
+		foreach ( $ResursResponse as $responseObject ) {
+			if ( isset( $responseObject->eventType ) && $responseObject->eventType == "UPDATE" ) {
+				$hasUpdate = true;
+			}
+		}
+		if ( ! $hasUpdate ) {
+			$updateResponse = $this->getRegisteredEventCallback( ResursCallbackTypes::UPDATE );
+			if ( isset( $updateResponse->uriTemplate ) && ! empty( $updateResponse->uriTemplate ) ) {
+				if ( ! isset( $updateResponse->eventType ) ) {
+					$updateResponse->eventType = "UPDATE";
+				}
+				$ResursResponse[] = $updateResponse;
+			}
+		}
 
 		return $ResursResponse;
+	}
+
+	/**
+	 * Reimplementation of getRegisteredEventCallback due to #78124
+	 *
+	 * @param int $callbackType
+	 *
+	 * @return mixed
+	 * @since 1.x.x
+	 */
+	public function getRegisteredEventCallback( $callbackType = ResursCallbackTypes::UNDEFINED ) {
+		$this->InitializeServices();
+		$fetchThisCallback        = $this->getCallbackTypeString( $callbackType );
+		$getRegisteredCallbackUrl = $this->getServiceUrl( "getRegisteredEventCallback" );
+		// We are not using postService here, since we are dependent on the response code rather than the response itself
+		$renderedResponse = $this->CURL->doPost( $getRegisteredCallbackUrl )->getRegisteredEventCallback( array( 'eventType' => $fetchThisCallback ) );
+		$parsedResponse   = $this->CURL->getParsedResponse( $renderedResponse );
+
+		return $parsedResponse;
 	}
 
 	/**
@@ -1550,7 +1594,7 @@ class ResursBank {
 			throw new \Exception( "Can not continue without a digest salt key", \ResursExceptions::CALLBACK_SALTDIGEST_MISSING );
 		}
 		////// DIGEST CONFIGURATION FINISH
-		if ( $this->registerCallbacksViaRest ) {
+		if ( $this->registerCallbacksViaRest && $callbackType !== ResursCallbackTypes::UPDATE ) {
 			$serviceUrl        = $this->getCheckoutUrl() . "/callbacks";
 			$renderCallbackUrl = $serviceUrl . "/" . $renderCallback['eventType'];
 			if ( isset( $renderCallback['eventType'] ) ) {
@@ -1803,15 +1847,16 @@ class ResursBank {
 	 * Special function for pushing user-agent from customer into our ecommerce communication. This must be enabled before setUserAgent.
 	 *
 	 * @param bool $enableCustomerUserAgent
+	 *
 	 * @since 1.0.13
 	 * @since 1.1.13
 	 * @since 1.2.0
 	 */
-	public function setPushCustomerUserAgent($enableCustomerUserAgent = false) {
+	public function setPushCustomerUserAgent( $enableCustomerUserAgent = false ) {
 		if ( class_exists( '\Resursbank\RBEcomPHP\TorneLIB_Crypto' ) ) {
 			$this->T_CRYPTO = new \Resursbank\RBEcomPHP\TorneLIB_Crypto();
 		}
-		if (!empty($this->T_CRYPTO)) {
+		if ( ! empty( $this->T_CRYPTO ) ) {
 			$this->customerUserAgentPush = $enableCustomerUserAgent;
 		}
 	}
@@ -2057,11 +2102,12 @@ class ResursBank {
 		}
 		$this->InitializeServices();
 		$url          = $this->getCheckoutUrl() . '/checkout/payments/' . $paymentId . '/updatePaymentReference';
-		$result = $this->CURL->doPut($url, array( 'paymentReference' => $to), CURL_POST_AS::POST_AS_JSON);
-		$ResponseCode = $this->CURL->getResponseCode($result);
+		$result       = $this->CURL->doPut( $url, array( 'paymentReference' => $to ), CURL_POST_AS::POST_AS_JSON );
+		$ResponseCode = $this->CURL->getResponseCode( $result );
 		if ( $ResponseCode >= 200 && $ResponseCode <= 250 ) {
 			return true;
 		}
+
 		return false;
 	}
 
@@ -2343,7 +2389,7 @@ class ResursBank {
 			$Expect           = $this->validateExternalUrl['http_accept'];
 			$UnExpect         = $this->validateExternalUrl['http_error'];
 			$useUrl           = $this->validateExternalUrl['url'];
-			$ExternalPostData = array( 'link' => $this->NETWORK->base64url_encode( $useUrl ), "returnEncoded"=>true );
+			$ExternalPostData = array( 'link' => $this->NETWORK->base64url_encode( $useUrl ), "returnEncoded" => true );
 			try {
 				$this->CURL->doPost( $ExternalAPI, $ExternalPostData, CURL_POST_AS::POST_AS_JSON );
 				$WebResponse = $this->CURL->getParsedResponse();
@@ -2359,8 +2405,8 @@ class ResursBank {
 					throw new \Exception( "No response returned from API", 500 );
 				}
 			}
-			$base64url = $this->base64url_encode($useUrl);
-			if (isset($ParsedResponse->{$base64url}) && isset( $ParsedResponse->{$base64url}->exceptiondata->errorcode ) && ! empty( $ParsedResponse->{$base64url}->exceptiondata->errorcode ) ) {
+			$base64url = $this->base64url_encode( $useUrl );
+			if ( isset( $ParsedResponse->{$base64url} ) && isset( $ParsedResponse->{$base64url}->exceptiondata->errorcode ) && ! empty( $ParsedResponse->{$base64url}->exceptiondata->errorcode ) ) {
 				return ResursCallbackReachability::IS_NOT_REACHABLE;
 			}
 			$UrlResult         = $ParsedResponse->{$base64url}->result;
@@ -2391,6 +2437,7 @@ class ResursBank {
 				return ResursCallbackReachability::IS_NOT_REACHABLE;
 			}
 		}
+
 		return ResursCallbackReachability::IS_REACHABLE_NOT_KNOWN;
 	}
 
@@ -2644,7 +2691,7 @@ class ResursBank {
 	 * @deprecated 1.1.2 Use setUserAgent
 	 */
 	public function setClientName( $clientNameString = "" ) {
-		if (!empty($clientNameString)) {
+		if ( ! empty( $clientNameString ) ) {
 			$this->setUserAgent( $clientNameString );
 		}
 	}
@@ -4012,7 +4059,7 @@ class ResursBank {
 	 * @deprecated 1.1.13 Will be replaced with getPreferredPaymentId
 	 */
 	public function getPreferredId( $maxLength = 25, $prefix = "", $dualUniq = true ) {
-		return $this->getPreferredPaymentId($maxLength, $prefix, $dualUniq);
+		return $this->getPreferredPaymentId( $maxLength, $prefix, $dualUniq );
 	}
 
 	/**
@@ -4040,7 +4087,7 @@ class ResursBank {
 	 * @since 1.1.2
 	 */
 	public function getPreferredPaymentId( $maxLength = 25, $prefix = "", $dualUniq = true, $force = false ) {
-		if ( ! empty( $this->preferredId ) && !$force ) {
+		if ( ! empty( $this->preferredId ) && ! $force ) {
 			return $this->preferredId;
 		}
 		$timestamp = strftime( "%Y%m%d%H%M%S", time() );
@@ -4057,8 +4104,10 @@ class ResursBank {
 		$preferredId       = $timestamp . "-" . $uniq;
 		$preferredId       = substr( $preferredId, 0, $maxLength );
 		$this->preferredId = $preferredId;
+
 		return $this->preferredId;
 	}
+
 	/**
 	 * Generates a unique "preferredId" out of a datestamp
 	 *
@@ -4292,6 +4341,7 @@ class ResursBank {
 				$this->SpecLines             = $this->Payload['orderLines'];
 			}
 		}
+
 		return $this->Payload;
 	}
 
@@ -4317,22 +4367,24 @@ class ResursBank {
 		}
 		$myFlow = $this->getPreferredPaymentService();
 		try {
-			if ($myFlow !== ResursMethodTypes::METHOD_CHECKOUT) {
+			if ( $myFlow !== ResursMethodTypes::METHOD_CHECKOUT ) {
 				$paymentMethodInfo = $this->getPaymentMethodSpecific( $payment_id_or_method );
 				if ( isset( $paymentMethodInfo->id ) ) {
 					$this->PaymentMethod = $paymentMethodInfo;
 				}
 			}
-		} catch (\Exception $e) {
+		} catch ( \Exception $e ) {
 
 		}
 		$this->preparePayload( $payment_id_or_method, $payload );
 		if ( $this->forceExecute ) {
 			$this->createPaymentExecuteCommand = $payment_id_or_method;
+
 			return array( 'status' => 'delayed' );
 		} else {
 			$bookPaymentResult = $this->createPaymentExecute( $payment_id_or_method, $this->Payload );
 		}
+
 		return $bookPaymentResult;
 	}
 
@@ -4355,10 +4407,11 @@ class ResursBank {
 		if ( $myFlow == ResursMethodTypes::METHOD_SIMPLIFIED ) {
 			$paymentMethodInfo = $this->getPaymentMethodSpecific( $payment_id_or_method );
 			if ( $paymentMethodInfo->specificType == "CARD" || $paymentMethodInfo->specificType == "NEWCARD" || $paymentMethodInfo->specificType == "REVOLVING_CREDIT" ) {
-				$this->validateCardData($paymentMethodInfo->specificType);
+				$this->validateCardData( $paymentMethodInfo->specificType );
 			}
 			$myFlowResponse  = $this->postService( 'bookPayment', $this->Payload );
 			$this->SpecLines = array();
+
 			return $myFlowResponse;
 		} else if ( $myFlow == ResursMethodTypes::METHOD_CHECKOUT ) {
 			$checkoutUrl      = $this->getCheckoutUrl() . "/checkout/payments/" . $payment_id_or_method;
@@ -4493,7 +4546,7 @@ class ResursBank {
 			$this->setPreferredPaymentService( ResursMethodTypes::METHOD_SIMPLIFIED );
 		}
 		if ( $this->enforceService === ResursMethodTypes::METHOD_CHECKOUT ) {
-			if ( empty( $payment_id_or_method ) && empty($this->preferredId)) {
+			if ( empty( $payment_id_or_method ) && empty( $this->preferredId ) ) {
 				throw new \Exception( "A payment method or payment id must be defined", \ResursExceptions::CREATEPAYMENT_NO_ID_SET );
 			}
 			$payment_id_or_method = $this->preferredId;
@@ -4579,9 +4632,9 @@ class ResursBank {
 		}
 		// If card data has been included in the payload, make sure that the card data is validated if the payload has been sent
 		// by manual hands (deprecated mode)
-		if (isset($this->Payload['card'])) {
-			if (isset($this->PaymentMethod->specificType)) {
-				$this->validateCardData($this->PaymentMethod->specificType);
+		if ( isset( $this->Payload['card'] ) ) {
+			if ( isset( $this->PaymentMethod->specificType ) ) {
+				$this->validateCardData( $this->PaymentMethod->specificType );
 			}
 		}
 	}
@@ -4680,12 +4733,17 @@ class ResursBank {
 			}
 			foreach ( $specLines as $specIndex => $specArray ) {
 				foreach ( $specArray as $key => $value ) {
-					if ( strtolower( $key ) == "unitmeasure" && empty( $value ) ) { $specArray[ $key ] = $this->defaultUnitMeasure;	}
-					if ( ! in_array( strtolower( $key ), array_map( "strtolower", $mySpecRules ) ) ) { unset( $specArray[ $key ] );	}
+					if ( strtolower( $key ) == "unitmeasure" && empty( $value ) ) {
+						$specArray[ $key ] = $this->defaultUnitMeasure;
+					}
+					if ( ! in_array( strtolower( $key ), array_map( "strtolower", $mySpecRules ) ) ) {
+						unset( $specArray[ $key ] );
+					}
 				}
 				$specLines[ $specIndex ] = $specArray;
 			}
 		}
+
 		return $specLines;
 	}
 
@@ -4743,7 +4801,8 @@ class ResursBank {
 			'postalArea'  => $postalArea,
 			'postalCode'  => $postalCode
 		);
-		if ( ! empty( trim( $addressRow2 ) ) ) {
+		$trimAddress   = trim( $addressRow2 ); // PHP Compatibility
+		if ( ! empty( $trimAddress ) ) {
 			$ReturnAddress['addressRow2'] = $addressRow2;
 		}
 		if ( $this->enforceService === ResursMethodTypes::METHOD_SIMPLIFIED ) {
@@ -4987,6 +5046,7 @@ class ResursBank {
 	 */
 	public function getPayload() {
 		$this->preparePayload();
+
 		return $this->Payload;
 	}
 
@@ -5562,7 +5622,7 @@ class ResursBank {
 		if ( ! $this->hasServicesInitialization ) {
 			$this->InitializeServices();
 		}
-		if (empty($this->defaultUnitMeasure)) {
+		if ( empty( $this->defaultUnitMeasure ) ) {
 			$this->setDefaultUnitMeasure();
 		}
 		$outputOrderLines = array();
@@ -5580,6 +5640,7 @@ class ResursBank {
 			$outputOrderLines = $orderLines;
 		}
 		$sanitizedOutputOrderLines = $this->sanitizePaymentSpec( $outputOrderLines, ResursMethodTypes::METHOD_CHECKOUT );
+
 		return $this->CURL->doPut( $this->getCheckoutUrl() . "/checkout/payments/" . $paymentId, array( 'orderLines' => $sanitizedOutputOrderLines ), CURL_POST_AS::POST_AS_JSON );
 	}
 
@@ -5979,10 +6040,11 @@ class ResursBank {
 	 * Payment card validity check for deprecation layer
 	 *
 	 * @param string $specificType
+	 *
 	 * @since 1.0.2
 	 * @since 1.1.2
 	 */
-	private function validateCardData($specificType = "") {
+	private function validateCardData( $specificType = "" ) {
 		// Keeps compatibility with card data sets
 		if ( isset( $this->Payload['orderData']['totalAmount'] ) && $this->getPreferredPaymentService() == ResursMethodTypes::METHOD_SIMPLIFIED ) {
 			$cardInfo = isset( $this->Payload['card'] ) ? $this->Payload['card'] : array();
@@ -5994,20 +6056,21 @@ class ResursBank {
 				}
 			}
 		}
-		if (isset($this->Payload['customer'])) {
+		if ( isset( $this->Payload['customer'] ) ) {
 			// CARD + (NEWCARD, REVOLVING_CREDIT)
-			$mandatoryExtendedCustomerFields = array('governmentId', 'address', 'phone', 'email', 'type');
+			$mandatoryExtendedCustomerFields = array( 'governmentId', 'address', 'phone', 'email', 'type' );
 			if ( $specificType == "CARD" ) {
-				$mandatoryExtendedCustomerFields = array('governmentId');
-			} else if (($specificType == "REVOLVING_CREDIT" || $specificType == "NEWCARD")) {
-				$mandatoryExtendedCustomerFields = array('governmentId', 'phone', 'email');
+				$mandatoryExtendedCustomerFields = array( 'governmentId' );
+			} else if ( ( $specificType == "REVOLVING_CREDIT" || $specificType == "NEWCARD" ) ) {
+				$mandatoryExtendedCustomerFields = array( 'governmentId', 'phone', 'email' );
 			}
-			if (count($mandatoryExtendedCustomerFields)) {
+			if ( count( $mandatoryExtendedCustomerFields ) ) {
 				foreach ( $this->Payload['customer'] as $customerKey => $customerValue ) {
 					// If the key belongs to extendedCustomer, is mandatory for the specificType and is empty,
 					// this means we can not deliver this data as a null value to ecommerce. Therefore, we have to remove it.
 					// The control being made here will skip the address object as we will only check the non-recursive data strings.
-					if ( ! is_array($customerValue) &&  ! in_array( $customerKey, $mandatoryExtendedCustomerFields ) && empty( trim( $customerValue ) ) ) {
+					$trimmedCustomerValue = trim( $customerValue );  // PHP Compat
+					if ( ! is_array( $customerValue ) && ! in_array( $customerKey, $mandatoryExtendedCustomerFields ) && empty( $trimmedCustomerValue ) ) {
 						unset( $this->Payload['customer'][ $customerKey ] );
 					}
 				}
@@ -6047,6 +6110,7 @@ class ResursBank {
 		if ( in_array( "DEBITABLE", $Status ) ) {
 			return true;
 		}
+
 		return false;
 	}
 
@@ -6078,6 +6142,7 @@ class ResursBank {
 		if ( in_array( "IS_DEBITED", $Status ) ) {
 			return true;
 		}
+
 		return false;
 	}
 
@@ -6096,6 +6161,7 @@ class ResursBank {
 		if ( in_array( "IS_CREDITED", $Status ) ) {
 			return true;
 		}
+
 		return false;
 	}
 
@@ -6114,6 +6180,7 @@ class ResursBank {
 		if ( in_array( "IS_ANNULLED", $Status ) ) {
 			return true;
 		}
+
 		return false;
 	}
 
@@ -6445,19 +6512,20 @@ class ResursBank {
 	 *
 	 * @return array
 	 * @since 1.0.11
-	 * @since 1.1.112017
+	 * @since 1.1.11
 	 * @since 1.2.0
 	 */
-	public function getPaymentInvoices($paymentId = '') {
-		$invoices = array();
-		$paymentData = $this->getPayment($paymentId);
-		if (!empty($paymentData) && isset($paymentData->paymentDiffs)) {
-			foreach ($paymentData->paymentDiffs as $paymentRow) {
-				if (isset($paymentRow->type) && $paymentRow->type == "DEBIT" && isset($paymentRow->invoiceId)) {
+	public function getPaymentInvoices( $paymentId = '' ) {
+		$invoices    = array();
+		$paymentData = $this->getPayment( $paymentId );
+		if ( ! empty( $paymentData ) && isset( $paymentData->paymentDiffs ) ) {
+			foreach ( $paymentData->paymentDiffs as $paymentRow ) {
+				if ( isset( $paymentRow->type ) && $paymentRow->type == "DEBIT" && isset( $paymentRow->invoiceId ) ) {
 					$invoices[] = $paymentRow->invoiceId;
 				}
 			}
 		}
+
 		return $invoices;
 	}
 }
