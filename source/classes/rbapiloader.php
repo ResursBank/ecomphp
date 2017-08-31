@@ -101,7 +101,7 @@ class ResursBank {
 	/** @var string The version of this gateway */
 	private $version = "1.2.0";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20170817";
+	private $lastUpdate = "20170831";
 	/** @var string This. */
 	private $clientName = "EComPHP";
 	/** @var string Replacing $clientName on usage of setClientNAme */
@@ -393,7 +393,7 @@ class ResursBank {
 			$this->environment = $this->env_prod;
 		}
 		if ( class_exists( '\Resursbank\RBEcomPHP\Tornevall_cURL' ) ) {
-			$this->CURL = new Tornevall_cURL();
+			$this->CURL = new \Resursbank\RBEcomPHP\Tornevall_cURL();
 			$this->CURL->setStoreSessionExceptions( true );
 			$this->CURL->setAuthentication( $this->soapOptions['login'], $this->soapOptions['password'] );
 			$this->CURL->setUserAgent( $this->myUserAgent );
@@ -993,7 +993,7 @@ class ResursBank {
 	 */
 	public function triggerCallback() {
 		$serviceUrl = $this->env_test . "DeveloperWebService?wsdl";
-		$CURL       = new Tornevall_cURL();
+		$CURL       = new \Resursbank\RBEcomPHP\Tornevall_cURL();
 		$CURL->setAuthentication( $this->username, $this->password );
 		$CURL->setUserAgent( $this->myUserAgent );
 		$eventRequest    = $CURL->doGet( $serviceUrl );
