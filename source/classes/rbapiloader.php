@@ -208,7 +208,7 @@ class ResursBank {
 	/** @var string The version of this gateway */
 	private $version = "1.1.18";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20170831";
+	private $lastUpdate = "20170904";
 	/** @var string This. */
 	private $clientName = "EComPHP";
 	/** @var string Replacing $clientName on usage of setClientNAme */
