@@ -6045,7 +6045,12 @@ class ResursBank {
 					// If the key belongs to extendedCustomer, is mandatory for the specificType and is empty,
 					// this means we can not deliver this data as a null value to ecommerce. Therefore, we have to remove it.
 					// The control being made here will skip the address object as we will only check the non-recursive data strings.
-					$trimmedCustomerValue = trim($customerValue);  // PHP Compat
+					if (is_string($customerValue)) {
+						$trimmedCustomerValue = trim($customerValue);
+					} else {
+						// Do not touch if this is not an array (and consider that something was sent into this part, that did not belong here?)
+						$trimmedCustomerValue = $customerValue;
+					}
 					if ( ! is_array($customerValue) &&  ! in_array( $customerKey, $mandatoryExtendedCustomerFields ) && empty( $trimmedCustomerValue ) ) {
 						unset( $this->Payload['customer'][ $customerKey ] );
 					}

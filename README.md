@@ -4,6 +4,7 @@ Resurs EComPHP Gateway is a simplifier for our webservices, with functionality e
 
 As EComPHP is continuously developed, you should take a look at our bitbucket repo to keep this information updated. It can be found at https://bitbucket.org/resursbankplugins/resurs-ecomphp
 
+
 ## Regular requirements and dependencies
 
 * For EComPHP 1.0 (With no namespaces) at least PHP 5.2
@@ -13,6 +14,12 @@ As EComPHP is continuously developed, you should take a look at our bitbucket re
 * EComPHP will, as of v1.0.1 and v1.1.1, uses [this curl library](https://bitbucket.tornevall.net/projects/LIB/repos/tornelib-php/browse/classes/tornevall_network.php) (bundled) for most of the webcalls that is not provided through the WSDL package.
 
 As this module uses [curl](https://curl.haxx.se) and [SoapClient](http://php.net/manual/en/class.soapclient.php) to work, there are dependencies in curl and xml libraries (as shown above). For Ubuntu, you can quickly fetch those with apt-get (apt-get install php-curl php-xml) if they do not already exists in your system. There might be a slight chance that you also need openssl or similar, as our services runs on https-only (normally openssl are delivered automatically, but sometimes they do not - apt-get install openssl might work in those cases if you have access to the server).
+
+## PHP 7.2
+
+As of 3 september 2017, there PHP 7.2RC1 has been released. Does the library work with PHP 7.2?
+
+- Yes, the tests are confirmed to run with 7.2RC1.
 
 
 ## What this library do and do not
