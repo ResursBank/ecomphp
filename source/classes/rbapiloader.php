@@ -12,7 +12,7 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.0
- * @version 1.0.18
+ * @version 1.0.19
  * @deprecated Maintenance version only
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
@@ -206,9 +206,9 @@ class ResursBank {
 	////////// Private variables
 	///// Client Specific Settings
 	/** @var string The version of this gateway */
-	private $version = "1.0.18";
+	private $version = "1.0.19";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20170831";
+	private $lastUpdate = "20170904";
 	/** @var string This. */
 	private $clientName = "EComPHP";
 	/** @var string Replacing $clientName on usage of setClientNAme */
@@ -6045,7 +6045,12 @@ class ResursBank {
 					// If the key belongs to extendedCustomer, is mandatory for the specificType and is empty,
 					// this means we can not deliver this data as a null value to ecommerce. Therefore, we have to remove it.
 					// The control being made here will skip the address object as we will only check the non-recursive data strings.
-					$trimmedCustomerValue = trim($customerValue);  // PHP Compat
+					if (is_string($customerValue)) {
+						$trimmedCustomerValue = trim($customerValue);
+					} else {
+						// Do not touch if this is not an array (and consider that something was sent into this part, that did not belong here?)
+						$trimmedCustomerValue = $customerValue;
+					}
 					if ( ! is_array($customerValue) &&  ! in_array( $customerKey, $mandatoryExtendedCustomerFields ) && empty( $trimmedCustomerValue ) ) {
 						unset( $this->Payload['customer'][ $customerKey ] );
 					}
