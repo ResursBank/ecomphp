@@ -778,12 +778,17 @@ class ResursBank {
 	 * @param bool $ReturnAsArray
 	 *
 	 * @return array
+	 * @throws \Exception
 	 * @link https://test.resurs.com/docs/display/ecom/ECommerce+PHP+Library#ECommercePHPLibrary-getCallbacksByRest
 	 * @since 1.0.1
 	 */
 	public function getCallBacksByRest( $ReturnAsArray = false ) {
 		$this->InitializeServices();
-		$ResursResponse = $this->CURL->getParsedResponse( $this->CURL->doGet( $this->getCheckoutUrl() . "/callbacks" ) );
+		try {
+			$ResursResponse = $this->CURL->getParsedResponse( $this->CURL->doGet( $this->getCheckoutUrl() . "/callbacks" ) );
+		} catch (\Exception $restException) {
+			throw new \Exception($restException->getMessage(), $restException->getCode());
+		}
 		if ( $ReturnAsArray ) {
 			$ResursResponseArray = array();
 			if ( is_array( $ResursResponse ) && count( $ResursResponse ) ) {
@@ -1028,13 +1033,11 @@ class ResursBank {
 	 * @since 1.1.1
 	 */
 	public function getServiceUrl( $ServiceName = '' ) {
+		$this->InitializeServices();
 		$properService = "";
-		if ( ! empty( $this->CURL ) ) {
-			if ( isset( $this->ServiceRequestList[ $ServiceName ] ) && isset( $this->URLS[ $this->ServiceRequestList[ $ServiceName ] ] ) ) {
-				$properService = $this->URLS[ $this->ServiceRequestList[ $ServiceName ] ];
-			}
+		if ( isset( $this->ServiceRequestList[ $ServiceName ] ) && isset( $this->URLS[ $this->ServiceRequestList[ $ServiceName ] ] ) ) {
+			$properService = $this->URLS[ $this->ServiceRequestList[ $ServiceName ] ];
 		}
-
 		return $properService;
 	}
 
@@ -1105,15 +1108,19 @@ class ResursBank {
 	 */
 	private function postService( $serviceName = "", $resursParameters = array(), $getResponseCode = false ) {
 		$this->InitializeServices();
-		$Service        = $this->CURL->doGet( $this->getServiceUrl( $serviceName ) );
-		$RequestService = $Service->$serviceName( $resursParameters );
-		$ParsedResponse = $Service->getParsedResponse( $RequestService );
-		$ResponseCode   = $Service->getResponseCode();
-		if ( ! $getResponseCode ) {
-			return $ParsedResponse;
-		} else {
-			return $ResponseCode;
+		$serviceNameUrl = $this->getServiceUrl( $serviceName );
+		if (!empty($serviceNameUrl) && !is_null($this->CURL)) {
+			$Service        = $this->CURL->doGet( $serviceNameUrl );
+			$RequestService = $Service->$serviceName( $resursParameters );
+			$ParsedResponse = $Service->getParsedResponse( $RequestService );
+			$ResponseCode   = $Service->getResponseCode();
+			if ( ! $getResponseCode ) {
+				return $ParsedResponse;
+			} else {
+				return $ResponseCode;
+			}
 		}
+		return null;
 	}
 
 	/**
