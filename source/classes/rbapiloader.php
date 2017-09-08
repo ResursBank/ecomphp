@@ -10,7 +10,7 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.1
- * @version 1.1.20
+ * @version 1.1.21
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @license Apache License
@@ -206,9 +206,9 @@ class ResursBank {
 	////////// Private variables
 	///// Client Specific Settings
 	/** @var string The version of this gateway */
-	private $version = "1.1.20";
+	private $version = "1.1.21";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20170906";
+	private $lastUpdate = "20170908";
 	/** @var string This. */
 	private $clientName = "EComPHP";
 	/** @var string Replacing $clientName on usage of setClientNAme */
@@ -1444,12 +1444,17 @@ class ResursBank {
 	 * @param bool $ReturnAsArray
 	 *
 	 * @return array
+	 * @throws \Exception
 	 * @link https://test.resurs.com/docs/display/ecom/ECommerce+PHP+Library#ECommercePHPLibrary-getCallbacksByRest
 	 * @since 1.0.1
 	 */
 	public function getCallBacksByRest( $ReturnAsArray = false ) {
 		$this->InitializeServices();
-		$ResursResponse = $this->CURL->getParsedResponse( $this->CURL->doGet( $this->getCheckoutUrl() . "/callbacks" ) );
+		try {
+			$ResursResponse = $this->CURL->getParsedResponse( $this->CURL->doGet( $this->getCheckoutUrl() . "/callbacks" ) );
+		} catch (\Exception $restException) {
+			throw new \Exception($restException->getMessage(), $restException->getCode());
+		}
 		if ( $ReturnAsArray ) {
 			$ResursResponseArray = array();
 			if ( is_array( $ResursResponse ) && count( $ResursResponse ) ) {
@@ -1815,15 +1820,19 @@ class ResursBank {
 	 */
 	private function postService( $serviceName = "", $resursParameters = array(), $getResponseCode = false ) {
 		$this->InitializeServices();
-		$Service        = $this->CURL->doGet( $this->getServiceUrl( $serviceName ) );
-		$RequestService = $Service->$serviceName( $resursParameters );
-		$ParsedResponse = $Service->getParsedResponse( $RequestService );
-		$ResponseCode   = $Service->getResponseCode();
-		if ( ! $getResponseCode ) {
-			return $ParsedResponse;
-		} else {
-			return $ResponseCode;
+		$serviceNameUrl = $this->getServiceUrl( $serviceName );
+		if (!empty($serviceNameUrl) && !is_null($this->CURL)) {
+			$Service        = $this->CURL->doGet( $serviceNameUrl );
+			$RequestService = $Service->$serviceName( $resursParameters );
+			$ParsedResponse = $Service->getParsedResponse( $RequestService );
+			$ResponseCode   = $Service->getResponseCode();
+			if ( ! $getResponseCode ) {
+				return $ParsedResponse;
+			} else {
+				return $ResponseCode;
+			}
 		}
+		return null;
 	}
 
 	/**
