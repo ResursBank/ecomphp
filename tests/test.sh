@@ -11,6 +11,11 @@ testThis="ecomphp-1.1.php"
 
 echo -n "Testing phpunit.phar: "
 
+instant=0
+if [ "" != "$1" ] ; then
+	instant=1
+fi
+
 if [ "$major" = "7" ] && [ $minor = "0" ] ; then
 	echo "PHP 7.${minor}/phpunit-6.3.phar"
 	unitver="6.3"
@@ -47,7 +52,18 @@ fi
 if [ "$pharfile" != "" ] ; then
 	echo "Primary test: $pharfile (testing if everything is OK)..."
 	firstphar=$pharfile
-	$firstphar $testThis >/dev/null 2>&1
+	nulled=">/dev/null 2>&1"
+	if [ "$instant" = "1" ] ; then
+		nulled=""
+		echo "Instant run request."
+	fi
+	$firstphar $testThis $nulled
+
+	if [ "$instant" = "1" ] ; then
+		echo "Instant run complete..."
+		exit
+	fi
+
 	if [ "$?" != "0" ] ; then
 		if [ "$unitver" = "6.3" ] ; then
 			altver="5.7"
