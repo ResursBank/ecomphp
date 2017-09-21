@@ -6167,7 +6167,7 @@ class ResursBank {
 	}
 
 	/**
-	 * Returns a complete payment spec grouped by status.
+	 * Returns a complete payment spec grouped by status. This function does not merge articles, even if there are multiple rows with the same article number. This normally indicates order modifications, so the are returned raw as is.
 	 *
 	 * @param $paymentIdOrSpec
 	 *
