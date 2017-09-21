@@ -1752,12 +1752,12 @@ class ResursBankTest extends TestCase
 	/**
 	 * Test for ECOMPHP-112
 	 */
-	function testAdditionalDualDebit() {
+	function testAdditionalDualDebitWithDifferentAmount() {
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
 		$this->rb->finalizePayment($paymentId);
 		$this->rb->addOrderLine("myAdditionalOrderLine", "One orderline added with additionalDebitOfPayment", 100, 25);
 		$this->rb->setAdditionalDebitOfPayment($paymentId);
-		$this->rb->addOrderLine("myAdditionalOrderLine", "One orderline added with additionalDebitOfPayment", 100, 25);
+		$this->rb->addOrderLine("myAdditionalOrderLine", "One orderline added with additionalDebitOfPayment", 105, 25);
 		$this->rb->setAdditionalDebitOfPayment($paymentId);
 		$merged = $this->rb->getPaymentSpecByStatus($paymentId);
 		$quantity = 0;
