@@ -3724,9 +3724,9 @@ class ResursBank {
 	}
 
 	/**
-	 * Returns a complete payment spec grouped by status.
+	 * Returns a complete payment spec grouped by status. This function does not merge articles, even if there are multiple rows with the same article number. This normally indicates order modifications, so the are returned raw as is.
 	 *
-	 * @param $paymentIdOrSpec
+	 * @param $paymentIdOrSpec Payment id or prepeared getPayment() object
 	 *
 	 * @return array
 	 */
@@ -3744,7 +3744,6 @@ class ResursBank {
 		}
 		if ( is_object( $usePayment ) && isset( $usePayment->id ) && isset( $usePayment->paymentDiffs ) ) {
 			$paymentDiff = $usePayment->paymentDiffs;
-			// If the paymentdiff is an array, we'll know that more than one thing has happened to the payment, and it's probably only an authorization
 			if ( is_array( $paymentDiff ) ) {
 				foreach ( $paymentDiff as $paymentDiffObject ) {
 					// Initially, let's make sure there is a key for the paymentdiff.
