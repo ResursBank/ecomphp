@@ -80,6 +80,18 @@ class ResursBankTest extends TestCase
 	 */
 	private $paymentMethodCountNorway = array('mock' => 3);
 
+	private $paymentIdAuthed = "20170519125223-9587503794";
+	private $paymentIdAuthAnnulled = "20170519125725-8589567180";
+	private $paymentIdDebited = "20170519125216-8830457943";
+
+	private function isSpecialAccount() {
+		$authed = $this->rb->getPayment($this->paymentIdAuthed);
+		if (isset($authed->id)) {
+			return true;
+		}
+		return false;
+	}
+
 	/** Before each test, invoke this */
 	public function setUp()
 	{
@@ -1671,7 +1683,7 @@ class ResursBankTest extends TestCase
 		}
 	}
 	private function getPaymentIdFromOrderByClientChoice($orderLines = 8, $quantity = 1, $minAmount = 1000, $maxAmount = 2000) {
-		$Payment = $this->generateOrderByClientChoice();
+		$Payment = $this->generateOrderByClientChoice($orderLines, $quantity, $minAmount, $maxAmount);
 		return $Payment->paymentId;
 	}
 
@@ -1685,15 +1697,6 @@ class ResursBankTest extends TestCase
 		}
 	}
 
-	/*function testFullDebit()
-	{
-		$this->checkEnvironment();
-		try {
-			$hasOrder = $this->generateOrderByClientChoice();
-			$paymentId = $hasOrder->paymentId;
-		} catch (\Exception $e) {
-		}
-	}*/
 	function testAnullFullPayment() {
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
 		$this->assertTrue($this->rb->annulPayment($paymentId));
@@ -1728,13 +1731,61 @@ class ResursBankTest extends TestCase
 		$this->assertTrue($this->rb->setAdditionalDebitOfPayment($paymentId));
 	}
 
-	// Incomplete test for rebuilding of aftershop-paymentspec-compiler
-	function testGetPaymentSpecByTypes() {
-		//$Payment = $this->getAPayment(null, false)->id;
-		$Payment = "20170519125223-9587503794";  // Authorize only
-		$Payment = "20170519125725-8589567180";  // AUTH + ANNUL
-		$Payment = "20170519125216-8830457943";  // DEBIT ONLY
-		echo "Payment $Payment\n";
-		$PaymentSpec = $this->rb->getPaymentSpecByStatus($Payment);
+	/**
+	 * Test for ECOMPHP-113
+	 */
+	function testAdditionalDebitNewDoubleDuplicateCheck() {
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice(2);
+		$this->rb->addOrderLine("myAdditionalOrderLineFirst", "One orderline added with additionalDebitOfPayment", 100, 25);
+		$this->rb->setAdditionalDebitOfPayment($paymentId);
+		$this->rb->addOrderLine("myAdditionalOrderLineExtended", "One orderline added with additionalDebitOfPayment", 100, 25);
+		$this->rb->setAdditionalDebitOfPayment($paymentId);
+		$merged = $this->rb->getPaymentSpecByStatus($paymentId);
+		$added = 0;
+		foreach ($merged['AUTHORIZE'] as $articles) {
+			if ($articles->artNo == "myAdditionalOrderLineFirst") {$added ++;}
+			if ($articles->artNo == "myAdditionalOrderLineExtended") {$added ++;}
+		}
+		$this->assertEquals(2, $added);
 	}
+
+	/**
+	 * Test for ECOMPHP-112
+	 */
+	function testAdditionalDualDebit() {
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
+		$this->rb->finalizePayment($paymentId);
+		$this->rb->addOrderLine("myAdditionalOrderLine", "One orderline added with additionalDebitOfPayment", 100, 25);
+		$this->rb->setAdditionalDebitOfPayment($paymentId);
+		$this->rb->addOrderLine("myAdditionalOrderLine", "One orderline added with additionalDebitOfPayment", 100, 25);
+		$this->rb->setAdditionalDebitOfPayment($paymentId);
+		$merged = $this->rb->getPaymentSpecByStatus($paymentId);
+		$quantity = 0;
+		foreach ($merged['AUTHORIZE'] as $articles) {
+			if ($articles->artNo == "myAdditionalOrderLine") {
+				$quantity += $articles->quantity;
+			}
+		}
+		$this->assertEquals(2, $quantity);
+	}
+
+	public function testRenderSpeclineByObject() {
+		$payment = $this->getAPayment(null, true);
+		if (isset($payment->id)) {
+			$this->assertTrue(is_array($this->rb->getPaymentSpecByStatus($payment)));
+		}
+	}
+	public function testRenderSpeclineByOrderId() {
+		$payment = $this->getAPayment(null, true);
+		if (isset($payment->id)) {
+			$this->assertTrue(is_array($this->rb->getPaymentSpecByStatus($payment->id)));
+		}
+	}
+	public function testRenderSpecBulk() {
+		if (!$this->isSpecialAccount()) {
+			$this->markTestSkipped("RenderSpecBulk skipped: Wrong credential account");
+		}
+		$this->assertCount(2, $this->rb->getPaymentSpecByStatus($this->paymentIdAuthAnnulled));
+	}
+
 }

@@ -208,7 +208,7 @@ class ResursBank {
 	/** @var string The version of this gateway */
 	private $version = "1.1.22";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20170913";
+	private $lastUpdate = "20170921";
 	/** @var string This. */
 	private $clientName = "EComPHP";
 	/** @var string Replacing $clientName on usage of setClientNAme */
@@ -1748,10 +1748,8 @@ class ResursBank {
 	 */
 	public function getServiceUrl( $ServiceName = '' ) {
 		$properService = "";
-		if ( ! empty( $this->CURL ) ) {
-			if ( isset( $this->ServiceRequestList[ $ServiceName ] ) && isset( $this->URLS[ $this->ServiceRequestList[ $ServiceName ] ] ) ) {
-				$properService = $this->URLS[ $this->ServiceRequestList[ $ServiceName ] ];
-			}
+		if ( isset( $this->ServiceRequestList[ $ServiceName ] ) && isset( $this->URLS[ $this->ServiceRequestList[ $ServiceName ] ] ) ) {
+			$properService = $this->URLS[ $this->ServiceRequestList[ $ServiceName ] ];
 		}
 
 		return $properService;
@@ -1768,10 +1766,8 @@ class ResursBank {
 	 */
 	private function getServiceMethod( $ServiceName = '' ) {
 		$ReturnMethod = "GET";
-		if ( ! empty( $this->CURL ) ) {
-			if ( isset( $this->ServiceRequestMethods[ $ServiceName ] ) ) {
-				$ReturnMethod = $this->ServiceRequestMethods[ $ServiceName ];
-			}
+		if ( isset( $this->ServiceRequestMethods[ $ServiceName ] ) ) {
+			$ReturnMethod = $this->ServiceRequestMethods[ $ServiceName ];
 		}
 
 		return strtolower( $ReturnMethod );
@@ -3104,19 +3100,17 @@ class ResursBank {
 		return $newSpec;
 	}
 
+	/**
+	 * Make sure that also simple payment specs gets arrayed
+	 *
+	 * @param array $clientPaymentSpec
+	 *
+	 * @return array
+	 * @since 1.0.0
+	 * @since 1.1.0
+	 * @since 1.2.0
+	 */
 	private function handleClientPaymentSpec( $clientPaymentSpec = array() ) {
-		/**
-		 * Make sure we are pushing in this spec in the correct format, which is:
-		 * array(
-		 *  [0] => array(
-		 *      'artNo' => [...]
-		 *      ),
-		 *  [1] = array(
-		 *      'artNo' => [...]
-		 *      )
-		 * )
-		 * - etc and not like: array('artNo'=>[...]);
-		 */
 		if ( isset( $clientPaymentSpec['artNo'] ) ) {
 			$newClientSpec   = array();
 			$newClientSpec[] = $clientPaymentSpec;
@@ -3136,16 +3130,16 @@ class ResursBank {
 	 *
 	 * @return array
 	 * @throws \Exception
+	 * @deprecated 1.0.22
+	 * @deprecated 1.1.22
 	 */
 	private function renderSpecLine( $paymentArray = array(), $renderType = ResursAfterShopRenderTypes::NONE, $finalizeParams = array() ) {
 		$returnSpecObject = array();
 		if ( $renderType == ResursAfterShopRenderTypes::NONE ) {
 			throw new \Exception( __FUNCTION__ . ": Can not render specLines without RenderType", 500 );
 		}
-		/* Preparation of the returning array*/
+		// Preparation of the returning array
 		$specLines = array();
-
-		/* Preparation */
 		$currentSpecs = array(
 			'AUTHORIZE' => array(),
 			'DEBIT'     => array(),
@@ -3153,14 +3147,9 @@ class ResursBank {
 			'ANNUL'     => array()
 		);
 
-		/*
-		 * This method summarizes all specrows in a proper objectarray, depending on the paymentdiff type.
-		 */
-		/** @noinspection PhpUndefinedFieldInspection */
+		// This method summarizes all specrows in a proper objectarray, depending on the paymentdiff type.
 		if ( isset( $paymentArray->paymentDiffs->paymentSpec->specLines ) ) {
-			/** @noinspection PhpUndefinedFieldInspection */
 			$specType = $paymentArray->paymentDiffs->type;
-			/** @noinspection PhpUndefinedFieldInspection */
 			$specLineArray = $paymentArray->paymentDiffs->paymentSpec->specLines;
 			if ( is_array( $specLineArray ) ) {
 				foreach ( $specLineArray as $subObjects ) {
@@ -3173,9 +3162,9 @@ class ResursBank {
 			// If the paymentarray does not have speclines, something else has been done with this payment
 			if ( isset( $paymentArray->paymentDiffs ) ) {
 				foreach ( $paymentArray->paymentDiffs as $specsObject ) {
-					/* Catch up the payment and split it up */
+					// Catch up the payment and split it up
 					$specType = $specsObject->type;
-					/* Making sure that everything is handled equally */
+					// Making sure that everything is handled equally
 					$specLineArray = $specsObject->paymentSpec->specLines;
 					if ( isset( $specsObject->paymentSpec->specLines ) ) {
 						if ( is_array( $specLineArray ) ) {
@@ -3190,24 +3179,26 @@ class ResursBank {
 			}
 		}
 
-		/* Finalization is being done on all authorized rows that is not already finalized (debit), annulled or crediter*/
+		// Finalization is being done on all authorized rows that is not already finalized (debit), annulled or crediter
 		if ( $renderType == ResursAfterShopRenderTypes::FINALIZE ) {
 			$returnSpecObject = $this->removeFromArray( $currentSpecs['AUTHORIZE'], array_merge( $currentSpecs['DEBIT'], $currentSpecs['ANNUL'], $currentSpecs['CREDIT'] ) );
 		}
-		/* Credit is being done on all authorized rows that is not annuled or already credited */
+		// Credit is being done on all authorized rows that is not annuled or already credited
 		if ( $renderType == ResursAfterShopRenderTypes::CREDIT ) {
 			$returnSpecObject = $this->removeFromArray( $currentSpecs['DEBIT'], array_merge( $currentSpecs['ANNUL'], $currentSpecs['CREDIT'] ) );
 		}
-		/* Annul is being done on all authorized rows that is not already annulled, debited or credited */
+		// Annul is being done on all authorized rows that is not already annulled, debited or credited
 		if ( $renderType == ResursAfterShopRenderTypes::ANNUL ) {
 			$returnSpecObject = $this->removeFromArray( $currentSpecs['AUTHORIZE'], array_merge( $currentSpecs['DEBIT'], $currentSpecs['ANNUL'], $currentSpecs['CREDIT'] ) );
 		}
 		if ( $renderType == ResursAfterShopRenderTypes::UPDATE ) {
 			$returnSpecObject = $currentSpecs['AUTHORIZE'];
 		}
-
 		return $returnSpecObject;
 	}
+
+
+
 
 	/**
 	 * Render a full paymentSpec for AfterShop
@@ -6176,7 +6167,7 @@ class ResursBank {
 	}
 
 	/**
-	 * Get a payment spec for a specific order in which we see what state each orderline is in for the moment
+	 * Returns a complete payment spec grouped by status.
 	 *
 	 * @param $paymentIdOrSpec
 	 *
@@ -6230,7 +6221,6 @@ class ResursBank {
 
 		return $orderLinesByStatus;
 	}
-
 
 	/**
 	 * Automatically cancel (credit or annul) a payment with "best practice".
@@ -6490,6 +6480,9 @@ class ResursBank {
 		);
 		$Result              = $this->postService( "additionalDebitOfPayment", $additionalDataArray, true );
 		if ( $Result >= 200 && $Result <= 250 ) {
+			// Reset orderData for each addition
+			$this->Payload['orderData'] = array();
+			$this->SpecLines            = array();
 			return true;
 		} else {
 			return false;
