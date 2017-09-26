@@ -26,6 +26,7 @@ if ( ! defined( 'RB_API_PATH' ) ) {
 	define( 'RB_API_PATH', __DIR__ );
 }
 require_once( RB_API_PATH . '/thirdparty/network.php' );
+require_once( RB_API_PATH . '/thirdparty/crypto.php' );
 require_once( RB_API_PATH . '/rbapiloader/ResursTypeClasses.php' );
 require_once( RB_API_PATH . '/rbapiloader/ResursEnvironments.php' );
 require_once( RB_API_PATH . '/rbapiloader/ResursException.php' );
@@ -1748,10 +1749,8 @@ class ResursBank {
 	 */
 	public function getServiceUrl( $ServiceName = '' ) {
 		$properService = "";
-		if ( ! empty( $this->CURL ) ) {
-			if ( isset( $this->ServiceRequestList[ $ServiceName ] ) && isset( $this->URLS[ $this->ServiceRequestList[ $ServiceName ] ] ) ) {
-				$properService = $this->URLS[ $this->ServiceRequestList[ $ServiceName ] ];
-			}
+		if ( isset( $this->ServiceRequestList[ $ServiceName ] ) && isset( $this->URLS[ $this->ServiceRequestList[ $ServiceName ] ] ) ) {
+			$properService = $this->URLS[ $this->ServiceRequestList[ $ServiceName ] ];
 		}
 
 		return $properService;
@@ -1768,10 +1767,8 @@ class ResursBank {
 	 */
 	private function getServiceMethod( $ServiceName = '' ) {
 		$ReturnMethod = "GET";
-		if ( ! empty( $this->CURL ) ) {
-			if ( isset( $this->ServiceRequestMethods[ $ServiceName ] ) ) {
-				$ReturnMethod = $this->ServiceRequestMethods[ $ServiceName ];
-			}
+		if ( isset( $this->ServiceRequestMethods[ $ServiceName ] ) ) {
+			$ReturnMethod = $this->ServiceRequestMethods[ $ServiceName ];
 		}
 
 		return strtolower( $ReturnMethod );
