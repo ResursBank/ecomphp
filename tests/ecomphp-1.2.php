@@ -5,18 +5,20 @@
  *
  * @package EcomPHPTest
  * @author Resurs Bank Ecommrece <ecommerce.support@resurs.se>
- * @version 0.2alpha
+ * @version 0.3
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @license -
  *
  */
 
-/**
- * Load EcomPHP
- */
 require_once('../source/classes/rbapiloader.php');
 
 use PHPUnit\Framework\TestCase;
+use \Resursbank\RBEcomPHP\ResursBank;
+use \Resursbank\RBEcomPHP\ResursAfterShopRenderTypes;
+use \Resursbank\RBEcomPHP\ResursCallbackTypes;
+use \Resursbank\RBEcomPHP\ResursMethodTypes;
+use \Resursbank\RBEcomPHP\ResursCallbackReachability;
 
 // Automatically set to test the pushCustomerUserAgent
 if (!isset($_SERVER['HTTP_USER_AGENT'])) {
@@ -25,34 +27,34 @@ if (!isset($_SERVER['HTTP_USER_AGENT'])) {
 
 /**
  * Class ResursBankTest: Primary test client
- *
  */
 class ResursBankTest extends TestCase
 {
-    /**
-     * Resurs Bank API Gateway, PHPUnit Test Client
-     *
-     * @subpackage EcomPHPClient
-     */
+	/**
+	 * Resurs Bank API Gateway, PHPUnit Test Client
+	 *
+	 * @subpackage EcomPHPClient
+	 */
 
-    /**
-     * The heart of this unit. To make tests "nicely" compatible with 1.1, this should be placed on top of this class as it looks different there.
-     */
+	/**
+	 * The heart of this unit. To make tests "nicely" compatible with 1.1, this should be placed on top of this class as it looks different there.
+	 */
 	private function initServices($overrideUsername = null, $overridePassword = null) {
 		if ( empty( $overrideUsername ) ) {
-			$this->rb = new \Resursbank\RBEcomPHP\ResursBank( $this->username, $this->password );
+			$this->rb = new ResursBank( $this->username, $this->password );
 		} else {
-			$this->rb = new \Resursbank\RBEcomPHP\ResursBank( $overrideUsername, $overridePassword );
+			$this->rb = new ResursBank( $overrideUsername, $overridePassword );
 		}
 		$this->rb->setPushCustomerUserAgent(true);
 		$this->rb->setUserAgent("EComPHP/TestSuite");
-        /*
-         * If HTTP_HOST is not set, Resurs Checkout will not run properly, since the iFrame requires a valid internet connection (actually browser vs http server).
-         */
-        if (!isset($_SERVER['HTTP_HOST'])) {
-            $_SERVER['HTTP_HOST'] = "localhost";
-        }
-    }
+		$this->rb->setDebug();
+		/*
+		 * If HTTP_HOST is not set, Resurs Checkout will not run properly, since the iFrame requires a valid internet connection (actually browser vs http server).
+		 */
+		if (!isset($_SERVER['HTTP_HOST'])) {
+			$_SERVER['HTTP_HOST'] = "localhost";
+		}
+	}
 
 	////////// Public variables
 	public $ignoreDefaultTests = false;
@@ -446,9 +448,9 @@ class ResursBankTest extends TestCase
 			'forceSigning' => $forceSigning
 		);
 
-		if ($paymentServiceSet !== \Resursbank\RBEcomPHP\ResursMethodTypes::METHOD_CHECKOUT) {
+		if ($paymentServiceSet !== ResursMethodTypes::METHOD_CHECKOUT) {
 			$res = $this->rb->createPayment($setMethod, $bookData);
-			if ($paymentServiceSet == \Resursbank\RBEcomPHP\ResursMethodTypes::METHOD_HOSTED) {
+			if ($paymentServiceSet == ResursMethodTypes::METHOD_HOSTED) {
 				$domainInfo = $this->NETWORK->getUrlDomain($res);
 				if (preg_match("/^http/i", $domainInfo[1])) {
 					$hostedContent = $this->CURL->getResponseBody($this->CURL->doGet($res));
@@ -466,7 +468,7 @@ class ResursBankTest extends TestCase
 			$bookStatus = $res->bookPaymentStatus;
 		}
 
-		if ($paymentServiceSet == \Resursbank\RBEcomPHP\ResursMethodTypes::METHOD_CHECKOUT) {
+		if ($paymentServiceSet == ResursMethodTypes::METHOD_CHECKOUT) {
 			return $res;
 		}
 
@@ -730,7 +732,7 @@ class ResursBankTest extends TestCase
 			$this->markTestSkipped();
 		}
 		$this->checkEnvironment();
-		$this->rb->setPreferredPaymentService(\Resursbank\RBEcomPHP\ResursMethodTypes::METHOD_HOSTED);
+		$this->rb->setPreferredPaymentService(ResursMethodTypes::METHOD_HOSTED);
 		$bookResult = $this->doBookPayment($this->availableMethods['invoice_natural'], true, false, true);
 		// Can't do bookings yet, since this is a forwarder. We would like to emulate browser clicking here, to complete the order.
 		$this->assertTrue(strlen($bookResult) > 1024);
@@ -1024,7 +1026,7 @@ class ResursBankTest extends TestCase
 		if ($this->ignoreBookingTests) {
 			$this->markTestSkipped();
 		}
-		$this->rb->setPreferredPaymentService(\Resursbank\RBEcomPHP\ResursMethodTypes::METHOD_CHECKOUT);
+		$this->rb->setPreferredPaymentService(ResursMethodTypes::METHOD_CHECKOUT);
 		$newReferenceId = $this->rb->getPreferredPaymentId();
 		$bookResult = $this->doBookPayment($newReferenceId, true, false, true);
 		if (is_string($bookResult) && preg_match("/iframe src/i", $bookResult)) {
@@ -1210,19 +1212,19 @@ class ResursBankTest extends TestCase
 				'digestParameters' => $parameterArray
 			);
 			if ($callbackType == "ANNULMENT") {
-				$setCallbackType = \Resursbank\RBEcomPHP\ResursCallbackTypes::ANNULMENT;
+				$setCallbackType = ResursCallbackTypes::ANNULMENT;
 			}
 			if ($callbackType == "AUTOMATIC_FRAUD_CONTROL") {
-				$setCallbackType = \Resursbank\RBEcomPHP\ResursCallbackTypes::AUTOMATIC_FRAUD_CONTROL;
+				$setCallbackType = ResursCallbackTypes::AUTOMATIC_FRAUD_CONTROL;
 			}
 			if ($callbackType == "FINALIZATION") {
-				$setCallbackType = \Resursbank\RBEcomPHP\ResursCallbackTypes::FINALIZATION;
+				$setCallbackType = ResursCallbackTypes::FINALIZATION;
 			}
 			if ($callbackType == "UNFREEZE") {
-				$setCallbackType = \Resursbank\RBEcomPHP\ResursCallbackTypes::UNFREEZE;
+				$setCallbackType = ResursCallbackTypes::UNFREEZE;
 			}
 			if ($callbackType == "UPDATE") {
-				$setCallbackType = \Resursbank\RBEcomPHP\ResursCallbackTypes::UPDATE;
+				$setCallbackType = ResursCallbackTypes::UPDATE;
 			}
 			$renderArray = array();
 			if (is_array($parameterArray)) {
@@ -1344,10 +1346,10 @@ class ResursBankTest extends TestCase
 		$callbackArrayData = $this->renderCallbackData(true);
 		$this->rb->setValidateExternalCallbackUrl($callbackArrayData[0][1]);
 		$Reachable = $this->rb->validateExternalAddress();
-		if ($Reachable !== \Resursbank\RBEcomPHP\ResursCallbackReachability::IS_FULLY_REACHABLE) {
-			$this->markTestIncomplete("External address validation returned $Reachable instead of " . \Resursbank\RBEcomPHP\ResursCallbackReachability::IS_FULLY_REACHABLE . ".\nPlease check your callback url (" . $callbackArrayData[0][1] . ") so that is properly configured and reachable.");
+		if ($Reachable !== ResursCallbackReachability::IS_FULLY_REACHABLE) {
+			$this->markTestIncomplete("External address validation returned $Reachable instead of " . ResursCallbackReachability::IS_FULLY_REACHABLE . ".\nPlease check your callback url (" . $callbackArrayData[0][1] . ") so that is properly configured and reachable.");
 		}
-		$this->assertTrue($Reachable === \Resursbank\RBEcomPHP\ResursCallbackReachability::IS_FULLY_REACHABLE);
+		$this->assertTrue($Reachable === ResursCallbackReachability::IS_FULLY_REACHABLE);
 	}
 
 	/**
@@ -1389,7 +1391,7 @@ class ResursBankTest extends TestCase
 		$this->checkEnvironment();
 		$this->rb->setRegisterCallbacksViaRest(true);
 
-		$this->assertTrue($this->rb->unregisterEventCallback(\Resursbank\RBEcomPHP\ResursCallbackTypes::ANNULMENT));
+		$this->assertTrue($this->rb->unregisterEventCallback(ResursCallbackTypes::ANNULMENT));
 	}
 
 	/**
@@ -1399,7 +1401,7 @@ class ResursBankTest extends TestCase
 	{
 		$this->checkEnvironment();
 		$this->rb->setRegisterCallbacksViaRest(false);
-		$this->assertTrue($this->rb->unregisterEventCallback(\Resursbank\RBEcomPHP\ResursCallbackTypes::ANNULMENT));
+		$this->assertTrue($this->rb->unregisterEventCallback(ResursCallbackTypes::ANNULMENT));
 	}
 
 	/**
@@ -1465,7 +1467,7 @@ class ResursBankTest extends TestCase
 	{
 		$this->checkEnvironment();
 
-		$this->rb->setPreferredPaymentService(\Resursbank\RBEcomPHP\ResursMethodTypes::METHOD_CHECKOUT);
+		$this->rb->setPreferredPaymentService(ResursMethodTypes::METHOD_CHECKOUT);
 		$ReturnedPayload = $this->rb->setBillingByGetAddress($this->govIdNatural);
 		$this->assertEquals($this->govIdNatural, $ReturnedPayload['customer']['governmentId']);
 	}
@@ -1473,7 +1475,7 @@ class ResursBankTest extends TestCase
 	function testSetCustomerLegal()
 	{
 		$this->checkEnvironment();
-		$this->rb->setPreferredPaymentService(\Resursbank\RBEcomPHP\ResursMethodTypes::METHOD_CHECKOUT);
+		$this->rb->setPreferredPaymentService(ResursMethodTypes::METHOD_CHECKOUT);
 		$ReturnedPayload = $this->rb->setBillingByGetAddress($this->govIdLegalCivic, "LEGAL");
 		$this->assertTrue($ReturnedPayload['customer']['governmentId'] == $this->govIdLegalCivic && $ReturnedPayload['customer']['address']['fullName'] == $this->govIdLegalFullname);
 	}
@@ -1517,7 +1519,7 @@ class ResursBankTest extends TestCase
 	{
 		$this->checkEnvironment();
 		try {
-			$this->rb->setPreferredPaymentService(\Resursbank\RBEcomPHP\ResursMethodTypes::METHOD_SIMPLIFIED);
+			$this->rb->setPreferredPaymentService(ResursMethodTypes::METHOD_SIMPLIFIED);
 			$this->rb->setBillingByGetAddress("198305147715");
 			//$this->rb->setBillingAddress("Anders Andersson", "Anders", "Andersson", "Hamngatan 2", null, "Ingestans", "12345", "SE");
 			$this->rb->setCustomer("198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL");
@@ -1571,7 +1573,7 @@ class ResursBankTest extends TestCase
 	{
 		$this->checkEnvironment();
 		try {
-			$this->rb->setPreferredPaymentService(\Resursbank\RBEcomPHP\ResursMethodTypes::METHOD_SIMPLIFIED);
+			$this->rb->setPreferredPaymentService(ResursMethodTypes::METHOD_SIMPLIFIED);
 			$this->rb->setBillingByGetAddress("198305147715");
 			$this->rb->setCustomer(null, "0808080808", "0707070707", "test@test.com", "NATURAL");
 			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
@@ -1603,7 +1605,7 @@ class ResursBankTest extends TestCase
 	{
 		$this->checkEnvironment();
 		try {
-			$this->rb->setPreferredPaymentService(\Resursbank\RBEcomPHP\ResursMethodTypes::METHOD_SIMPLIFIED);
+			$this->rb->setPreferredPaymentService(ResursMethodTypes::METHOD_SIMPLIFIED);
 			$this->rb->setBillingByGetAddress("198305147715");
 			$this->rb->setCustomer(null, "0808080808", "0707070707", "test@test.com", "NATURAL");
 			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null, 10);
@@ -1635,7 +1637,7 @@ class ResursBankTest extends TestCase
 	{
 		$this->checkEnvironment();
 		try {
-			$this->rb->setPreferredPaymentService(\Resursbank\RBEcomPHP\ResursMethodTypes::METHOD_CHECKOUT);
+			$this->rb->setPreferredPaymentService(ResursMethodTypes::METHOD_CHECKOUT);
 			$this->rb->setBillingByGetAddress("198305147715");
 			$this->rb->setCustomer(null, "0808080808", "0707070707", "test@test.com", "NATURAL");
 			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, 'ORDER_LINE', 10);
@@ -1683,7 +1685,7 @@ class ResursBankTest extends TestCase
 
 	private function generateOrderByClientChoice($orderLines = 8, $quantity = 1, $minAmount = 1000, $maxAmount = 2000)
 	{
-		$this->rb->setPreferredPaymentService(\Resursbank\RBEcomPHP\ResursMethodTypes::METHOD_SIMPLIFIED);
+		$this->rb->setPreferredPaymentService(ResursMethodTypes::METHOD_SIMPLIFIED);
 		$this->rb->setBillingByGetAddress("198305147715");
 		$this->rb->setCustomer("198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL");
 		while ($orderLines-- > 0) {
@@ -1724,7 +1726,7 @@ class ResursBankTest extends TestCase
 	function testAdditionalDebitResursCheckout() {
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
 		$this->rb->annulPayment($paymentId);
-		$this->rb->setPreferredPaymentService(\Resursbank\RBEcomPHP\ResursMethodTypes::METHOD_CHECKOUT);
+		$this->rb->setPreferredPaymentService(ResursMethodTypes::METHOD_CHECKOUT);
 		$this->rb->addOrderLine("myExtraOrderLine-1", "One orderline added with additionalDebitOfPayment", 100, 25);
 		$this->rb->addOrderLine("myExtraOrderLine-2", "One orderline added with additionalDebitOfPayment", 200, 25);
 		$this->assertTrue($this->rb->setAdditionalDebitOfPayment($paymentId));
@@ -1832,13 +1834,113 @@ class ResursBankTest extends TestCase
 	}
 
 	/**
+	 * Reset the connection to simulate a true scenario
+	 * @return bool
+	 */
+	private function resetConnection() {
+		$isEmpty = false;
+		$this->setUp();
+		try { $this->rb->getPayload(); } catch (\Exception $emptyPayloadException) { $isEmpty = true; }
+		return $isEmpty;
+	}
+
+	/**
 	 * Test: Aftershop finalization, new method
+	 * Expected result: The order is fully debited
 	 */
 	function testAftershopFullFinalization() {
-		$this->rb->addOrderLine("myAdditionalOrderLine", "One orderline added with additionalDebitOfPayment", 100, 25);
-		$this->rb->setAfterShopInvoiceExtRef("Test Testsson");
-		$paymentId = $this->getPaymentIdFromOrderByClientChoice(1);
-		$finalResult = $this->rb->paymentFinalize($paymentId);
-		print_R($finalResult);
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice(2);
+		if ($this->resetConnection()) {
+			$this->rb->setAfterShopInvoiceExtRef( "Test Testsson" );
+			$finalizeResult = $this->rb->paymentFinalize( $paymentId );
+			$testOrder = $this->rb->getPaymentSpecCount($paymentId);
+			$this->assertTrue(($finalizeResult == 200 && $testOrder['AUTHORIZE'] == 2 && $testOrder['DEBIT'] == 2));
+		}
 	}
+
+	/**
+	 * Test: Aftershop finalization, new method, automated by using addOrderLine
+	 * Expected result: Two rows, one added row debited
+	 */
+	function testAftershopPartialAutomatedFinalization() {
+		// Add one order line to the random one
+		$this->rb->addOrderLine( "myAdditionalPartialAutomatedOrderLine", "One orderline added with addOrderLine", 100, 25 );
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice(1);
+		if ($this->resetConnection()) {
+			$this->rb->setAfterShopInvoiceExtRef( "Test Testsson" );
+			// Add the orderLine that should be handled in the finalization
+			// id, desc, unitAmoutWithoutVat, vatPct, unitMeasure, ORDER_LINE, quantity
+			$this->rb->addOrderLine( "myAdditionalPartialAutomatedOrderLine", "One orderline added with addOrderLine", 100, 25 );
+			$finalizeResult = $this->rb->paymentFinalize( $paymentId );
+			$testOrder = $this->rb->getPaymentSpecCount($paymentId);
+			$this->assertTrue(($finalizeResult == 200 && $testOrder['AUTHORIZE'] == 2 && $testOrder['DEBIT'] == 1));
+		}
+	}
+
+	/**
+	 * Test: Aftershop finalization, new method, automated by using addOrderLine
+	 * Expected result: Two rows, the row with 4 in quantity has 2 debited
+	 */
+	function testAftershopPartialAutomatedQuantityFinalization() {
+		// Add one order line to the random one, with 4 in quantity
+		$this->rb->addOrderLine( "myAdditionalAutomatedOrderLine", "One orderline added with addOrderLine", 100, 25, 'st', 'ORDER_LINE', 4 );
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice(1);
+		if ($this->resetConnection()) {
+			$this->rb->setAfterShopInvoiceExtRef( "Test Testsson" );
+			// Add the orderLine that should be handled in the finalization, but only 2 of the set up above
+			$this->rb->addOrderLine( "myAdditionalAutomatedOrderLine", "One orderline added with addOrderLine", 100, 25, 'st', 'ORDER_LINE', 2 );
+			$finalizeResult = $this->rb->paymentFinalize( $paymentId );
+			$countOrder = $this->rb->getPaymentSpecCount($paymentId);
+			$testOrder = $this->rb->getPaymentSpecByStatus($paymentId);
+			// Also check the quantity on this
+			$this->assertTrue(($finalizeResult == 200 && $countOrder['AUTHORIZE'] == 2 && $countOrder['DEBIT'] == 1 && (int)$testOrder['DEBIT']['0']->quantity == 2));
+		}
+	}
+
+	/**
+	 * Test: Aftershop finalization, new method, automated by using addOrderLine
+	 * Expected result: Two rows, one row (the correct one) row debited
+	 */
+	function testAftershopPartialManualFinalization() {
+		// Add one order line to the random one
+		$this->rb->addOrderLine( "myAdditionalManualOrderLine", "One orderline added with addOrderLine", 100, 25 );
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice(1);
+		if ($this->resetConnection()) {
+			$this->rb->setAfterShopInvoiceExtRef( "Test Testsson" );
+			$newArray = array(
+				'artNo' => 'myAdditionalManualOrderLine',
+				'description' => "One orderline added with addOrderLine",
+				'unitAmountWithoutVat' => 100,
+				'vatPct' => 25,
+				'quantity' => 1
+			);
+			$finalizeResult = $this->rb->paymentFinalize( $paymentId, $newArray );
+			$testOrder = $this->rb->getPaymentSpecCount($paymentId);
+			$this->assertTrue(($finalizeResult == 200 && $testOrder['AUTHORIZE'] == 2 && $testOrder['DEBIT'] == 1));
+		}
+	}
+	/**
+	 * Test: Aftershop finalization, new method, manually added array that mismatches with the first order (This order will have one double debited orderLine)
+	 * Expected result: Three rows, mismatching row debited
+	 */
+	function testAftershopPartialManualFinalizationWithMismatchingKeys() {
+		// Add one order line to the random one
+		$this->rb->addOrderLine( "myAdditionalManualOrderLine", "One orderline added with addOrderLine", 100, 25 );
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice(1);
+		if ($this->resetConnection()) {
+			$this->rb->setAfterShopInvoiceExtRef( "Test Testsson" );
+			$newArray = array(
+				'artNo' => 'myAdditionalMismatchingOrderLine',
+				'description' => "One orderline added with addOrderLine",
+				'unitAmountWithoutVat' => 101,
+				'vatPct' => 25,
+				'quantity' => 2
+			);
+			$finalizeResult = $this->rb->paymentFinalize( $paymentId, $newArray );
+			$countOrder = $this->rb->getPaymentSpecCount($paymentId);
+			$testOrder = $this->rb->getPaymentSpecByStatus($paymentId);
+			$this->assertTrue(($finalizeResult == 200 && $countOrder['AUTHORIZE'] == 2 && $countOrder['DEBIT'] == 1 && (int)$testOrder['DEBIT']['0']->quantity == 2));
+		}
+	}
+
 }
