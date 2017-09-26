@@ -5,7 +5,7 @@
  *
  * @package EcomPHPTest
  * @author Resurs Bank Ecommrece <ecommerce.support@resurs.se>
- * @version 0.3
+ * @version 0.4
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @license -
  *
