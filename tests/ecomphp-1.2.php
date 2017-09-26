@@ -375,75 +375,74 @@ class ResursBankTest extends TestCase
 	 *
 	 * @return bool Returning true if booking went as you expected
 	 */
-	private function doBookPayment($setMethod = '', $bookSuccess = true, $forceSigning = false, $signSuccess = true, $country = 'SE', $ownSpecline = array())
-	{
-		$this->setCountry($country);
+	private function doBookPayment($setMethod = '', $bookSuccess = true, $forceSigning = false, $signSuccess = true, $country = 'SE', $ownSpecline = array()) {
+		$this->setCountry( $country );
 		$paymentServiceSet = $this->rb->getPreferredPaymentService();
 		//$this->checkEnvironment();
-		$useMethodList = $this->availableMethods;
+		$useMethodList      = $this->availableMethods;
 		$useGovIdLegalCivic = $this->govIdLegalCivic;
-		$useGovId = $this->testGovId;
-		$usePhoneNumber = "0101010101";
-		$bookStatus = null;
+		$useGovId           = $this->testGovId;
+		$usePhoneNumber     = "0101010101";
+		$bookStatus         = null;
 
-		if ($country == "NO") {
-			if (count($this->availableMethodsNorway) && !empty($this->usernameNorway)) {
-				$useMethodList = $this->availableMethodsNorway;
+		if ( $country == "NO" ) {
+			if ( count( $this->availableMethodsNorway ) && ! empty( $this->usernameNorway ) ) {
+				$useMethodList      = $this->availableMethodsNorway;
 				$useGovIdLegalCivic = $this->govIdLegalCivicNorway;
-				$useGovId = $this->testGovIdNorway;
-				$usePhoneNumber = "+4723456789";
+				$useGovId           = $this->testGovIdNorway;
+				$usePhoneNumber     = "+4723456789";
 			} else {
 				$this->markTestIncomplete();
 			}
-		} else if ($country == "SE") {
-			if (!count($this->availableMethods) || empty($this->username)) {
+		} else if ( $country == "SE" ) {
+			if ( ! count( $this->availableMethods ) || empty( $this->username ) ) {
 				$this->markTestIncomplete();
 			}
 		}
-		if ($this->zeroSpecLine) {
-			if (!$this->zeroSpecLineZeroTax) {
+		if ( $this->zeroSpecLine ) {
+			if ( ! $this->zeroSpecLineZeroTax ) {
 				$bookData['specLine'] = $this->getSpecLineZero();
 			} else {
-				$bookData['specLine'] = $this->getSpecLineZero(array(), true);
+				$bookData['specLine'] = $this->getSpecLineZero( array(), true );
 			}
 		} else {
 			$bookData['specLine'] = $this->getSpecLine();
 		}
-		$this->zeroSpecLine = false;
-		$bookData['address'] = array(
-			'fullName' => 'Test Testsson',
-			'firstName' => 'Test',
-			'lastName' => 'Testsson',
+		$this->zeroSpecLine   = false;
+		$bookData['address']  = array(
+			'fullName'    => 'Test Testsson',
+			'firstName'   => 'Test',
+			'lastName'    => 'Testsson',
 			'addressRow1' => 'Testgatan 1',
-			'postalArea' => 'Testort',
-			'postalCode' => '12121',
-			'country' => 'SE'
+			'postalArea'  => 'Testort',
+			'postalCode'  => '12121',
+			'country'     => 'SE'
 		);
 		$bookData['customer'] = array(
 			'governmentId' => $useGovId,
-			'phone' => $usePhoneNumber,
-			'email' => 'noreply@resurs.se',
-			'type' => 'NATURAL'
+			'phone'        => $usePhoneNumber,
+			'email'        => 'noreply@resurs.se',
+			'type'         => 'NATURAL'
 		);
-		if (isset($useMethodList['invoice_legal']) && $setMethod == $useMethodList['invoice_legal']) {
+		if ( isset( $useMethodList['invoice_legal'] ) && $setMethod == $useMethodList['invoice_legal'] ) {
 			$bookData['customer']['contactGovernmentId'] = $useGovIdLegalCivic;
-			$bookData['customer']['type'] = 'LEGAL';
+			$bookData['customer']['type']                = 'LEGAL';
 		}
-		if (isset($useMethodList['card']) && $setMethod == $useMethodList['card']) {
+		if ( isset( $useMethodList['card'] ) && $setMethod == $useMethodList['card'] ) {
 			$useGovId = $this->cardGovId;
 			//$this->rb->prepareCardData( $this->cardNumber, false );
-			$this->rb->setCardData($this->cardNumber);
+			$this->rb->setCardData( $this->cardNumber );
 		}
-		if (isset($useMethodList['card_new']) && $setMethod == $useMethodList['card_new']) {
+		if ( isset( $useMethodList['card_new'] ) && $setMethod == $useMethodList['card_new'] ) {
 			$useGovId = $this->cardGovId;
 			//$this->rb->prepareCardData( null, true );
 			$this->rb->setCardData();
 		}
 		$bookData['paymentData']['waitForFraudControl'] = $this->waitForFraudControl;
-		$bookData['signing'] = array(
-			'successUrl' => $this->signUrl . '&success=true&preferredService=' . $this->rb->getPreferredPaymentService(),
-			'failUrl' => $this->signUrl . '&success=false&preferredService=' . $this->rb->getPreferredPaymentService(),
-			'backUrl' => $this->signUrl . '&success=backurl&preferredService=' . $this->rb->getPreferredPaymentService(),
+		$bookData['signing']                            = array(
+			'successUrl'   => $this->signUrl . '&success=true&preferredService=' . $this->rb->getPreferredPaymentService(),
+			'failUrl'      => $this->signUrl . '&success=false&preferredService=' . $this->rb->getPreferredPaymentService(),
+			'backUrl'      => $this->signUrl . '&success=backurl&preferredService=' . $this->rb->getPreferredPaymentService(),
 			'forceSigning' => $forceSigning
 		);
 
@@ -1072,20 +1071,34 @@ class ResursBankTest extends TestCase
 	public function testUpdatePaymentReference()
 	{
 		$this->checkEnvironment();
-		$iframePaymentReference = $this->rb->getPreferredPaymentId(30, "FIRST-");
+		$iframePaymentReference = $this->rb->getPreferredPaymentId(30, "CREATE-");
 		try {
 			$iFrameUrl = $this->getCheckoutFrame(true);
 		} catch (\Exception $e) {
 			$this->markTestIncomplete("Exception: " . $e->getMessage());
 		}
+		$this->CURL->setAuthentication( $this->username, $this->password );
 		$this->CURL->setLocalCookies(true);
 		$iframeRequest = $this->CURL->doGet($iFrameUrl);
+
+		$payload = $this->rb->getPayload();
+		$orderLines = array("orderLines" => $payload['orderLines']);
+
 		$iframeContent = $iframeRequest['body'];
 		$Success = false;
 		if (!empty($iframePaymentReference) && !empty($iFrameUrl) && !empty($iframeContent) && strlen($iframeContent) > 1024) {
-			$newReference = $this->rb->getPreferredPaymentId(30, "UPDATE-", true);
+			$newReference = $this->rb->getPreferredPaymentId(30, "UPDATE-", true, true);
+			$firstCheckoutUrl = $this->rb->getCheckoutUrl() . "/checkout/payments/" . $iframePaymentReference;
+			$secondCheckoutUrl = $this->rb->getCheckoutUrl() . "/checkout/payments/" . $newReference;
 			try {
+				// Currently, this test always gets a HTTP-200 from ecommerce, regardless of successful or failing updates.
 				$Success = $this->rb->updatePaymentReference($iframePaymentReference, $newReference);
+				// TODO: When exceptions are properly implemented in ecom/checkout this should be included
+				// TODO: Create test suite for testing failing updates when ecom/checkout starts to throw exceptions
+				// Update the new order id with new products
+				//$updateOrderReq = $this->CURL->doPut($secondCheckoutUrl, $orderLines, 1);
+				//$responseOnFirstUpdate = $this->CURL->getResponseCode($updateOrderReq);
+
 			} catch (\Exception $e) {
 				$this->markTestIncomplete("Exception: " . $e->getCode() . ": " . $e->getMessage());
 			}
@@ -1093,12 +1106,15 @@ class ResursBankTest extends TestCase
 		$this->assertTrue($Success === true);
 	}
 
+
+
 	/**
 	 * Get all callbacks by a rest call (objects)
 	 */
 	public function testGetCallbackListByRest()
 	{
-		$this->assertGreaterThan(0, count($this->rb->getCallBacksByRest()));
+		$cbr = $this->rb->getCallBacksByRest();
+		$this->assertGreaterThan(0, count($cbr));
 	}
 
 	/**
@@ -1106,7 +1122,8 @@ class ResursBankTest extends TestCase
 	 */
 	public function testGetCallbackListAsArrayByRest()
 	{
-		$this->assertGreaterThan(0, count($this->rb->getCallBacksByRest(true)));
+		$cbr = $this->rb->getCallBacksByRest(true);
+		$this->assertGreaterThan(0, count($cbr));
 	}
 
 	/**
@@ -1183,6 +1200,7 @@ class ResursBankTest extends TestCase
 			'ANNULMENT' => array('paymentId'),
 			'FINALIZATION' => array('paymentId'),
 			'UNFREEZE' => array('paymentId'),
+			'UPDATE' => array('paymentId'),
 			'AUTOMATIC_FRAUD_CONTROL' => array('paymentId', 'result')
 		);
 		foreach ($parameter as $callbackType => $parameterArray) {
@@ -1202,6 +1220,9 @@ class ResursBankTest extends TestCase
 			}
 			if ($callbackType == "UNFREEZE") {
 				$setCallbackType = \Resursbank\RBEcomPHP\ResursCallbackTypes::UNFREEZE;
+			}
+			if ($callbackType == "UPDATE") {
+				$setCallbackType = \Resursbank\RBEcomPHP\ResursCallbackTypes::UPDATE;
 			}
 			$renderArray = array();
 			if (is_array($parameterArray)) {
@@ -1367,6 +1388,7 @@ class ResursBankTest extends TestCase
 	{
 		$this->checkEnvironment();
 		$this->rb->setRegisterCallbacksViaRest(true);
+
 		$this->assertTrue($this->rb->unregisterEventCallback(\Resursbank\RBEcomPHP\ResursCallbackTypes::ANNULMENT));
 	}
 
@@ -1442,6 +1464,7 @@ class ResursBankTest extends TestCase
 	function testSetCustomerNatural()
 	{
 		$this->checkEnvironment();
+
 		$this->rb->setPreferredPaymentService(\Resursbank\RBEcomPHP\ResursMethodTypes::METHOD_CHECKOUT);
 		$ReturnedPayload = $this->rb->setBillingByGetAddress($this->govIdNatural);
 		$this->assertEquals($this->govIdNatural, $ReturnedPayload['customer']['governmentId']);
@@ -1691,24 +1714,6 @@ class ResursBankTest extends TestCase
 		}
 	}
 
-	function testAnullFullPayment() {
-		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
-		$this->assertTrue($this->rb->annulPayment($paymentId));
-	}
-	function testDebitFullPayment() {
-		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
-		$this->assertTrue($this->rb->finalizePayment($paymentId));
-	}
-	function testCreditFullPayment() {
-		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
-		$this->rb->finalizePayment($paymentId);
-		$this->assertTrue($this->rb->creditPayment($paymentId));
-	}
-	function testCancelFullPayment() {
-		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
-		$this->rb->finalizePayment($paymentId);
-		$this->assertTrue($this->rb->cancelPayment($paymentId));
-	}
 	function testAdditionalDebit() {
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
 		$this->rb->annulPayment($paymentId);
@@ -1780,5 +1785,60 @@ class ResursBankTest extends TestCase
 			$this->markTestSkipped("RenderSpecBulk skipped: Wrong credential account");
 		}
 		$this->assertCount(2, $this->rb->getPaymentSpecByStatus($this->paymentIdAuthAnnulled));
+	}
+
+	function testFinalizeFull() {
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
+		$this->assertTrue($this->rb->finalizePayment($paymentId));
+	}
+
+	/**
+	 * Test: Annull full payment (deprecated method)
+	 */
+	function testAnullFullPaymentDeprecated() {
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
+		$this->assertTrue($this->rb->annulPayment($paymentId));
+	}
+	/**
+	 * Test: Finalize full payment (deprecated method)
+	 */
+	function testFinalizeFullPaymentDeprecatedWithSpecialInformation() {
+		$this->rb->setAfterShopYourReference("YourReference TestSuite");
+		$this->rb->setAfterShopOurReference("OurReference TestSuite");
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
+		$this->assertTrue($this->rb->finalizePayment($paymentId));
+	}
+	/**
+	 * Test: Credit full payment (deprecated method)
+	 */
+	function testCreditFullPaymentDeprecated() {
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
+		$this->rb->finalizePayment($paymentId);
+		$this->assertTrue($this->rb->creditPayment($paymentId));
+	}
+	/**
+	 * Test: Cancel full payment (deprecated method)
+	 */
+	function testCancelFullPaymentDeprecated() {
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
+		$this->rb->finalizePayment($paymentId);
+		$this->assertTrue($this->rb->cancelPayment($paymentId));
+	}
+
+	function testAfterShopSanitizer() {
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice(2);
+		$sanitizedShopSpec = $this->rb->sanitizeAfterShopSpec($paymentId, ResursAfterShopRenderTypes::FINALIZE);
+		$this->assertCount(2, $sanitizedShopSpec);
+	}
+
+	/**
+	 * Test: Aftershop finalization, new method
+	 */
+	function testAftershopFullFinalization() {
+		$this->rb->addOrderLine("myAdditionalOrderLine", "One orderline added with additionalDebitOfPayment", 100, 25);
+		$this->rb->setAfterShopInvoiceExtRef("Test Testsson");
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice(1);
+		$finalResult = $this->rb->paymentFinalize($paymentId);
+		print_R($finalResult);
 	}
 }

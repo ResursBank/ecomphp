@@ -47,7 +47,7 @@ class ResursBank {
 
 	///// Debugging, helpers and development
 	/** @var bool Activation of debug mode */
-	public $debug = false;
+	private $debug = false;
 
 	/// PHP Support
 	/** @var bool User activation flag */
@@ -121,6 +121,11 @@ class ResursBank {
 	 * @since 1.1.1
 	 */
 	private $CURL;
+	/**
+	 * Info and statistics from the CURL-client
+	 * @var array
+	 */
+	private $curlStats = array();
 	/**
 	 * @var TorneLIB_Network Class for handling Network related checks
 	 * @since 1.0.1
@@ -303,6 +308,16 @@ class ResursBank {
 	/** @var bool Defines if the checkout should honor the customer field array */
 	private $checkoutCustomerFieldSupport = false;
 
+	/// AfterShop Flow
+	/** @var string Preferred transaction id for aftershop */
+	private $afterShopPreferredTransactionId = "";
+	/** @var string Order id for aftershop */
+	private $afterShopOrderId = "";
+	/** @var string Invoice id (Optional) for aftershop */
+	private $afterShopInvoiceId = "";
+	/** @var string Invoice external reference for aftershop */
+	private $afterShopInvoiceExtRef = "";
+
 	/** @var string Default unit measure. "st" or styck for Sweden. If your plugin is not used for Sweden, use the proper unit for your country. */
 	private $defaultUnitMeasure;
 
@@ -404,6 +419,39 @@ class ResursBank {
 		foreach ( $this->wsdlServices as $ServiceName => $isAvailableBoolean) {$this->URLS[ $ServiceName ] = $this->environment . $ServiceName . "?wsdl";}
 		return true;
 	}
+
+	/**
+	 * @param bool $debugModeState
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
+	 */
+	public function setDebug($debugModeState = false) {
+		$this->debug = $debugModeState;
+	}
+
+	/**
+	 * Get debugging information
+	 * @return array
+	 */
+	public function getDebug() {
+		$this->curlStats['debug'] = $this->debug;
+		return $this->curlStats;
+	}
+
+	/**
+	 * Return the CURL communication handle to the client, when in debug mode
+	 * @return Tornevall_cURL
+	 * @throws \Exception
+	 */
+	public function getCurlHandle() {
+		if ($this->debug) {
+			return $this->CURL;
+		} else {
+			throw new \Exception("Can't return handle. The module is in wrong state (non-debug mode)", 403);
+		}
+	}
+
 
 	/**
 	 * Set up a user-agent to identify with webservices.
@@ -1108,6 +1156,7 @@ class ResursBank {
 	 * @return array
 	 * @since 1.0.2
 	 * @since 1.1.2
+	 * @since 1.2.0
 	 */
 	private function postService( $serviceName = "", $resursParameters = array(), $getResponseCode = false ) {
 		$this->InitializeServices();
@@ -1117,6 +1166,12 @@ class ResursBank {
 			$RequestService = $Service->$serviceName( $resursParameters );
 			$ParsedResponse = $Service->getParsedResponse( $RequestService );
 			$ResponseCode   = $Service->getResponseCode();
+			if ($this->debug) {
+				if (!isset($this->curlStats['calls'])) {
+					$this->curlStats['calls'] = 1;
+				}
+				$this->curlStats['calls'] ++;
+			}
 			if ( ! $getResponseCode ) {
 				return $ParsedResponse;
 			} else {
@@ -1125,7 +1180,6 @@ class ResursBank {
 		}
 		return null;
 	}
-
 	/**
 	 * When something from CURL threw an exception and you really need to get detailed information about those exceptions
 	 *
@@ -2211,19 +2265,17 @@ class ResursBank {
 				}
 			}
 			$renderParams['createdBy'] = $this->getCreatedBy();
+
+			// Other data fields that can be sent from client (see below). Note the orderId, this may be important for the order.
+			$preferredTransactionId = $this->getAfterShopPreferredTransactionId();
+			$orderId                = $this->getAfterShopOrderId();
+			if ( ! empty( $preferredTransactionId ) ) {
+				$renderParams['preferredTransactionId'] = $preferredTransactionId;
+			}
+			if ( ! empty( $orderId ) ) {
+				$renderParams['orderId'] = $orderId;
+			}
 			$paymentContainer          = array_merge( $paymentContainerContent, $renderParams );
-
-			/*
-			 * Other data fields that can be sent from client (see below).
-			 * Please note the orderId, this may be important for the order.
-			 */
-
-			/*
-				$renderParams['ourReference'] = '';
-				$renderParams['yourReference'] = '';
-				$renderParams['preferredTransactionId'] = '';
-				$renderParams['orderId'] = '';
-			*/
 		}
 
 		return $paymentContainer;
@@ -3414,11 +3466,26 @@ class ResursBank {
 	 * @return mixed
 	 * @since 1.0.2
 	 * @since 1.1.2
+	 * @since 1.2.0
 	 */
 	public function getPayload() {
 		$this->preparePayload();
 		return $this->Payload;
 	}
+
+	/**
+	 * Return the final payload order data array
+	 *
+	 * @return array
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
+	 */
+	public function getOrderData() {
+		$this->preparePayload();
+		return isset($this->Payload['orderData']) ? $this->Payload['orderData'] : array();
+	}
+
 
 	/**
 	 * Remove script from the iframe-source
@@ -3726,24 +3793,25 @@ class ResursBank {
 	/**
 	 * Returns a complete payment spec grouped by status. This function does not merge articles, even if there are multiple rows with the same article number. This normally indicates order modifications, so the are returned raw as is.
 	 *
-	 * @param $paymentIdOrSpec Payment id or prepeared getPayment() object
+	 * @param $paymentIdOrPaymentObject
 	 *
 	 * @return array
 	 */
-	public function getPaymentSpecByStatus( $paymentIdOrSpec ) {
-		$usePayment         = $paymentIdOrSpec;
-		$currentSpecs       = array(
+	public function getPaymentSpecByStatus( $paymentIdOrPaymentObject ) {
+		$usePayment         = $paymentIdOrPaymentObject;
+		// Current specs available: AUTHORIZE, DEBIT, CREDIT, ANNUL
+		$orderLinesByStatus = array(
 			'AUTHORIZE' => array(),
-			'DEBIT'     => array(),
-			'CREDIT'    => array(),
-			'ANNUL'     => array()
+			'DEBIT' => array(),
+			'CREDIT' => array(),
+			'ANNUL' => array(),
 		);
-		$orderLinesByStatus = array();
-		if ( is_string( $paymentIdOrSpec ) ) {
-			$usePayment = $this->getPayment( $paymentIdOrSpec );
+		if ( is_string( $paymentIdOrPaymentObject ) ) {
+			$usePayment = $this->getPayment( $paymentIdOrPaymentObject );
 		}
 		if ( is_object( $usePayment ) && isset( $usePayment->id ) && isset( $usePayment->paymentDiffs ) ) {
 			$paymentDiff = $usePayment->paymentDiffs;
+			// If the paymentdiff is an array, we'll know that more than one thing has happened to the payment, and it's probably only an authorization
 			if ( is_array( $paymentDiff ) ) {
 				foreach ( $paymentDiff as $paymentDiffObject ) {
 					// Initially, let's make sure there is a key for the paymentdiff.
@@ -3776,6 +3844,216 @@ class ResursBank {
 		}
 
 		return $orderLinesByStatus;
+	}
+
+	/**
+	 * Sanitize a paymentspec from a payment id or a prepared getPayment object and return filtered depending on the requested aftershop type
+	 * @param string $paymentIdOrPaymentObject
+	 * @param int $renderType
+	 *
+	 * @return array|mixed|null
+	 */
+	public function sanitizeAfterShopSpec($paymentIdOrPaymentObject = '', $renderType = ResursAfterShopRenderTypes::NONE) {
+		// Get payment spec bulked
+		$paymentIdOrPaymentObject = $this->getPaymentSpecByStatus($paymentIdOrPaymentObject);
+		$returnSpecObject = null;
+		if ( $renderType == ResursAfterShopRenderTypes::FINALIZE ) {
+			$returnSpecObject = $this->removeFromArray( $paymentIdOrPaymentObject['AUTHORIZE'], array_merge( $paymentIdOrPaymentObject['DEBIT'], $paymentIdOrPaymentObject['ANNUL'], $paymentIdOrPaymentObject['CREDIT'] ) );
+		} else if ( $renderType == ResursAfterShopRenderTypes::CREDIT ) {
+			$returnSpecObject = $this->removeFromArray( $paymentIdOrPaymentObject['DEBIT'], array_merge( $paymentIdOrPaymentObject['ANNUL'], $paymentIdOrPaymentObject['CREDIT'] ) );
+		} else if ( $renderType == ResursAfterShopRenderTypes::ANNUL ) {
+			$returnSpecObject = $this->removeFromArray( $paymentIdOrPaymentObject['AUTHORIZE'], array_merge( $paymentIdOrPaymentObject['DEBIT'], $currentSpecs['ANNUL'], $paymentIdOrPaymentObject['CREDIT'] ) );
+		} else {
+			// If no type is chosen, return all rows
+			$returnSpecObject = $this->removeFromArray(array(), $paymentIdOrPaymentObject);
+		}
+		return $returnSpecObject;
+	}
+
+	/**
+	 * Sets a preferred transaction id
+	 *
+	 * @param $preferredTransactionId
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
+	 */
+	public function setAfterShopPreferredTransactionId($preferredTransactionId) {
+		if (!empty($preferredTransactionId)) {
+			$this->afterShopPreferredTransactionId = $preferredTransactionId;
+		}
+	}
+
+	/**
+	 * Returns the preferred transaction id if any
+	 *
+	 * @return string
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
+	 */
+	public function getAfterShopPreferredTransactionId() {
+		return $this->afterShopPreferredTransactionId;
+	}
+
+	/**
+	 * Set a order id for the aftershop flow, which will be shown in the invoice
+	 *
+	 * @param $orderId
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
+	 */
+	public function setAfterShopOrderId($orderId) {
+		if (!empty($orderId)) {
+			$this->afterShopOrderId = $orderId;
+		}
+	}
+
+	/**
+	 * Return the set order id for the aftershop flow (invoice)
+	 *
+	 * @return string
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
+	 */
+	public function getAfterShopOrderId() {
+		return $this->afterShopOrderId;
+	}
+
+	/**
+	 * Pre-set a invoice id for aftershop
+	 *
+	 * @param $invoiceId
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
+	 */
+	public function setAfterShopInvoiceId($invoiceId) {
+		if (!empty($invoiceId)) {
+			$this->afterShopInvoiceId = $invoiceId;
+		}
+	}
+
+	/**
+	 * Return pre-set invoice id for aftershop if any
+	 *
+	 * @return string
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
+	 */
+	public function getAfterShopInvoiceId() {
+		return $this->afterShopInvoiceId;
+	}
+
+	/**
+	 * Set invoice external reference
+	 *
+	 * @param $invoiceExtRef
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
+	 */
+	public function setAfterShopInvoiceExtRef($invoiceExtRef) {
+		if (!empty($invoiceExtRef)) {
+			$this->afterShopInvoiceExtRef = $invoiceExtRef;
+		}
+	}
+
+	/**
+	 * Return the invoice external reference
+	 *
+	 * @return string
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
+	 */
+	public function getAfterShopInvoiceExtRef() {
+		return $this->afterShopInvoiceExtRef;
+	}
+
+
+	/**
+	 * Split function for aftershop: This was included in each of the deprecated function instead of running from a central place
+	 */
+	private function aftershopPrepareMetaData($paymentId) {
+		try {
+			if ( empty( $this->customerId ) ) {
+				$this->customerId = "-";
+			}
+			$this->addMetaData( $paymentId, "CustomerId", $this->customerId );
+		} catch ( \Exception $metaResponseException ) {
+
+		}
+	}
+
+	/**
+	 * Create an afterShopFlow object to use with the afterShop flow
+	 * @param string $paymentId
+	 * @param array $customPayloadItemList
+	 *
+	 * @return array
+	 */
+	private function getAfterShopObjectByPayload($paymentId = "", $customPayloadItemList = array()) {
+		$finalAfterShopSpec = array(
+			'paymentId' => $paymentId
+		);
+
+		$storedPayment = $this->getPayment($paymentId);
+		$paymentMethod = $storedPayment->paymentMethodId;
+		$paymentMethodData = $this->getPaymentMethodSpecific($paymentMethod);
+		$paymentSpecificType = strtoupper(isset($paymentMethodData->specificType) ? $paymentMethodData->specificType : null);
+		if ($paymentSpecificType == "INVOICE") {
+			$finalAfterShopSpec['orderDate']   = date( 'Y-m-d', time() );
+			$finalAfterShopSpec['invoiceDate'] = date( 'Y-m-d', time() );
+			if (empty($this->afterShopInvoiceId)) {
+				$finalAfterShopSpec['invoiceId'] = $this->getNextInvoiceNumber();
+			}
+			$extRef = $this->getAfterShopInvoiceExtRef();
+			if (!empty($extRef)) {
+				$this->addMetaData($paymentId, 'invoiceExtRef', $extRef);
+			}
+		}
+
+		$finalAfterShopSpec['createdBy'] = $this->getCreatedBy();
+
+		$this->renderPaymentSpec( ResursMethodTypes::METHOD_SIMPLIFIED );
+		$orderDataArray = $this->getOrderData();
+		if (isset($orderDataArray['specLines'])) {
+			$orderDataArray['partPaymentSpec'] = $orderDataArray;
+		}
+
+		// rendered order spec, use when customPayloadItemList is not set, to handle full orders
+		$renderedOrderSpec = $this->sanitizeAfterShopSpec($storedPayment, ResursAfterShopRenderTypes::FINALIZE);
+
+		$finalAfterShopSpec += $orderDataArray;
+		return $finalAfterShopSpec;
+	}
+
+	/**
+	 * Aftershop Payment Finalization (DEBIT) - Finalization replacement.
+	 *
+	 * @param $paymentId
+	 * @param array $customPayloadItemList
+	 *
+	 * @return array
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
+	 */
+	/**
+	 * @param string $paymentId
+	 * @param array $customPayloadItemList
+	 *
+	 * @return array
+	 */
+	public function paymentFinalize($paymentId = "", $customPayloadItemList = array()) {
+		$this->aftershopPrepareMetaData($paymentId);
+		$afterShopObject = $this->getAfterShopObjectByPayload($paymentId, $customPayloadItemList);
+		$Result         = $this->postService( "finalizePayment", $afterShopObject );
+		return $Result;
 	}
 
 	/**
@@ -3894,7 +4172,9 @@ class ResursBank {
 	 *
 	 * @return bool True if successful
 	 * @throws \Exception
-	 * @throws \Exception
+	 * @deprecated 1.0.22
+	 * @deprecated 1.1.22
+	 * @deprecated 1.2.0
 	 */
 	public function finalizePayment( $paymentId = "", $clientPaymentSpec = array(), $finalizeParams = array(), $quantityMatch = true, $useSpecifiedQuantity = false ) {
 		try {
