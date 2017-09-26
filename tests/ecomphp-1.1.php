@@ -1833,13 +1833,113 @@ class ResursBankTest extends TestCase
 	}
 
 	/**
+	 * Reset the connection to simulate a true scenario
+	 * @return bool
+	 */
+	private function resetConnection() {
+		$isEmpty = false;
+		$this->setUp();
+		try { $this->rb->getPayload(); } catch (\Exception $emptyPayloadException) { $isEmpty = true; }
+		return $isEmpty;
+	}
+
+	/**
 	 * Test: Aftershop finalization, new method
+	 * Expected result: The order is fully debited
 	 */
 	function testAftershopFullFinalization() {
-		$this->rb->addOrderLine("myAdditionalOrderLine", "One orderline added with additionalDebitOfPayment", 100, 25);
-		$this->rb->setAfterShopInvoiceExtRef("Test Testsson");
-		$paymentId = $this->getPaymentIdFromOrderByClientChoice(1);
-		$finalResult = $this->rb->paymentFinalize($paymentId);
-		print_R($finalResult);
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice(2);
+		if ($this->resetConnection()) {
+			$this->rb->setAfterShopInvoiceExtRef( "Test Testsson" );
+			$finalizeResult = $this->rb->paymentFinalize( $paymentId );
+			$testOrder = $this->rb->getPaymentSpecCount($paymentId);
+			$this->assertTrue(($finalizeResult == 200 && $testOrder['AUTHORIZE'] == 2 && $testOrder['DEBIT'] == 2));
+		}
 	}
+
+	/**
+	 * Test: Aftershop finalization, new method, automated by using addOrderLine
+	 * Expected result: Two rows, one added row debited
+	 */
+	function testAftershopPartialAutomatedFinalization() {
+		// Add one order line to the random one
+		$this->rb->addOrderLine( "myAdditionalPartialAutomatedOrderLine", "One orderline added with addOrderLine", 100, 25 );
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice(1);
+		if ($this->resetConnection()) {
+			$this->rb->setAfterShopInvoiceExtRef( "Test Testsson" );
+			// Add the orderLine that should be handled in the finalization
+			// id, desc, unitAmoutWithoutVat, vatPct, unitMeasure, ORDER_LINE, quantity
+			$this->rb->addOrderLine( "myAdditionalPartialAutomatedOrderLine", "One orderline added with addOrderLine", 100, 25 );
+			$finalizeResult = $this->rb->paymentFinalize( $paymentId );
+			$testOrder = $this->rb->getPaymentSpecCount($paymentId);
+			$this->assertTrue(($finalizeResult == 200 && $testOrder['AUTHORIZE'] == 2 && $testOrder['DEBIT'] == 1));
+		}
+	}
+
+	/**
+	 * Test: Aftershop finalization, new method, automated by using addOrderLine
+	 * Expected result: Two rows, the row with 4 in quantity has 2 debited
+	 */
+	function testAftershopPartialAutomatedQuantityFinalization() {
+		// Add one order line to the random one, with 4 in quantity
+		$this->rb->addOrderLine( "myAdditionalAutomatedOrderLine", "One orderline added with addOrderLine", 100, 25, 'st', 'ORDER_LINE', 4 );
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice(1);
+		if ($this->resetConnection()) {
+			$this->rb->setAfterShopInvoiceExtRef( "Test Testsson" );
+			// Add the orderLine that should be handled in the finalization, but only 2 of the set up above
+			$this->rb->addOrderLine( "myAdditionalAutomatedOrderLine", "One orderline added with addOrderLine", 100, 25, 'st', 'ORDER_LINE', 2 );
+			$finalizeResult = $this->rb->paymentFinalize( $paymentId );
+			$countOrder = $this->rb->getPaymentSpecCount($paymentId);
+			$testOrder = $this->rb->getPaymentSpecByStatus($paymentId);
+			// Also check the quantity on this
+			$this->assertTrue(($finalizeResult == 200 && $countOrder['AUTHORIZE'] == 2 && $countOrder['DEBIT'] == 1 && (int)$testOrder['DEBIT']['0']->quantity == 2));
+		}
+	}
+
+	/**
+	 * Test: Aftershop finalization, new method, automated by using addOrderLine
+	 * Expected result: Two rows, one row (the correct one) row debited
+	 */
+	function testAftershopPartialManualFinalization() {
+		// Add one order line to the random one
+		$this->rb->addOrderLine( "myAdditionalManualOrderLine", "One orderline added with addOrderLine", 100, 25 );
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice(1);
+		if ($this->resetConnection()) {
+			$this->rb->setAfterShopInvoiceExtRef( "Test Testsson" );
+			$newArray = array(
+				'artNo' => 'myAdditionalManualOrderLine',
+				'description' => "One orderline added with addOrderLine",
+				'unitAmountWithoutVat' => 100,
+				'vatPct' => 25,
+				'quantity' => 1
+			);
+			$finalizeResult = $this->rb->paymentFinalize( $paymentId, $newArray );
+			$testOrder = $this->rb->getPaymentSpecCount($paymentId);
+			$this->assertTrue(($finalizeResult == 200 && $testOrder['AUTHORIZE'] == 2 && $testOrder['DEBIT'] == 1));
+		}
+	}
+	/**
+	 * Test: Aftershop finalization, new method, manually added array that mismatches with the first order (This order will have one double debited orderLine)
+	 * Expected result: Three rows, mismatching row debited
+	 */
+	function testAftershopPartialManualFinalizationWithMismatchingKeys() {
+		// Add one order line to the random one
+		$this->rb->addOrderLine( "myAdditionalManualOrderLine", "One orderline added with addOrderLine", 100, 25 );
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice(1);
+		if ($this->resetConnection()) {
+			$this->rb->setAfterShopInvoiceExtRef( "Test Testsson" );
+			$newArray = array(
+				'artNo' => 'myAdditionalMismatchingOrderLine',
+				'description' => "One orderline added with addOrderLine",
+				'unitAmountWithoutVat' => 101,
+				'vatPct' => 25,
+				'quantity' => 2
+			);
+			$finalizeResult = $this->rb->paymentFinalize( $paymentId, $newArray );
+			$countOrder = $this->rb->getPaymentSpecCount($paymentId);
+			$testOrder = $this->rb->getPaymentSpecByStatus($paymentId);
+			$this->assertTrue(($finalizeResult == 200 && $countOrder['AUTHORIZE'] == 2 && $countOrder['DEBIT'] == 1 && (int)$testOrder['DEBIT']['0']->quantity == 2));
+		}
+	}
+
 }
