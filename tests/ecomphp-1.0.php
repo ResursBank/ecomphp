@@ -14,10 +14,6 @@
 require_once('../source/classes/rbapiloader.php');
 
 use PHPUnit\Framework\TestCase;
-use ResursAfterShopRenderTypes;
-use ResursCallbackTypes;
-use ResursMethodTypes;
-use ResursCallbackReachability;
 
 // Automatically set to test the pushCustomerUserAgent
 if (!isset($_SERVER['HTTP_USER_AGENT'])) {
