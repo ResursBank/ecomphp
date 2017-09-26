@@ -5,13 +5,20 @@
  *
  * @package EcomPHPTest
  * @author Resurs Bank Ecommrece <ecommerce.support@resurs.se>
- * @version 0.2alpha
+ * @version 0.3
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @license -
  *
  */
 
 require_once('../source/classes/rbapiloader.php');
+
+use PHPUnit\Framework\TestCase;
+use ResursAfterShopRenderTypes;
+use ResursCallbackTypes;
+use ResursMethodTypes;
+use ResursCallbackReachability;
+
 // Automatically set to test the pushCustomerUserAgent
 if (!isset($_SERVER['HTTP_USER_AGENT'])) {
 	$_SERVER['HTTP_USER_AGENT'] = "EComPHP/Test-InternalClient";
@@ -19,32 +26,30 @@ if (!isset($_SERVER['HTTP_USER_AGENT'])) {
 
 /**
  * Class ResursBankTest: Primary test client
- *
  */
-class ResursBankTest extends PHPUnit_Framework_TestCase
+class ResursBankTest extends TestCase
 {
-    private $CURL;
+	private $CURL;
     private $NETWORK;
 
 	/**
 	 * The heart of this unit. To make tests "nicely" compatible with 1.1, this should be placed on top of this class as it looks different there.
 	 */
-    private function initServices($overrideUsername = null, $overridePassword = null)
-    {
+	private function initServices($overrideUsername = null, $overridePassword = null) {
 		if ( empty( $overrideUsername ) ) {
-            $this->rb = new \ResursBank($this->username, $this->password);
+			$this->rb = new ResursBank( $this->username, $this->password );
 		} else {
-            $this->rb = new \ResursBank($overrideUsername, $overridePassword);
+			$this->rb = new ResursBank( $overrideUsername, $overridePassword );
 		}
 		$this->rb->setPushCustomerUserAgent(true);
 		$this->rb->setUserAgent("EComPHP/TestSuite");
+		$this->rb->setDebug();
 		/*
 		 * If HTTP_HOST is not set, Resurs Checkout will not run properly, since the iFrame requires a valid internet connection (actually browser vs http server).
 		 */
 		if (!isset($_SERVER['HTTP_HOST'])) {
 			$_SERVER['HTTP_HOST'] = "localhost";
 		}
-        $this->rb->setPreferredPaymentService(ResursMethodTypes::METHOD_SIMPLIFIED);
 	}
 
 	////////// Public variables
