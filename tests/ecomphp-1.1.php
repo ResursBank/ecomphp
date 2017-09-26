@@ -17,6 +17,7 @@
 require_once('../source/classes/rbapiloader.php');
 
 use PHPUnit\Framework\TestCase;
+use \Resursbank\RBEcomPHP\ResursAfterShopRenderTypes;
 
 // Automatically set to test the pushCustomerUserAgent
 if (!isset($_SERVER['HTTP_USER_AGENT'])) {
@@ -45,6 +46,7 @@ class ResursBankTest extends TestCase
 		}
 		$this->rb->setPushCustomerUserAgent(true);
 		$this->rb->setUserAgent("EComPHP/TestSuite");
+		$this->rb->setDebug();
 		/*
 		 * If HTTP_HOST is not set, Resurs Checkout will not run properly, since the iFrame requires a valid internet connection (actually browser vs http server).
 		 */
@@ -1070,26 +1072,42 @@ class ResursBankTest extends TestCase
 	public function testUpdatePaymentReference()
 	{
 		$this->checkEnvironment();
-		$iframePaymentReference = $this->rb->getPreferredPaymentId(30, "FIRST-");
+		$iframePaymentReference = $this->rb->getPreferredPaymentId(30, "CREATE-");
 		try {
 			$iFrameUrl = $this->getCheckoutFrame(true);
 		} catch (\Exception $e) {
 			$this->markTestIncomplete("Exception: " . $e->getMessage());
 		}
+		$this->CURL->setAuthentication( $this->username, $this->password );
 		$this->CURL->setLocalCookies(true);
 		$iframeRequest = $this->CURL->doGet($iFrameUrl);
+
+		$payload = $this->rb->getPayload();
+		$orderLines = array("orderLines" => $payload['orderLines']);
+
 		$iframeContent = $iframeRequest['body'];
 		$Success = false;
 		if (!empty($iframePaymentReference) && !empty($iFrameUrl) && !empty($iframeContent) && strlen($iframeContent) > 1024) {
-			$newReference = $this->rb->getPreferredPaymentId(30, "UPDATE-", true);
+			$newReference = $this->rb->getPreferredPaymentId(30, "UPDATE-", true, true);
+			$firstCheckoutUrl = $this->rb->getCheckoutUrl() . "/checkout/payments/" . $iframePaymentReference;
+			$secondCheckoutUrl = $this->rb->getCheckoutUrl() . "/checkout/payments/" . $newReference;
 			try {
+				// Currently, this test always gets a HTTP-200 from ecommerce, regardless of successful or failing updates.
 				$Success = $this->rb->updatePaymentReference($iframePaymentReference, $newReference);
+				// TODO: When exceptions are properly implemented in ecom/checkout this should be included
+				// TODO: Create test suite for testing failing updates when ecom/checkout starts to throw exceptions
+				// Update the new order id with new products
+				//$updateOrderReq = $this->CURL->doPut($secondCheckoutUrl, $orderLines, 1);
+				//$responseOnFirstUpdate = $this->CURL->getResponseCode($updateOrderReq);
+
 			} catch (\Exception $e) {
 				$this->markTestIncomplete("Exception: " . $e->getCode() . ": " . $e->getMessage());
 			}
 		}
 		$this->assertTrue($Success === true);
 	}
+
+
 
 	/**
 	 * Get all callbacks by a rest call (objects)
@@ -1697,24 +1715,6 @@ class ResursBankTest extends TestCase
 		}
 	}
 
-	function testAnullFullPayment() {
-		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
-		$this->assertTrue($this->rb->annulPayment($paymentId));
-	}
-	function testDebitFullPayment() {
-		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
-		$this->assertTrue($this->rb->finalizePayment($paymentId));
-	}
-	function testCreditFullPayment() {
-		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
-		$this->rb->finalizePayment($paymentId);
-		$this->assertTrue($this->rb->creditPayment($paymentId));
-	}
-	function testCancelFullPayment() {
-		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
-		$this->rb->finalizePayment($paymentId);
-		$this->assertTrue($this->rb->cancelPayment($paymentId));
-	}
 	function testAdditionalDebit() {
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
 		$this->rb->annulPayment($paymentId);
@@ -1788,4 +1788,58 @@ class ResursBankTest extends TestCase
 		$this->assertCount(2, $this->rb->getPaymentSpecByStatus($this->paymentIdAuthAnnulled));
 	}
 
+	function testFinalizeFull() {
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
+		$this->assertTrue($this->rb->finalizePayment($paymentId));
+	}
+
+	/**
+	 * Test: Annull full payment (deprecated method)
+	 */
+	function testAnullFullPaymentDeprecated() {
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
+		$this->assertTrue($this->rb->annulPayment($paymentId));
+	}
+	/**
+	 * Test: Finalize full payment (deprecated method)
+	 */
+	function testFinalizeFullPaymentDeprecatedWithSpecialInformation() {
+		$this->rb->setAfterShopYourReference("YourReference TestSuite");
+		$this->rb->setAfterShopOurReference("OurReference TestSuite");
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
+		$this->assertTrue($this->rb->finalizePayment($paymentId));
+	}
+	/**
+	 * Test: Credit full payment (deprecated method)
+	 */
+	function testCreditFullPaymentDeprecated() {
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
+		$this->rb->finalizePayment($paymentId);
+		$this->assertTrue($this->rb->creditPayment($paymentId));
+	}
+	/**
+	 * Test: Cancel full payment (deprecated method)
+	 */
+	function testCancelFullPaymentDeprecated() {
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
+		$this->rb->finalizePayment($paymentId);
+		$this->assertTrue($this->rb->cancelPayment($paymentId));
+	}
+
+	function testAfterShopSanitizer() {
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice(2);
+		$sanitizedShopSpec = $this->rb->sanitizeAfterShopSpec($paymentId, ResursAfterShopRenderTypes::FINALIZE);
+		$this->assertCount(2, $sanitizedShopSpec);
+	}
+
+	/**
+	 * Test: Aftershop finalization, new method
+	 */
+	function testAftershopFullFinalization() {
+		$this->rb->addOrderLine("myAdditionalOrderLine", "One orderline added with additionalDebitOfPayment", 100, 25);
+		$this->rb->setAfterShopInvoiceExtRef("Test Testsson");
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice(1);
+		$finalResult = $this->rb->paymentFinalize($paymentId);
+		print_R($finalResult);
+	}
 }
