@@ -1786,7 +1786,8 @@ class ResursBankTest extends TestCase
 		if (!$this->isSpecialAccount()) {
 			$this->markTestSkipped("RenderSpecBulk skipped: Wrong credential account");
 		}
-		$this->assertCount(2, $this->rb->getPaymentSpecByStatus($this->paymentIdAuthAnnulled));
+		$annulledPayment = $this->rb->getPaymentSpecCount($this->paymentIdAuthAnnulled);
+		$this->assertTrue( $annulledPayment['AUTHORIZE'] > 0 && $annulledPayment['ANNUL'] > 0  && $annulledPayment['DEBIT'] == 0 && $annulledPayment['CREDIT'] == 0);
 	}
 
 	function testFinalizeFull() {
