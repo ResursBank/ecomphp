@@ -160,7 +160,7 @@ class ResursBank {
 	 * @since 1.0.2
 	 * @since 1.1.2
 	 */
-	private $SpecLines;
+	private $SpecLines = array();
 
 	/// Environment URLs
 	/** @var null The chosen environment */
@@ -2754,8 +2754,14 @@ class ResursBank {
 		}
 		$paymentSpec = array();
 		if ( is_array( $this->SpecLines ) && count( $this->SpecLines ) ) {
+			// Try correctify speclines that have been merged in the wrong way
+			if (isset($this->SpecLines['artNo'])) {
+				$this->SpecLines = array(
+					$this->SpecLines
+				);
+			}
 			foreach ( $this->SpecLines as $specIndex => $specRow ) {
-				if ( ! isset( $specRow['unitMeasure'] ) ) {
+				if ( is_array($specRow) && ! isset( $specRow['unitMeasure'] ) ) {
 					$this->SpecLines[ $specIndex ]['unitMeasure'] = $this->defaultUnitMeasure;
 				}
 				if ( $myFlow === ResursMethodTypes::METHOD_SIMPLIFIED ) {
@@ -3791,6 +3797,25 @@ class ResursBank {
 	}
 
 	/**
+	 * Get each payment diff content count (mostly used for tests)
+	 *
+	 * @param $paymentIdOrPaymentObject
+	 *
+	 * @return array
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
+	 */
+	public function getPaymentSpecCount($paymentIdOrPaymentObject) {
+		$countObject = $this->getPaymentSpecByStatus($paymentIdOrPaymentObject);
+		$returnedCountObject = array();
+		foreach ($countObject as $status => $theArray) {
+			$returnedCountObject[$status] = count($theArray);
+		}
+		return $returnedCountObject;
+	}
+
+	/**
 	 * Returns a complete payment spec grouped by status. This function does not merge articles, even if there are multiple rows with the same article number. This normally indicates order modifications, so the are returned raw as is.
 	 *
 	 * @param $paymentIdOrPaymentObject
@@ -3854,18 +3879,19 @@ class ResursBank {
 	 * @return array|mixed|null
 	 */
 	public function sanitizeAfterShopSpec($paymentIdOrPaymentObject = '', $renderType = ResursAfterShopRenderTypes::NONE) {
-		// Get payment spec bulked
-		$paymentIdOrPaymentObject = $this->getPaymentSpecByStatus($paymentIdOrPaymentObject);
 		$returnSpecObject = null;
+
+		// Get payment spec bulked
+		$paymentIdOrPaymentObject = $this->objectsIntoArray($this->getPaymentSpecByStatus($paymentIdOrPaymentObject));
 		if ( $renderType == ResursAfterShopRenderTypes::FINALIZE ) {
 			$returnSpecObject = $this->removeFromArray( $paymentIdOrPaymentObject['AUTHORIZE'], array_merge( $paymentIdOrPaymentObject['DEBIT'], $paymentIdOrPaymentObject['ANNUL'], $paymentIdOrPaymentObject['CREDIT'] ) );
 		} else if ( $renderType == ResursAfterShopRenderTypes::CREDIT ) {
 			$returnSpecObject = $this->removeFromArray( $paymentIdOrPaymentObject['DEBIT'], array_merge( $paymentIdOrPaymentObject['ANNUL'], $paymentIdOrPaymentObject['CREDIT'] ) );
 		} else if ( $renderType == ResursAfterShopRenderTypes::ANNUL ) {
-			$returnSpecObject = $this->removeFromArray( $paymentIdOrPaymentObject['AUTHORIZE'], array_merge( $paymentIdOrPaymentObject['DEBIT'], $currentSpecs['ANNUL'], $paymentIdOrPaymentObject['CREDIT'] ) );
+			$returnSpecObject = $this->removeFromArray( $paymentIdOrPaymentObject['AUTHORIZE'], array_merge( $paymentIdOrPaymentObject['DEBIT'], $paymentIdOrPaymentObject['ANNUL'], $paymentIdOrPaymentObject['CREDIT'] ) );
 		} else {
 			// If no type is chosen, return all rows
-			$returnSpecObject = $this->removeFromArray(array(), $paymentIdOrPaymentObject);
+			$returnSpecObject = $this->removeFromArray($paymentIdOrPaymentObject, array());
 		}
 		return $returnSpecObject;
 	}
@@ -3993,10 +4019,11 @@ class ResursBank {
 	 * Create an afterShopFlow object to use with the afterShop flow
 	 * @param string $paymentId
 	 * @param array $customPayloadItemList
+	 * @param int $payloadType
 	 *
 	 * @return array
 	 */
-	private function getAfterShopObjectByPayload($paymentId = "", $customPayloadItemList = array()) {
+	private function getAfterShopObjectByPayload($paymentId = "", $customPayloadItemList = array(), $payloadType = ResursAfterShopRenderTypes::NONE) {
 		$finalAfterShopSpec = array(
 			'paymentId' => $paymentId
 		);
@@ -4018,15 +4045,31 @@ class ResursBank {
 		}
 
 		$finalAfterShopSpec['createdBy'] = $this->getCreatedBy();
+		$this->renderPaymentSpec( ResursMethodTypes::METHOD_SIMPLIFIED );
 
+		// Rendered order spec, use when customPayloadItemList is not set, to handle full orders
+		$actualEcommerceOrderSpec = $this->sanitizeAfterShopSpec($storedPayment, $payloadType);
+
+		try {
+			// Try to fetch internal order data.
+			$orderDataArray = $this->getOrderData();
+		} catch (\Exception $getOrderDataException) {
+			// If there is no payload, make sure we'll render this from the current payment
+			if ($getOrderDataException->getCode() == \ResursExceptions::BOOKPAYMENT_NO_BOOKDATA && !count($customPayloadItemList)) {
+				//array_merge($this->SpecLines, $actualEcommerceOrderSpec);
+				$this->SpecLines += $actualEcommerceOrderSpec;
+			}
+		}
+
+		if (count($customPayloadItemList)) {
+			$this->SpecLines += $customPayloadItemList;
+		}
 		$this->renderPaymentSpec( ResursMethodTypes::METHOD_SIMPLIFIED );
 		$orderDataArray = $this->getOrderData();
+
 		if (isset($orderDataArray['specLines'])) {
 			$orderDataArray['partPaymentSpec'] = $orderDataArray;
 		}
-
-		// rendered order spec, use when customPayloadItemList is not set, to handle full orders
-		$renderedOrderSpec = $this->sanitizeAfterShopSpec($storedPayment, ResursAfterShopRenderTypes::FINALIZE);
 
 		$finalAfterShopSpec += $orderDataArray;
 		return $finalAfterShopSpec;
@@ -4043,16 +4086,10 @@ class ResursBank {
 	 * @since 1.1.22
 	 * @since 1.2.0
 	 */
-	/**
-	 * @param string $paymentId
-	 * @param array $customPayloadItemList
-	 *
-	 * @return array
-	 */
 	public function paymentFinalize($paymentId = "", $customPayloadItemList = array()) {
 		$this->aftershopPrepareMetaData($paymentId);
-		$afterShopObject = $this->getAfterShopObjectByPayload($paymentId, $customPayloadItemList);
-		$Result         = $this->postService( "finalizePayment", $afterShopObject );
+		$afterShopObject = $this->getAfterShopObjectByPayload($paymentId, $customPayloadItemList, ResursAfterShopRenderTypes::FINALIZE);
+		$Result         = $this->postService( "finalizePayment", $afterShopObject, true);
 		return $Result;
 	}
 
