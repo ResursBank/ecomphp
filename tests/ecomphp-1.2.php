@@ -5,7 +5,7 @@
  *
  * @package EcomPHPTest
  * @author Resurs Bank Ecommrece <ecommerce.support@resurs.se>
- * @version 0.4
+ * @version 0.5
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @license -
  *
@@ -86,6 +86,8 @@ class ResursBankTest extends TestCase
 	private $paymentIdAuthed = "20170519125223-9587503794";
 	private $paymentIdAuthAnnulled = "20170519125725-8589567180";
 	private $paymentIdDebited = "20170519125216-8830457943";
+
+	private $NETWORK;
 
 	private function isSpecialAccount() {
 		$authed = $this->rb->getPayment($this->paymentIdAuthed);
@@ -477,8 +479,8 @@ class ResursBankTest extends TestCase
 				/* Pick up the signing url */
 				$signUrl = $res->signingUrl;
 				$getSigningPage = file_get_contents($signUrl);
-				$Network = new \Resursbank\RBEcomPHP\TorneLIB_Network();
-				$signUrlHostInfo = $Network->getUrlDomain($signUrl);
+				$NETWORK = new \Resursbank\RBEcomPHP\TorneLIB_Network();
+				$signUrlHostInfo = $NETWORK->getUrlDomain($signUrl);
 				$getUrlHost = $signUrlHostInfo[1] . "://" . $signUrlHostInfo[0];
 				$mockSuccessUrl = preg_replace("/\/$/", '', $getUrlHost . preg_replace('/(.*?)\<a href=\"(.*?)\">(.*?)\>Mock success(.*)/is', '$2', $getSigningPage));
 				// Split up in case of test requirements
@@ -1065,6 +1067,26 @@ class ResursBankTest extends TestCase
 			$FrameContent = $this->CURL->doGet($getFrameUrl);
 			$this->assertTrue($FrameContent['code'] == 200 && strlen($FrameContent['body']) > 1024);
 		}
+	}
+
+	public function testCheckoutAsFromDocs() {
+		$this->checkEnvironment();
+		$this->rb->setPreferredPaymentService(ResursMethodTypes::METHOD_CHECKOUT);
+		$iframePaymentReference = $this->rb->getPreferredPaymentId(30, "CREATE-");
+		$this->rb->addOrderLine(
+			"HORSE",
+			"Stallponny",
+			4800,
+			25,
+			"st",
+			null,
+			1
+		);
+		$this->rb->setShopUrl("https://my.iframe.shop.com/test", true);
+		$this->rb->setCheckoutUrls("https://google.com/?q=signingSuccessful", "https://google.com/?q=signingFailed", false);
+		$theFrame = $this->rb->createPayment($iframePaymentReference);
+		$urls = $this->NETWORK->getUrlsFromHtml($theFrame);
+		$this->assertTrue(count($urls) == 2);
 	}
 
 	/**

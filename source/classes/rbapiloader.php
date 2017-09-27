@@ -101,7 +101,7 @@ class ResursBank {
 	/** @var string The version of this gateway */
 	private $version = "1.2.0";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20170926";
+	private $lastUpdate = "20170927";
 	/** @var string This. */
 	private $clientName = "EComPHP";
 	/** @var string Replacing $clientName on usage of setClientNAme */
@@ -185,6 +185,8 @@ class ResursBank {
 	private $env_hosted_current = "";
 	/** @var string ShopUrl to use with the checkout */
 	private $checkoutShopUrl = "";
+	/** @var bool Set to true via setValidateCheckoutShopUrl() if you require validation of a proper shopUrl */
+	private $validateCheckoutShopUrl = false;
 	/** @var int Default current environment. Always set to test (security reasons) */
 	private $current_environment_updated = false;
 	/** @var Store ID */
@@ -1974,15 +1976,33 @@ class ResursBank {
 	 * It is also possible to handle this through the manual payload as always.
 	 *
 	 * @param string $shopUrl
+	 *
 	 * @since 1.0.4
 	 * @since 1.1.4
 	 */
-	public function setShopUrl( $shopUrl = '' ) {
+	public function setShopUrl( $shopUrl = '', $validateFormat = true ) {
+		$this->InitializeServices();
 		if ( ! empty( $shopUrl ) ) {
 			$this->checkoutShopUrl = $shopUrl;
 		}
+		if ($validateFormat) {
+			$shopUrlValidate = $this->NETWORK->getUrlDomain($this->checkoutShopUrl);
+			$this->checkoutShopUrl = $shopUrlValidate[1] . "://" . $shopUrlValidate[0];
+		}
 	}
 
+	/**
+	 * Make sure shopUrl are properly set by enabling this feature
+	 *
+	 * @param bool $validateEnabled
+	 *
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
+	 */
+	public function setValidateCheckoutShopUrl($validateEnabled = true) {
+		$this->validateCheckoutShopUrl = $validateEnabled;
+	}
 
 	/////////// PAYMENT SPECS AND ROWS - IN DECISION OF DEPRECATION
 
@@ -2713,6 +2733,11 @@ class ResursBank {
 		if ( ! is_array( $this->SpecLines ) ) {
 			$this->SpecLines = array();
 		}
+
+		if (is_null($articleType)) {
+			$articleType = "ORDER_LINE";
+		}
+
 		// Simplified: id, artNo, description, quantity, unitMeasure, unitAmountWithoutVat, vatPct, totalVatAmount, totalAmount
 		// Hosted: artNo, description, quantity, unitMeasure, unitAmountWithoutVat, vatPct, totalVatAmount, totalAmount
 		// Checkout: artNo, description, quantity, unitMeasure, unitAmountWithoutVat, vatPct, type
@@ -3087,6 +3112,10 @@ class ResursBank {
 				}
 				// Making sure sloppy developers uses shopUrl properly.
 				if ( ! isset( $this->Payload['shopUrl'] ) ) {
+					if ($this->validateCheckoutShopUrl) {
+						$shopUrlValidate = $this->NETWORK->getUrlDomain( $this->checkoutShopUrl );
+						$this->checkoutShopUrl = $shopUrlValidate[1] . "://" . $shopUrlValidate[0];
+					}
 					$this->Payload['shopUrl'] = $this->checkoutShopUrl;
 				}
 			}
@@ -3306,6 +3335,9 @@ class ResursBank {
 	 * Payload simplifier: Having data from getAddress, you want to set as billing address, this can be done from here.
 	 *
 	 * @param $getaddressdata_or_governmentid
+	 * @param string $customerType
+	 *
+	 * @return array
 	 * @since 1.0.2
 	 * @since 1.1.2
 	 */
@@ -3422,6 +3454,17 @@ class ResursBank {
 		);
 		$this->handlePayload( $SigningPayload );
 	}
+
+	/**
+	 * Helper function. This actually does what setSigning do, but with lesser confusion.
+	 *
+	 * @param string $successUrl
+	 * @param string $backUrl
+	 */
+	public function setCheckoutUrls($successUrl = '', $backUrl = '') {
+		$this->setSigning($successUrl, $backUrl);
+	}
+
 	//// PAYLOAD HANDLER!
 
 	/**
