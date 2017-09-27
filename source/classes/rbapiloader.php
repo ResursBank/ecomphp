@@ -6562,16 +6562,21 @@ class ResursBank {
 	 * @param $paymentId
 	 * @param array $customPayloadItemList
 	 *
-	 * @return array
+	 * @return bool
+	 * @throws \Exception
 	 * @since 1.0.22
 	 * @since 1.1.22
 	 * @since 1.2.0
 	 */
-	public function paymentFinalize($paymentId = "", $customPayloadItemList = array()) {
-		$this->aftershopPrepareMetaData($paymentId);
-		$afterShopObject = $this->getAfterShopObjectByPayload($paymentId, $customPayloadItemList, ResursAfterShopRenderTypes::FINALIZE);
-		$Result         = $this->postService( "finalizePayment", $afterShopObject, true);
-		return $Result;
+	public function paymentFinalize( $paymentId = "", $customPayloadItemList = array() ) {
+		$this->aftershopPrepareMetaData( $paymentId );
+		$afterShopObject       = $this->getAfterShopObjectByPayload( $paymentId, $customPayloadItemList, ResursAfterShopRenderTypes::FINALIZE );
+		$afterShopResponseCode = $this->postService( "finalizePayment", $afterShopObject, true );
+		if ( $afterShopResponseCode >= 200 && $afterShopResponseCode < 300 ) {
+			return true;
+		}
+
+		return false;
 	}
 
 
