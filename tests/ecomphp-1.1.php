@@ -1117,12 +1117,9 @@ class ResursBankTest extends TestCase
 			try {
 				// Currently, this test always gets a HTTP-200 from ecommerce, regardless of successful or failing updates.
 				$Success = $this->rb->updatePaymentReference($iframePaymentReference, $newReference);
-				// TODO: When exceptions are properly implemented in ecom/checkout this should be included
-				// TODO: Create test suite for testing failing updates when ecom/checkout starts to throw exceptions
-				// Update the new order id with new products
-				//$updateOrderReq = $this->CURL->doPut($secondCheckoutUrl, $orderLines, 1);
-				//$responseOnFirstUpdate = $this->CURL->getResponseCode($updateOrderReq);
-
+				$updateCart = $this->rb->setCheckoutFrameOrderLines($newReference, $orderLines);
+				$this->assertTrue($updateCart);
+				return;
 			} catch (\Exception $e) {
 				$this->markTestIncomplete("Exception: " . $e->getCode() . ": " . $e->getMessage());
 			}
@@ -1130,6 +1127,64 @@ class ResursBankTest extends TestCase
 		$this->assertTrue($Success === true);
 	}
 
+	/**
+	 * Test that fails when updatePaymentReference is successful and the old payment reference gets the cart update
+	 */
+	public function testUpdatePaymentReferenceFail()
+	{
+		$this->checkEnvironment();
+		$iframePaymentReference = $this->rb->getPreferredPaymentId(30, "CREATE-");
+		try {
+			$iFrameUrl = $this->getCheckoutFrame(true);
+		} catch (\Exception $e) {
+			$this->markTestIncomplete("Exception: " . $e->getMessage());
+		}
+		$this->CURL->setAuthentication( $this->username, $this->password );
+		$this->CURL->setLocalCookies(true);
+		$iframeRequest = $this->CURL->doGet($iFrameUrl);
+
+		$payload = $this->rb->getPayload();
+		$orderLines = array("orderLines" => $payload['orderLines']);
+
+		$iframeContent = $iframeRequest['body'];
+		if (!empty($iframePaymentReference) && !empty($iFrameUrl) && !empty($iframeContent) && strlen($iframeContent) > 1024) {
+			$newReference = $this->rb->getPreferredPaymentId(30, "UPDATE-", true, true);
+			try {
+				// Currently, this test always gets a HTTP-200 from ecommerce, regardless of successful or failing updates.
+				$this->rb->updatePaymentReference($iframePaymentReference, $newReference);
+				$this->rb->setCheckoutFrameOrderLines($iframePaymentReference, $orderLines);
+			} catch (\Exception $e) {
+				$this->assertTrue($e->getCode() >= 400);
+				return;
+			}
+		}
+		$this->markTestIncomplete(__FUNCTION__ . " failed.");
+	}
+
+	public function testUpdateWrongPaymentReference()
+	{
+		$this->checkEnvironment();
+		$iframePaymentReference = $this->rb->getPreferredPaymentId(30, "CREATE-");
+		try {
+			$iFrameUrl = $this->getCheckoutFrame(true);
+		} catch (\Exception $e) {
+			$this->markTestIncomplete("Exception: " . $e->getMessage());
+		}
+		$this->CURL->setAuthentication( $this->username, $this->password );
+		$this->CURL->setLocalCookies(true);
+		$iframeRequest = $this->CURL->doGet($iFrameUrl);
+		$iframeContent = $iframeRequest['body'];
+		if (!empty($iframePaymentReference) && !empty($iFrameUrl) && !empty($iframeContent) && strlen($iframeContent) > 1024) {
+			$newReference = "#" . $this->rb->getPreferredPaymentId(30, "FAIL-", true, true);
+			try {
+				$this->rb->updatePaymentReference($iframePaymentReference, $newReference);
+			} catch (\Exception $e) {
+				$this->assertTrue($e->getCode() >= 400);
+				return;
+			}
+		}
+		$this->markTestIncomplete(__FUNCTION__ . " failed.");
+	}
 
 
 	/**

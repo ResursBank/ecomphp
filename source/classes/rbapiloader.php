@@ -2150,7 +2150,7 @@ class ResursBank {
 	 * @param  string $paymentId [The current paymentId]
 	 * @param  string $to [What it should be updated to]
 	 *
-	 * @return mixed
+	 * @return bool
 	 * @throws \Exception
 	 * @since 1.0.1
 	 * @since 1.1.1
@@ -2165,6 +2165,9 @@ class ResursBank {
 		$ResponseCode = $this->CURL->getResponseCode($result);
 		if ( $ResponseCode >= 200 && $ResponseCode <= 250 ) {
 			return true;
+		}
+		if ($ResponseCode >= 400) {
+			throw new \Exception("Payment reference could not be updated", $ResponseCode);
 		}
 		return false;
 	}
@@ -5696,11 +5699,6 @@ class ResursBank {
 	/**
 	 * Update the Checkout iframe
 	 *
-	 * Backwards compatible so the formatting of the orderLines will be accepted in folllowing formats:
-	 *  - $orderLines is accepted as a json string
-	 *  - $orderLines can be sent in as array('orderLines' => $yourOrderlines)
-	 *  - $orderLines can be sent in as array($yourOrderlines)
-	 *
 	 * @param string $paymentId
 	 * @param array $orderLines
 	 *
@@ -5708,18 +5706,19 @@ class ResursBank {
 	 * @throws \Exception
 	 * @since 1.0.8
 	 * @since 1.1.8
+	 * @deprecated Use updateCheckoutOrderLines() instead
 	 */
 	public function setCheckoutFrameOrderLines( $paymentId = '', $orderLines = array() ) {
+		$outputOrderLines = array();
 		if ( empty( $paymentId ) ) {
 			throw new \Exception( "Payment id not set" );
 		}
 		if ( ! $this->hasServicesInitialization ) {
 			$this->InitializeServices();
 		}
-		if (empty($this->defaultUnitMeasure)) {
+		if ( empty( $this->defaultUnitMeasure ) ) {
 			$this->setDefaultUnitMeasure();
 		}
-		$outputOrderLines = array();
 		if ( is_string( $orderLines ) ) {
 			// If this is a string, it might be an json string from older systems. We need, in that case make sure it is returned as an array.
 			// This will destroy the content going to the PUT call, if it is not the case. However, sending a string to this point has no effect in the flow whatsoever.
@@ -5733,8 +5732,35 @@ class ResursBank {
 		} else {
 			$outputOrderLines = $orderLines;
 		}
-		$sanitizedOutputOrderLines = $this->sanitizePaymentSpec( $outputOrderLines, ResursMethodTypes::METHOD_CHECKOUT );
-		return $this->CURL->doPut( $this->getCheckoutUrl() . "/checkout/payments/" . $paymentId, array( 'orderLines' => $sanitizedOutputOrderLines ), CURL_POST_AS::POST_AS_JSON );
+		$sanitizedOutputOrderLines    = $this->sanitizePaymentSpec( $outputOrderLines, ResursMethodTypes::METHOD_CHECKOUT );
+		$updateOrderLinesResponse     = $this->CURL->doPut( $this->getCheckoutUrl() . "/checkout/payments/" . $paymentId, array( 'orderLines' => $sanitizedOutputOrderLines ), CURL_POST_AS::POST_AS_JSON );
+		$updateOrderLinesResponseCode = $this->CURL->getResponseCode( $updateOrderLinesResponse );
+		if ( $updateOrderLinesResponseCode >= 400 ) {
+			throw new \Exception( "Could not update order lines", $updateOrderLinesResponseCode );
+		}
+		if ( $updateOrderLinesResponseCode >= 200 && $updateOrderLinesResponseCode < 300 ) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Update the Checkout iframe
+	 *
+	 * Backwards compatible so the formatting of the orderLines will be accepted in folllowing formats:
+	 *  - $orderLines is accepted as a json string
+	 *  - $orderLines can be sent in as array('orderLines' => $yourOrderlines)
+	 *  - $orderLines can be sent in as array($yourOrderlines)
+	 *
+	 * @param string $paymentId
+	 * @param array $orderLines
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
+	 */
+	public function updateCheckoutOrderLines( $paymentId = '', $orderLines = array() ) {
+		$this->setCheckoutFrameOrderLines($paymentId, $orderLines);
 	}
 
 	////// HOSTED FLOW
