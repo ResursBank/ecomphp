@@ -255,6 +255,10 @@ class ResursBank {
 	 */
 	private $NETWORK;
 	/**
+	 * @var TorneLIB_NetBits Class for handling bitmasks
+	 */
+	private $BIT;
+	/**
 	 * @var TorneLIB_Crypto Class for handling data encoding/encryption
 	 * @since 1.0.13
 	 * @since 1.1.13
@@ -953,6 +957,7 @@ class ResursBank {
 			$this->CURL->setAuthentication( $this->soapOptions['login'], $this->soapOptions['password'] );
 			$this->CURL->setUserAgent( $this->myUserAgent );
 			$this->NETWORK = new \Resursbank\RBEcomPHP\TorneLIB_Network();
+			$this->BIT = $this->NETWORK->BIT;
 		}
 		// Prepare services URL in case of nonWsdl mode.
 		// This makes the throwing on "no available services" unnecessary
@@ -4671,7 +4676,7 @@ class ResursBank {
 			throw new \Exception( "No payload are set for this payment", \ResursExceptions::BOOKPAYMENT_NO_BOOKDATA );
 		}
 
-		// Obsolete way to handle multidimensional specrows (1.0.0-1.0.1)
+		// Obsolete way to handle multidimensional specrows
 		if ( isset( $this->Payload['specLine'] ) ) {
 			if ( isset( $this->Payload['specLine']['artNo'] ) ) {
 				$this->SpecLines[] = $this->Payload['specLine'];
@@ -4685,6 +4690,10 @@ class ResursBank {
 			unset( $this->Payload['specLine'] );
 			$this->renderPaymentSpec();
 		} else if ( isset( $this->Payload['orderLines'] ) ) {
+			$this->renderPaymentSpec();
+		} else if (!isset($this->Payload['orderLines']) && count($this->SpecLines)) {
+			// Fix desynched orderlines
+			$this->Payload['orderLines'] = $this->SpecLines;
 			$this->renderPaymentSpec();
 		}
 		if ( $this->enforceService === ResursMethodTypes::METHOD_HOSTED || $this->enforceService === ResursMethodTypes::METHOD_SIMPLIFIED ) {
@@ -5173,6 +5182,22 @@ class ResursBank {
 	public function getPayload() {
 		$this->preparePayload();
 		return $this->Payload;
+	}
+
+	/**
+	 * Return added speclines / Orderlines
+	 *
+	 * @return array
+	 */
+	public function getOrderLines() {
+		return $this->SpecLines;
+	}
+
+	/**
+	 * @return array
+	 */
+	public function getSpecLines() {
+		return $this->getOrderLines();
 	}
 
 	/**
@@ -6421,21 +6446,32 @@ class ResursBank {
 
 	/**
 	 * Sanitize a paymentspec from a payment id or a prepared getPayment object and return filtered depending on the requested aftershop type
+	 *
 	 * @param string $paymentIdOrPaymentObject
-	 * @param int $renderType
+	 * @param int $renderType ResursAfterShopRenderTypes as unique type or bitmask
 	 *
 	 * @return array|mixed|null
 	 */
 	public function sanitizeAfterShopSpec($paymentIdOrPaymentObject = '', $renderType = ResursAfterShopRenderTypes::NONE) {
 		$returnSpecObject = null;
 
+		$this->BIT->setBitStructure(
+			array(
+				'FINALIZE' => ResursAfterShopRenderTypes::FINALIZE,
+				'CREDIT' => ResursAfterShopRenderTypes::CREDIT,
+				'ANNUL' => ResursAfterShopRenderTypes::ANNUL,
+				'AUTHORIZE' => ResursAfterShopRenderTypes::AUTHORIZE,
+			)
+		);
+
 		// Get payment spec bulked
-		$paymentIdOrPaymentObject = $this->objectsIntoArray($this->getPaymentSpecByStatus($paymentIdOrPaymentObject));
-		if ( $renderType == ResursAfterShopRenderTypes::FINALIZE ) {
+		$paymentIdOrPaymentObject = $this->getPaymentSpecByStatus($paymentIdOrPaymentObject);
+
+		if ( $this->BIT->isBit(ResursAfterShopRenderTypes::FINALIZE, $renderType) ) {
 			$returnSpecObject = $this->removeFromArray( $paymentIdOrPaymentObject['AUTHORIZE'], array_merge( $paymentIdOrPaymentObject['DEBIT'], $paymentIdOrPaymentObject['ANNUL'], $paymentIdOrPaymentObject['CREDIT'] ) );
-		} else if ( $renderType == ResursAfterShopRenderTypes::CREDIT ) {
+		} else if ( $this->BIT->isBit(ResursAfterShopRenderTypes::CREDIT, $renderType) ) {
 			$returnSpecObject = $this->removeFromArray( $paymentIdOrPaymentObject['DEBIT'], array_merge( $paymentIdOrPaymentObject['ANNUL'], $paymentIdOrPaymentObject['CREDIT'] ) );
-		} else if ( $renderType == ResursAfterShopRenderTypes::ANNUL ) {
+		} else if ( $this->BIT->isBit(ResursAfterShopRenderTypes::ANNUL, $renderType) ) {
 			$returnSpecObject = $this->removeFromArray( $paymentIdOrPaymentObject['AUTHORIZE'], array_merge( $paymentIdOrPaymentObject['DEBIT'], $paymentIdOrPaymentObject['ANNUL'], $paymentIdOrPaymentObject['CREDIT'] ) );
 		} else {
 			// If no type is chosen, return all rows
@@ -6576,6 +6612,7 @@ class ResursBank {
 	 * @since 1.2.0
 	 */
 	private function getAfterShopObjectByPayload($paymentId = "", $customPayloadItemList = array(), $payloadType = ResursAfterShopRenderTypes::NONE) {
+
 		$finalAfterShopSpec = array(
 			'paymentId' => $paymentId
 		);
@@ -6629,7 +6666,18 @@ class ResursBank {
 	}
 
 	/**
-	 * Aftershop Payment Finalization (DEBIT) - Finalization replacement.
+	 * Identical to paymentFinalize but used for testing errors
+	 */
+	public function paymentFinalizeTest() {
+		if (defined('TEST_OVERRIDE_AFTERSHOP_PAYLOAD') && $this->current_environment == ResursEnvironments::ENVIRONMENT_TEST) {
+			$this->postService( "finalizePayment", unserialize( TEST_OVERRIDE_AFTERSHOP_PAYLOAD ) );
+		}
+	}
+
+	/**
+	 * Aftershop Payment Finalization (DEBIT)
+	 *
+	 * Make sure that you are running this with try-catches in cases where failures may occur.
 	 *
 	 * @param $paymentId
 	 * @param array $customPayloadItemList
@@ -6651,12 +6699,77 @@ class ResursBank {
 	}
 
 	/**
-	 * Identical to paymentFinalize but used for testing errors
+	 * Aftershop Payment Annulling (ANNUL)
+	 *
+	 * Make sure that you are running this with try-catches in cases where failures may occur.
+	 *
+	 * @param $paymentId
+	 * @param array $customPayloadItemList
+	 *
+	 * @return bool
+	 * @throws \Exception
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
 	 */
-	public function paymentFinalizeTest() {
-		if (defined('TEST_OVERRIDE_AFTERSHOP_PAYLOAD') && $this->current_environment == ResursEnvironments::ENVIRONMENT_TEST) {
-			$this->postService( "finalizePayment", unserialize( TEST_OVERRIDE_AFTERSHOP_PAYLOAD ) );
+	public function paymentAnnul( $paymentId = "", $customPayloadItemList = array() ) {
+		$afterShopObject = $this->getAfterShopObjectByPayload( $paymentId, $customPayloadItemList, ResursAfterShopRenderTypes::ANNUL );
+		$this->aftershopPrepareMetaData( $paymentId );
+		$afterShopResponseCode = $this->postService( "annulPayment", $afterShopObject, true );
+		if ( $afterShopResponseCode >= 200 && $afterShopResponseCode < 300 ) {
+			return true;
 		}
+		return false;
+	}
+
+	/**
+	 * Aftershop Payment Crediting (CREDIT)
+	 *
+	 * Make sure that you are running this with try-catches in cases where failures may occur.
+	 *
+	 * @param $paymentId
+	 * @param array $customPayloadItemList
+	 *
+	 * @return bool
+	 * @throws \Exception
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
+	 */
+	public function paymentCredit( $paymentId = "", $customPayloadItemList = array() ) {
+		$afterShopObject = $this->getAfterShopObjectByPayload( $paymentId, $customPayloadItemList, ResursAfterShopRenderTypes::CREDIT );
+		$this->aftershopPrepareMetaData( $paymentId );
+		$afterShopResponseCode = $this->postService( "creditPayment", $afterShopObject, true );
+		if ( $afterShopResponseCode >= 200 && $afterShopResponseCode < 300 ) {
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Aftershop Payment Cancellation (ANNUL+CREDIT)
+	 *
+	 * Make sure that you are running this with try-catches in cases where failures may occur.
+	 *
+	 * @param $paymentId
+	 * @param array $customPayloadItemList
+	 *
+	 * @return bool
+	 * @throws \Exception
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
+	 */
+	public function paymentCancel( $paymentId = "", $customPayloadItemList = array() ) {
+		$afterShopObject = $this->getAfterShopObjectByPayload( $paymentId, $customPayloadItemList, (ResursAfterShopRenderTypes::CREDIT + ResursAfterShopRenderTypes::ANNUL) );
+		print_r($afterShopObject);
+		die;
+		$this->aftershopPrepareMetaData( $paymentId );
+		$afterShopResponseCode = $this->postService( "creditPayment", $afterShopObject, true );
+		if ( $afterShopResponseCode >= 200 && $afterShopResponseCode < 300 ) {
+			return true;
+		}
+		return false;
 	}
 
 	/**
