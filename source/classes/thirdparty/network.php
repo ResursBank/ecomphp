@@ -3,7 +3,7 @@
 /**
  * NetCurl Library
  *
- * @version 6.0.5
+ * @version 6.0.6
  */
 
 namespace Resursbank\RBEcomPHP;
@@ -2440,7 +2440,7 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 	 * Class TorneLIB_NetBits Netbits Library for calculations with bitmasks
 	 *
 	 * @package TorneLIB
-	 * @version 6.0.0
+	 * @version 6.0.1
 	 */
 	class TorneLIB_NetBits {
 		/** @var array Standard bitmask setup */
@@ -2500,9 +2500,11 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 			$require                  = $this->getRequiredBits( count( $bitStructure ) );
 			$validated                = array();
 			$newValidatedBitStructure = array();
+			$valueKeys = array();
 			foreach ( $bitStructure as $key => $value ) {
 				if ( in_array( $value, $require ) ) {
 					$newValidatedBitStructure[ $key ] = $value;
+					$valueKeys[$value] = $key;
 					$validated[]                      = $value;
 				}
 			}
@@ -2511,11 +2513,18 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 					if ( $bitIndex == "0" ) {
 						$newValidatedBitStructure["OFF"] = $bitIndex;
 					} else {
-						$newValidatedBitStructure[ "BIT_" . $bitIndex ] = $bitIndex;
+						$bitIdentificationName = "BIT_" . $bitIndex;
+						$newValidatedBitStructure[ $bitIdentificationName ] = $bitIndex;
+					}
+				} else {
+					if (isset($valueKeys[$bitIndex]) && !empty($valueKeys[$bitIndex])) {
+						$bitIdentificationName = $valueKeys[$bitIndex];
+						$newValidatedBitStructure[ $bitIdentificationName ] = $bitIndex;
 					}
 				}
 			}
 			asort( $newValidatedBitStructure );
+			$this->BIT_SETUP = $newValidatedBitStructure;
 
 			return $newValidatedBitStructure;
 		}
