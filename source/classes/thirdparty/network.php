@@ -1,5 +1,11 @@
 <?php
 
+/**
+ * NetCurl Library
+ *
+ * @version 6.0.5
+ */
+
 namespace Resursbank\RBEcomPHP;
 
 // Make sure this library won't conflict with others
@@ -8,7 +14,7 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 	 * Library for handling network related things (currently not sockets). A conversion of a legacy PHP library called "TorneEngine" and family.
 	 *
 	 * Class TorneLIB_Network
-	 * @version 6.0.1
+	 * @version 6.0.2
 	 * @link https://phpdoc.tornevall.net/TorneLIBv5/class-TorneLIB.TorneLIB_Network.html PHPDoc/Staging - TorneLIB_Network
 	 * @link https://docs.tornevall.net/x/KQCy TorneLIB (PHP) Landing documentation
 	 * @link https://bitbucket.tornevall.net/projects/LIB/repos/tornelib-php/browse Sources of TorneLIB
@@ -40,10 +46,15 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 		private $cookieUseSecure;
 		private $cookieDefaultDomain;
 		private $cookieDefaultPrefix;
+		private $alwaysResolveHostvalidation = false;
+
+		/** @var TorneLIB_NetBits BitMask handler with 8 bits as default */
+		public $BIT;
 
 		function __construct() {
 			// Initiate and get client headers.
 			$this->renderProxyHeaders();
+			$this->BIT = new TorneLIB_NetBits();
 		}
 
 		/**
@@ -66,7 +77,7 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 			if ( ! isset( $urlParsed['host'] ) || ! $urlParsed['scheme'] ) {
 				return array( null, null, null );
 			}
-			if ( $validateHost ) {
+			if ( $validateHost || $this->alwaysResolveHostvalidation === true ) {
 				// Make sure that the host is not invalid
 				$hostRecord = dns_get_record( $urlParsed['host'], DNS_ANY );
 				if ( ! count( $hostRecord ) ) {
@@ -380,6 +391,22 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 			exit;
 		}
 
+		/**
+		 * When active: Force this libray to always validate hosts with a DNS resolve during a getUrlDomain()-call.
+		 *
+		 * @param bool $activate
+		 */
+		public function setAlwaysResolveHostvalidation( $activate = false ) {
+			$this->alwaysResolveHostvalidation = $activate;
+		}
+
+		/**
+		 * Return the current boolean value for alwaysResolveHostvalidation.
+		 */
+		public function getAlwaysResolveHostvalidation() {
+			$this->alwaysResolveHostvalidation;
+		}
+
 	}
 
 	/** @noinspection PhpUndefinedClassInspection */
@@ -398,7 +425,7 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 	 * Class Tornevall_cURL
 	 *
 	 * @package TorneLIB
-	 * @version 6.0.4
+	 * @version 6.0.5
 	 * @link https://phpdoc.tornevall.net/TorneLIBv5/source-class-TorneLIB.Tornevall_cURL.html PHPDoc/Staging - Tornevall_cURL
 	 * @link https://docs.tornevall.net/x/KQCy TorneLIB (PHP) Landing documentation
 	 * @link https://bitbucket.tornevall.net/projects/LIB/repos/tornelib-php/browse Sources of TorneLIB
@@ -414,7 +441,7 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 		private $NETWORK;
 
 		/** @var string Internal version that is being used to find out if we are running the latest version of this library */
-		private $TorneCurlVersion = "6.0.4";
+		private $TorneCurlVersion = "6.0.5";
 		private $CurlVersion = null;
 
 		/** @var string Internal release snapshot that is being used to find out if we are running the latest version of this library */
@@ -748,7 +775,7 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 		 * @since 5.0.0/2017.4
 		 */
 		public function setEnforceFollowLocation( $setEnabledState = true ) {
-			$this->followLocationSet     = $setEnabledState;
+			$this->followLocationSet = $setEnabledState;
 		}
 
 
@@ -885,6 +912,7 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 		public function init() {
 			$this->initCookiePath();
 			$this->CurlSession = curl_init( $this->CurlURL );
+
 			return $this->CurlSession;
 		}
 
@@ -1332,8 +1360,7 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 				}
 			}
 			if ( is_null( $parsedContent ) && ( preg_match( "/xml version/", $content ) || preg_match( "/rss version/", $content ) || preg_match( "/xml/i", $contentType ) ) ) {
-				$trimmedContent = trim( $content ); // PHP 5.3: Can't use function return value in write context
-
+				$trimmedContent        = trim( $content ); // PHP 5.3: Can't use function return value in write context
 				$overrideXmlSerializer = false;
 				if ( $this->useXmlSerializer ) {
 					$serializerPath = stream_resolve_include_path( 'XML/Unserializer.php' );
@@ -1357,9 +1384,7 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 						return null;
 					}
 				} else {
-					/*
-                 * Returns empty class if the SimpleXMLElement is missing.
-                 */
+					// Returns empty class if the SimpleXMLElement is missing.
 					if ( $overrideXmlSerializer ) {
 						$xmlSerializer = new \XML_Unserializer();
 						$xmlSerializer->unserialize( $content );
@@ -1621,7 +1646,7 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 			// If response code starts with 3xx, this is probably a redirect
 			if ( preg_match( "/^3/", $code ) ) {
 				$this->redirectedUrls[] = $this->CurlURL;
-				$redirectArray[] = array(
+				$redirectArray[]        = array(
 					'header' => $header,
 					'body'   => $body,
 					'code'   => $code
@@ -1742,10 +1767,11 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 		 */
 		public function doPost( $url = '', $postData = array(), $postAs = CURL_POST_AS::POST_AS_NORMAL ) {
 			$response = null;
-			if (!empty($url)) {
-				$content       = $this->handleUrlCall( $url, $postData, CURL_METHODS::METHOD_POST, $postAs );
+			if ( ! empty( $url ) ) {
+				$content  = $this->handleUrlCall( $url, $postData, CURL_METHODS::METHOD_POST, $postAs );
 				$response = $this->ParseResponse( $content );
 			}
+
 			return $response;
 		}
 
@@ -1758,10 +1784,11 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 		 */
 		public function doPut( $url = '', $postData = array(), $postAs = CURL_POST_AS::POST_AS_NORMAL ) {
 			$response = null;
-			if (!empty($url)) {
-				$content       = $this->handleUrlCall( $url, $postData, CURL_METHODS::METHOD_PUT, $postAs );
+			if ( ! empty( $url ) ) {
+				$content  = $this->handleUrlCall( $url, $postData, CURL_METHODS::METHOD_PUT, $postAs );
 				$response = $this->ParseResponse( $content );
 			}
+
 			return $response;
 		}
 
@@ -1774,10 +1801,11 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 		 */
 		public function doDelete( $url = '', $postData = array(), $postAs = CURL_POST_AS::POST_AS_NORMAL ) {
 			$response = null;
-			if (!empty($url)) {
+			if ( ! empty( $url ) ) {
 				$content  = $this->handleUrlCall( $url, $postData, CURL_METHODS::METHOD_DELETE, $postAs );
 				$response = $this->ParseResponse( $content );
 			}
+
 			return $response;
 		}
 
@@ -1791,10 +1819,11 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 		 */
 		public function doGet( $url = '', $postAs = CURL_POST_AS::POST_AS_NORMAL ) {
 			$response = null;
-			if (!empty($url)) {
-				$content       = $this->handleUrlCall( $url, array(), CURL_METHODS::METHOD_GET, $postAs );
+			if ( ! empty( $url ) ) {
+				$content  = $this->handleUrlCall( $url, array(), CURL_METHODS::METHOD_GET, $postAs );
 				$response = $this->ParseResponse( $content );
 			}
+
 			return $response;
 		}
 
@@ -1895,9 +1924,10 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 				$Soap->SoapTryOnce = $this->SoapTryOnce;
 				try {
 					$getSoapResponse = $Soap->getSoap();
-				} catch (\Exception $getSoapResponseException) {
-					throw new \Exception($getSoapResponseException->getMessage(), $getSoapResponseException->getCode());
+				} catch ( \Exception $getSoapResponseException ) {
+					throw new \Exception( $getSoapResponseException->getMessage(), $getSoapResponseException->getCode() );
 				}
+
 				return $getSoapResponse;
 			}
 
@@ -2122,6 +2152,7 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 		private $libResponse;
 		private $canThrowSoapFaults = true;
 		private $CustomUserAgent;
+		private $soapFaultExceptionObject;
 
 		public $SoapFaultString = null;
 		public $SoapFaultCode = 0;
@@ -2189,9 +2220,9 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 			if ( $this->SoapTryOnce ) {
 				try {
 					$this->soapClient = new \SoapClient( $this->soapUrl, $this->soapOptions );
-				} catch (\Exception $soapException) {
+				} catch ( \Exception $soapException ) {
 					$soapCode = $soapException->getCode();
-					if (!$soapCode) {
+					if ( ! $soapCode ) {
 						$soapCode = 500;
 					}
 					throw new \Exception( $soapException->getMessage(), $soapCode );
@@ -2219,6 +2250,7 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 					}
 				}
 			}
+
 			return $this;
 		}
 
@@ -2249,12 +2281,11 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 				$returnResponse['header']  = $parsedHeader['header'];
 				$returnResponse['code']    = isset( $parsedHeader['code'] ) ? $parsedHeader['code'] : 0;
 				$returnResponse['body']    = $this->soapResponse;
-				/*
-             * Collect the response received internally, before throwing
-             */
-				$this->libResponse = $returnResponse;
+				// Collect the response received internally, before throwing
+				$this->libResponse              = $returnResponse;
+				$this->soapFaultExceptionObject = $e;
 				if ( $this->canThrowSoapFaults ) {
-					throw new \Exception( $e->getMessage(), $e->getCode() );
+					throw new \Exception( $e->getMessage(), $e->getCode(), $e );
 				}
 				$this->SoapFaultString = $e->getMessage();
 				$this->SoapFaultCode   = $e->getCode();
@@ -2285,9 +2316,31 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 		 * Get the SOAP response independently on exceptions or successes
 		 *
 		 * @return mixed
+		 * @since 5.0.0
+		 * @deprecated 6.0.5 Use getSoapResponse()
 		 */
 		public function getLibResponse() {
 			return $this->libResponse;
+		}
+
+		/**
+		 * Get the SOAP response independently on exceptions or successes
+		 *
+		 * @return mixed
+		 * @since 6.0.5
+		 */
+		public function getSoapResponse() {
+			return $this->libResponse;
+		}
+
+		/**
+		 * Get the last thrown soapfault object
+		 *
+		 * @return mixed
+		 * @since 6.0.5
+		 */
+		public function getSoapFault() {
+			return $this->soapFaultExceptionObject;
 		}
 	}
 
@@ -2370,8 +2423,6 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 		const RESPONSETYPE_OBJECT = 1;
 	}
 
-	/** @noinspection PhpUndefinedClassInspection */
-
 	/**
 	 * Class TORNELIB_CURLOBJECT
 	 * @package TorneLIB
@@ -2383,5 +2434,164 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 		public $parsed;
 		public $url;
 		public $ip;
+	}
+
+	/**
+	 * Class TorneLIB_NetBits Netbits Library for calculations with bitmasks
+	 *
+	 * @package TorneLIB
+	 * @version 6.0.0
+	 */
+	class TorneLIB_NetBits {
+		/** @var array Standard bitmask setup */
+		private $BIT_SETUP;
+		private $maxBits = 8;
+
+		function __construct( $bitStructure = array() ) {
+			$this->BIT_SETUP = array(
+				'OFF'     => 0,
+				'BIT_1'   => 1,
+				'BIT_2'   => 2,
+				'BIT_4'   => 4,
+				'BIT_8'   => 8,
+				'BIT_16'  => 16,
+				'BIT_32'  => 32,
+				'BIT_64'  => 64,
+				'BIT_128' => 128
+			);
+			if ( count( $bitStructure ) ) {
+				$this->BIT_SETUP = $this->validateBitStructure( $bitStructure );
+			}
+		}
+
+		public function setMaxBits( $maxBits = 8 ) {
+			$this->maxBits = $maxBits;
+			$this->validateBitStructure( $maxBits );
+		}
+
+		public function getMaxBits() {
+			return $this->maxBits;
+		}
+
+		private function getRequiredBits( $maxBits = 8 ) {
+			$requireArray = array();
+			if ( $this->maxBits != $maxBits ) {
+				$maxBits = $this->maxBits;
+			}
+			for ( $curBit = 0; $curBit <= $maxBits; $curBit ++ ) {
+				$requireArray[] = (int) pow( 2, $curBit );
+			}
+
+			return $requireArray;
+		}
+
+		private function validateBitStructure( $bitStructure = array() ) {
+			if ( is_numeric( $bitStructure ) ) {
+				$newBitStructure = array(
+					'OFF' => 0
+				);
+				for ( $bitIndex = 0; $bitIndex <= $bitStructure; $bitIndex ++ ) {
+					$powIndex                              = pow( 2, $bitIndex );
+					$newBitStructure[ "BIT_" . $powIndex ] = $powIndex;
+				}
+				$bitStructure    = $newBitStructure;
+				$this->BIT_SETUP = $bitStructure;
+			}
+			$require                  = $this->getRequiredBits( count( $bitStructure ) );
+			$validated                = array();
+			$newValidatedBitStructure = array();
+			foreach ( $bitStructure as $key => $value ) {
+				if ( in_array( $value, $require ) ) {
+					$newValidatedBitStructure[ $key ] = $value;
+					$validated[]                      = $value;
+				}
+			}
+			foreach ( $require as $bitIndex ) {
+				if ( ! in_array( $bitIndex, $validated ) ) {
+					if ( $bitIndex == "0" ) {
+						$newValidatedBitStructure["OFF"] = $bitIndex;
+					} else {
+						$newValidatedBitStructure[ "BIT_" . $bitIndex ] = $bitIndex;
+					}
+				}
+			}
+			asort( $newValidatedBitStructure );
+
+			return $newValidatedBitStructure;
+		}
+
+		public function setBitStructure( $bitStructure = array() ) {
+			$this->validateBitStructure( $bitStructure );
+		}
+
+		public function getBitStructure() {
+			return $this->BIT_SETUP;
+		}
+
+		/**
+		 * Finds out if a bitmasked value is located in a bitarray
+		 *
+		 * @param int $requestedExistingBit
+		 * @param int $requestedBitSum
+		 *
+		 * @return bool
+		 */
+		public function isBit( $requestedExistingBit = 0, $requestedBitSum = 0 ) {
+			$return = false;
+			if ( is_array( $requestedExistingBit ) ) {
+				foreach ( $requestedExistingBit as $bitKey ) {
+					if ( ! $this->isBit( $bitKey, $requestedBitSum ) ) {
+						return false;
+					}
+				}
+
+				return true;
+			}
+
+			// Solution that works with unlimited bits
+			for ( $bitCount = 0; $bitCount < count( $this->getBitStructure() ); $bitCount ++ ) {
+				if ( $requestedBitSum & pow( 2, $bitCount ) ) {
+					if ( $requestedExistingBit == pow( 2, $bitCount ) ) {
+						$return = true;
+					}
+				}
+			}
+
+			// Solution that works with bits up to 8
+			/*
+			$sum = 0;
+			preg_match_all("/\d/", sprintf("%08d", decbin( $requestedBitSum)), $bitArray);
+			for ($bitCount = count($bitArray[0]); $bitCount >= 0; $bitCount--) {
+				if (isset($bitArray[0][$bitCount])) {
+					if ( $requestedBitSum & pow(2, $bitCount)) {
+						if ( $requestedExistingBit == pow(2, $bitCount)) {
+							$return = true;
+						}
+					}
+				}
+			}
+			*/
+
+			return $return;
+		}
+
+		/**
+		 * Get active bits in an array
+		 *
+		 * @param int $bitValue
+		 *
+		 * @return array
+		 */
+		public function getBitArray( $bitValue = 0 ) {
+			$returnBitList = array();
+			foreach ( $this->BIT_SETUP as $key => $value ) {
+				if ( $this->isBit( $value, $bitValue ) ) {
+					$returnBitList[] = $key;
+				}
+			}
+
+			return $returnBitList;
+		}
+
 	}
 }
