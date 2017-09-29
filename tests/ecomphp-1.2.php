@@ -5,7 +5,7 @@
  *
  * @package EcomPHPTest
  * @author Resurs Bank Ecommrece <ecommerce.support@resurs.se>
- * @version 0.5
+ * @version 0.6
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @license -
  *
@@ -1923,6 +1923,38 @@ class ResursBankTest extends TestCase
 	}
 
 	/**
+	 * Test: Curl error handling before NetCurl 6.0.5
+	 */
+	function testSoapErrorXPath() {
+		$CURL = new \Resursbank\RBEcomPHP\Tornevall_cURL();
+		$CURL->setAuthentication($this->username, $this->password);
+		$wsdl = $CURL->doGet('https://test.resurs.com/ecommerce-test/ws/V4/AfterShopFlowService?wsdl');
+		try {
+			$wsdl->finalizePayment(array('paymentId'=>time()));
+		} catch (\Exception $e) {
+			$soapObject       = $wsdl->getSoap();
+			$soapLibResponse  = $soapObject->getLibResponse();
+			$soapBody = $this->CURL->ParseContent( $soapLibResponse['body'], false, "xml" );
+			$getSoapFault = $soapBody->xpath( "//soap:Fault/detail/*" );
+			$this->assertTrue(isset($getSoapFault[0]) && is_object($getSoapFault[0]) && isset($getSoapFault[0]->fixableByYou));
+		}
+	}
+
+	/**
+	 * Test: Curl error handling from NetCurl 6.0.5 and above
+	 */
+	function testSoapError() {
+		$CURL = new \Resursbank\RBEcomPHP\Tornevall_cURL();
+		$wsdl = $CURL->doGet('https://test.resurs.com/ecommerce-test/ws/V4/SimplifiedShopFlowService?wsdl');
+		try {
+			$wsdl->getPaymentMethods();
+		} catch (\Exception $e) {
+			$previousException = $e->getPrevious();
+			$this->assertTrue(isset($previousException->faultstring) && !empty($previousException->faultstring));
+		}
+	}
+
+	/**
 	 * Test: Aftershop finalization, new method
 	 * Expected result: The order is fully debited
 	 */
@@ -2052,6 +2084,16 @@ class ResursBankTest extends TestCase
 			$countOrder     = $this->rb->getPaymentSpecCount( $paymentId );
 			$testOrder      = $this->rb->getPaymentSpecByStatus( $paymentId );
 			$this->assertTrue( ( $finalizeResult == 200 && $countOrder['AUTHORIZE'] == 2 && $countOrder['DEBIT'] == 1 && (int) $testOrder['DEBIT']['0']->quantity == 2 ) );
+		}
+	}
+
+	function testAftershopFullFinalizationFailure() {
+		define('TEST_OVERRIDE_AFTERSHOP_PAYLOAD', 'a:9:{s:9:"paymentId";s:19:"unExistentPaymentId";s:9:"orderDate";s:10:"2017-09-28";s:11:"invoiceDate";s:10:"2017-09-28";s:9:"invoiceId";i:1366;s:9:"createdBy";s:14:"EComPHP_010122";s:9:"specLines";a:2:{i:0;a:9:{s:2:"id";i:1;s:5:"artNo";s:8:"Art 1065";s:11:"description";s:16:"Beskrivning 3222";s:8:"quantity";s:7:"1.00000";s:11:"unitMeasure";s:2:"st";s:20:"unitAmountWithoutVat";s:10:"1309.00000";s:6:"vatPct";s:8:"25.00000";s:14:"totalVatAmount";s:19:"327.250000000000000";s:11:"totalAmount";s:20:"1636.250000000000000";}i:1;a:9:{s:2:"id";i:2;s:5:"artNo";s:8:"Art 2022";s:11:"description";s:16:"Beskrivning 4048";s:8:"quantity";s:7:"1.00000";s:11:"unitMeasure";s:2:"st";s:20:"unitAmountWithoutVat";s:10:"1292.00000";s:6:"vatPct";s:8:"25.00000";s:14:"totalVatAmount";s:19:"323.000000000000000";s:11:"totalAmount";s:20:"1615.000000000000000";}}s:11:"totalAmount";d:3251.25;s:14:"totalVatAmount";d:650.25;s:15:"partPaymentSpec";a:3:{s:9:"specLines";a:2:{i:0;a:9:{s:2:"id";i:1;s:5:"artNo";s:8:"Art 1065";s:11:"description";s:16:"Beskrivning 3222";s:8:"quantity";s:7:"1.00000";s:11:"unitMeasure";s:2:"st";s:20:"unitAmountWithoutVat";s:10:"1309.00000";s:6:"vatPct";s:8:"25.00000";s:14:"totalVatAmount";s:19:"327.250000000000000";s:11:"totalAmount";s:20:"1636.250000000000000";}i:1;a:9:{s:2:"id";i:2;s:5:"artNo";s:8:"Art 2022";s:11:"description";s:16:"Beskrivning 4048";s:8:"quantity";s:7:"1.00000";s:11:"unitMeasure";s:2:"st";s:20:"unitAmountWithoutVat";s:10:"1292.00000";s:6:"vatPct";s:8:"25.00000";s:14:"totalVatAmount";s:19:"323.000000000000000";s:11:"totalAmount";s:20:"1615.000000000000000";}}s:11:"totalAmount";d:3251.25;s:14:"totalVatAmount";d:650.25;}}');
+		try {
+			$this->rb->paymentFinalizeTest();
+		} catch (\Exception $paymentFinalizeException) {
+			$exceptionCode = $paymentFinalizeException->getCode();
+			$this->assertTrue($exceptionCode == 8 || $exceptionCode >= 500);
 		}
 	}
 
