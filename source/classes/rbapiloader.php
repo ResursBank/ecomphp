@@ -1865,6 +1865,7 @@ class ResursBank {
 	 * @param bool $getResponseCode
 	 *
 	 * @return array
+	 * @throws \Exception
 	 * @since 1.0.2
 	 * @since 1.1.2
 	 * @since 1.2.0
@@ -1872,13 +1873,53 @@ class ResursBank {
 	private function postService( $serviceName = "", $resursParameters = array(), $getResponseCode = false ) {
 		$this->InitializeServices();
 		$serviceNameUrl = $this->getServiceUrl( $serviceName );
+		$soapBody = null;
 		if (!empty($serviceNameUrl) && !is_null($this->CURL)) {
 			$Service        = $this->CURL->doGet( $serviceNameUrl );
-			$RequestService = $Service->$serviceName( $resursParameters );
+			try {
+				$RequestService = $Service->$serviceName( $resursParameters );
+			} catch (\Exception $serviceRequestException) {
+				// Try to fetch previous exception (This is what we actually want)
+				$previousException = $serviceRequestException->getPrevious();
+				if (isset($previousException->detail) && is_object($previousException->detail)) {
+					// TODO: Update when NetCurl 6.0.5 releases
+				}
+				$exceptionCode    = $serviceRequestException->getCode();
+				$exceptionMessage = $serviceRequestException->getMessage();
+				$soapObject       = $Service->getSoap();
+				$soapLibResponse  = $soapObject->getLibResponse();
+				if ( isset( $soapLibResponse['code'] ) && intval( $exceptionCode ) == 0 && $soapLibResponse['code'] > 0 ) {
+					// Fetch any internal errors
+					$exceptionCode = $soapLibResponse['code'];
+					try {
+						$soapBody = $this->CURL->ParseContent( $soapLibResponse['body'], false, "xml" );
+						// If the parsed object is an object and has an xpath-method available, there are great chances that we can extract something more from it
+						if ( is_object( $soapBody ) && method_exists( $soapBody, "xpath" ) ) {
+							$getSoapFault = $soapBody->xpath( "//soap:Fault/detail/*" );
+							if ( is_array( $getSoapFault ) && isset( $getSoapFault[0] ) ) {
+								$internalSoapFault = $getSoapFault[0];
+								if ( is_object( $internalSoapFault ) && isset( $internalSoapFault->errorTypeId ) ) {
+									$errorTypeId = intval( $internalSoapFault->errorTypeId );
+									// Make sure this is not zero
+									if ( $errorTypeId ) {
+										$exceptionCode = $errorTypeId;
+									}
+									if ( $internalSoapFault->userErrorMessage ) {
+										$exceptionMessage = $internalSoapFault->userErrorMessage;
+									}
+								}
+							}
+						}
+					} catch ( \Exception $soapFaultExtractionException ) {
+					}
+				}
+				// Cast internal soap errors into a new, since the exception code is lost
+				throw new \Exception( $exceptionMessage, $exceptionCode );
+			}
 			$ParsedResponse = $Service->getParsedResponse( $RequestService );
 			$ResponseCode   = $Service->getResponseCode();
 			if ($this->debug) {
-				if (!isset($this->curlStats['calls'])) {
+				if ( ! isset( $this->curlStats['calls'] ) ) {
 					$this->curlStats['calls'] = 1;
 				}
 				$this->curlStats['calls'] ++;
@@ -2147,8 +2188,8 @@ class ResursBank {
 	}
 
 	/**
-	 * @param  string $paymentId [The current paymentId]
-	 * @param  string $to [What it should be updated to]
+	 * @param  string $paymentId The current paymentId
+	 * @param  string $to What it should be updated to
 	 *
 	 * @return bool
 	 * @throws \Exception
@@ -6524,16 +6565,21 @@ class ResursBank {
 
 	/**
 	 * Create an afterShopFlow object to use with the afterShop flow
+	 *
 	 * @param string $paymentId
 	 * @param array $customPayloadItemList
 	 * @param int $payloadType
 	 *
 	 * @return array
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
 	 */
 	private function getAfterShopObjectByPayload($paymentId = "", $customPayloadItemList = array(), $payloadType = ResursAfterShopRenderTypes::NONE) {
 		$finalAfterShopSpec = array(
 			'paymentId' => $paymentId
 		);
+		if (!is_array($customPayloadItemList)) {$customPayloadItemList = array();} // Make sure this is correct
 
 		$storedPayment = $this->getPayment($paymentId);
 		$paymentMethod = $storedPayment->paymentMethodId;
@@ -6595,16 +6641,23 @@ class ResursBank {
 	 * @since 1.2.0
 	 */
 	public function paymentFinalize( $paymentId = "", $customPayloadItemList = array() ) {
+		$afterShopObject = $this->getAfterShopObjectByPayload( $paymentId, $customPayloadItemList, ResursAfterShopRenderTypes::FINALIZE );
 		$this->aftershopPrepareMetaData( $paymentId );
-		$afterShopObject       = $this->getAfterShopObjectByPayload( $paymentId, $customPayloadItemList, ResursAfterShopRenderTypes::FINALIZE );
 		$afterShopResponseCode = $this->postService( "finalizePayment", $afterShopObject, true );
 		if ( $afterShopResponseCode >= 200 && $afterShopResponseCode < 300 ) {
 			return true;
 		}
-
 		return false;
 	}
 
+	/**
+	 * Identical to paymentFinalize but used for testing errors
+	 */
+	public function paymentFinalizeTest() {
+		if (defined('TEST_OVERRIDE_AFTERSHOP_PAYLOAD') && $this->current_environment == ResursEnvironments::ENVIRONMENT_TEST) {
+			$this->postService( "finalizePayment", unserialize( TEST_OVERRIDE_AFTERSHOP_PAYLOAD ) );
+		}
+	}
 
 	/**
 	 * Automatically cancel (credit or annul) a payment with "best practice".
