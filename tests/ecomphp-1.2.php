@@ -1765,8 +1765,10 @@ class ResursBankTest extends TestCase
 		$this->rb->setPreferredPaymentService(ResursMethodTypes::METHOD_SIMPLIFIED);
 		$this->rb->setBillingByGetAddress("198305147715");
 		$this->rb->setCustomer("198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL");
-		while ($orderLines-- > 0) {
-			$this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), rand($minAmount, $maxAmount), 25, null, $quantity);
+		if ($orderLines > 0) {
+			while ( $orderLines -- > 0 ) {
+				$this->addRandomOrderLine( "Art " . rand( 1024, 2048 ), "Beskrivning " . rand( 2048, 4096 ), rand( $minAmount, $maxAmount ), 25, null, $quantity );
+			}
 		}
 		$this->rb->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
 		try {
@@ -2095,6 +2097,49 @@ class ResursBankTest extends TestCase
 			$exceptionCode = $paymentFinalizeException->getCode();
 			$this->assertTrue($exceptionCode == 8 || $exceptionCode >= 500);
 		}
+	}
+
+	/**
+	 * Test: Aftershop finalization, new method
+	 * Expected result: The order is fully debited
+	 */
+	function testAftershopFullCancellation() {
+
+		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
+		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
+		$this->rb->addOrderLine( "authLine-1", "One orderline added with addOrderLine", 100, 25 );
+		$this->rb->addOrderLine( "authLine-2", "One orderline added with addOrderLine", 100, 25 );
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice(0);
+
+		if ($this->resetConnection()) {
+			$this->rb->setAfterShopInvoiceExtRef( "Test Testsson" );
+			$cancellationResult = $this->rb->paymentCancel( $paymentId );
+			print_R($cancellationResult);
+			//$testOrder = $this->rb->getPaymentSpecCount($paymentId);
+			//$this->assertTrue(($finalizeResult == 200 && $testOrder['AUTHORIZE'] == 2 && $testOrder['DEBIT'] == 2));
+		}
+	}
+
+	function testSanitizer() {
+		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
+		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
+		$this->rb->addOrderLine( "authLine-1", "One orderline added with addOrderLine", 100, 25 );
+		$this->rb->addOrderLine( "authLine-2", "One orderline added with addOrderLine", 100, 25 );
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 3 );
+
+		$this->resetConnection();
+		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
+		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
+		$this->rb->paymentFinalize( $paymentId );
+
+		$this->resetConnection();
+		$this->rb->addOrderLine( "authLine-1", "One orderline added with addOrderLine", 100, 25 );
+		$this->rb->addOrderLine( "authLine-2", "One orderline added with addOrderLine", 100, 25 );
+		$this->rb->paymentAnnul( $paymentId );
+
+		$this->resetConnection();
+		$remainArray = $this->rb->sanitizeAfterShopSpec( $paymentId, (ResursAfterShopRenderTypes::ANNUL + ResursAfterShopRenderTypes::CREDIT));
+		$this->assertCount(2, $remainArray);
 	}
 
 }

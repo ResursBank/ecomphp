@@ -4179,6 +4179,15 @@ class ResursBank {
 	}
 
 	/**
+	 * Identical to paymentFinalize but used for testing errors
+	 */
+	public function paymentFinalizeTest() {
+		if (defined('TEST_OVERRIDE_AFTERSHOP_PAYLOAD') && $this->current_environment == ResursEnvironments::ENVIRONMENT_TEST) {
+			$this->postService( "finalizePayment", unserialize( TEST_OVERRIDE_AFTERSHOP_PAYLOAD ) );
+		}
+	}
+
+	/**
 	 * Aftershop Payment Finalization (DEBIT) - Finalization replacement.
 	 *
 	 * @param $paymentId
@@ -4198,15 +4207,6 @@ class ResursBank {
 			return true;
 		}
 		return false;
-	}
-
-	/**
-	 * Identical to paymentFinalize but used for testing errors
-	 */
-	public function paymentFinalizeTest() {
-		if (defined('TEST_OVERRIDE_AFTERSHOP_PAYLOAD') && $this->current_environment == ResursEnvironments::ENVIRONMENT_TEST) {
-			$this->postService( "finalizePayment", unserialize( TEST_OVERRIDE_AFTERSHOP_PAYLOAD ) );
-		}
 	}
 
 	/**
