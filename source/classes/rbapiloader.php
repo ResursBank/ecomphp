@@ -2017,6 +2017,8 @@ class ResursBank {
 	public function getPaymentMethods( $parameters = array() ) {
 		$this->InitializeServices();
 
+		$realPaymentMethods = array();
+
 		$paymentMethods = $this->postService( "getPaymentMethods", array(
 			'customerType'   => isset( $parameters['customerType'] ) ? $parameters['customerType'] : null,
 			'language'       => isset( $parameters['language'] ) ? $parameters['language'] : null,
@@ -2027,8 +2029,83 @@ class ResursBank {
 		if ( is_object( $paymentMethods ) ) {
 			$paymentMethods = array( $paymentMethods );
 		}
+		$paymentSevice = $this->getPreferredPaymentService();
 
-		return $paymentMethods;
+		foreach ( $paymentMethods as $paymentMethodIndex => $paymentMethodData ) {
+			$type      = $paymentMethodData->type;
+			$addMethod = true;
+
+			if ( $this->paymentMethodsIsStrictPsp ) {
+				if ( $type == "PAYMENT_PROVIDER" ) {
+					$addMethod = false;
+				}
+			} else if ( $paymentSevice != ResursMethodTypes::METHOD_CHECKOUT ) {
+				if ( $type == "PAYMENT_PROVIDER" ) {
+					$addMethod = false;
+				}
+				if ( $this->paymentMethodsHasPsp ) {
+					$addMethod = true;
+				}
+			}
+
+			if ( $addMethod ) {
+				$realPaymentMethods[] = $paymentMethodData;
+			}
+		}
+
+		return $realPaymentMethods;
+	}
+
+	/**
+	 * If the merchant has PSP methods available in the simplified and hosted flow where it is normally not supported, this should be set to true. setStrictPsp() overrides this setting.
+	 *
+	 * @param bool $allowed
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
+	 */
+	public function setSimplifiedPsp($allowed = false) {
+		$this->paymentMethodsHasPsp = $allowed;
+	}
+
+	/**
+	 * Return a boolean of paymentMethodsHasPsp (if they are allowed in simplified/hosted)
+	 *
+	 * @return bool
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
+	 */
+	public function getSimplifiedPsp() {
+		return $this->paymentMethodsHasPsp;
+	}
+
+	/**
+	 * If the strict control of payment methods vs PSP is set, we will never show any payment method that is based on PAYMENT_PROVIDER.
+	 *
+	 * This might be good to use in mixed environments and payment methods are listed regardless of the requested flow. This setting overrides setSimplifiedPsp()
+	 *
+	 * @param bool $isStrict
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
+	 */
+	public function setStrictPsp($isStrict = false) {
+		$this->paymentMethodsIsStrictPsp = $isStrict;
+	}
+
+	/**
+	 * Returns the value set with setStrictPsp()
+	 *
+	 * @param bool $isStrict
+	 *
+	 * @return bool
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
+	 */
+	public function getStrictPsp($isStrict = false) {
+		return $this->paymentMethodsIsStrictPsp;
 	}
 
 	/**
