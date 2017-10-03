@@ -2071,7 +2071,7 @@ class ResursBankTest extends TestCase {
 		$this->rb->setAfterShopInvoiceExtRef( "Test Testsson" );
 		$cancellationResult = $this->rb->paymentCancel( $paymentId );
 		$result             = $this->rb->getPaymentSpecCount( $paymentId );
-		$this->assertTrue( $cancellationResult && count( $result['AUTHORIZE'] ) == 4 && count( $result['DEBIT'] ) == 2 && count( $result['CREDIT'] ) == 2 && count( $result['ANNUL'] ) == 2 );
+		$this->assertTrue( $cancellationResult && $result['AUTHORIZE'] == 4 && $result['DEBIT'] == 2 && $result['CREDIT'] == 2 && $result['ANNUL'] == 2 );
 	}
 
 	/**
@@ -2115,7 +2115,7 @@ class ResursBankTest extends TestCase {
 			$this->markTestIncomplete( $somethingWentWrongException->getMessage() );
 		}
 		$result = $this->rb->getPaymentSpecCount( $paymentId );
-		$this->assertTrue( $cancellationResult && count( $result['AUTHORIZE'] ) == 4 && count( $result['DEBIT'] ) == 2 && count( $result['CREDIT'] ) == 1 && count( $result['ANNUL'] ) == 1 );
+		$this->assertTrue( $cancellationResult && $result['AUTHORIZE'] == 4 && $result['DEBIT'] == 2 && $result['CREDIT'] == 1 && $result['ANNUL'] == 1 );
 	}
 
 	function testBitMaskSanitizer() {
