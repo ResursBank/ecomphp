@@ -155,6 +155,8 @@ class ResursBank {
 	private $paymentMethodsHasPsp = false;
 	/** @var bool If the strict control of payment methods vs PSP is set, we will never show any payment method that is based on PAYMENT_PROVIDER - this might be good to use in mixed environments */
 	private $paymentMethodsIsStrictPsp = false;
+	/** @var bool Setting this to true should help developers have their payment method ids returned in a consistent format */
+	private $paymentMethodIdSanitizing = false;
 
 	/** @var bool Enable the possibility to push over User-Agent from customer into header (debugging related) */
 	private $customerUserAgentPush = false;
@@ -2054,6 +2056,10 @@ class ResursBank {
 			$type      = $paymentMethodData->type;
 			$addMethod = true;
 
+			if ($this->paymentMethodIdSanitizing && isset($paymentMethods[$paymentMethodIndex]->id)) {
+				$paymentMethods[$paymentMethodIndex]->id = preg_replace("/[^a-z0-9$]/i", '', $paymentMethods[$paymentMethodIndex]->id);
+			}
+
 			if ( $this->paymentMethodsIsStrictPsp ) {
 				if ( $type == "PAYMENT_PROVIDER" ) {
 					$addMethod = false;
@@ -2073,6 +2079,30 @@ class ResursBank {
 		}
 
 		return $realPaymentMethods;
+	}
+
+	/**
+	 * Setting this to true should help developers have their payment method ids returned in a consistent format (a-z, 0-9, will be the only accepted characters)
+	 *
+	 * @param bool $doSanitize
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
+	 */
+	public function setPaymentMethodIdSanitizing($doSanitize = false) {
+		$this->paymentMethodIdSanitizing = $doSanitize;
+	}
+
+	/**
+	 * Return the payment method id sanitizer status (active=true)
+	 *
+	 * @return bool
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
+	 */
+	public function getPaymentMethodIdSanitizing(){
+		return $this->paymentMethodIdSanitizing;
 	}
 
 	/**
