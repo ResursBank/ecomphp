@@ -2209,8 +2209,6 @@ class ResursBankTest extends TestCase {
 	 * Test returning of payment methods
 	 */
 	public function testSimplifiedPsp() {
-		$this->rb = new Resursbank("atest", "atest", \Resursbank\RBEcomPHP\ResursEnvironments::ENVIRONMENT_TEST);
-
 		// Get first list of methods - this should return nonPSP methods
 		$firstMethodList = $this->rb->getPaymentMethods();
 		$this->rb->setSimplifiedPsp(true);
@@ -2235,5 +2233,4 @@ class ResursBankTest extends TestCase {
 			$this->markTestIncomplete("Current account does not have any PSP methods");
 		}
 	}
-
 }
