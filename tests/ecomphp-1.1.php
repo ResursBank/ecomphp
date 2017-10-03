@@ -2204,4 +2204,36 @@ class ResursBankTest extends TestCase {
 		$paymentSpecCount = $this->rb->getPaymentSpecCount( $paymentId );
 		$this->assertTrue( $paymentSpecCount['AUTHORIZE'] == 4 && $paymentSpecCount['DEBIT'] == 2 && $paymentSpecCount['CREDIT']  == 2 && $paymentSpecCount['ANNUL'] == 2);
 	}
+
+	/**
+	 * Test returning of payment methods
+	 */
+	public function testSimplifiedPsp() {
+		$this->rb = new Resursbank("atest", "atest", \Resursbank\RBEcomPHP\ResursEnvironments::ENVIRONMENT_TEST);
+
+		// Get first list of methods - this should return nonPSP methods
+		$firstMethodList = $this->rb->getPaymentMethods();
+		$this->rb->setSimplifiedPsp(true);
+
+		// Get second list of methods - this should return all methods
+		$secondMethodList = $this->rb->getPaymentMethods();
+
+		// First: If the count above is mismatching, the current test account probably don't have the proper set of payment methods
+		if (count($firstMethodList) != count($secondMethodList)) {
+			// Now, set up so that simplified flow can see everything
+			$this->rb->setSimplifiedPsp(true);
+
+			// Now, force EComPHP into strict mode, so that noone can see the payment methods
+			$this->rb->setStrictPsp(true);
+
+			// This request should not only return nonPSP-methods
+			$thirdMethodList = $this->rb->getPaymentMethods();
+
+			// Assert diff
+			$this->assertTrue(count($secondMethodList) != count($thirdMethodList));
+		} else {
+			$this->markTestIncomplete("Current account does not have any PSP methods");
+		}
+	}
+
 }
