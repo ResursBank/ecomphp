@@ -362,15 +362,8 @@ class ResursBank {
 		$this->checkoutShopUrl           = $this->hasHttps( true ) . "://" . $theHost;
 		$this->soapOptions['cache_wsdl'] = ( defined( 'WSDL_CACHE_BOTH' ) ? WSDL_CACHE_BOTH : true );
 		$this->soapOptions['ssl_method'] = ( defined( 'SOAP_SSL_METHOD_TLS' ) ? SOAP_SSL_METHOD_TLS : false );
-		if ( ! is_null( $login ) ) {
-			$this->soapOptions['login'] = $login;
-			$this->username             = $login; // For use with initwsdl
-		}
-		if ( ! is_null( $password ) ) {
-			$this->soapOptions['password'] = $password;
-			$this->password                = $password; // For use with initwsdl
-		}
-		// PreSelect environment when creating the class
+
+		$this->setAuthentication($login, $password);
 		if ( $targetEnvironment != ResursEnvironments::ENVIRONMENT_NOT_SET ) {
 			$this->setEnvironment( $targetEnvironment );
 		}
@@ -525,6 +518,28 @@ class ResursBank {
 	 */
 	public function getEnvironment() {
 		return $this->current_environment;
+	}
+
+	/**
+	 * Set up authentication for ecommerce
+	 *
+	 * @param string $username
+	 * @param string $password
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
+	 */
+	public function setAuthentication($username = '', $password = '') {
+		$this->username = $username;
+		$this->password = $password;
+		if ( ! is_null( $username ) ) {
+			$this->soapOptions['login'] = $username;
+			$this->username             = $username; // For use with initwsdl
+		}
+		if ( ! is_null( $password ) ) {
+			$this->soapOptions['password'] = $password;
+			$this->password                = $password; // For use with initwsdl
+		}
 	}
 
 	/**
