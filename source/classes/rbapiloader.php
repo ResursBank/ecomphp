@@ -76,9 +76,9 @@ class ResursBank {
 	/** @var int Current targeted environment - default is always test, as we don't like that mistakes are going production */
 	public $current_environment = self::ENVIRONMENT_TEST;
 	/** @var null The username used with the webservices */
-	public $username = null;
+	private $username = null;
 	/** @var null The password used with the webservices */
-	public $password = null;
+	private $password = null;
 
 	/**
 	 * If set to true, we're trying to convert received object data to standard object classes so they don't get incomplete on serialization.
@@ -151,6 +151,10 @@ class ResursBank {
 	public $bookPaymentRoundDecimals = 2;
 	/** @var string Customer id used at afterShopFlow */
 	private $customerId = "";
+	/** @var bool If the merchant has PSP methods available in the simplified and hosted flow where it is normally not supported, this should be set to true via setSimplifiedPsp(true) */
+	private $paymentMethodsHasPsp = false;
+	/** @var bool If the strict control of payment methods vs PSP is set, we will never show any payment method that is based on PAYMENT_PROVIDER - this might be good to use in mixed environments */
+	private $paymentMethodsIsStrictPsp = false;
 
 	/** @var bool Enable the possibility to push over User-Agent from customer into header (debugging related) */
 	private $customerUserAgentPush = false;
@@ -207,7 +211,7 @@ class ResursBank {
 	////////// Private variables
 	///// Client Specific Settings
 	/** @var string The version of this gateway */
-	private $version = "1.0.22";
+	private $version = "1.1.22";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
 	private $lastUpdate = "20171003";
 	/** @var string This. */
@@ -724,15 +728,8 @@ class ResursBank {
 		$this->checkoutShopUrl           = $this->hasHttps( true ) . "://" . $theHost;
 		$this->soapOptions['cache_wsdl'] = ( defined( 'WSDL_CACHE_BOTH' ) ? WSDL_CACHE_BOTH : true );
 		$this->soapOptions['ssl_method'] = ( defined( 'SOAP_SSL_METHOD_TLS' ) ? SOAP_SSL_METHOD_TLS : false );
-		if ( ! is_null( $login ) ) {
-			$this->soapOptions['login'] = $login;
-			$this->username             = $login; // For use with initwsdl
-		}
-		if ( ! is_null( $password ) ) {
-			$this->soapOptions['password'] = $password;
-			$this->password                = $password; // For use with initwsdl
-		}
-		// PreSelect environment when creating the class
+
+		$this->setAuthentication($login, $password);
 		if ( $targetEnvironment != ResursEnvironments::ENVIRONMENT_NOT_SET ) {
 			$this->setEnvironment( $targetEnvironment );
 		}
@@ -1156,6 +1153,28 @@ class ResursBank {
 	 */
 	public function getEnvironment() {
 		return $this->current_environment;
+	}
+
+	/**
+	 * Set up authentication for ecommerce
+	 *
+	 * @param string $username
+	 * @param string $password
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
+	 */
+	public function setAuthentication($username = '', $password = '') {
+		$this->username = $username;
+		$this->password = $password;
+		if ( ! is_null( $username ) ) {
+			$this->soapOptions['login'] = $username;
+			$this->username             = $username; // For use with initwsdl
+		}
+		if ( ! is_null( $password ) ) {
+			$this->soapOptions['password'] = $password;
+			$this->password                = $password; // For use with initwsdl
+		}
 	}
 
 	/**
