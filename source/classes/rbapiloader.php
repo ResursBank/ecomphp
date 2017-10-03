@@ -75,9 +75,9 @@ class ResursBank {
 	/** @var int Current targeted environment - default is always test, as we don't like that mistakes are going production */
 	public $current_environment = self::ENVIRONMENT_TEST;
 	/** @var null The username used with the webservices */
-	public $username = null;
+	private $username = null;
 	/** @var null The password used with the webservices */
-	public $password = null;
+	private $password = null;
 
 	/**
 	 * If set to true, we're trying to convert received object data to standard object classes so they don't get incomplete on serialization.
@@ -727,15 +727,8 @@ class ResursBank {
 		$this->checkoutShopUrl           = $this->hasHttps( true ) . "://" . $theHost;
 		$this->soapOptions['cache_wsdl'] = ( defined( 'WSDL_CACHE_BOTH' ) ? WSDL_CACHE_BOTH : true );
 		$this->soapOptions['ssl_method'] = ( defined( 'SOAP_SSL_METHOD_TLS' ) ? SOAP_SSL_METHOD_TLS : false );
-		if ( ! is_null( $login ) ) {
-			$this->soapOptions['login'] = $login;
-			$this->username             = $login; // For use with initwsdl
-		}
-		if ( ! is_null( $password ) ) {
-			$this->soapOptions['password'] = $password;
-			$this->password                = $password; // For use with initwsdl
-		}
-		// PreSelect environment when creating the class
+
+		$this->setAuthentication($login, $password);
 		if ( $targetEnvironment != ResursEnvironments::ENVIRONMENT_NOT_SET ) {
 			$this->setEnvironment( $targetEnvironment );
 		}
@@ -1159,6 +1152,28 @@ class ResursBank {
 	 */
 	public function getEnvironment() {
 		return $this->current_environment;
+	}
+
+	/**
+	 * Set up authentication for ecommerce
+	 *
+	 * @param string $username
+	 * @param string $password
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
+	 */
+	public function setAuthentication($username = '', $password = '') {
+		$this->username = $username;
+		$this->password = $password;
+		if ( ! is_null( $username ) ) {
+			$this->soapOptions['login'] = $username;
+			$this->username             = $username; // For use with initwsdl
+		}
+		if ( ! is_null( $password ) ) {
+			$this->soapOptions['password'] = $password;
+			$this->password                = $password; // For use with initwsdl
+		}
 	}
 
 	/**
