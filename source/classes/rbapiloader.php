@@ -91,7 +91,7 @@ class ResursBank {
 	/** @var int How many decimals to use with round */
 	public $bookPaymentRoundDecimals = 2;
 	/** @var string Customer id used at afterShopFlow */
-	public $customerId = "";
+	private $customerId = "";
 
 	/** @var bool Enable the possibility to push over User-Agent from customer into header (debugging related) */
 	private $customerUserAgentPush = false;
@@ -101,7 +101,7 @@ class ResursBank {
 	/** @var string The version of this gateway */
 	private $version = "1.2.0";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20170929";
+	private $lastUpdate = "20171003";
 	/** @var string This. */
 	private $clientName = "EComPHP";
 	/** @var string Replacing $clientName on usage of setClientNAme */
@@ -2946,7 +2946,7 @@ class ResursBank {
 				$this->validateCardData($paymentMethodInfo->specificType);
 			}
 			$myFlowResponse  = $this->postService( 'bookPayment', $this->Payload );
-			$this->SpecLines = array();
+			$this->resetPayload();
 			return $myFlowResponse;
 		} else if ( $myFlow == ResursMethodTypes::METHOD_CHECKOUT ) {
 			$checkoutUrl      = $this->getCheckoutUrl() . "/checkout/payments/" . $payment_id_or_method;
@@ -2957,6 +2957,7 @@ class ResursBank {
 			if ( isset( $parsedResponse->paymentSessionId ) ) {
 				$this->paymentSessionId = $parsedResponse->paymentSessionId;
 				$this->SpecLines        = array();
+
 				return $parsedResponse->html;
 			} else {
 				if ( isset( $parsedResponse->error ) ) {
@@ -2967,6 +2968,7 @@ class ResursBank {
 				}
 				throw new \Exception( implode( "\n", $error ), $responseCode );
 			}
+
 			return $parsedResponse;
 		} else if ( $myFlow == ResursMethodTypes::METHOD_HOSTED ) {
 			$hostedUrl      = $this->getHostedUrl();
@@ -2975,7 +2977,7 @@ class ResursBank {
 			$responseCode   = $this->CURL->getResponseCode( $hostedResponse );
 			// Do not trust response codes!
 			if ( isset( $parsedResponse->location ) ) {
-				$this->SpecLines = array();
+				$this->resetPayload();
 				return $parsedResponse->location;
 			} else {
 				if ( isset( $parsedResponse->error ) ) {
@@ -4114,6 +4116,24 @@ class ResursBank {
 	}
 
 	/**
+	 * Aftershop specific setting to add a customer id to the invoice (can be unset by sending empty value)
+	 *
+	 * @param $customerId
+	 */
+	public function setCustomerId($customerId = "") {
+		$this->customerId = $customerId;
+	}
+
+	/**
+	 * Returns the current customer id (for aftershop)
+	 *
+	 * @return string
+	 */
+	public function getCustomerId() {
+		return $this->customerId;
+	}
+
+	/**
 	 * Create an afterShopFlow object to use with the afterShop flow
 	 *
 	 * @param string $paymentId
@@ -4126,6 +4146,7 @@ class ResursBank {
 	 * @since 1.2.0
 	 */
 	private function getAfterShopObjectByPayload($paymentId = "", $customPayloadItemList = array(), $payloadType = ResursAfterShopRenderTypes::NONE) {
+
 		$finalAfterShopSpec = array(
 			'paymentId' => $paymentId
 		);
@@ -4147,11 +4168,11 @@ class ResursBank {
 			}
 		}
 
-		$finalAfterShopSpec['createdBy'] = $this->getCreatedBy();
-		$this->renderPaymentSpec( ResursMethodTypes::METHOD_SIMPLIFIED );
-
 		// Rendered order spec, use when customPayloadItemList is not set, to handle full orders
 		$actualEcommerceOrderSpec = $this->sanitizeAfterShopSpec($storedPayment, $payloadType);
+
+		$finalAfterShopSpec['createdBy'] = $this->getCreatedBy();
+		$this->renderPaymentSpec( ResursMethodTypes::METHOD_SIMPLIFIED );
 
 		try {
 			// Try to fetch internal order data.
@@ -4160,12 +4181,14 @@ class ResursBank {
 			// If there is no payload, make sure we'll render this from the current payment
 			if ($getOrderDataException->getCode() == \ResursExceptions::BOOKPAYMENT_NO_BOOKDATA && !count($customPayloadItemList)) {
 				//array_merge($this->SpecLines, $actualEcommerceOrderSpec);
-				$this->SpecLines += $actualEcommerceOrderSpec;
+				$this->SpecLines += $this->objectsIntoArray($actualEcommerceOrderSpec); // Convert objects
 			}
 		}
 
 		if (count($customPayloadItemList)) {
-			$this->SpecLines += $customPayloadItemList;
+			// If there is a customized specrowArray injected, no appending should occur.
+			//$this->SpecLines += $this->objectsIntoArray($customPayloadItemList);
+			$this->SpecLines = $this->objectsIntoArray($customPayloadItemList);
 		}
 		$this->renderPaymentSpec( ResursMethodTypes::METHOD_SIMPLIFIED );
 		$orderDataArray = $this->getOrderData();
@@ -4188,7 +4211,17 @@ class ResursBank {
 	}
 
 	/**
-	 * Aftershop Payment Finalization (DEBIT) - Finalization replacement.
+	 * Clean up payload after usage
+	 */
+	private function resetPayload() {
+		$this->SpecLines = array();
+		$this->Payload = array();
+	}
+
+	/**
+	 * Aftershop Payment Finalization (DEBIT)
+	 *
+	 * Make sure that you are running this with try-catches in cases where failures may occur.
 	 *
 	 * @param $paymentId
 	 * @param array $customPayloadItemList
@@ -4204,245 +4237,169 @@ class ResursBank {
 		$this->aftershopPrepareMetaData( $paymentId );
 		$afterShopResponseCode = $this->postService( "finalizePayment", $afterShopObject, true );
 		if ( $afterShopResponseCode >= 200 && $afterShopResponseCode < 300 ) {
+			$this->resetPayload();
 			return true;
 		}
 		return false;
 	}
 
 	/**
-	 * Automatically cancel (credit or annul) a payment with "best practice".
-	 *
-	 * Since the rendered container only returns payment data if the rows are available for the current requested action, this function will try to both credit a payment and annul it depending on the status.
+	 * Shadow function for paymentFinalize
 	 *
 	 * @param string $paymentId
-	 * @param array $clientPaymentSpec
-	 * @param array $cancelParams
-	 * @param bool $quantityMatch
-	 * @param bool $useSpecifiedQuantity If set to true, the quantity set clientside will be used rather than the exact quantity from the spec in getPayment (This requires that $quantityMatch is set to false)
+	 * @param array $customPayloadItemList
+	 *
+	 * @return bool
+	 */
+	public function finalizePayment( $paymentId = "", $customPayloadItemList = array() ) {
+		return $this->paymentFinalize($paymentId, $customPayloadItemList);
+	}
+
+	/**
+	 * Aftershop Payment Annulling (ANNUL)
+	 *
+	 * Make sure that you are running this with try-catches in cases where failures may occur.
+	 *
+	 * @param $paymentId
+	 * @param array $customPayloadItemList
 	 *
 	 * @return bool
 	 * @throws \Exception
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
 	 */
-	public function cancelPayment( $paymentId = "", $clientPaymentSpec = array(), $cancelParams = array(), $quantityMatch = true, $useSpecifiedQuantity = false ) {
-		try {
-			if ( empty( $this->customerId ) ) {
-				$this->customerId = "-";
-			}
-			$this->addMetaData( $paymentId, "CustomerId", $this->customerId );
-		} catch ( \Exception $metaResponseException ) {
-
+	public function paymentAnnul( $paymentId = "", $customPayloadItemList = array() ) {
+		$afterShopObject = $this->getAfterShopObjectByPayload( $paymentId, $customPayloadItemList, ResursAfterShopRenderTypes::ANNUL );
+		$this->aftershopPrepareMetaData( $paymentId );
+		$afterShopResponseCode = $this->postService( "annulPayment", $afterShopObject, true );
+		if ( $afterShopResponseCode >= 200 && $afterShopResponseCode < 300 ) {
+			$this->resetPayload();
+			return true;
 		}
-		$clientPaymentSpec  = $this->handleClientPaymentSpec( $clientPaymentSpec );
-		$creditStateSuccess = false;
-		$annulStateSuccess  = false;
-		$cancelStateSuccess = false;
-		$lastErrorMessage   = "";
-		$cancelPaymentArray = $this->getPayment( $paymentId );
-		$creditSpecLines    = array();
-		$annulSpecLines     = array();
+		return false;
+	}
 
-		/*
-		 * If no clientPaymentSpec are defined, we should consider this a full cancellation. In that case, we'll sort the full payment spec so we'll pick up rows
-		 * that should be credited separately and vice versa for annullments. If the clientPaymentSpec are defined, the $cancelPaymentArray will be used as usual.
-		 */
-		if ( is_array( $clientPaymentSpec ) && ! count( $clientPaymentSpec ) ) {
-			try {
-				$creditSpecLines = $this->stripPaymentSpec( $this->renderSpecLine( $creditSpecLines, ResursAfterShopRenderTypes::CREDIT, $cancelParams ) );
-			} catch ( \Exception $ignoreCredit ) {
-				$creditSpecLines = array();
-			}
-			try {
-				$annulSpecLines = $this->stripPaymentSpec( $this->renderSpecLine( $annulSpecLines, ResursAfterShopRenderTypes::ANNUL, $cancelParams ) );
-			} catch ( \Exception $ignoreAnnul ) {
-				$annulSpecLines = array();
-			}
+	/**
+	 * Shadow function for paymentAnnul
+	 *
+	 * @param string $paymentId
+	 * @param array $customPayloadItemList
+	 *
+	 * @return bool
+	 */
+	public function annullPayment( $paymentId = "", $customPayloadItemList = array() ) {
+		return $this->paymentAnnul($paymentId, $customPayloadItemList);
+	}
+
+	/**
+	 * Aftershop Payment Crediting (CREDIT)
+	 *
+	 * Make sure that you are running this with try-catches in cases where failures may occur.
+	 *
+	 * @param $paymentId
+	 * @param array $customPayloadItemList
+	 *
+	 * @return bool
+	 * @throws \Exception
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
+	 */
+	public function paymentCredit( $paymentId = "", $customPayloadItemList = array() ) {
+		$afterShopObject = $this->getAfterShopObjectByPayload( $paymentId, $customPayloadItemList, ResursAfterShopRenderTypes::CREDIT );
+		$this->aftershopPrepareMetaData( $paymentId );
+		$afterShopResponseCode = $this->postService( "creditPayment", $afterShopObject, true );
+		if ( $afterShopResponseCode >= 200 && $afterShopResponseCode < 300 ) {
+			$this->resetPayload();
+			return true;
 		}
-		/* First, try to credit the requested order, if debited rows are found */
+		return false;
+	}
+
+	/**
+	 * Shadow function for paymentCredit
+	 *
+	 * @param string $paymentId
+	 * @param array $customPayloadItemList
+	 *
+	 * @return bool
+	 */
+	public function creditPayment( $paymentId = "", $customPayloadItemList = array() ) {
+		return $this->paymentCredit($paymentId, $customPayloadItemList);
+	}
+
+	/**
+	 * Aftershop Payment Cancellation (ANNUL+CREDIT)
+	 *
+	 * This function cancels a full order depending on the order content. Payloads MAY be customized but on your own risk!
+	 *
+	 * @param $paymentId
+	 *
+	 * @return bool
+	 * @throws \Exception
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
+	 */
+	public function paymentCancel( $paymentId = "", $customPayloadItemList = array() ) {
+		// Collect the payment
+		$currentPayment = $this->getPayment($paymentId);
+		// Collect the payment sorted by status
+		$currentPaymentSpec = $this->getPaymentSpecByStatus($currentPayment);
+
+		// Sanitized paymentspec based on what to CREDIT
+		$creditObject = $this->sanitizeAfterShopSpec( $currentPayment, ResursAfterShopRenderTypes::CREDIT);
+		// Sanitized paymentspec based on what to ANNUL
+		$annulObject = $this->sanitizeAfterShopSpec( $currentPayment, ResursAfterShopRenderTypes::ANNUL);
+
+		if (is_array($customPayloadItemList) && count($customPayloadItemList)) {
+			$this->SpecLines = array_merge($this->SpecLines, $customPayloadItemList);
+		}
+		$this->renderPaymentSpec(ResursMethodTypes::METHOD_SIMPLIFIED);
+
+		$this->aftershopPrepareMetaData( $paymentId );
 		try {
-			if ( ! count( $creditSpecLines ) ) {
-				$creditPaymentContainer = $this->renderPaymentSpecContainer( $paymentId, ResursAfterShopRenderTypes::CREDIT, $cancelPaymentArray, $clientPaymentSpec, $cancelParams, $quantityMatch, $useSpecifiedQuantity );
+			// Render and check if this is customized
+			$currentOrderLines = $this->getOrderLines();
+
+			if (count($currentOrderLines)) {
+				// If it is customized, we need to render the cancellation differently to specify what's what.
+
+				// Validation object - Contains everything that CAN be credited
+				$validatedCreditObject = $this->removeFromArray( $currentPaymentSpec['DEBIT'], array_merge( $currentPaymentSpec['ANNUL'], $currentPaymentSpec['CREDIT'] ) );
+				// Validation object - Contains everything that CAN be annulled
+				$validatedAnnulmentObject = $this->removeFromArray( $currentPaymentSpec['AUTHORIZE'], array_merge( $currentPaymentSpec['DEBIT'], $currentPaymentSpec['ANNUL'], $currentPaymentSpec['CREDIT'] ) );
+
+				// Clean up selected rows from the credit element and keep those rows than still can be credited and matches the orderRow-request
+				$newCreditObject = $this->objectsIntoArray($this->removeFromArray($validatedCreditObject, $currentOrderLines, true));
+
+				// Clean up selected rows from the credit element and keep those rows than still can be annulled and matches the orderRow-request
+				$newAnnulObject = $this->objectsIntoArray($this->removeFromArray($validatedAnnulmentObject, $currentOrderLines, true));
+
+				if (count($newCreditObject)) {$this->paymentCredit( $paymentId, $newCreditObject );}
+				if (count($newAnnulObject)) {$this->paymentAnnul( $paymentId, $newAnnulObject );}
 			} else {
-				$creditPaymentContainer = $this->renderPaymentSpecContainer( $paymentId, ResursAfterShopRenderTypes::CREDIT, $creditSpecLines, $clientPaymentSpec, $cancelParams, $quantityMatch, $useSpecifiedQuantity );
+				if (count($creditObject)) {$this->paymentCredit( $paymentId, $creditObject );}
+				if (count($annulObject)) {$this->paymentAnnul( $paymentId, $annulObject );}
 			}
-			$Result             = $this->postService( "creditPayment", $creditPaymentContainer );
-			$creditStateSuccess = true;
-		} catch ( \Exception $e ) {
-			$creditStateSuccess = false;
-			$lastErrorMessage   = $e->getMessage();
+		} catch (\Exception $cancelException) {
+			return false;
 		}
-		/* Second, try to annul the rest of the order, if authorized (not debited) rows are found */
-		try {
-			if ( ! count( $creditSpecLines ) ) {
-				$annulPaymentContainer = $this->renderPaymentSpecContainer( $paymentId, ResursAfterShopRenderTypes::ANNUL, $cancelPaymentArray, $clientPaymentSpec, $cancelParams, $quantityMatch, $useSpecifiedQuantity );
-			} else {
-				$annulPaymentContainer = $this->renderPaymentSpecContainer( $paymentId, ResursAfterShopRenderTypes::ANNUL, $annulSpecLines, $clientPaymentSpec, $cancelParams, $quantityMatch, $useSpecifiedQuantity );
-			}
-			if ( is_array( $annulPaymentContainer ) && count( $annulPaymentContainer ) ) {
-				$Result            = $this->postService( "annulPayment", $annulPaymentContainer );
-				$annulStateSuccess = true;
-			}
-		} catch ( \Exception $e ) {
-			$annulStateSuccess = false;
-			$lastErrorMessage  = $e->getMessage();
-		}
-
-		/* Check if one of the above statuses is true and set the cancel as successful. If none of them are true, the cancellation has failed completely. */
-		if ( $creditStateSuccess ) {
-			$cancelStateSuccess = true;
-		}
-		if ( $annulStateSuccess ) {
-			$cancelStateSuccess = true;
-		}
-
-		/* On total fail, throw the last error */
-		if ( ! $cancelStateSuccess ) {
-			throw new \Exception( __FUNCTION__ . ": " . $lastErrorMessage, 500 );
-		}
-
-		return $cancelStateSuccess;
+		$this->resetPayload();
+		return true;
 	}
 
 	/**
-	 * Finalize payment by payment ID. Finalizes an order based on the order content.
-	 *
-	 * clientPaymentSpec (not required) should contain array[] => ('artNo' => 'articleNumber', 'quantity' => numberOfArticles). Example:
-	 * array(
-	 *      0=>array(
-	 *          'artNo' => 'art999',
-	 *          'quantity' => '1'
-	 *      ),
-	 *      1=>array(
-	 *          'artNo' => 'art333',
-	 *          'quantity' => '2'
-	 *      )
-	 * );
+	 * Shadow function for paymentCancel
 	 *
 	 * @param string $paymentId
-	 * @param array $clientPaymentSpec (Optional) paymentspec if only specified lines are being finalized
-	 * @param array $finalizeParams
-	 * @param bool $quantityMatch (Optional) Match quantity. If false, quantity will be ignored during finalization and all client specified paymentspecs will match
-	 * @param bool $useSpecifiedQuantity If set to true, the quantity set clientside will be used rather than the exact quantity from the spec in getPayment (This requires that $quantityMatch is set to false)
-	 *
-	 * @return bool True if successful
-	 * @throws \Exception
-	 * @deprecated 1.0.22
-	 * @deprecated 1.1.22
-	 * @deprecated 1.2.0
-	 */
-	public function finalizePayment( $paymentId = "", $clientPaymentSpec = array(), $finalizeParams = array(), $quantityMatch = true, $useSpecifiedQuantity = false ) {
-		try {
-			if ( empty( $this->customerId ) ) {
-				$this->customerId = "-";
-			}
-			$this->addMetaData( $paymentId, "CustomerId", $this->customerId );
-		} catch ( \Exception $metaResponseException ) {
-
-		}
-
-		$clientPaymentSpec = $this->handleClientPaymentSpec( $clientPaymentSpec );
-		$finalizeResult    = false;
-		if ( null === $paymentId ) {
-			throw new \Exception( "Payment ID must be ID" );
-		}
-		$paymentArray             = $this->getPayment( $paymentId );
-		$finalizePaymentContainer = $this->renderPaymentSpecContainer( $paymentId, ResursAfterShopRenderTypes::FINALIZE, $paymentArray, $clientPaymentSpec, $finalizeParams, $quantityMatch, $useSpecifiedQuantity );
-		if ( isset( $paymentArray->id ) ) {
-			try {
-				$Result         = $this->postService( "finalizePayment", $finalizePaymentContainer );
-				$finalizeResult = true;
-			} catch ( \Exception $e ) {
-				throw new \Exception( __FUNCTION__ . ": " . $e->getMessage(), 500 );
-			}
-		}
-
-		return $finalizeResult;
-	}
-
-	/**
-	 * Credit a payment
-	 *
-	 * If you need fully automated credits (where payment specs are sorted automatically) you should use cancelPayment
-	 *
-	 * @param string $paymentId
-	 * @param array $clientPaymentSpec
-	 * @param array $creditParams
-	 * @param bool $quantityMatch
-	 * @param bool $useSpecifiedQuantity
+	 * @param array $customPayloadItemList
 	 *
 	 * @return bool
-	 * @throws \Exception
-	 *
 	 */
-	public function creditPayment( $paymentId = "", $clientPaymentSpec = array(), $creditParams = array(), $quantityMatch = true, $useSpecifiedQuantity = false ) {
-		try {
-			if ( empty( $this->customerId ) ) {
-				$this->customerId = "-";
-			}
-			$this->addMetaData( $paymentId, "CustomerId", $this->customerId );
-		} catch ( \Exception $metaResponseException ) {
-
-		}
-
-		$clientPaymentSpec = $this->handleClientPaymentSpec( $clientPaymentSpec );
-		$creditResult      = false;
-		if ( null === $paymentId ) {
-			throw new \Exception( "Payment ID must be ID" );
-		}
-		$paymentArray           = $this->getPayment( $paymentId );
-		$creditPaymentContainer = $this->renderPaymentSpecContainer( $paymentId, ResursAfterShopRenderTypes::CREDIT, $paymentArray, $clientPaymentSpec, $creditParams, $quantityMatch, $useSpecifiedQuantity );
-		if ( isset( $paymentArray->id ) ) {
-			try {
-				$Result       = $this->postService( "creditPayment", $creditPaymentContainer );
-				$creditResult = true;
-			} catch ( \Exception $e ) {
-				throw new \Exception( __FUNCTION__ . ": " . $e->getMessage(), $e->getCode() );
-			}
-		}
-
-		return $creditResult;
-	}
-
-	/**
-	 * Annul a payment
-	 *
-	 * If you need fully automated annullments (where payment specs are sorted automatically) you should use cancelPayment
-	 *
-	 * @param string $paymentId
-	 * @param array $clientPaymentSpec
-	 * @param array $annulParams
-	 * @param bool $quantityMatch
-	 * @param bool $useSpecifiedQuantity If set to true, the quantity set clientside will be used rather than the exact quantity from the spec in getPayment (This requires that $quantityMatch is set to false)
-	 *
-	 * @return bool
-	 * @throws \Exception
-	 */
-	public function annulPayment( $paymentId = "", $clientPaymentSpec = array(), $annulParams = array(), $quantityMatch = true, $useSpecifiedQuantity = false ) {
-		try {
-			if ( empty( $this->customerId ) ) {
-				$this->customerId = "-";
-			}
-			$this->addMetaData( $paymentId, "CustomerId", $this->customerId );
-		} catch ( \Exception $metaResponseException ) {
-
-		}
-
-		$clientPaymentSpec = $this->handleClientPaymentSpec( $clientPaymentSpec );
-		$annulResult       = false;
-		if ( null === $paymentId ) {
-			throw new \Exception( "Payment ID must be ID" );
-		}
-		$paymentArray          = $this->getPayment( $paymentId );
-		$annulPaymentContainer = $this->renderPaymentSpecContainer( $paymentId, ResursAfterShopRenderTypes::ANNUL, $paymentArray, $clientPaymentSpec, $annulParams, $quantityMatch, $useSpecifiedQuantity );
-		if ( isset( $paymentArray->id ) ) {
-			try {
-				$Result      = $this->postService( "annulPayment", $annulPaymentContainer );
-				$annulResult = true;
-			} catch ( \Exception $e ) {
-				throw new \Exception( __FUNCTION__ . ": " . $e->getMessage(), $e->getCode() );
-			}
-		}
-
-		return $annulResult;
+	public function cancelPayment( $paymentId = "", $customPayloadItemList = array() ) {
+		return $this->paymentCancel($paymentId, $customPayloadItemList);
 	}
 
 	/**
