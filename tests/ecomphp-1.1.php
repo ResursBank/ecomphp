@@ -1735,12 +1735,17 @@ class ResursBankTest extends TestCase {
 
 	function testAdditionalDebit() {
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
+		$this->rb->addOrderLine( "myExtraOrderLine-1", "One orderline added with additionalDebitOfPayment", 100, 25 );
+		$this->rb->addOrderLine( "myExtraOrderLine-2", "One orderline added with additionalDebitOfPayment", 200, 25 );
+		$this->assertTrue( $this->rb->setAdditionalDebitOfPayment( $paymentId ) );
+	}
+	function testAdditionalDebitAnnulled() {
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
 		$this->rb->annulPayment( $paymentId );
 		$this->rb->addOrderLine( "myExtraOrderLine-1", "One orderline added with additionalDebitOfPayment", 100, 25 );
 		$this->rb->addOrderLine( "myExtraOrderLine-2", "One orderline added with additionalDebitOfPayment", 200, 25 );
 		$this->assertTrue( $this->rb->setAdditionalDebitOfPayment( $paymentId ) );
 	}
-
 	function testAdditionalDebitResursCheckout() {
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
 		$this->rb->annulPayment( $paymentId );
@@ -1748,6 +1753,28 @@ class ResursBankTest extends TestCase {
 		$this->rb->addOrderLine( "myExtraOrderLine-1", "One orderline added with additionalDebitOfPayment", 100, 25 );
 		$this->rb->addOrderLine( "myExtraOrderLine-2", "One orderline added with additionalDebitOfPayment", 200, 25 );
 		$this->assertTrue( $this->rb->setAdditionalDebitOfPayment( $paymentId ) );
+	}
+	function testAdditionalDebitMoreLines() {
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice(1);
+		$this->rb->addOrderLine( "myExtraOrderLine-1", "One orderline added with additionalDebitOfPayment", 100, 25 );
+		$this->rb->addOrderLine( "myExtraOrderLine-2", "One orderline added with additionalDebitOfPayment", 200, 25 );
+		$this->rb->setAdditionalDebitOfPayment( $paymentId );
+		$this->rb->addOrderLine( "myExtraOrderLine-1", "One orderline added with additionalDebitOfPayment", 100, 25 );
+		$this->rb->addOrderLine( "myExtraOrderLine-2", "One orderline added with additionalDebitOfPayment", 200, 25 );
+		$this->rb->setAdditionalDebitOfPayment( $paymentId );
+	}
+	function testAdditionalDebitReduceFail() {
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice(1);
+		$this->rb->addOrderLine( "myExtraOrderLine-1", "One orderline added with additionalDebitOfPayment", 100, 25 );
+		$this->rb->addOrderLine( "myExtraOrderLine-2", "One orderline added with additionalDebitOfPayment", 200, 25 );
+		$this->rb->setAdditionalDebitOfPayment( $paymentId );
+		try {
+			$this->rb->addOrderLine( "myExtraOrderLine-1", "One orderline added with additionalDebitOfPayment", 100, 25, null, null, - 5 );
+			$this->rb->addOrderLine( "myExtraOrderLine-2", "One orderline added with additionalDebitOfPayment", 200, 25, null, null, - 5 );
+			$this->rb->setAdditionalDebitOfPayment( $paymentId );
+		} catch (\Exception $e) {
+			$this->assertTrue($e->getCode() == 500);
+		}
 	}
 
 	/**

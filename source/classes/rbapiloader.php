@@ -7075,8 +7075,9 @@ class ResursBank {
 		$Result              = $this->postService( "additionalDebitOfPayment", $additionalDataArray, true );
 		if ( $Result >= 200 && $Result <= 250 ) {
 			// Reset orderData for each addition
-			$this->Payload['orderData'] = array();
-			$this->SpecLines            = array();
+			//$this->Payload['orderData'] = array();
+			//$this->SpecLines            = array();
+			$this->resetPayload();
 			return true;
 		} else {
 			return false;
