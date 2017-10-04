@@ -5,6 +5,23 @@ Resurs EComPHP Gateway is a simplifier for our webservices, with functionality e
 As EComPHP is continuously developed, you should take a look at our bitbucket repo to keep this information updated. It can be found at https://bitbucket.org/resursbankplugins/resurs-ecomphp
 
 
+## Composerized version
+
+Did you decide to go with the experimental composer edition of EComPHP?
+
+First of all, the release is based on the branch develop/1.2 and is currently in alpha development state so we cannot guarantee anything to function. However, if you're aware of that you're on your own for the moment, you can go for this:
+
+    composer require resursbank/ecomphp:dev-develop/composerize
+
+Then you may go with something like this in your first born code:
+
+    <?php
+        require_once("vendor/autoload.php");
+        $resurs = new \Resursbank\RBEcomPHP\ResursBank($myMerchantUserName, $myMerchantPassword);
+        $methods = $resurs->getPaymentMethods();
+        print_r($methods);
+    ?>
+
 
 ## Regular requirements and dependencies
 
