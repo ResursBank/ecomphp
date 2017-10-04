@@ -1693,7 +1693,7 @@ class ResursBankTest extends TestCase {
 		try {
 			$payment = $this->rb->getPayment( "20170519070836-6799421526" );
 			$this->assertTrue( $this->rb->canDebit( $payment ) );
-		} catch (\Exception $e) {
+		} catch ( \Exception $e ) {
 			$this->markTestSkipped( "Can not find any debitable snapshot to test." );
 		}
 	}
@@ -1739,6 +1739,7 @@ class ResursBankTest extends TestCase {
 		$this->rb->addOrderLine( "myExtraOrderLine-2", "One orderline added with additionalDebitOfPayment", 200, 25 );
 		$this->assertTrue( $this->rb->setAdditionalDebitOfPayment( $paymentId ) );
 	}
+
 	function testAdditionalDebitAnnulled() {
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
 		$this->rb->annulPayment( $paymentId );
@@ -1746,6 +1747,7 @@ class ResursBankTest extends TestCase {
 		$this->rb->addOrderLine( "myExtraOrderLine-2", "One orderline added with additionalDebitOfPayment", 200, 25 );
 		$this->assertTrue( $this->rb->setAdditionalDebitOfPayment( $paymentId ) );
 	}
+
 	function testAdditionalDebitResursCheckout() {
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
 		$this->rb->annulPayment( $paymentId );
@@ -1754,8 +1756,9 @@ class ResursBankTest extends TestCase {
 		$this->rb->addOrderLine( "myExtraOrderLine-2", "One orderline added with additionalDebitOfPayment", 200, 25 );
 		$this->assertTrue( $this->rb->setAdditionalDebitOfPayment( $paymentId ) );
 	}
+
 	function testAdditionalDebitMoreLines() {
-		$paymentId = $this->getPaymentIdFromOrderByClientChoice(1);
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1 );
 		$this->rb->addOrderLine( "myExtraOrderLine-1", "One orderline added with additionalDebitOfPayment", 100, 25 );
 		$this->rb->addOrderLine( "myExtraOrderLine-2", "One orderline added with additionalDebitOfPayment", 200, 25 );
 		$this->rb->setAdditionalDebitOfPayment( $paymentId );
@@ -1763,8 +1766,9 @@ class ResursBankTest extends TestCase {
 		$this->rb->addOrderLine( "myExtraOrderLine-2", "One orderline added with additionalDebitOfPayment", 200, 25 );
 		$this->rb->setAdditionalDebitOfPayment( $paymentId );
 	}
+
 	function testAdditionalDebitReduceFail() {
-		$paymentId = $this->getPaymentIdFromOrderByClientChoice(1);
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1 );
 		$this->rb->addOrderLine( "myExtraOrderLine-1", "One orderline added with additionalDebitOfPayment", 100, 25 );
 		$this->rb->addOrderLine( "myExtraOrderLine-2", "One orderline added with additionalDebitOfPayment", 200, 25 );
 		$this->rb->setAdditionalDebitOfPayment( $paymentId );
@@ -1772,8 +1776,8 @@ class ResursBankTest extends TestCase {
 			$this->rb->addOrderLine( "myExtraOrderLine-1", "One orderline added with additionalDebitOfPayment", 100, 25, null, null, - 5 );
 			$this->rb->addOrderLine( "myExtraOrderLine-2", "One orderline added with additionalDebitOfPayment", 200, 25, null, null, - 5 );
 			$this->rb->setAdditionalDebitOfPayment( $paymentId );
-		} catch (\Exception $e) {
-			$this->assertTrue($e->getCode() == 500);
+		} catch ( \Exception $e ) {
+			$this->assertTrue( $e->getCode() == 500 );
 		}
 	}
 
@@ -2196,7 +2200,7 @@ class ResursBankTest extends TestCase {
 		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
 		$this->rb->paymentAnnul( $paymentId );
 		$paymentSpecCount = $this->rb->getPaymentSpecCount( $paymentId );
-		$this->assertTrue( $paymentSpecCount['AUTHORIZE'] == 4 && $paymentSpecCount['DEBIT'] == 2 && $paymentSpecCount['CREDIT']  == 2 && $paymentSpecCount['ANNUL'] == 2);
+		$this->assertTrue( $paymentSpecCount['AUTHORIZE'] == 4 && $paymentSpecCount['DEBIT'] == 2 && $paymentSpecCount['CREDIT'] == 2 && $paymentSpecCount['ANNUL'] == 2 );
 	}
 
 	/**
@@ -2229,7 +2233,7 @@ class ResursBankTest extends TestCase {
 		$this->rb->paymentCredit( $paymentId );
 
 		$paymentSpecCount = $this->rb->getPaymentSpecCount( $paymentId );
-		$this->assertTrue( $paymentSpecCount['AUTHORIZE'] == 4 && $paymentSpecCount['DEBIT'] == 2 && $paymentSpecCount['CREDIT']  == 2 && $paymentSpecCount['ANNUL'] == 2);
+		$this->assertTrue( $paymentSpecCount['AUTHORIZE'] == 4 && $paymentSpecCount['DEBIT'] == 2 && $paymentSpecCount['CREDIT'] == 2 && $paymentSpecCount['ANNUL'] == 2 );
 	}
 
 	/**
@@ -2238,26 +2242,26 @@ class ResursBankTest extends TestCase {
 	public function testSimplifiedPsp() {
 		// Get first list of methods - this should return nonPSP methods
 		$firstMethodList = $this->rb->getPaymentMethods();
-		$this->rb->setSimplifiedPsp(true);
+		$this->rb->setSimplifiedPsp( true );
 
 		// Get second list of methods - this should return all methods
 		$secondMethodList = $this->rb->getPaymentMethods();
 
 		// First: If the count above is mismatching, the current test account probably don't have the proper set of payment methods
-		if (count($firstMethodList) != count($secondMethodList)) {
+		if ( count( $firstMethodList ) != count( $secondMethodList ) ) {
 			// Now, set up so that simplified flow can see everything
-			$this->rb->setSimplifiedPsp(true);
+			$this->rb->setSimplifiedPsp( true );
 
 			// Now, force EComPHP into strict mode, so that noone can see the payment methods
-			$this->rb->setStrictPsp(true);
+			$this->rb->setStrictPsp( true );
 
 			// This request should not only return nonPSP-methods
 			$thirdMethodList = $this->rb->getPaymentMethods();
 
 			// Assert diff
-			$this->assertTrue(count($secondMethodList) != count($thirdMethodList));
+			$this->assertTrue( count( $secondMethodList ) != count( $thirdMethodList ) );
 		} else {
-			$this->markTestIncomplete("Current account does not have any PSP methods");
+			$this->markTestIncomplete( "Current account does not have any PSP methods" );
 		}
 	}
 }
