@@ -1389,7 +1389,7 @@ class ResursBank {
 	public function getPaymentMethodIdSanitizing(){
 		return $this->paymentMethodIdSanitizing;
 	}
-	
+
 	/**
 	 * If the merchant has PSP methods available in the simplified and hosted flow where it is normally not supported, this should be set to true. setStrictPsp() overrides this setting.
 	 *
@@ -4572,9 +4572,15 @@ class ResursBank {
 	 * @since 1.1.11
 	 * @since 1.2.0
 	 */
-	public function getPaymentInvoices($paymentId = '') {
+	public function getPaymentInvoices($paymentIdOrPaymentObject = '') {
 		$invoices = array();
-		$paymentData = $this->getPayment($paymentId);
+		if (is_string($paymentIdOrPaymentObject)) {
+			$paymentData = $this->getPayment( $paymentIdOrPaymentObject );
+		} else if (is_object($paymentIdOrPaymentObject)) {
+			$paymentData = $paymentIdOrPaymentObject;
+		} else {
+			return array();
+		}
 		if (!empty($paymentData) && isset($paymentData->paymentDiffs)) {
 			foreach ($paymentData->paymentDiffs as $paymentRow) {
 				if (isset($paymentRow->type) && $paymentRow->type == "DEBIT" && isset($paymentRow->invoiceId)) {
