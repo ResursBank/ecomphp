@@ -4415,7 +4415,7 @@ class ResursBank {
 	 *
 	 * @return bool
 	 */
-	public function annullPayment( $paymentId = "", $customPayloadItemList = array() ) {
+	public function annulPayment( $paymentId = "", $customPayloadItemList = array() ) {
 		return $this->paymentAnnul($paymentId, $customPayloadItemList);
 	}
 
