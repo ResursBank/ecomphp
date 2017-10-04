@@ -11,7 +11,7 @@
  *
  */
 
-require_once('../source/classes/rbapiloader.php');
+require_once('../vendor/autoload.php');
 
 use PHPUnit\Framework\TestCase;
 use \Resursbank\RBEcomPHP\ResursBank;
@@ -19,6 +19,9 @@ use \Resursbank\RBEcomPHP\ResursAfterShopRenderTypes;
 use \Resursbank\RBEcomPHP\ResursCallbackTypes;
 use \Resursbank\RBEcomPHP\ResursMethodTypes;
 use \Resursbank\RBEcomPHP\ResursCallbackReachability;
+
+use \TorneLIB\Tornevall_cURL;
+use \TorneLIB\TorneLIB_Network;
 
 // Automatically set to test the pushCustomerUserAgent
 if (!isset($_SERVER['HTTP_USER_AGENT'])) {
@@ -100,8 +103,8 @@ class ResursBankTest extends TestCase
 
 	/** Before each test, invoke this */
 	public function setUp() {
-		$this->CURL    = new \Resursbank\RBEcomPHP\Tornevall_cURL();
-		$this->NETWORK = new \Resursbank\RBEcomPHP\TorneLIB_Network();
+		$this->CURL    = new Tornevall_cURL();
+		$this->NETWORK = new TorneLIB_Network();
 
 		if ( version_compare( PHP_VERSION, '5.3.0', "<" ) ) {
 			if ( ! $this->allowObsoletePHP ) {
@@ -472,7 +475,7 @@ class ResursBankTest extends TestCase
 				/* Pick up the signing url */
 				$signUrl         = $res->signingUrl;
 				$getSigningPage  = file_get_contents( $signUrl );
-				$NETWORK         = new \Resursbank\RBEcomPHP\TorneLIB_Network();
+				$NETWORK         = new TorneLIB_Network();
 				$signUrlHostInfo = $NETWORK->getUrlDomain( $signUrl );
 				$getUrlHost      = $signUrlHostInfo[1] . "://" . $signUrlHostInfo[0];
 				$mockSuccessUrl  = preg_replace( "/\/$/", '', $getUrlHost . preg_replace( '/(.*?)\<a href=\"(.*?)\">(.*?)\>Mock success(.*)/is', '$2', $getSigningPage ) );
@@ -1085,7 +1088,7 @@ class ResursBankTest extends TestCase
 			try {
 				// Currently, this test always gets a HTTP-200 from ecommerce, regardless of successful or failing updates.
 				$Success    = $this->rb->updatePaymentReference( $iframePaymentReference, $newReference );
-				$updateCart = $this->rb->setCheckoutFrameOrderLines( $newReference, $orderLines );
+				$updateCart = $this->rb->updateCheckoutOrderLines( $newReference, $orderLines );
 				$this->assertTrue( $updateCart );
 
 				return;
@@ -1120,7 +1123,7 @@ class ResursBankTest extends TestCase
 			try {
 				// Currently, this test always gets a HTTP-200 from ecommerce, regardless of successful or failing updates.
 				$this->rb->updatePaymentReference( $iframePaymentReference, $newReference );
-				$this->rb->setCheckoutFrameOrderLines( $iframePaymentReference, $orderLines );
+				$this->rb->updateCheckoutOrderLines( $iframePaymentReference, $orderLines );
 			} catch ( \Exception $e ) {
 				$this->assertTrue( $e->getCode() >= 400 );
 
@@ -1913,7 +1916,7 @@ class ResursBankTest extends TestCase
 	 * Test: Curl error handling before NetCurl 6.0.5
 	 */
 	function testSoapErrorXPath() {
-		$CURL = new \Resursbank\RBEcomPHP\Tornevall_cURL();
+		$CURL = new Tornevall_cURL();
 		$CURL->setAuthentication( $this->username, $this->password );
 		$wsdl = $CURL->doGet( 'https://test.resurs.com/ecommerce-test/ws/V4/AfterShopFlowService?wsdl' );
 		try {
@@ -1931,7 +1934,7 @@ class ResursBankTest extends TestCase
 	 * Test: Curl error handling from NetCurl 6.0.5 and above
 	 */
 	function testSoapError() {
-		$CURL = new \Resursbank\RBEcomPHP\Tornevall_cURL();
+		$CURL = new Tornevall_cURL();
 		$wsdl = $CURL->doGet( 'https://test.resurs.com/ecommerce-test/ws/V4/SimplifiedShopFlowService?wsdl' );
 		try {
 			$wsdl->getPaymentMethods();

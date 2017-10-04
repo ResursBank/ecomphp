@@ -5,6 +5,7 @@ Resurs EComPHP Gateway is a simplifier for our webservices, with functionality e
 As EComPHP is continuously developed, you should take a look at our bitbucket repo to keep this information updated. It can be found at https://bitbucket.org/resursbankplugins/resurs-ecomphp
 
 
+
 ## Regular requirements and dependencies
 
 * For EComPHP 1.0 (With no namespaces) at least PHP 5.2

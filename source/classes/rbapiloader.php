@@ -21,13 +21,13 @@ namespace Resursbank\RBEcomPHP;
 if ( ! defined( 'RB_API_PATH' ) ) {
 	define( 'RB_API_PATH', __DIR__ );
 }
-require_once(RB_API_PATH . '/thirdparty/network.php');
-require_once(RB_API_PATH . '/thirdparty/crypto.php');
 require_once(RB_API_PATH . '/rbapiloader/ResursTypeClasses.php');
 require_once(RB_API_PATH . '/rbapiloader/ResursEnvironments.php');
 require_once(RB_API_PATH . '/rbapiloader/ResursException.php');
 
-use Resursbank\RBEcomPHP\CURL_POST_AS;
+use \TorneLIB\Tornevall_cURL;
+use \TorneLIB\TorneLIB_Network;
+use \TorneLIB\CURL_POST_AS;
 
 /**
  * Class ResursBank Primary class for EComPHP
@@ -408,8 +408,8 @@ class ResursBank {
 		} else {
 			$this->environment = $this->env_prod;
 		}
-		if ( class_exists( '\Resursbank\RBEcomPHP\Tornevall_cURL' ) ) {
-			$this->CURL = new \Resursbank\RBEcomPHP\Tornevall_cURL();
+		if ( class_exists( '\TorneLIB\Tornevall_cURL' ) ) {
+			$this->CURL = new Tornevall_cURL();
 			$this->CURL->setStoreSessionExceptions( true );
 			$this->CURL->setAuthentication( $this->soapOptions['login'], $this->soapOptions['password'] );
 			$this->CURL->setUserAgent( $this->myUserAgent );
@@ -1004,7 +1004,7 @@ class ResursBank {
 			if ( isset( $renderCallback['eventType'] ) ) {
 				unset( $renderCallback['eventType'] );
 			}
-			$renderedResponse = $this->CURL->doPost( $renderCallbackUrl, $renderCallback, \Resursbank\RBEcomPHP\CURL_POST_AS::POST_AS_JSON );
+			$renderedResponse = $this->CURL->doPost( $renderCallbackUrl, $renderCallback, CURL_POST_AS::POST_AS_JSON );
 			$code             = $this->CURL->getResponseCode();
 		} else {
 			$renderCallbackUrl = $this->getServiceUrl( "registerEventCallback" );
@@ -4415,7 +4415,7 @@ class ResursBank {
 	 *
 	 * @return bool
 	 */
-	public function annullPayment( $paymentId = "", $customPayloadItemList = array() ) {
+	public function annulPayment( $paymentId = "", $customPayloadItemList = array() ) {
 		return $this->paymentAnnul($paymentId, $customPayloadItemList);
 	}
 

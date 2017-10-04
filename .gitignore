@@ -3,11 +3,6 @@
 .svn
 /tests/test.json
 docs
-source/Makefile
-source/testwsdl.sh
-source/classes/thirdparty/Makefile
-source/classes/thirdparty/merger
 composer.lock
 vendor
-source/classes/thirdparty/setnamespace.sh
 composer.phar

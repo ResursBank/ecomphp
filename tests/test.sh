@@ -7,7 +7,7 @@ minor="${phpver[1]}"
 build="${phpver[2]}"
 unitver="5.7"
 altver=""
-testThis="ecomphp-1.1.php"
+testThis="ecomphp-composerized.php"
 
 echo -n "Testing phpunit.phar: "
 
