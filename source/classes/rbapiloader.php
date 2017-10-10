@@ -6049,6 +6049,27 @@ class ResursBank {
 	 * @deprecated Use updateCheckoutOrderLines() instead
 	 */
 	public function setCheckoutFrameOrderLines( $paymentId = '', $orderLines = array() ) {
+		$this->updateCheckoutOrderLines($paymentId, $orderLines);
+	}
+
+	/**
+	 * Update the Checkout iframe
+	 *
+	 * Backwards compatible so the formatting of the orderLines will be accepted in folllowing formats:
+	 *  - $orderLines is accepted as a json string
+	 *  - $orderLines can be sent in as array('orderLines' => $yourOrderlines)
+	 *  - $orderLines can be sent in as array($yourOrderlines)
+	 *
+	 * @param string $paymentId
+	 * @param array $orderLines
+	 *
+	 * @return bool
+	 * @throws \Exception
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
+	 */
+	public function updateCheckoutOrderLines( $paymentId = '', $orderLines = array() ) {
 		$outputOrderLines = array();
 		if ( empty( $paymentId ) ) {
 			throw new \Exception( "Payment id not set" );
@@ -6083,23 +6104,6 @@ class ResursBank {
 		}
 
 		return false;
-	}
-
-	/**
-	 * Update the Checkout iframe
-	 *
-	 * Backwards compatible so the formatting of the orderLines will be accepted in folllowing formats:
-	 *  - $orderLines is accepted as a json string
-	 *  - $orderLines can be sent in as array('orderLines' => $yourOrderlines)
-	 *  - $orderLines can be sent in as array($yourOrderlines)
-	 *
-	 * @param string $paymentId
-	 * @param array $orderLines
-	 * @since 1.0.22
-	 * @since 1.1.22
-	 * @since 1.2.0
-	 */
-	public function updateCheckoutOrderLines( $paymentId = '', $orderLines = array() ) {
 		$this->setCheckoutFrameOrderLines($paymentId, $orderLines);
 	}
 

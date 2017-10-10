@@ -24,6 +24,7 @@ use \Resursbank\RBEcomPHP\ResursCallbackReachability;
 if ( ! isset( $_SERVER['HTTP_USER_AGENT'] ) ) {
 	$_SERVER['HTTP_USER_AGENT'] = "EComPHP/Test-InternalClient";
 }
+ini_set('memory_limit', -1);
 
 /**
  * Class ResursBankTest: Primary test client
