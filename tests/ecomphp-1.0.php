@@ -1850,6 +1850,7 @@ class ResursBankTest extends TestCase {
 	 */
 	function testAnullFullPaymentDeprecated() {
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
+		$this->rb->setLoggedInUser('myAdminUserName');
 		$this->assertTrue( $this->rb->annulPayment( $paymentId ) );
 	}
 
