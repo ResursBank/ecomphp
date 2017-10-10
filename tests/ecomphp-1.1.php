@@ -24,6 +24,7 @@ use \Resursbank\RBEcomPHP\ResursCallbackReachability;
 if ( ! isset( $_SERVER['HTTP_USER_AGENT'] ) ) {
 	$_SERVER['HTTP_USER_AGENT'] = "EComPHP/Test-InternalClient";
 }
+ini_set('memory_limit', -1);
 
 /**
  * Class ResursBankTest: Primary test client
@@ -1079,12 +1080,12 @@ class ResursBankTest extends TestCase {
 		$Success       = false;
 		if ( ! empty( $iframePaymentReference ) && ! empty( $iFrameUrl ) && ! empty( $iframeContent ) && strlen( $iframeContent ) > 1024 ) {
 			$newReference      = $this->rb->getPreferredPaymentId( 30, "UPDATE-", true, true );
-			$firstCheckoutUrl  = $this->rb->getCheckoutUrl() . "/checkout/payments/" . $iframePaymentReference;
-			$secondCheckoutUrl = $this->rb->getCheckoutUrl() . "/checkout/payments/" . $newReference;
+			//$firstCheckoutUrl  = $this->rb->getCheckoutUrl() . "/checkout/payments/" . $iframePaymentReference;
+			//$secondCheckoutUrl = $this->rb->getCheckoutUrl() . "/checkout/payments/" . $newReference;
 			try {
 				// Currently, this test always gets a HTTP-200 from ecommerce, regardless of successful or failing updates.
 				$Success    = $this->rb->updatePaymentReference( $iframePaymentReference, $newReference );
-				$updateCart = $this->rb->setCheckoutFrameOrderLines( $newReference, $orderLines );
+				$updateCart = $this->rb->updateCheckoutOrderLines( $newReference, $orderLines );
 				$this->assertTrue( $updateCart );
 
 				return;
@@ -1119,7 +1120,7 @@ class ResursBankTest extends TestCase {
 			try {
 				// Currently, this test always gets a HTTP-200 from ecommerce, regardless of successful or failing updates.
 				$this->rb->updatePaymentReference( $iframePaymentReference, $newReference );
-				$this->rb->setCheckoutFrameOrderLines( $iframePaymentReference, $orderLines );
+				$this->rb->updateCheckoutOrderLines( $iframePaymentReference, $orderLines );
 			} catch ( \Exception $e ) {
 				$this->assertTrue( $e->getCode() >= 400 );
 
@@ -1855,6 +1856,7 @@ class ResursBankTest extends TestCase {
 	 */
 	function testAnullFullPaymentDeprecated() {
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
+		$this->rb->setLoggedInUser('myAdminUserName');
 		$this->assertTrue( $this->rb->annulPayment( $paymentId ) );
 	}
 
