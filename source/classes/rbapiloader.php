@@ -107,7 +107,7 @@ class ResursBank {
 	/** @var string The version of this gateway */
 	private $version = "1.2.0";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20171004";
+	private $lastUpdate = "20171010";
 	/** @var string This. */
 	private $clientName = "EComPHP";
 	/** @var string Replacing $clientName on usage of setClientNAme */
@@ -275,6 +275,8 @@ class ResursBank {
 		'password'           => '',
 		'trace'              => 1
 	);
+	private $curlSslDisable = false;
+
 	/** @var string The current directory of RB Classes */
 	private $classPath = "";
 	/** @var array Files to look for in class directories, to find RB */
@@ -418,6 +420,7 @@ class ResursBank {
 		$this->wsdlServices = array();
 		foreach ($this->ServiceRequestList as $reqType => $reqService) { $this->wsdlServices[$reqService] = true;}
 		foreach ( $this->wsdlServices as $ServiceName => $isAvailableBoolean) {$this->URLS[ $ServiceName ] = $this->environment . $ServiceName . "?wsdl";}
+		$this->getSslValidation();
 		return true;
 	}
 
@@ -428,12 +431,16 @@ class ResursBank {
 	 * @since 1.2.0
 	 */
 	public function setDebug($debugModeState = false) {
+		$this->InitializeServices();
 		$this->debug = $debugModeState;
 	}
 
 	/**
 	 * Get debugging information
 	 * @return array
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
 	 */
 	public function getDebug() {
 		$this->curlStats['debug'] = $this->debug;
@@ -444,13 +451,68 @@ class ResursBank {
 	 * Return the CURL communication handle to the client, when in debug mode
 	 * @return Tornevall_cURL
 	 * @throws \Exception
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
 	 */
 	public function getCurlHandle() {
+		$this->InitializeServices();
 		if ($this->debug) {
 			return $this->CURL;
 		} else {
 			throw new \Exception("Can't return handle. The module is in wrong state (non-debug mode)", 403);
 		}
+	}
+
+	/**
+	 *
+	 * Make it possible, in test mode, to replace the old curl handle with a new reconfigured one
+	 *
+	 * @param $newCurlHandle
+	 *
+	 * @return Tornevall_cURL
+	 * @throws \Exception
+	 * @since 1.0.23
+	 * @since 1.1.23
+	 * @since 1.2.0
+	 */
+	public function setCurlHandle($newCurlHandle) {
+		$this->InitializeServices();
+		if ($this->debug) {
+			$this->CURL = $newCurlHandle;
+		} else {
+			throw new \Exception("Can't return handle. The module is in wrong state (non-debug mode)", 403);
+		}
+	}
+
+	/**
+	 * Put SSL Validation into relaxed mode (Test and debug only) - this disables SSL certificate validation off
+	 *
+	 * @param bool $validationEnabled
+	 *
+	 * @throws \Exception
+	 * @since 1.0.23
+	 * @since 1.1.23
+	 * @since 1.2.0
+	 */
+	public function setSslValidation($validationEnabled = false) {
+		if ($this->debug && $this->current_environment == ResursEnvironments::ENVIRONMENT_TEST) {
+			$this->CURL->setSslUnverified( true );
+			$this->CURL->setCertAuto( false, false );
+		} else {
+			throw new \Exception("Can't set SSL validation in relaxed mode. Debug mode is disabled and/or test environment are not set", 403);
+		}
+	}
+
+	private function getSslValidation() {
+		if ($this->curlSslDisable) {
+			$this->CURL->setSslUnverified( true );
+			$this->CURL->setCertAuto( false, false );
+		}
+	}
+
+	public function getSslIsUnsafe() {
+		return $this->CURL->getSslIsUnsafe();
 	}
 
 
@@ -473,6 +535,74 @@ class ResursBank {
 		}
 	}
 
+	/**
+	 * Set internal flag parameter
+	 *
+	 * @param string $flagKey
+	 * @param string $flagValue
+	 * @return bool If successful
+	 * @throws \Exception
+	 * @since 1.0.23
+	 * @since 1.1.23
+	 * @since 1.2.0
+	 */
+	public function setFlag($flagKey = '', $flagValue = '') {
+		if (!empty($flagKey)) {
+			$this->internalFlags[$flagKey] = $flagValue ;
+			return true;
+		}
+		throw new \Exception("Flags can not be empty", 500);
+	}
+
+	/**
+	 * Get internal flag
+	 * @param string $flagKey
+	 *
+	 * @return mixed|null
+	 * @since 1.0.23
+	 * @since 1.1.23
+	 * @since 1.2.0
+	 */
+	public function getFlag($flagKey = '') {
+		if (isset($this->internalFlags[$flagKey])) {
+			return $this->internalFlags[$flagKey];
+		}
+		return null;
+	}
+
+	/**
+	 * Check if flag is set and true
+	 *
+	 * @param string $flagKey
+	 *
+	 * @return bool
+	 * @since 1.0.23
+	 * @since 1.1.23
+	 * @since 1.2.0
+	 */
+	public function isFlag($flagKey = '') {
+		if ($this->hasFlag($flagKey)) {
+			return ($this->getFlag($flagKey) === 1 || $this->getFlag($flagKey) === true ? true : false);
+		}
+		return false;
+	}
+
+	/**
+	 * Check if there is an internal flag set with current key
+	 *
+	 * @param string $flagKey
+	 *
+	 * @return bool
+	 * @since 1.0.23
+	 * @since 1.1.23
+	 * @since 1.2.0
+	 */
+	public function hasFlag($flagKey = '') {
+		if (!is_null($this->getFlag($flagKey))) {
+			return true;
+		}
+		return false;
+	}
 
 	/**
 	 * Find classes
@@ -1068,16 +1198,14 @@ class ResursBank {
 	 * @since 1.1.2
 	 */
 	public function triggerCallback() {
+		$this->InitializeServices();
 		$envUrl = $this->env_test;
 		$curEnv = $this->getEnvironment();
 		if ($curEnv == ResursEnvironments::ENVIRONMENT_PRODUCTION) {
 			$envUrl = $this->env_prod;
 		}
 		$serviceUrl = $envUrl . "DeveloperWebService?wsdl";
-		$CURL       = new \Resursbank\RBEcomPHP\Tornevall_cURL();
-		$CURL->setAuthentication( $this->username, $this->password );
-		$CURL->setUserAgent( $this->myUserAgent );
-		$eventRequest    = $CURL->doGet( $serviceUrl );
+		$eventRequest    = $this->CURL->doGet( $serviceUrl );
 		$eventParameters = array(
 			'eventType' => 'TEST',
 			'param'     => array(

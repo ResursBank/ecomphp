@@ -1948,6 +1948,7 @@ class ResursBankTest extends TestCase
 	 */
 	function testAftershopFullFinalization() {
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 2 );
+		$this->rb->setLoggedInUser('myAdminUserName');
 		if ( $this->resetConnection() ) {
 			$this->rb->setAfterShopInvoiceExtRef( "Test Testsson" );
 			$finalizeResult = $this->rb->paymentFinalize( $paymentId );
@@ -2265,4 +2266,5 @@ class ResursBankTest extends TestCase
 			$this->markTestIncomplete( "Current account does not have any PSP methods" );
 		}
 	}
+
 }
