@@ -17,11 +17,11 @@
  */
 
 /**
- * Tornevall Networks NETCURL-6.0.10
+ * Tornevall Networks netCurl library - Yet another http- and network communicator library
  *
  * Each class in this library has its own version numbering to keep track of where the changes are. However, there is a major version too.
  *
- * @version 6.0.10
+ * @version 6.0.11
  */
 
 namespace Resursbank\RBEcomPHP;
@@ -489,11 +489,11 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 		/** @var string This modules name (inherited to some exceptions amongst others) */
 		protected $ModuleName = "NetCurl";
 		/** @var string Internal version that is being used to find out if we are running the latest version of this library */
-		private $TorneCurlVersion = "6.0.9";
+		private $TorneCurlVersion = "6.0.10";
 		/** @var null Curl Version */
 		private $CurlVersion = null;
 		/** @var string Internal release snapshot that is being used to find out if we are running the latest version of this library */
-		private $TorneCurlReleaseDate = "20171009";
+		private $TorneCurlReleaseDate = "20171010";
 		/**
 		 * Prepare TorneLIB_Network class if it exists (as of the november 2016 it does).
 		 *
@@ -503,7 +503,7 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 		/**
 		 * Target environment (if target is production some debugging values will be skipped)
 		 *
-		 * @since 5.0.0-20170210
+		 * @since 5.0.0
 		 * @var int
 		 */
 		private $TargetEnvironment = TORNELIB_CURL_ENVIRONMENT::ENVIRONMENT_PRODUCTION;
@@ -597,7 +597,8 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 		private $CurlHeadersUserDefined = array();
 		private $allowCdata = false;
 		private $useXmlSerializer = false;
-
+		/** @var bool Store information about the URL call and if the SSL was unsafe (disabled) */
+		protected $unsafeSslCall = false;
 
 		//// COOKIE CONFIGS
 		private $useLocalCookies = false;
@@ -634,6 +635,9 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 		private $sessionsExceptions = array();
 		/** @var bool The soapTryOnce variable */
 		private $SoapTryOnce = true;
+		private $curlConstantsOpt = array();
+		private $curlConstantsErr = array();
+
 		/**
 		 * Set up if this library can throw exceptions, whenever it needs to do that.
 		 *
@@ -654,7 +658,19 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 		 */
 		public function __construct( $PreferredURL = '', $PreparedPostData = array(), $PreferredMethod = CURL_METHODS::METHOD_POST ) {
 			register_shutdown_function( array( $this, 'tornecurl_terminate' ) );
-
+			// Store constants of curl errors and curlOptions
+			try {
+				$constants = @get_defined_constants();
+				foreach ( $constants as $constKey => $constInt ) {
+					if ( preg_match( "/^curlopt/i", $constKey ) ) {
+						$this->curlConstantsOpt[ $constInt ] = $constKey;
+					}
+					if (preg_match( "/^curle/i", $constKey ) ) {
+						$this->curlConstantsErr[$constInt] = $constKey;
+					}
+				}
+			} catch (\Exception $constantException) {}
+			unset($constants);
 			if ( ! function_exists( 'curl_init' ) ) {
 				throw new \Exception( $this->ModuleName . " curl init exception: curl library not found" );
 			}
@@ -817,6 +833,7 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 		 * @param string $flagKey
 		 *
 		 * @return bool
+		 * @since 6.0.9
 		 */
 		public function isFlag($flagKey = '') {
 			if ($this->hasFlag($flagKey)) {
@@ -1057,7 +1074,7 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 		 * To not break production environments by setting for example _DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION, switching over to test mode is required
 		 * to use those variables.
 		 *
-		 * @since 5.0.0-20170210
+		 * @since 5.0.0
 		 */
 		public function setTestEnabled() {
 			$this->TargetEnvironment = TORNELIB_CURL_ENVIRONMENT::ENVIRONMENT_TEST;
@@ -1200,6 +1217,27 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 		}
 
 		/**
+		 * Easy readable curlopts
+		 *
+		 * @return array
+		 * @since 6.0.10
+		 */
+		public function getCurlOptByKeys() {
+			$return = array();
+			if (is_array($this->curlConstantsOpt)) {
+				$currentCurlOpt = $this->getCurlOpt();
+				foreach ($currentCurlOpt as $curlOptKey => $curlOptValue) {
+					if (isset($this->curlConstantsOpt[$curlOptKey])) {
+						$return[$this->curlConstantsOpt[$curlOptKey]] = $curlOptValue;
+					} else {
+						$return[$curlOptKey] = $curlOptValue;
+					}
+				}
+			}
+			return $return;
+		}
+
+		/**
 		 * Set up special SSL option array for communicators
 		 *
 		 * @param array $sslOptArray
@@ -1263,7 +1301,6 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 			return $this->sessionsExceptions;
 		}
 
-
 		/// SPECIAL FEATURES
 
 		/**
@@ -1321,6 +1358,16 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 			}
 
 			return "";
+		}
+
+		/**
+		 * Returns true if SSL verification was unset during the URL call
+		 *
+		 * @return bool
+		 * @since 6.0.10
+		 */
+		public function getSslIsUnsafe() {
+			return $this->unsafeSslCall;
 		}
 
 
@@ -1576,7 +1623,7 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 		 * in cases, when crt-files are missing and PHP can not under very specific circumstances verify the peer. To allow this behaviour, the client
 		 * MUST use this function.
 		 *
-		 * @since 5.0.0-20170210
+		 * @since 5.0.0
 		 *
 		 * @param bool $enabledFlag
 		 */
@@ -2374,6 +2421,7 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 					curl_setopt( $this->CurlSession, CURLOPT_SSL_VERIFYPEER, 0 );
 					$this->curlopt[ CURLOPT_SSL_VERIFYHOST ] = 0;
 					$this->curlopt[ CURLOPT_SSL_VERIFYPEER ] = 0;
+					$this->unsafeSslCall = true;
 				} else {
 					// From libcurl 7.28.1 CURLOPT_SSL_VERIFYHOST is deprecated. However, using the value 1 can be used
 					// as of PHP 5.4.11, where the deprecation notices was added. The deprecation has started before libcurl
@@ -2400,6 +2448,7 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 						curl_setopt( $this->CurlSession, CURLOPT_SSL_VERIFYPEER, 0 );
 						$this->curlopt[ CURLOPT_SSL_VERIFYHOST ] = 0;
 						$this->curlopt[ CURLOPT_SSL_VERIFYPEER ] = 0;
+						$this->unsafeSslCall = true;
 					} else {
 						try {
 							curl_setopt( $this->CurlSession, CURLOPT_CAINFO, $this->useCertFile );
@@ -2591,6 +2640,7 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 						$this->hasErrorsStore[] = array( 'code' => $errorCode, 'message' => $errorMessage );
 						$this->setSslVerify( false );
 						$this->setSslUnverified( true );
+						$this->unsafeSslCall = true;
 						$this->CurlRetryTypes['sslunverified'] ++;
 
 						return $this->handleUrlCall( $this->CurlURL, $postData, $CurlMethod );
