@@ -3930,6 +3930,10 @@ class ResursBank {
 	 * @deprecated 1.1.8 It is strongly recommended that you are generating all this by yourself in an integration.
 	 */
 	private function getFormTemplateRules() {
+
+		// TODO: New regex for swedish phone numbers that supports +4607[...]-typos (see the extra 0)
+		// ^((0|\\+46||0046)[ |-]?(200|20|70|73|76|74|1-9{0,2})([ |-]?[0-9]){5,8})?$
+
 		$formTemplateRules = array(
 			'NATURAL' => array(
 				'fields' => array(
