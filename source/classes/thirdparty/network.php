@@ -21,7 +21,7 @@
  *
  * Each class in this library has its own version numbering to keep track of where the changes are. However, there is a major version too.
  *
- * @version 6.0.11
+ * @version 6.0.12
  */
 
 namespace Resursbank\RBEcomPHP;
@@ -431,7 +431,7 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 	 * Class Tornevall_cURL
 	 *
 	 * @package TorneLIB
-	 * @version 6.0.10
+	 * @version 6.0.11
 	 * @link https://docs.tornevall.net/x/KQCy TorneLIBv5
 	 * @link https://bitbucket.tornevall.net/projects/LIB/repos/tornelib-php-netcurl/browse Sources of TorneLIB
 	 * @link https://docs.tornevall.net/x/KwCy Network & Curl v5 and v6 Library usage
@@ -489,11 +489,11 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 		/** @var string This modules name (inherited to some exceptions amongst others) */
 		protected $ModuleName = "NetCurl";
 		/** @var string Internal version that is being used to find out if we are running the latest version of this library */
-		private $TorneCurlVersion = "6.0.10";
+		private $TorneCurlVersion = "6.0.11";
 		/** @var null Curl Version */
 		private $CurlVersion = null;
 		/** @var string Internal release snapshot that is being used to find out if we are running the latest version of this library */
-		private $TorneCurlReleaseDate = "20171010";
+		private $TorneCurlReleaseDate = "20171013";
 		/**
 		 * Prepare TorneLIB_Network class if it exists (as of the november 2016 it does).
 		 *
@@ -563,7 +563,7 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 		/** @var null, if not set, but CurlProxy is, we will use HTTP as proxy (See CURLPROXY_* for more information) */
 		private $CurlProxyType = null;
 		/** @var bool Enable tunneling mode */
-		public $CurlTunnel = false;
+		private $CurlTunnel = false;
 
 		//// URL REDIRECT
 		/** @var bool Decide whether the curl library should follow an url redirect or not */
@@ -1285,6 +1285,9 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 		 * @param null $curlOptValue
 		 */
 		private function setCurlOptInternal( $curlOptArrayOrKey = array(), $curlOptValue = null ) {
+			if (is_null($this->CurlSession)) {
+				$this->init();
+			}
 			if ( ! is_array( $curlOptArrayOrKey ) && !empty( $curlOptArrayOrKey ) && ! is_null( $curlOptValue ) ) {
 				if (!isset($this->curlopt[$curlOptArrayOrKey])) {
 					$this->curlopt[ $curlOptArrayOrKey ] = $curlOptValue;
@@ -1881,8 +1884,46 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 		public function setProxy( $ProxyAddr, $ProxyType = CURLPROXY_HTTP ) {
 			$this->CurlProxy     = $ProxyAddr;
 			$this->CurlProxyType = $ProxyType;
+			// Run from proxy on request
+			$this->setCurlOptInternal( CURLOPT_PROXY, $this->CurlProxy );
+			if ( isset( $this->CurlProxyType ) && ! empty( $this->CurlProxyType ) ) {
+				$this->setCurlOptInternal( CURLOPT_PROXYTYPE, $this->CurlProxyType );
+			}
 		}
 
+		/**
+		 * Get proxy settings
+		 *
+		 * @return array
+		 * @since 6.0.11
+		 */
+		public function getProxy() {
+			return array(
+				'curlProxy' => $this->CurlProxy,
+				'curlProxyType' => $this->CurlProxyType
+			);
+		}
+
+		/**
+		 * Enable curl tunneling
+		 *
+		 * @param bool $curlTunnelEnable
+		 * @since 6.0.11
+		 */
+		public function setTunnel($curlTunnelEnable = true) {
+			// Run in tunneling mode
+			$this->CurlTunnel = $curlTunnelEnable;
+			$this->setCurlOptInternal(CURLOPT_HTTPPROXYTUNNEL, $curlTunnelEnable);
+		}
+
+		/**
+		 * Return state of curltunneling
+		 *
+		 * @return bool
+		 */
+		public function getTunnel() {
+			return $this->CurlTunnel;
+		}
 
 
 		//// PARSING
@@ -2616,20 +2657,14 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 			}
 
 			$this->setCurlOptInternal(CURLOPT_VERBOSE, false);
+			// Tunnel and proxy setup. If this is set, make sure the default IP setup gets cleared out.
+			if ( ! empty( $this->CurlProxy ) && ! empty( $this->CurlProxyType ) ) {
+				unset( $this->CurlIp );
+			}
+			if ( $this->getTunnel() ) {
+				unset( $this->CurlIp );
+			}
 
-			// Run from proxy on request
-			if ( isset( $this->CurlProxy ) && ! empty( $this->CurlProxy ) ) {
-				$this->setCurlOptInternal(CURLOPT_PROXY, $this->CurlProxy);
-				if ( isset( $this->CurlProxyType ) && ! empty( $this->CurlProxyType ) ) {
-					$this->setCurlOptInternal(CURLOPT_PROXYTYPE, $this->CurlProxyType);
-				}
-				unset( $this->CurlIp );
-			}
-			// Run in tunneling mode
-			if ( isset( $this->CurlTunnel ) && ! empty( $this->CurlTunnel ) ) {
-				$this->setCurlOptInternal(CURLOPT_HTTPPROXYTUNNEL, true);
-				unset( $this->CurlIp );
-			}
 			// Another HTTP_REFERER
 			if ( isset( $this->CurlReferer ) && ! empty( $this->CurlReferer ) ) {
 				$this->setCurlOptInternal(CURLOPT_REFERER, $this->CurlReferer);
@@ -2686,7 +2721,7 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 				if ( ! $this->hasSoap() ) {
 					throw new \Exception( $this->ModuleName . " " . __FUNCTION__ . " exception: SoapClient is not available in this system", 500 );
 				}
-				$Soap = new Tornevall_SimpleSoap( $this->CurlURL, $this->curlopt );
+				$Soap = new Tornevall_SimpleSoap( $this->CurlURL, $this );
 				$Soap->setCustomUserAgent( $this->CustomUserAgent );
 				$Soap->setThrowableState( $this->canThrow );
 				$Soap->setSoapAuthentication( $this->AuthData );
@@ -2958,7 +2993,7 @@ if ( ! class_exists( 'Tornevall_SimpleSoap' ) && ! class_exists( 'TorneLIB\Torne
 			'trace'      => true,
 			'cache_wsdl' => 0       // Replacing WSDL_CACHE_NONE (WSDL_CACHE_BOTH = 3)
 		);
-		private $simpleSoapVersion = "6.0.3";
+		private $simpleSoapVersion = "6.0.4";
 		private $soapUrl;
 		private $AuthData;
 		private $soapRequest;
@@ -2969,6 +3004,8 @@ if ( ! class_exists( 'Tornevall_SimpleSoap' ) && ! class_exists( 'TorneLIB\Torne
 		private $canThrowSoapFaults = true;
 		private $CustomUserAgent;
 		private $soapFaultExceptionObject;
+		/** @var Tornevall_cURL */
+		private $PARENT;
 
 		private $SoapFaultString = null;
 		private $SoapFaultCode = 0;
@@ -2978,18 +3015,39 @@ if ( ! class_exists( 'Tornevall_SimpleSoap' ) && ! class_exists( 'TorneLIB\Torne
 		 * Tornevall_SimpleSoap constructor.
 		 *
 		 * @param string $Url
-		 * @param array $SoapOptions
+		 * @param \TorneLIB\Tornevall_cURL
 		 */
-		function __construct( $Url, $SoapOptions = array() ) {
+		function __construct( $Url, $that = null ) {
+			// Inherit parent
 			parent::__construct();
+
+			/** @var Tornevall_cURL */
+			$this->PARENT = $that;      // Get the parent instance from parent, when parent gives wrong information
 			$this->soapUrl = $Url;
 			$this->sslGetOptionsStream();
-			if ( count( $SoapOptions ) ) {
-				$this->soapOptions = $SoapOptions;
-			}
+			$this->soapOptions = $this->PARENT->getCurlOpt();
 			foreach ( $this->addSoapOptions as $soapKey => $soapValue ) {
 				if ( ! isset( $this->soapOptions[ $soapKey ] ) ) {
 					$this->soapOptions[ $soapKey ] = $soapValue;
+				}
+			}
+			$this->configureInternals();
+		}
+
+		/**
+		 * Configure internal data
+		 *
+		 * @since 6.0.3
+		 */
+		private function configureInternals() {
+			$proxySettings = $this->PARENT->getProxy();
+
+			// SOCKS is currently unsupported by SoapClient
+			if (!empty($proxySettings['curlProxy'])) {
+				$proxyConfig = explode(":", $proxySettings['curlProxy']);
+				if ( isset( $proxyConfig[1] ) && ! empty( $proxyConfig[0] ) && $proxyConfig[1] > 0 ) {
+					$this->soapOptions['proxy_host'] = $proxyConfig[0];
+					$this->soapOptions['proxy_port'] = $proxyConfig[1];
 				}
 			}
 		}
@@ -3039,13 +3097,16 @@ if ( ! class_exists( 'Tornevall_SimpleSoap' ) && ! class_exists( 'TorneLIB\Torne
 			}
 			if ( $this->SoapTryOnce ) {
 				try {
-					$this->soapClient = new \SoapClient( $this->soapUrl, $this->soapOptions );
+					$this->soapClient = @new \SoapClient( $this->soapUrl, $this->soapOptions );
 				} catch ( \Exception $soapException ) {
 					$soapCode = $soapException->getCode();
 					if ( ! $soapCode ) {
 						$soapCode = 500;
 					}
-					throw new \Exception( $this->ModuleName . " exception from soapClient: " . $soapException->getMessage(), $soapCode );
+					throw new \Exception( $this->ModuleName . " exception from soapClient: " . $soapException->getMessage(), $soapCode, $soapException );
+				}
+				if (!is_object($this->soapClient)) {
+					throw new \Exception( $this->ModuleName . " exception from SimpleSoap->getSoap(): Could not create SoapClient. Make sure that all settings and URLs are correctly configured.", 500 );
 				}
 			} else {
 				try {
@@ -3064,10 +3125,13 @@ if ( ! class_exists( 'Tornevall_SimpleSoap' ) && ! class_exists( 'TorneLIB\Torne
 							try {
 								$this->soapClient = @new \SoapClient( $this->soapUrl, $this->soapOptions );
 							} catch ( \Exception $soapException ) {
-								throw new \Exception( $this->ModuleName . " exception from soapClient: " . $soapException->getMessage(), $soapException->getCode() );
+								throw new \Exception( $this->ModuleName . " exception from soapClient: " . $soapException->getMessage(), $soapException->getCode(), $soapException );
 							}
 						}
 					}
+				}
+				if (!is_object($this->soapClient)) {
+					throw new \Exception( $this->ModuleName . " exception from SimpleSoap->getSoap(): Could not create SoapClient. Make sure that all settings and URLs are correctly configured.", 500 );
 				}
 			}
 
