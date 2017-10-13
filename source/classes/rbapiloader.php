@@ -107,7 +107,7 @@ class ResursBank {
 	/** @var string The version of this gateway */
 	private $version = "1.2.0";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20171010";
+	private $lastUpdate = "20171013";
 	/** @var string This. */
 	private $clientName = "EComPHP";
 	/** @var string Replacing $clientName on usage of setClientNAme */
@@ -410,8 +410,8 @@ class ResursBank {
 		} else {
 			$this->environment = $this->env_prod;
 		}
-		if ( class_exists( '\Resursbank\RBEcomPHP\Tornevall_cURL' ) ) {
-			$this->CURL = new \Resursbank\RBEcomPHP\Tornevall_cURL();
+		if ( class_exists( '\TorneLIB\Tornevall_cURL' ) ) {
+			$this->CURL = new Tornevall_cURL();
 			$this->CURL->setStoreSessionExceptions( true );
 			$this->CURL->setAuthentication( $this->soapOptions['login'], $this->soapOptions['password'] );
 			$this->CURL->setUserAgent( $this->myUserAgent );
@@ -1134,7 +1134,7 @@ class ResursBank {
 			if ( isset( $renderCallback['eventType'] ) ) {
 				unset( $renderCallback['eventType'] );
 			}
-			$renderedResponse = $this->CURL->doPost( $renderCallbackUrl, $renderCallback, \Resursbank\RBEcomPHP\CURL_POST_AS::POST_AS_JSON );
+			$renderedResponse = $this->CURL->doPost( $renderCallbackUrl, $renderCallback, CURL_POST_AS::POST_AS_JSON );
 			$code             = $this->CURL->getResponseCode();
 		} else {
 			$renderCallbackUrl = $this->getServiceUrl( "registerEventCallback" );
@@ -1465,29 +1465,31 @@ class ResursBank {
 		}
 		$paymentSevice = $this->getPreferredPaymentService();
 
-		foreach ( $paymentMethods as $paymentMethodIndex => $paymentMethodData ) {
-			$type      = $paymentMethodData->type;
-			$addMethod = true;
+		if (is_array($paymentMethods) && count($paymentMethods)) {
+			foreach ( $paymentMethods as $paymentMethodIndex => $paymentMethodData ) {
+				$type      = $paymentMethodData->type;
+				$addMethod = true;
 
-			if ($this->paymentMethodIdSanitizing && isset($paymentMethods[$paymentMethodIndex]->id)) {
-				$paymentMethods[$paymentMethodIndex]->id = preg_replace("/[^a-z0-9$]/i", '', $paymentMethods[$paymentMethodIndex]->id);
-			}
+				if ( $this->paymentMethodIdSanitizing && isset( $paymentMethods[ $paymentMethodIndex ]->id ) ) {
+					$paymentMethods[ $paymentMethodIndex ]->id = preg_replace( "/[^a-z0-9$]/i", '', $paymentMethods[ $paymentMethodIndex ]->id );
+				}
 
-			if ( $this->paymentMethodsIsStrictPsp ) {
-				if ( $type == "PAYMENT_PROVIDER" ) {
-					$addMethod = false;
+				if ( $this->paymentMethodsIsStrictPsp ) {
+					if ( $type == "PAYMENT_PROVIDER" ) {
+						$addMethod = false;
+					}
+				} else if ( $paymentSevice != ResursMethodTypes::METHOD_CHECKOUT ) {
+					if ( $type == "PAYMENT_PROVIDER" ) {
+						$addMethod = false;
+					}
+					if ( $this->paymentMethodsHasPsp ) {
+						$addMethod = true;
+					}
 				}
-			} else if ( $paymentSevice != ResursMethodTypes::METHOD_CHECKOUT ) {
-				if ( $type == "PAYMENT_PROVIDER" ) {
-					$addMethod = false;
-				}
-				if ( $this->paymentMethodsHasPsp ) {
-					$addMethod = true;
-				}
-			}
 
-			if ( $addMethod ) {
-				$realPaymentMethods[] = $paymentMethodData;
+				if ( $addMethod ) {
+					$realPaymentMethods[] = $paymentMethodData;
+				}
 			}
 		}
 
