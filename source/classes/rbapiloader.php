@@ -107,7 +107,7 @@ class ResursBank {
 	/** @var string The version of this gateway */
 	private $version = "1.2.0";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20171010";
+	private $lastUpdate = "20171018";
 	/** @var string This. */
 	private $clientName = "EComPHP";
 	/** @var string Replacing $clientName on usage of setClientNAme */
@@ -1451,8 +1451,6 @@ class ResursBank {
 	public function getPaymentMethods( $parameters = array() ) {
 		$this->InitializeServices();
 
-		$realPaymentMethods = array();
-
 		$paymentMethods = $this->postService( "getPaymentMethods", array(
 			'customerType'   => isset( $parameters['customerType'] ) ? $parameters['customerType'] : null,
 			'language'       => isset( $parameters['language'] ) ? $parameters['language'] : null,
@@ -1463,34 +1461,50 @@ class ResursBank {
 		if ( is_object( $paymentMethods ) ) {
 			$paymentMethods = array( $paymentMethods );
 		}
+		$realPaymentMethods = $this->sanitizePaymentMethods($paymentMethods);
+		return $realPaymentMethods;
+	}
+
+	/**
+	 * Sanitize payment methods locally: make sure, amongst others that also cached payment methods is handled correctly on request, when for example PAYMENT_PROVIDER needs to be cleaned up
+	 *
+	 * @param array $paymentMethods
+	 *
+	 * @return array
+	 * @since 1.0.24
+	 * @since 1.1.24
+	 * @since 1.2.0
+	 */
+	public function sanitizePaymentMethods($paymentMethods = array()) {
+		$realPaymentMethods = array();
 		$paymentSevice = $this->getPreferredPaymentService();
+		if (is_array($paymentMethods) && count($paymentMethods)) {
+			foreach ( $paymentMethods as $paymentMethodIndex => $paymentMethodData ) {
+				$type      = $paymentMethodData->type;
+				$addMethod = true;
 
-		foreach ( $paymentMethods as $paymentMethodIndex => $paymentMethodData ) {
-			$type      = $paymentMethodData->type;
-			$addMethod = true;
-
-			if ($this->paymentMethodIdSanitizing && isset($paymentMethods[$paymentMethodIndex]->id)) {
-				$paymentMethods[$paymentMethodIndex]->id = preg_replace("/[^a-z0-9$]/i", '', $paymentMethods[$paymentMethodIndex]->id);
-			}
-
-			if ( $this->paymentMethodsIsStrictPsp ) {
-				if ( $type == "PAYMENT_PROVIDER" ) {
-					$addMethod = false;
+				if ( $this->paymentMethodIdSanitizing && isset( $paymentMethods[ $paymentMethodIndex ]->id ) ) {
+					$paymentMethods[ $paymentMethodIndex ]->id = preg_replace( "/[^a-z0-9$]/i", '', $paymentMethods[ $paymentMethodIndex ]->id );
 				}
-			} else if ( $paymentSevice != ResursMethodTypes::METHOD_CHECKOUT ) {
-				if ( $type == "PAYMENT_PROVIDER" ) {
-					$addMethod = false;
-				}
-				if ( $this->paymentMethodsHasPsp ) {
-					$addMethod = true;
-				}
-			}
 
-			if ( $addMethod ) {
-				$realPaymentMethods[] = $paymentMethodData;
+				if ( $this->paymentMethodsIsStrictPsp ) {
+					if ( $type == "PAYMENT_PROVIDER" ) {
+						$addMethod = false;
+					}
+				} else if ( $paymentSevice != ResursMethodTypes::METHOD_CHECKOUT ) {
+					if ( $type == "PAYMENT_PROVIDER" ) {
+						$addMethod = false;
+					}
+					if ( $this->paymentMethodsHasPsp ) {
+						$addMethod = true;
+					}
+				}
+
+				if ( $addMethod ) {
+					$realPaymentMethods[] = $paymentMethodData;
+				}
 			}
 		}
-
 		return $realPaymentMethods;
 	}
 
@@ -1605,6 +1619,48 @@ class ResursBank {
 	 */
 	public function getAnnuityFactors( $paymentMethodId = '' ) {
 		return $this->postService( "getAnnuityFactors", array( 'paymentMethodId' => $paymentMethodId ) );
+	}
+
+	/**
+	 * Get annuity factor by duration
+	 *
+	 * @param $paymentMethodIdOrFactorObject
+	 * @param $duration
+	 *
+	 * @return float
+	 * @since 1.1.24
+	 */
+	public function getAnnuityFactorByDuration($paymentMethodIdOrFactorObject, $duration) {
+		$returnFactor = 0;
+		$factorObject = $paymentMethodIdOrFactorObject;
+		if (is_string($paymentMethodIdOrFactorObject) && !empty($paymentMethodIdOrFactorObject)) {
+			$factorObject = $this->getAnnuityFactors($paymentMethodIdOrFactorObject);
+		}
+		if (is_array($factorObject)) {
+			foreach ($factorObject as $factorObjectData) {
+				if ($factorObjectData->duration == $duration && isset($factorObjectData->factor)) {
+					return (float)$factorObjectData->factor;
+				}
+			}
+		}
+		return $returnFactor;
+	}
+
+	/**
+	 * Get annuity factor rounded sum by the total price
+	 *
+	 * @param $price
+	 * @param $paymentMethodIdOrFactorObject
+	 * @param $duration
+	 *
+	 * @return float
+	 * @since 1.1.24
+	 */
+	public function getAnnuityPriceByDuration($totalAmount, $paymentMethodIdOrFactorObject, $duration) {
+		$durationFactor = $this->getAnnuityFactorByDuration($paymentMethodIdOrFactorObject, $duration);
+		if ($durationFactor > 0) {
+			return round($durationFactor * $totalAmount);
+		}
 	}
 
 	/**
