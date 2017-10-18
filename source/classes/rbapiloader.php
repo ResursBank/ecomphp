@@ -12,7 +12,7 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.0
- * @version 1.0.23
+ * @version 1.0.24
  * @deprecated Maintenance version only
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
@@ -213,9 +213,9 @@ class ResursBank {
 	////////// Private variables
 	///// Client Specific Settings
 	/** @var string The version of this gateway */
-	private $version = "1.0.23";
+	private $version = "1.0.24";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20171010";
+	private $lastUpdate = "20171018";
 	/** @var string This. */
 	private $clientName = "EComPHP";
 	/** @var string Replacing $clientName on usage of setClientNAme */
@@ -2178,8 +2178,6 @@ class ResursBank {
 	public function getPaymentMethods( $parameters = array() ) {
 		$this->InitializeServices();
 
-		$realPaymentMethods = array();
-
 		$paymentMethods = $this->postService( "getPaymentMethods", array(
 			'customerType'   => isset( $parameters['customerType'] ) ? $parameters['customerType'] : null,
 			'language'       => isset( $parameters['language'] ) ? $parameters['language'] : null,
@@ -2190,34 +2188,50 @@ class ResursBank {
 		if ( is_object( $paymentMethods ) ) {
 			$paymentMethods = array( $paymentMethods );
 		}
+		$realPaymentMethods = $this->sanitizePaymentMethods($paymentMethods);
+		return $realPaymentMethods;
+	}
+
+	/**
+	 * Sanitize payment methods locally: make sure, amongst others that also cached payment methods is handled correctly on request, when for example PAYMENT_PROVIDER needs to be cleaned up
+	 *
+	 * @param array $paymentMethods
+	 *
+	 * @return array
+	 * @since 1.0.24
+	 * @since 1.1.24
+	 * @since 1.2.0
+	 */
+	public function sanitizePaymentMethods($paymentMethods = array()) {
+		$realPaymentMethods = array();
 		$paymentSevice = $this->getPreferredPaymentService();
+		if (is_array($paymentMethods) && count($paymentMethods)) {
+			foreach ( $paymentMethods as $paymentMethodIndex => $paymentMethodData ) {
+				$type      = $paymentMethodData->type;
+				$addMethod = true;
 
-		foreach ( $paymentMethods as $paymentMethodIndex => $paymentMethodData ) {
-			$type      = $paymentMethodData->type;
-			$addMethod = true;
-
-			if ($this->paymentMethodIdSanitizing && isset($paymentMethods[$paymentMethodIndex]->id)) {
-				$paymentMethods[$paymentMethodIndex]->id = preg_replace("/[^a-z0-9$]/i", '', $paymentMethods[$paymentMethodIndex]->id);
-			}
-
-			if ( $this->paymentMethodsIsStrictPsp ) {
-				if ( $type == "PAYMENT_PROVIDER" ) {
-					$addMethod = false;
+				if ( $this->paymentMethodIdSanitizing && isset( $paymentMethods[ $paymentMethodIndex ]->id ) ) {
+					$paymentMethods[ $paymentMethodIndex ]->id = preg_replace( "/[^a-z0-9$]/i", '', $paymentMethods[ $paymentMethodIndex ]->id );
 				}
-			} else if ( $paymentSevice != ResursMethodTypes::METHOD_CHECKOUT ) {
-				if ( $type == "PAYMENT_PROVIDER" ) {
-					$addMethod = false;
-				}
-				if ( $this->paymentMethodsHasPsp ) {
-					$addMethod = true;
-				}
-			}
 
-			if ( $addMethod ) {
-				$realPaymentMethods[] = $paymentMethodData;
+				if ( $this->paymentMethodsIsStrictPsp ) {
+					if ( $type == "PAYMENT_PROVIDER" ) {
+						$addMethod = false;
+					}
+				} else if ( $paymentSevice != ResursMethodTypes::METHOD_CHECKOUT ) {
+					if ( $type == "PAYMENT_PROVIDER" ) {
+						$addMethod = false;
+					}
+					if ( $this->paymentMethodsHasPsp ) {
+						$addMethod = true;
+					}
+				}
+
+				if ( $addMethod ) {
+					$realPaymentMethods[] = $paymentMethodData;
+				}
 			}
 		}
-
 		return $realPaymentMethods;
 	}
 
@@ -2332,6 +2346,48 @@ class ResursBank {
 	 */
 	public function getAnnuityFactors( $paymentMethodId = '' ) {
 		return $this->postService( "getAnnuityFactors", array( 'paymentMethodId' => $paymentMethodId ) );
+	}
+
+	/**
+	 * Get annuity factor by duration
+	 *
+	 * @param $paymentMethodIdOrFactorObject
+	 * @param $duration
+	 *
+	 * @return float
+	 * @since 1.1.24
+	 */
+	public function getAnnuityFactorByDuration($paymentMethodIdOrFactorObject, $duration) {
+		$returnFactor = 0;
+		$factorObject = $paymentMethodIdOrFactorObject;
+		if (is_string($paymentMethodIdOrFactorObject) && !empty($paymentMethodIdOrFactorObject)) {
+			$factorObject = $this->getAnnuityFactors($paymentMethodIdOrFactorObject);
+		}
+		if (is_array($factorObject)) {
+			foreach ($factorObject as $factorObjectData) {
+				if ($factorObjectData->duration == $duration && isset($factorObjectData->factor)) {
+					return (float)$factorObjectData->factor;
+				}
+			}
+		}
+		return $returnFactor;
+	}
+
+	/**
+	 * Get annuity factor rounded sum by the total price
+	 *
+	 * @param $price
+	 * @param $paymentMethodIdOrFactorObject
+	 * @param $duration
+	 *
+	 * @return float
+	 * @since 1.1.24
+	 */
+	public function getAnnuityPriceByDuration($totalAmount, $paymentMethodIdOrFactorObject, $duration) {
+		$durationFactor = $this->getAnnuityFactorByDuration($paymentMethodIdOrFactorObject, $duration);
+		if ($durationFactor > 0) {
+			return round($durationFactor * $totalAmount);
+		}
 	}
 
 	/**
@@ -3931,6 +3987,10 @@ class ResursBank {
 	 * @deprecated 1.1.8 It is strongly recommended that you are generating all this by yourself in an integration.
 	 */
 	private function getFormTemplateRules() {
+
+		// TODO: New regex for swedish phone numbers that supports +4607[...]-typos (see the extra 0)
+		// ^((0|\\+46||0046)[ |-]?(200|20|70|73|76|74|1-9{0,2})([ |-]?[0-9]){5,8})?$
+
 		$formTemplateRules = array(
 			'NATURAL' => array(
 				'fields' => array(
@@ -6050,6 +6110,27 @@ class ResursBank {
 	 * @deprecated Use updateCheckoutOrderLines() instead
 	 */
 	public function setCheckoutFrameOrderLines( $paymentId = '', $orderLines = array() ) {
+		$this->updateCheckoutOrderLines($paymentId, $orderLines);
+	}
+
+	/**
+	 * Update the Checkout iframe
+	 *
+	 * Backwards compatible so the formatting of the orderLines will be accepted in folllowing formats:
+	 *  - $orderLines is accepted as a json string
+	 *  - $orderLines can be sent in as array('orderLines' => $yourOrderlines)
+	 *  - $orderLines can be sent in as array($yourOrderlines)
+	 *
+	 * @param string $paymentId
+	 * @param array $orderLines
+	 *
+	 * @return bool
+	 * @throws \Exception
+	 * @since 1.0.22
+	 * @since 1.1.22
+	 * @since 1.2.0
+	 */
+	public function updateCheckoutOrderLines( $paymentId = '', $orderLines = array() ) {
 		$outputOrderLines = array();
 		if ( empty( $paymentId ) ) {
 			throw new \Exception( "Payment id not set" );
@@ -6084,23 +6165,6 @@ class ResursBank {
 		}
 
 		return false;
-	}
-
-	/**
-	 * Update the Checkout iframe
-	 *
-	 * Backwards compatible so the formatting of the orderLines will be accepted in folllowing formats:
-	 *  - $orderLines is accepted as a json string
-	 *  - $orderLines can be sent in as array('orderLines' => $yourOrderlines)
-	 *  - $orderLines can be sent in as array($yourOrderlines)
-	 *
-	 * @param string $paymentId
-	 * @param array $orderLines
-	 * @since 1.0.22
-	 * @since 1.1.22
-	 * @since 1.2.0
-	 */
-	public function updateCheckoutOrderLines( $paymentId = '', $orderLines = array() ) {
 		$this->setCheckoutFrameOrderLines($paymentId, $orderLines);
 	}
 
