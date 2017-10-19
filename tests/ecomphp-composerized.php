@@ -5,7 +5,7 @@
  *
  * @package EcomPHPTest
  * @author Resurs Bank Ecommrece <ecommerce.support@resurs.se>
- * @version 0.7
+ * @version 0.8
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @license -
  *
@@ -23,10 +23,13 @@ use \Resursbank\RBEcomPHP\ResursCallbackReachability;
 use \TorneLIB\Tornevall_cURL;
 use \TorneLIB\TorneLIB_Network;
 
+///// ADD ALWAYS SECTION
+
 // Automatically set to test the pushCustomerUserAgent
 if (!isset($_SERVER['HTTP_USER_AGENT'])) {
 	$_SERVER['HTTP_USER_AGENT'] = "EComPHP/Test-InternalClient";
 }
+ini_set('memory_limit', -1);
 
 /**
  * Class ResursBankTest: Primary test client
@@ -1878,14 +1881,20 @@ class ResursBankTest extends TestCase
 		$this->assertTrue( $this->rb->setAdditionalDebitOfPayment( $paymentId ) );
 	}
 
-	function testAdditionalDebitMoreLines() {
+	/** Test wrong, bad and stupid behaviour when orderlines are duplicated */
+	function testAdditionalDebitDuplicateLines() {
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1 );
-		$this->rb->addOrderLine( "myExtraOrderLine-1", "One orderline added with additionalDebitOfPayment", 100, 25 );
-		$this->rb->addOrderLine( "myExtraOrderLine-2", "One orderline added with additionalDebitOfPayment", 200, 25 );
-		$this->rb->setAdditionalDebitOfPayment( $paymentId );
-		$this->rb->addOrderLine( "myExtraOrderLine-1", "One orderline added with additionalDebitOfPayment", 100, 25 );
-		$this->rb->addOrderLine( "myExtraOrderLine-2", "One orderline added with additionalDebitOfPayment", 200, 25 );
-		$this->rb->setAdditionalDebitOfPayment( $paymentId );
+		try {
+			$this->rb->addOrderLine( "myExtraOrderLine-1", "One orderline added with additionalDebitOfPayment", 100, 25 );
+			$this->rb->addOrderLine( "myExtraOrderLine-2", "One orderline added with additionalDebitOfPayment", 200, 25 );
+			$this->rb->setAdditionalDebitOfPayment( $paymentId );
+			$this->rb->addOrderLine( "myExtraOrderLine-1", "One orderline added with additionalDebitOfPayment", 100, 25 );
+			$this->rb->addOrderLine( "myExtraOrderLine-2", "One orderline added with additionalDebitOfPayment", 200, 25 );
+			$this->rb->setAdditionalDebitOfPayment( $paymentId );
+		} catch (\Exception $additionalException) {
+		}
+		$paymentResult = $this->rb->getPaymentSpecCount($paymentId);
+		$this->assertTrue($paymentResult['AUTHORIZE'] == 5);
 	}
 
 	function testAdditionalDebitReduceFail() {
@@ -2304,6 +2313,28 @@ class ResursBankTest extends TestCase
 	 *      - Now annul the same rows that you've just credited (payment admin: adds an annulment on the same rows)
 	 */
 	function testAfterShopFaultyDebitAnnul() {
+		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
+		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
+		$this->rb->addOrderLine( "authLine-1", "One orderline added with addOrderLine", 100, 25 );
+		$this->rb->addOrderLine( "authLine-2", "One orderline added with addOrderLine", 100, 25 );
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 0 );
+
+		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
+		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
+		$this->rb->paymentFinalize( $paymentId );
+
+		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
+		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
+		$this->rb->paymentCredit( $paymentId );
+
+		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
+		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
+		$this->rb->paymentAnnul( $paymentId );
+		$paymentSpecCount = $this->rb->getPaymentSpecCount( $paymentId );
+		$this->assertTrue( $paymentSpecCount['AUTHORIZE'] == 4 && $paymentSpecCount['DEBIT'] == 2 && $paymentSpecCount['CREDIT'] == 2 && $paymentSpecCount['ANNUL'] == 2 );
+	}
+	function testAfterShopFaultyDebitAnnulOldMerge() {
+		$this->rb->setFlag("MERGEBYSTATUS_DEPRECATED_METHOD");
 		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
 		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
 		$this->rb->addOrderLine( "authLine-1", "One orderline added with addOrderLine", 100, 25 );
