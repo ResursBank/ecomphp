@@ -56,10 +56,6 @@ class ResursBank {
 	/** @var bool Activation of debug mode */
 	private $debug = false;
 
-	/// PHP Support
-	/** @var bool User activation flag */
-	private $allowObsoletePHP = false;
-
 	///// Environment and API
 	/** @var int Current targeted environment - default is always test, as we don't like that mistakes are going production */
 	public $current_environment = self::ENVIRONMENT_TEST;
@@ -340,7 +336,7 @@ class ResursBank {
 	private $afterShopInvoiceExtRef = "";
 
 	/** @var string Default unit measure. "st" or styck for Sweden. If your plugin is not used for Sweden, use the proper unit for your country. */
-	private $defaultUnitMeasure;
+	private $defaultUnitMeasure = "st";
 
 	/// Resurs Checkout
 	/** @var null When using clearOcShop(), the Resurs Checkout tailing script (resizer) will be stored here */
