@@ -19,9 +19,13 @@ use \Resursbank\RBEcomPHP\ResursAfterShopRenderTypes;
 use \Resursbank\RBEcomPHP\ResursCallbackTypes;
 use \Resursbank\RBEcomPHP\ResursMethodTypes;
 use \Resursbank\RBEcomPHP\ResursCallbackReachability;
+use \Resursbank\RBEcomPHP\Tornevall_cURL;
+use \Resursbank\RBEcomPHP\TorneLIB_Network;
+
+///// ADD ALWAYS SECTION
 
 // Automatically set to test the pushCustomerUserAgent
-if ( ! isset( $_SERVER['HTTP_USER_AGENT'] ) ) {
+if (!isset($_SERVER['HTTP_USER_AGENT'])) {
 	$_SERVER['HTTP_USER_AGENT'] = "EComPHP/Test-InternalClient";
 }
 ini_set('memory_limit', -1);
@@ -29,7 +33,8 @@ ini_set('memory_limit', -1);
 /**
  * Class ResursBankTest: Primary test client
  */
-class ResursBankTest extends TestCase {
+class ResursBankTest extends TestCase
+{
 	/**
 	 * Resurs Bank API Gateway, PHPUnit Test Client
 	 *
@@ -39,19 +44,19 @@ class ResursBankTest extends TestCase {
 	/**
 	 * The heart of this unit. To make tests "nicely" compatible with 1.1, this should be placed on top of this class as it looks different there.
 	 */
-	private function initServices( $overrideUsername = null, $overridePassword = null ) {
+	private function initServices($overrideUsername = null, $overridePassword = null) {
 		if ( empty( $overrideUsername ) ) {
 			$this->rb = new ResursBank( $this->username, $this->password );
 		} else {
 			$this->rb = new ResursBank( $overrideUsername, $overridePassword );
 		}
-		$this->rb->setPushCustomerUserAgent( true );
-		$this->rb->setUserAgent( "EComPHP/TestSuite" );
+		$this->rb->setPushCustomerUserAgent(true);
+		$this->rb->setUserAgent("EComPHP/TestSuite");
 		$this->rb->setDebug();
 		/*
 		 * If HTTP_HOST is not set, Resurs Checkout will not run properly, since the iFrame requires a valid internet connection (actually browser vs http server).
 		 */
-		if ( ! isset( $_SERVER['HTTP_HOST'] ) ) {
+		if (!isset($_SERVER['HTTP_HOST'])) {
 			$_SERVER['HTTP_HOST'] = "localhost";
 		}
 	}
@@ -100,8 +105,8 @@ class ResursBankTest extends TestCase {
 
 	/** Before each test, invoke this */
 	public function setUp() {
-		$this->CURL    = new \Resursbank\RBEcomPHP\Tornevall_cURL();
-		$this->NETWORK = new \Resursbank\RBEcomPHP\TorneLIB_Network();
+		$this->CURL    = new Tornevall_cURL();
+		$this->NETWORK = new TorneLIB_Network();
 
 		if ( version_compare( PHP_VERSION, '5.3.0', "<" ) ) {
 			if ( ! $this->allowObsoletePHP ) {
@@ -472,7 +477,7 @@ class ResursBankTest extends TestCase {
 				/* Pick up the signing url */
 				$signUrl         = $res->signingUrl;
 				$getSigningPage  = file_get_contents( $signUrl );
-				$NETWORK         = new \Resursbank\RBEcomPHP\TorneLIB_Network();
+				$NETWORK         = new TorneLIB_Network();
 				$signUrlHostInfo = $NETWORK->getUrlDomain( $signUrl );
 				$getUrlHost      = $signUrlHostInfo[1] . "://" . $signUrlHostInfo[0];
 				$mockSuccessUrl  = preg_replace( "/\/$/", '', $getUrlHost . preg_replace( '/(.*?)\<a href=\"(.*?)\">(.*?)\>Mock success(.*)/is', '$2', $getSigningPage ) );
@@ -2037,7 +2042,7 @@ class ResursBankTest extends TestCase {
 	 * Test: Curl error handling before NetCurl 6.0.5
 	 */
 	function testSoapErrorXPath() {
-		$CURL = new \Resursbank\RBEcomPHP\Tornevall_cURL();
+		$CURL = new Tornevall_cURL();
 		$CURL->setAuthentication( $this->username, $this->password );
 		$wsdl = $CURL->doGet( 'https://test.resurs.com/ecommerce-test/ws/V4/AfterShopFlowService?wsdl' );
 		try {
@@ -2055,7 +2060,7 @@ class ResursBankTest extends TestCase {
 	 * Test: Curl error handling from NetCurl 6.0.5 and above
 	 */
 	function testSoapError() {
-		$CURL = new \Resursbank\RBEcomPHP\Tornevall_cURL();
+		$CURL = new Tornevall_cURL();
 		$wsdl = $CURL->doGet( 'https://test.resurs.com/ecommerce-test/ws/V4/SimplifiedShopFlowService?wsdl' );
 		try {
 			$wsdl->getPaymentMethods();
