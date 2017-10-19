@@ -1083,8 +1083,8 @@ class ResursBankTest extends TestCase
 		$Success       = false;
 		if ( ! empty( $iframePaymentReference ) && ! empty( $iFrameUrl ) && ! empty( $iframeContent ) && strlen( $iframeContent ) > 1024 ) {
 			$newReference      = $this->rb->getPreferredPaymentId( 30, "UPDATE-", true, true );
-			$firstCheckoutUrl  = $this->rb->getCheckoutUrl() . "/checkout/payments/" . $iframePaymentReference;
-			$secondCheckoutUrl = $this->rb->getCheckoutUrl() . "/checkout/payments/" . $newReference;
+			//$firstCheckoutUrl  = $this->rb->getCheckoutUrl() . "/checkout/payments/" . $iframePaymentReference;
+			//$secondCheckoutUrl = $this->rb->getCheckoutUrl() . "/checkout/payments/" . $newReference;
 			try {
 				// Currently, this test always gets a HTTP-200 from ecommerce, regardless of successful or failing updates.
 				$Success    = $this->rb->updatePaymentReference( $iframePaymentReference, $newReference );
@@ -1859,6 +1859,7 @@ class ResursBankTest extends TestCase
 	 */
 	function testAnullFullPaymentDeprecated() {
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
+		$this->rb->setLoggedInUser('myAdminUserName');
 		$this->assertTrue( $this->rb->annulPayment( $paymentId ) );
 	}
 

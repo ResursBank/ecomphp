@@ -25,6 +25,7 @@ require_once(RB_API_PATH . '/rbapiloader/ResursTypeClasses.php');
 require_once(RB_API_PATH . '/rbapiloader/ResursEnvironments.php');
 require_once(RB_API_PATH . '/rbapiloader/ResursException.php');
 
+use TorneLIB\TorneLIB_Crypto;
 use \TorneLIB\Tornevall_cURL;
 use \TorneLIB\TorneLIB_Network;
 use \TorneLIB\CURL_POST_AS;
@@ -107,7 +108,7 @@ class ResursBank {
 	/** @var string The version of this gateway */
 	private $version = "1.2.0";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20171013";
+	private $lastUpdate = "20171018";
 	/** @var string This. */
 	private $clientName = "EComPHP";
 	/** @var string Replacing $clientName on usage of setClientNAme */
@@ -410,12 +411,14 @@ class ResursBank {
 		} else {
 			$this->environment = $this->env_prod;
 		}
-		if ( class_exists( '\TorneLIB\Tornevall_cURL' ) ) {
+		if ( class_exists( 'TorneLIB\Tornevall_cURL' ) ) {
 			$this->CURL = new Tornevall_cURL();
 			$this->CURL->setStoreSessionExceptions( true );
 			$this->CURL->setAuthentication( $this->soapOptions['login'], $this->soapOptions['password'] );
 			$this->CURL->setUserAgent( $this->myUserAgent );
 			$this->NETWORK = new TorneLIB_Network();
+		} else {
+			throw new \Exception("http(s) communication library is missing", 500);
 		}
 		$this->wsdlServices = array();
 		foreach ($this->ServiceRequestList as $reqType => $reqService) { $this->wsdlServices[$reqService] = true;}
@@ -1134,7 +1137,7 @@ class ResursBank {
 			if ( isset( $renderCallback['eventType'] ) ) {
 				unset( $renderCallback['eventType'] );
 			}
-			$renderedResponse = $this->CURL->doPost( $renderCallbackUrl, $renderCallback, CURL_POST_AS::POST_AS_JSON );
+			$renderedResponse = $this->CURL->doPost( $renderCallbackUrl, $renderCallback, \Resursbank\RBEcomPHP\CURL_POST_AS::POST_AS_JSON );
 			$code             = $this->CURL->getResponseCode();
 		} else {
 			$renderCallbackUrl = $this->getServiceUrl( "registerEventCallback" );
@@ -1393,8 +1396,8 @@ class ResursBank {
 	 * @since 1.2.0
 	 */
 	public function setPushCustomerUserAgent($enableCustomerUserAgent = false) {
-		if ( class_exists( '\Resursbank\RBEcomPHP\TorneLIB_Crypto' ) ) {
-			$this->T_CRYPTO = new \Resursbank\RBEcomPHP\TorneLIB_Crypto();
+		if ( class_exists( 'TorneLIB\TorneLIB_Crypto' ) ) {
+			$this->T_CRYPTO = new TorneLIB_Crypto();
 		}
 		if (!empty($this->T_CRYPTO)) {
 			$this->customerUserAgentPush = $enableCustomerUserAgent;
@@ -1451,8 +1454,6 @@ class ResursBank {
 	public function getPaymentMethods( $parameters = array() ) {
 		$this->InitializeServices();
 
-		$realPaymentMethods = array();
-
 		$paymentMethods = $this->postService( "getPaymentMethods", array(
 			'customerType'   => isset( $parameters['customerType'] ) ? $parameters['customerType'] : null,
 			'language'       => isset( $parameters['language'] ) ? $parameters['language'] : null,
@@ -1463,8 +1464,23 @@ class ResursBank {
 		if ( is_object( $paymentMethods ) ) {
 			$paymentMethods = array( $paymentMethods );
 		}
-		$paymentSevice = $this->getPreferredPaymentService();
+		$realPaymentMethods = $this->sanitizePaymentMethods($paymentMethods);
+		return $realPaymentMethods;
+	}
 
+	/**
+	 * Sanitize payment methods locally: make sure, amongst others that also cached payment methods is handled correctly on request, when for example PAYMENT_PROVIDER needs to be cleaned up
+	 *
+	 * @param array $paymentMethods
+	 *
+	 * @return array
+	 * @since 1.0.24
+	 * @since 1.1.24
+	 * @since 1.2.0
+	 */
+	public function sanitizePaymentMethods($paymentMethods = array()) {
+		$realPaymentMethods = array();
+		$paymentSevice = $this->getPreferredPaymentService();
 		if (is_array($paymentMethods) && count($paymentMethods)) {
 			foreach ( $paymentMethods as $paymentMethodIndex => $paymentMethodData ) {
 				$type      = $paymentMethodData->type;
@@ -1492,7 +1508,6 @@ class ResursBank {
 				}
 			}
 		}
-
 		return $realPaymentMethods;
 	}
 
@@ -1607,6 +1622,48 @@ class ResursBank {
 	 */
 	public function getAnnuityFactors( $paymentMethodId = '' ) {
 		return $this->postService( "getAnnuityFactors", array( 'paymentMethodId' => $paymentMethodId ) );
+	}
+
+	/**
+	 * Get annuity factor by duration
+	 *
+	 * @param $paymentMethodIdOrFactorObject
+	 * @param $duration
+	 *
+	 * @return float
+	 * @since 1.1.24
+	 */
+	public function getAnnuityFactorByDuration($paymentMethodIdOrFactorObject, $duration) {
+		$returnFactor = 0;
+		$factorObject = $paymentMethodIdOrFactorObject;
+		if (is_string($paymentMethodIdOrFactorObject) && !empty($paymentMethodIdOrFactorObject)) {
+			$factorObject = $this->getAnnuityFactors($paymentMethodIdOrFactorObject);
+		}
+		if (is_array($factorObject)) {
+			foreach ($factorObject as $factorObjectData) {
+				if ($factorObjectData->duration == $duration && isset($factorObjectData->factor)) {
+					return (float)$factorObjectData->factor;
+				}
+			}
+		}
+		return $returnFactor;
+	}
+
+	/**
+	 * Get annuity factor rounded sum by the total price
+	 *
+	 * @param $price
+	 * @param $paymentMethodIdOrFactorObject
+	 * @param $duration
+	 *
+	 * @return float
+	 * @since 1.1.24
+	 */
+	public function getAnnuityPriceByDuration($totalAmount, $paymentMethodIdOrFactorObject, $duration) {
+		$durationFactor = $this->getAnnuityFactorByDuration($paymentMethodIdOrFactorObject, $duration);
+		if ($durationFactor > 0) {
+			return round($durationFactor * $totalAmount);
+		}
 	}
 
 	/**
