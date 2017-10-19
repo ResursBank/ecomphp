@@ -1134,7 +1134,7 @@ class ResursBank {
 			if ( isset( $renderCallback['eventType'] ) ) {
 				unset( $renderCallback['eventType'] );
 			}
-			$renderedResponse = $this->CURL->doPost( $renderCallbackUrl, $renderCallback, \Resursbank\RBEcomPHP\CURL_POST_AS::POST_AS_JSON );
+			$renderedResponse = $this->CURL->doPost( $renderCallbackUrl, $renderCallback, CURL_POST_AS::POST_AS_JSON );
 			$code             = $this->CURL->getResponseCode();
 		} else {
 			$renderCallbackUrl = $this->getServiceUrl( "registerEventCallback" );
