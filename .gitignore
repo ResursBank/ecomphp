@@ -6,3 +6,4 @@ docs
 composer.lock
 vendor
 composer.phar
+source/classes/thirdparty
