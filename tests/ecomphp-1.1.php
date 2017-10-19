@@ -21,6 +21,7 @@ use \Resursbank\RBEcomPHP\ResursMethodTypes;
 use \Resursbank\RBEcomPHP\ResursCallbackReachability;
 use \Resursbank\RBEcomPHP\Tornevall_cURL;
 use \Resursbank\RBEcomPHP\TorneLIB_Network;
+use \Resursbank\RBEcomPHP\TorneLIB_Crypto;
 
 ///// ADD ALWAYS SECTION
 
