@@ -27,6 +27,15 @@ require_once(RB_API_PATH . '/rbapiloader/ResursTypeClasses.php');
 require_once(RB_API_PATH . '/rbapiloader/ResursEnvironments.php');
 require_once(RB_API_PATH . '/rbapiloader/ResursException.php');
 
+if (file_exists(__DIR__ . "/../../vendor/autoload.php")) {
+	require_once(__DIR__ . '/../../vendor/autoload.php');
+}
+
+//use Resursbank\RBEcomPHP\Tornevall_cURL;
+//use Resursbank\RBEcomPHP\TorneLIB_Network;
+//use Resursbank\RBEcomPHP\TorneLIB_Crypto;
+
+use Resursbank\RBEcomPHP\ResursMethodTypes;
 use Resursbank\RBEcomPHP\CURL_POST_AS;
 
 /**
@@ -138,6 +147,10 @@ class ResursBank {
 	 * @since 1.1.1
 	 */
 	private $NETWORK;
+	/**
+	 * @var TorneLIB_NetBits Class for handling bitmasks
+	 */
+	private $BIT;
 	/**
 	 * @var TorneLIB_Crypto Class for handling data encoding/encryption
 	 * @since 1.0.13
@@ -410,12 +423,13 @@ class ResursBank {
 		} else {
 			$this->environment = $this->env_prod;
 		}
-		if ( class_exists( '\Resursbank\RBEcomPHP\Tornevall_cURL' ) ) {
-			$this->CURL = new \Resursbank\RBEcomPHP\Tornevall_cURL();
+		if ( class_exists( '\Resursbank\RBEcomPHP\Tornevall_cURL' ) || class_exists( '\TorneLIB\Tornevall_cURL' ) ) {
+			$this->CURL = new Tornevall_cURL();
 			$this->CURL->setStoreSessionExceptions( true );
 			$this->CURL->setAuthentication( $this->soapOptions['login'], $this->soapOptions['password'] );
 			$this->CURL->setUserAgent( $this->myUserAgent );
 			$this->NETWORK = new TorneLIB_Network();
+			$this->BIT = $this->NETWORK->BIT;
 		}
 		$this->wsdlServices = array();
 		foreach ($this->ServiceRequestList as $reqType => $reqService) { $this->wsdlServices[$reqService] = true;}
@@ -448,7 +462,8 @@ class ResursBank {
 	}
 
 	/**
-	 * Return the CURL communication handle to the client, when in debug mode
+	 * Return the CURL communication handle to the client, when in debug mode (Read only)
+	 *
 	 * @return Tornevall_cURL
 	 * @throws \Exception
 	 * @since 1.0.22
@@ -604,36 +619,8 @@ class ResursBank {
 		return false;
 	}
 
-	/**
-	 * Find classes
-	 *
-	 * @param string $path
-	 *
-	 * @return bool
-	 */
-	private function classes( $path = '' ) {
-		foreach ( $this->classPathFiles as $file ) {
-			if ( file_exists( $path . "/" . $file ) ) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
 
 	/////////// Standard getters and setters
-
-	/**
-	 * Allow older/obsolete PHP Versions (Follows the obsolete php versions rules - see the link for more information).
-	 *
-	 * @param bool $activate
-	 *
-	 * @link https://test.resurs.com/docs/x/TYNM#ECommercePHPLibrary-ObsoletePHPversions
-	 */
-	public function setObsoletePhp( $activate = false ) {
-		$this->allowObsoletePHP = $activate;
-	}
 
 	/**
 	 * Define current environment
@@ -749,7 +736,7 @@ class ResursBank {
 	 * @return string
 	 */
 	private function base64url_encode( $data ) {
-		return rtrim( strtr( base64_encode( $data ), '+/', '-_' ), '=' );
+		return $this->NETWORK->base64url_encode($data);
 	}
 
 	/**
@@ -760,7 +747,7 @@ class ResursBank {
 	 * @return string
 	 */
 	private function base64url_decode( $data ) {
-		return base64_decode( str_pad( strtr( $data, '-_', '+/' ), strlen( $data ) % 4, '=', STR_PAD_RIGHT ) );
+		return $this->NETWORK->base64url_decode($data);
 	}
 
 
@@ -1392,11 +1379,9 @@ class ResursBank {
 	 * @since 1.1.13
 	 * @since 1.2.0
 	 */
-	public function setPushCustomerUserAgent($enableCustomerUserAgent = false) {
-		if ( class_exists( '\Resursbank\RBEcomPHP\TorneLIB_Crypto' ) ) {
-			$this->T_CRYPTO = new \Resursbank\RBEcomPHP\TorneLIB_Crypto();
-		}
-		if (!empty($this->T_CRYPTO)) {
+	public function setPushCustomerUserAgent( $enableCustomerUserAgent = false ) {
+		$this->T_CRYPTO = new TorneLIB_Crypto();
+		if ( ! empty( $this->T_CRYPTO ) ) {
 			$this->customerUserAgentPush = $enableCustomerUserAgent;
 		}
 	}
@@ -1649,7 +1634,7 @@ class ResursBank {
 	/**
 	 * Get annuity factor rounded sum by the total price
 	 *
-	 * @param $price
+	 * @param $totalAmount
 	 * @param $paymentMethodIdOrFactorObject
 	 * @param $duration
 	 *
@@ -2199,17 +2184,19 @@ class ResursBank {
 	}
 
 	/**
-	 * PaymentSpecCleaner
+	 * Payment spec container cleaner
+	 *
+	 * TODO: Key on artNo, description, price instead
 	 *
 	 * @param array $currentArray The current speclineArray
 	 * @param array $cleanWith The array with the speclines that should be removed from currentArray
-	 * @param bool $includeId Include matching against id (meaning both id and artNo is trying to match to make the search safer)
+	 * @param bool $keepOpposite Setting this to true, will run the opposite of what the function actually do
 	 *
 	 * @return array New array
 	 * @since 1.0.0
 	 * @since 1.1.0
 	 */
-	private function removeFromArray( $currentArray = array(), $cleanWith = array(), $includeId = false ) {
+	private function removeFromArray( $currentArray = array(), $cleanWith = array(), $keepOpposite = false ) {
 		$cleanedArray = array();
 		foreach ( $currentArray as $currentObject ) {
 			if ( is_array( $cleanWith ) ) {
@@ -2217,26 +2204,33 @@ class ResursBank {
 				foreach ( $cleanWith as $currentCleanObject ) {
 					if ( is_object( $currentCleanObject ) ) {
 						if ( ! empty( $currentObject->artNo ) ) {
-							/**
-							 * Search with both id and artNo - This may fail so we are normally ignoring the id from a specline.
-							 * If you are absolutely sure that your speclines are fully matching each other, you may enabled id-searching.
-							 */
-							if ( ! $includeId ) {
-								if ( $currentObject->artNo == $currentCleanObject->artNo ) {
-									$foundObject = true;
-									break;
+							if ( $currentObject->artNo == $currentCleanObject->artNo ) {    // No longer searching on id, as that is an incremental value rather than a dynamically added.
+								$foundObject = true;
+								if ($keepOpposite) {
+									// This little one does the opposite of what this function normally do: Remove everything from the array except the found row.
+									$cleanedArray[] = $currentObject;
 								}
-							} else {
-								if ( $currentObject->id == $currentCleanObject->id && $currentObject->artNo == $currentCleanObject->artNo ) {
-									$foundObject = true;
-									break;
+								break;
+							}
+						}
+					} else if (is_array($currentCleanObject)) {
+						// This is above, but based on incoming array
+						if ( ! empty( $currentObject->artNo ) ) {
+							if ( $currentObject->artNo == $currentCleanObject['artNo'] ) {    // No longer searching on id, as that is an incremental value rather than a dynamically added.
+								$foundObject = true;
+								if ($keepOpposite) {
+									// This little one does the opposite of what this function normally do: Remove everything from the array except the found row.
+									$cleanedArray[] = $currentObject;
 								}
+								break;
 							}
 						}
 					}
 				}
-				if ( ! $foundObject ) {
-					$cleanedArray[] = $currentObject;
+				if ( ! $keepOpposite ) {
+					if ( ! $foundObject ) {
+						$cleanedArray[] = $currentObject;
+					}
 				}
 			} else {
 				$cleanedArray[] = $currentObject;
@@ -2359,305 +2353,6 @@ class ResursBank {
 	public function setValidateCheckoutShopUrl($validateEnabled = true) {
 		$this->validateCheckoutShopUrl = $validateEnabled;
 	}
-
-	/////////// PAYMENT SPECS AND ROWS - IN DECISION OF DEPRECATION
-
-	/**
-	 * Scan client specific specrows for matches
-	 *
-	 * @param $clientPaymentSpec
-	 * @param $artNo
-	 * @param $quantity
-	 * @param bool $quantityMatch
-	 * @param bool $useSpecifiedQuantity If set to true, the quantity set clientside will be used rather than the exact quantity from the spec in getPayment (This requires that $quantityMatch is set to false)
-	 *
-	 * @return bool
-	 */
-	private function inSpec( $clientPaymentSpec, $artNo, $quantity, $quantityMatch = true, $useSpecifiedQuantity = false ) {
-		$foundArt = false;
-		foreach ( $clientPaymentSpec as $row ) {
-			if ( isset( $row['artNo'] ) ) {
-				if ( $row['artNo'] == $artNo ) {
-					// If quantity match is true, quantity must match the request to return a true value
-					if ( $quantityMatch ) {
-						// Consider full quantity if no quantity is set
-						if ( ! isset( $row['quantity'] ) ) {
-							$foundArt = true;
-
-							return true;
-						}
-						if ( isset( $row['quantity'] ) && (float) $row['quantity'] === (float) $quantity ) {
-							return true;
-						} else {
-							// Eventually set this to false, unless the float controll is successful
-							$foundArt = false;
-							// If the float control fails, also try check against integers
-							if ( isset( $row['quantity'] ) && intval( $row['quantity'] ) > 0 && intval( $quantity ) > 0 && intval( $row['quantity'] ) === intval( $quantity ) ) {
-								return true;
-							}
-						}
-					} else {
-						return true;
-					}
-				} else {
-					$foundArt = false;
-				}
-			}
-		}
-
-		return $foundArt;
-	}
-
-	/**
-	 * @param array $specLines
-	 *
-	 * @return array
-	 */
-	private function stripPaymentSpec( $specLines = array() ) {
-		$newSpec = array();
-		if ( is_array( $specLines ) && count( $specLines ) ) {
-			foreach ( $specLines as $specRow ) {
-				if ( isset( $specRow->artNo ) && ! empty( $specRow->artNo ) ) {
-					$newSpec[] = array(
-						'artNo'    => $specRow->artNo,
-						'quantity' => $specRow->quantity
-					);
-				}
-			}
-		}
-
-		return $newSpec;
-	}
-
-	/**
-	 * Make sure that also simple payment specs gets arrayed
-	 *
-	 * @param array $clientPaymentSpec
-	 *
-	 * @return array
-	 * @since 1.0.0
-	 * @since 1.1.0
-	 * @since 1.2.0
-	 */
-	private function handleClientPaymentSpec( $clientPaymentSpec = array() ) {
-		if ( isset( $clientPaymentSpec['artNo'] ) ) {
-			$newClientSpec   = array();
-			$newClientSpec[] = $clientPaymentSpec;
-		} else {
-			$newClientSpec = $clientPaymentSpec;
-		}
-
-		return $newClientSpec;
-	}
-
-	/**
-	 * Render a specLine-array depending on the needs (This function is explicitly used for the AfterShopFlow together with Finalize/Annul/Credit
-	 *
-	 * @param array $paymentArray
-	 * @param int $renderType
-	 * @param array $finalizeParams
-	 *
-	 * @return array
-	 * @throws \Exception
-	 * @deprecated 1.0.22
-	 * @deprecated 1.1.22
-	 */
-	private function renderSpecLine( $paymentArray = array(), $renderType = ResursAfterShopRenderTypes::NONE, $finalizeParams = array() ) {
-		$returnSpecObject = array();
-		if ( $renderType == ResursAfterShopRenderTypes::NONE ) {
-			throw new \Exception( __FUNCTION__ . ": Can not render specLines without RenderType", 500 );
-		}
-		// Preparation of the returning array
-		$specLines = array();
-		$currentSpecs = array(
-			'AUTHORIZE' => array(),
-			'DEBIT'     => array(),
-			'CREDIT'    => array(),
-			'ANNUL'     => array()
-		);
-
-		// This method summarizes all specrows in a proper objectarray, depending on the paymentdiff type.
-		if ( isset( $paymentArray->paymentDiffs->paymentSpec->specLines ) ) {
-			$specType = $paymentArray->paymentDiffs->type;
-			$specLineArray = $paymentArray->paymentDiffs->paymentSpec->specLines;
-			if ( is_array( $specLineArray ) ) {
-				foreach ( $specLineArray as $subObjects ) {
-					array_push( $currentSpecs[ $specType ], $subObjects );
-				}
-			} else {
-				array_push( $currentSpecs[ $specType ], $specLineArray );
-			}
-		} else {
-			// If the paymentarray does not have speclines, something else has been done with this payment
-			if ( isset( $paymentArray->paymentDiffs ) ) {
-				foreach ( $paymentArray->paymentDiffs as $specsObject ) {
-					// Catch up the payment and split it up
-					$specType = $specsObject->type;
-					// Making sure that everything is handled equally
-					$specLineArray = $specsObject->paymentSpec->specLines;
-					if ( isset( $specsObject->paymentSpec->specLines ) ) {
-						if ( is_array( $specLineArray ) ) {
-							foreach ( $specLineArray as $subObjects ) {
-								array_push( $currentSpecs[ $specType ], $subObjects );
-							}
-						} else {
-							array_push( $currentSpecs[ $specType ], $specLineArray );
-						}
-					}
-				}
-			}
-		}
-
-		// Finalization is being done on all authorized rows that is not already finalized (debit), annulled or crediter
-		if ( $renderType == ResursAfterShopRenderTypes::FINALIZE ) {
-			$returnSpecObject = $this->removeFromArray( $currentSpecs['AUTHORIZE'], array_merge( $currentSpecs['DEBIT'], $currentSpecs['ANNUL'], $currentSpecs['CREDIT'] ) );
-		}
-		// Credit is being done on all authorized rows that is not annuled or already credited
-		if ( $renderType == ResursAfterShopRenderTypes::CREDIT ) {
-			$returnSpecObject = $this->removeFromArray( $currentSpecs['DEBIT'], array_merge( $currentSpecs['ANNUL'], $currentSpecs['CREDIT'] ) );
-		}
-		// Annul is being done on all authorized rows that is not already annulled, debited or credited
-		if ( $renderType == ResursAfterShopRenderTypes::ANNUL ) {
-			$returnSpecObject = $this->removeFromArray( $currentSpecs['AUTHORIZE'], array_merge( $currentSpecs['DEBIT'], $currentSpecs['ANNUL'], $currentSpecs['CREDIT'] ) );
-		}
-		if ( $renderType == ResursAfterShopRenderTypes::UPDATE ) {
-			$returnSpecObject = $currentSpecs['AUTHORIZE'];
-		}
-		return $returnSpecObject;
-	}
-
-	/**
-	 * Render a full paymentSpec for AfterShop
-	 *
-	 * Depending on the rendering type the specrows may differ, but the primary goal is to only handle rows from a payment spec that is actual for the moment.
-	 *
-	 * Examples:
-	 *   - Request: Finalize. The payment has credited and annulled rows. Credited, annulled and formerly debited rows are ignored.
-	 *   - Request: Annul. The payment is partially debited. Debited and former annulled rows are ignored.
-	 *   - Request: Annul. The payment is partially credited. Credited and debited rows is ignored.
-	 *   - Request: Credit. The payment is partially annulled. Only debited rows will be chosen.
-	 *
-	 * @param $paymentId
-	 * @param $renderType
-	 * @param array $paymentArray The actual full speclineArray to handle
-	 * @param array $clientPaymentSpec (Optional) paymentspec if only specified lines are being finalized
-	 * @param array $renderParams Finalize parameters received from the server-application
-	 * @param bool $quantityMatch (Optional, Passthrough) Match quantity. If false, quantity will be ignored during finalization and all client specified paymentspecs will match
-	 * @param bool $useSpecifiedQuantity If set to true, the quantity set clientside will be used rather than the exact quantity from the spec in getPayment (This requires that $quantityMatch is set to false)
-	 *
-	 * @return array
-	 * @throws \Exception
-	 * @deprecated 1.0.2
-	 * @deprecated 1.1.2
-	 */
-	public function renderPaymentSpecContainer( $paymentId, $renderType, $paymentArray = array(), $clientPaymentSpec = array(), $renderParams = array(), $quantityMatch = true, $useSpecifiedQuantity = false ) {
-		$paymentSpecLine         = $this->renderSpecLine( $paymentArray, $renderType, $renderParams );
-		$totalAmount             = 0;
-		$totalVatAmount          = 0;
-		$newSpecLine             = array();
-		$paymentContainerContent = array();
-		$paymentContainer        = array();
-		$paymentMethodType       = isset( $paymentArray->paymentMethodType ) ? $paymentArray->paymentMethodType : "";
-		$isInvoice               = false;
-		if ( strtoupper( $paymentMethodType ) === "INVOICE" ) {
-			$isInvoice = true;
-		}
-
-		if ( ! count( $paymentSpecLine ) ) {
-			/* Should occur when you for example try to annul an order that is already debited or credited */
-			throw new \Exception( __FUNCTION__ . ": No articles was added during the renderingprocess (RenderType $renderType)", \ResursExceptions::PAYMENTSPEC_EMPTY );
-		}
-
-		if ( is_array( $paymentSpecLine ) && count( $paymentSpecLine ) ) {
-			/* Calculate totalAmount to finalize */
-			foreach ( $paymentSpecLine as $row ) {
-				if ( is_array( $clientPaymentSpec ) && count( $clientPaymentSpec ) ) {
-					/**
-					 * Partial payments control
-					 * If the current article is missing in the requested $clientPaymentSpec, it should be included into the summary and therefore not be calculated.
-					 */
-					if ( $this->inSpec( $clientPaymentSpec, $row->artNo, $row->quantity, $quantityMatch, $useSpecifiedQuantity ) ) {
-						/**
-						 * Partial specrow quantity modifier - Beta
-						 * Activated by setting $useSpecifiedQuantity to true
-						 * Warning: Do not use this special feature unless you know what you are doing
-						 *
-						 * Used when own quantity values are set instead of the one set in the received payment spec. This is actually being used
-						 * when we are for example are trying to annul parts of a specrow instead of the full row.
-						 */
-						if ( $useSpecifiedQuantity ) {
-							foreach ( $clientPaymentSpec as $item ) {
-								if ( isset( $item['artNo'] ) && ! empty( $item['artNo'] ) && $item['artNo'] == $row->artNo && isset( $item['quantity'] ) && intval( $item['quantity'] ) > 0 ) {
-									/* Recalculate the new totalVatAmount */
-									$newTotalVatAmount = ( $row->unitAmountWithoutVat * ( $row->vatPct / 100 ) ) * $item['quantity'];
-									/* Recalculate the new totalAmount */
-									$newTotalAmount = ( $row->unitAmountWithoutVat * $item['quantity'] ) + $newTotalVatAmount;
-									/* Change the new values in the current row */
-									$row->quantity       = $item['quantity'];
-									$row->totalVatAmount = $newTotalVatAmount;
-									$row->totalAmount    = $newTotalAmount;
-									break;
-								}
-							}
-							/* Put the manipulated row into the specline*/
-							$newSpecLine[]  = $this->objectsIntoArray( $row );
-							$totalAmount    += $row->totalAmount;
-							$totalVatAmount += $row->totalVatAmount;
-						} else {
-							$newSpecLine[]  = $this->objectsIntoArray( $row );
-							$totalAmount    += $row->totalAmount;
-							$totalVatAmount += $row->totalVatAmount;
-						}
-					}
-				} else {
-					$newSpecLine[]  = $this->objectsIntoArray( $row );
-					$totalAmount    += $row->totalAmount;
-					$totalVatAmount += $row->totalVatAmount;
-				}
-			}
-			$paymentSpec             = array(
-				'specLines'      => $newSpecLine,
-				'totalAmount'    => $totalAmount,
-				'totalVatAmount' => $totalVatAmount
-			);
-			$paymentContainerContent = array(
-				'paymentId'       => $paymentId,
-				'partPaymentSpec' => $paymentSpec
-			);
-
-			/**
-			 * Note: If the paymentspec are rendered without speclines, this may be caused by for example a finalization where the speclines already are finalized.
-			 */
-			if ( ! count( $newSpecLine ) ) {
-				throw new \Exception( __FUNCTION__ . ": No articles has been added to the paymentspec due to mismatching clientPaymentSpec", \ResursExceptions::PAYMENTSPEC_EMPTY );
-			}
-
-			/* If no invoice id is set, we are assuming that Resurs Bank Invoice numbering sequence is the right one - Enforcing an invoice number if not exists */
-			if ( $isInvoice ) {
-				$paymentContainerContent['orderDate']   = date( 'Y-m-d', time() );
-				$paymentContainerContent['invoiceDate'] = date( 'Y-m-d', time() );
-				if ( ! isset( $renderParams['invoiceId'] ) ) {
-					$renderParams['invoiceId'] = $this->getNextInvoiceNumber();
-				}
-			}
-			$renderParams['createdBy'] = $this->getCreatedBy();
-
-			// Other data fields that can be sent from client (see below). Note the orderId, this may be important for the order.
-			$preferredTransactionId = $this->getAfterShopPreferredTransactionId();
-			$orderId                = $this->getAfterShopOrderId();
-			if ( ! empty( $preferredTransactionId ) ) {
-				$renderParams['preferredTransactionId'] = $preferredTransactionId;
-			}
-			if ( ! empty( $orderId ) ) {
-				$renderParams['orderId'] = $orderId;
-			}
-			$paymentContainer          = array_merge( $paymentContainerContent, $renderParams );
-		}
-
-		return $paymentContainer;
-	}
-
-
 
 	/////////// LONG LIFE DEPRECATION (Belongs to the deprecated shopFlow emulation, used by the wooCommerce plugin amongst others)
 
@@ -3077,6 +2772,8 @@ class ResursBank {
 	}
 
 	/**
+	 * Insert products in "virtual cart"
+	 *
 	 * @param string $articleNumberOrId
 	 * @param string $description
 	 * @param int $unitAmountWithoutVat
@@ -3084,6 +2781,10 @@ class ResursBank {
 	 * @param string $unitMeasure
 	 * @param string $articleType ORDER_LINE, DISCOUNT, SHIPPING_FEE
 	 * @param int $quantity
+	 *
+	 * @since 1.0.2
+	 * @since 1.1.2
+	 * @since 1.2.0
 	 */
 	public function addOrderLine( $articleNumberOrId = '', $description = '', $unitAmountWithoutVat = 0, $vatPct = 0, $unitMeasure = 'st', $articleType = "ORDER_LINE", $quantity = 1 ) {
 		if ( ! is_array( $this->SpecLines ) ) {
@@ -3399,7 +3100,7 @@ class ResursBank {
 			throw new \Exception( "No payload are set for this payment", \ResursExceptions::BOOKPAYMENT_NO_BOOKDATA );
 		}
 
-		// Obsolete way to handle multidimensional specrows (1.0.0-1.0.1)
+		// Obsolete way to handle multidimensional specrows
 		if ( isset( $this->Payload['specLine'] ) ) {
 			if ( isset( $this->Payload['specLine']['artNo'] ) ) {
 				$this->SpecLines[] = $this->Payload['specLine'];
@@ -3413,6 +3114,10 @@ class ResursBank {
 			unset( $this->Payload['specLine'] );
 			$this->renderPaymentSpec();
 		} else if ( isset( $this->Payload['orderLines'] ) ) {
+			$this->renderPaymentSpec();
+		} else if (!isset($this->Payload['orderLines']) && count($this->SpecLines)) {
+			// Fix desynched orderlines
+			$this->Payload['orderLines'] = $this->SpecLines;
 			$this->renderPaymentSpec();
 		}
 		if ( $this->enforceService === ResursMethodTypes::METHOD_HOSTED || $this->enforceService === ResursMethodTypes::METHOD_SIMPLIFIED ) {
@@ -3536,13 +3241,34 @@ class ResursBank {
 	public function sanitizePaymentSpec( $specLines = array(), $myFlowOverrider = ResursMethodTypes::METHOD_UNDEFINED ) {
 		$specRules = array(
 			'checkout'   => array(
-				'artNo', 'description', 'quantity', 'unitMeasure', 'unitAmountWithoutVat', 'vatPct', 'type'
+				'artNo',
+				'description',
+				'quantity',
+				'unitMeasure',
+				'unitAmountWithoutVat',
+				'vatPct',
+				'type'
 			),
 			'hosted'     => array(
-				'artNo', 'description', 'quantity', 'unitMeasure', 'unitAmountWithoutVat', 'vatPct', 'totalVatAmount', 'totalAmount'
+				'artNo',
+				'description',
+				'quantity',
+				'unitMeasure',
+				'unitAmountWithoutVat',
+				'vatPct',
+				'totalVatAmount',
+				'totalAmount'
 			),
 			'simplified' => array(
-				'id', 'artNo', 'description', 'quantity', 'unitMeasure', 'unitAmountWithoutVat', 'vatPct', 'totalVatAmount', 'totalAmount'
+				'id',
+				'artNo',
+				'description',
+				'quantity',
+				'unitMeasure',
+				'unitAmountWithoutVat',
+				'vatPct',
+				'totalVatAmount',
+				'totalAmount'
 			)
 		);
 		if ( is_array( $specLines ) ) {
@@ -3560,12 +3286,8 @@ class ResursBank {
 			}
 			foreach ( $specLines as $specIndex => $specArray ) {
 				foreach ( $specArray as $key => $value ) {
-					if ( ! in_array( strtolower( $key ), array_map( "strtolower", $mySpecRules ) ) ) {
-						unset( $specArray[ $key ] );
-					}
-					if ( strtolower( $key ) == "unitmeasure" && empty( $value ) ) {
-						$specArray[ $key ] = $this->defaultUnitMeasure;
-					}
+					if ( strtolower( $key ) == "unitmeasure" && empty( $value ) ) { $specArray[ $key ] = $this->defaultUnitMeasure;	}
+					if ( ! in_array( strtolower( $key ), array_map( "strtolower", $mySpecRules ) ) ) { unset( $specArray[ $key ] );	}
 				}
 				$specLines[ $specIndex ] = $specArray;
 			}
@@ -3878,6 +3600,22 @@ class ResursBank {
 	public function getPayload() {
 		$this->preparePayload();
 		return $this->Payload;
+	}
+
+	/**
+	 * Return added speclines / Orderlines
+	 *
+	 * @return array
+	 */
+	public function getOrderLines() {
+		return $this->SpecLines;
+	}
+
+	/**
+	 * @return array
+	 */
+	public function getSpecLines() {
+		return $this->getOrderLines();
 	}
 
 	/**
@@ -4257,12 +3995,20 @@ class ResursBank {
 					// Second, make sure that the paymentdiffs are collected as one array per specType (AUTHORIZE,DEBIT,CREDIT,ANULL)
 					if ( is_array( $paymentDiffObject->paymentSpec->specLines ) ) {
 						// Note: array_merge won't work if the initial array is empty. Instead we'll append it to the above array.
-						$orderLinesByStatus[ $paymentDiffObject->type ] += $paymentDiffObject->paymentSpec->specLines;
+						// Also note that appending with += may fail when indexes matches each other on both sides - in that case
+						// not all objects will be attached properly to this array.
+						if (!$this->isFlag('MERGEBYSTATUS_DEPRECATED_METHOD')) {
+							foreach ($paymentDiffObject->paymentSpec->specLines as $arrayObject)
+							{
+								$orderLinesByStatus[ $paymentDiffObject->type ][] = $arrayObject;
+							}
+						} else {
+							$orderLinesByStatus[ $paymentDiffObject->type ] += $paymentDiffObject->paymentSpec->specLines;
+						}
 					} else if ( is_object( $paymentDiffObject ) ) {
 						$orderLinesByStatus[ $paymentDiffObject->type ][] = $paymentDiffObject->paymentSpec->specLines;
 					}
 				}
-				//$paymentSpecType = $paymentDiff->type;
 			} else {
 				// If the paymentdiff is an object we'd know that only one thing has occured in the order.
 				// Keep in mind that, if an order has been debited, there should be rows both for the debiting and the authorization (which shows each orderline
@@ -4278,27 +4024,37 @@ class ResursBank {
 				}
 			}
 		}
-
 		return $orderLinesByStatus;
 	}
 
 	/**
 	 * Sanitize a paymentspec from a payment id or a prepared getPayment object and return filtered depending on the requested aftershop type
-	 * @param string $paymentIdOrPaymentObject
-	 * @param int $renderType
 	 *
-	 * @return array|mixed|null
+	 * @param string $paymentIdOrPaymentObjectData
+	 * @param int $renderType ResursAfterShopRenderTypes as unique type or bitmask
+	 *
+	 * @return array
 	 */
-	public function sanitizeAfterShopSpec($paymentIdOrPaymentObject = '', $renderType = ResursAfterShopRenderTypes::NONE) {
+	public function sanitizeAfterShopSpec($paymentIdOrPaymentObjectData = '', $renderType = ResursAfterShopRenderTypes::NONE) {
 		$returnSpecObject = null;
 
+		$this->BIT->setBitStructure(
+			array(
+				'FINALIZE' => ResursAfterShopRenderTypes::FINALIZE,
+				'CREDIT' => ResursAfterShopRenderTypes::CREDIT,
+				'ANNUL' => ResursAfterShopRenderTypes::ANNUL,
+				'AUTHORIZE' => ResursAfterShopRenderTypes::AUTHORIZE,
+			)
+		);
+
 		// Get payment spec bulked
-		$paymentIdOrPaymentObject = $this->objectsIntoArray($this->getPaymentSpecByStatus($paymentIdOrPaymentObject));
-		if ( $renderType == ResursAfterShopRenderTypes::FINALIZE ) {
+		$paymentIdOrPaymentObject = $this->getPaymentSpecByStatus( $paymentIdOrPaymentObjectData );
+
+		if ( $this->BIT->isBit(ResursAfterShopRenderTypes::FINALIZE, $renderType) ) {
 			$returnSpecObject = $this->removeFromArray( $paymentIdOrPaymentObject['AUTHORIZE'], array_merge( $paymentIdOrPaymentObject['DEBIT'], $paymentIdOrPaymentObject['ANNUL'], $paymentIdOrPaymentObject['CREDIT'] ) );
-		} else if ( $renderType == ResursAfterShopRenderTypes::CREDIT ) {
+		} else if ( $this->BIT->isBit(ResursAfterShopRenderTypes::CREDIT, $renderType) ) {
 			$returnSpecObject = $this->removeFromArray( $paymentIdOrPaymentObject['DEBIT'], array_merge( $paymentIdOrPaymentObject['ANNUL'], $paymentIdOrPaymentObject['CREDIT'] ) );
-		} else if ( $renderType == ResursAfterShopRenderTypes::ANNUL ) {
+		} else if ( $this->BIT->isBit(ResursAfterShopRenderTypes::ANNUL, $renderType) ) {
 			$returnSpecObject = $this->removeFromArray( $paymentIdOrPaymentObject['AUTHORIZE'], array_merge( $paymentIdOrPaymentObject['DEBIT'], $paymentIdOrPaymentObject['ANNUL'], $paymentIdOrPaymentObject['CREDIT'] ) );
 		} else {
 			// If no type is chosen, return all rows
@@ -4749,7 +4505,7 @@ class ResursBank {
 	/**
 	 * Returns all invoice numbers for a specific payment
 	 *
-	 * @param string $paymentId
+	 * @param string $paymentIdOrPaymentObject
 	 *
 	 * @return array
 	 * @since 1.0.11
