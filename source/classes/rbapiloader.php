@@ -75,7 +75,11 @@ class ResursBank {
 	public $throwOnInit = false;
 
 	/// PHP Support
-	/** @var bool User activation flag */
+	/**
+	 * User activation flag
+	 * @var bool
+	 * @deprecated Removed in 1.2
+	 */
 	private $allowObsoletePHP = false;
 
 	///// Environment and API
@@ -532,7 +536,7 @@ class ResursBank {
 	private $afterShopInvoiceExtRef = "";
 
 	/** @var string Default unit measure. "st" or styck for Sweden. If your plugin is not used for Sweden, use the proper unit for your country. */
-	private $defaultUnitMeasure;
+	private $defaultUnitMeasure = "st";
 
 	/**
 	 * Stored array for booked payments
