@@ -1524,19 +1524,35 @@ class ResursBankTest extends TestCase
 		);
 	}
 
-	private function doMockSign( $URL, $govId ) {
+	private function doMockSign( $URL, $govId, $fail = false ) {
 		$MockFormResponse   = $this->CURL->doGet( $URL );
 		$MockDomain         = $this->NETWORK->getUrlDomain( $MockFormResponse['URL'] );
 		$SignBody           = $this->CURL->getResponseBody( $this->CURL->doGet( $URL ) );
 		$MockForm           = $this->CURL->getResponseBody( $MockFormResponse );
 		$MockFormActionPath = preg_replace( "/(.*?)action=\"(.*?)\"(.*)/is", '$2', $MockForm );
 		$MockFormToken      = preg_replace( "/(.*?)resursToken\" value=\"(.*?)\"(.*)/is", '$2', $MockForm );
+		$mockFailUrl = preg_replace("/(.*?)\"\/mock\/failAuth(.*?)\"(.*)/is", '$2', $MockForm);
 		$prepareMockSuccess = $MockDomain[1] . "://" . $MockDomain[0] . $MockFormActionPath . "?resursToken=" . $MockFormToken . "&govId=" . $govId;
-		$ValidateUrl        = $this->NETWORK->getUrlDomain( $prepareMockSuccess, true );
-		if ( ! empty( $ValidateUrl[0] ) ) {
-			$mockSuccess = $this->CURL->getParsedResponse( $this->CURL->doGet( $prepareMockSuccess ) );
-			if ( isset( $mockSuccess->_GET->success ) ) {
-				return $mockSuccess->_GET;
+		$prepareMockFail = $MockDomain[1] . "://". $MockDomain[0] . "/mock/failAuth" . $mockFailUrl;
+		if (!$fail) {
+			$ValidateUrl = $this->NETWORK->getUrlDomain( $prepareMockSuccess, true );
+			if ( ! empty( $ValidateUrl[0] ) ) {
+				$mockSuccess = $this->CURL->getParsedResponse( $this->CURL->doGet( $prepareMockSuccess ) );
+				if ( isset( $mockSuccess->_GET->success ) ) {
+					return $mockSuccess->_GET;
+				}
+			}
+		} else {
+			$ValidateUrl = $this->NETWORK->getUrlDomain( $prepareMockFail, true );
+			if ( ! empty( $ValidateUrl[0] ) ) {
+				try {
+					$mockSuccess = $this->CURL->getParsedResponse( $this->CURL->doGet( $prepareMockFail ) );
+				} catch (\Exception $e) {
+					return false;
+				}
+				if ( isset( $mockSuccess->_GET->success ) ) {
+					return $mockSuccess->_GET;
+				}
 			}
 		}
 
@@ -1626,6 +1642,107 @@ class ResursBankTest extends TestCase
 			$this->markTestIncomplete( $e->getMessage() );
 		}
 	}
+	function testCreatePaymentPayloadForcedSigningMultipleSimplified() {
+		$this->checkEnvironment();
+		try {
+			$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_SIMPLIFIED );
+			$this->rb->setBillingByGetAddress( "198305147715" );
+			$this->rb->setCustomer( null, "0808080808", "0707070707", "test@test.com", "NATURAL" );
+			$this->addRandomOrderLine( "Art " . rand( 1024, 2048 ), "Beskrivning " . rand( 2048, 4096 ), "0.80", 25, null, 10 );
+			$this->addRandomOrderLine( "Art " . rand( 1024, 2048 ), "Beskrivning " . rand( 2048, 4096 ), "0.80", 25, null, 10 );
+			$this->addRandomOrderLine( "Art " . rand( 1024, 2048 ), "Beskrivning " . rand( 2048, 4096 ), "0.80", 25, null, 10 );
+			$this->addRandomOrderLine( "Art " . rand( 1024, 2048 ), "Beskrivning " . rand( 2048, 4096 ), "0.80", 25, null, 10 );
+			$useThisPaymentId = $this->rb->getPreferredPaymentId();
+			$this->rb->setSigning( $this->signUrl . '&success=true', $this->signUrl . '&success=false', true );
+			try {
+				$Payment = $this->rb->createPayment( $this->availableMethods['invoice_natural'] );
+				if ( $Payment->bookPaymentStatus == "SIGNING" ) {
+					$signUrl  = $Payment->signingUrl;
+					try {
+						$signings = 0;
+						$signData[$signings++] = $this->doMockSign( $signUrl, "198305147715" );
+						$signData[$signings++] = $this->doMockSign( $signUrl, "198305147715" );
+						$signData[$signings++] = $this->doMockSign( $signUrl, "198305147715" );
+						$signData[$signings++] = $this->doMockSign( $signUrl, "198305147715" );
+					} catch (\Exception $e) {
+
+					}
+					$this->assertCount( 4, $signData );
+				}
+			} catch ( \Exception $e ) {
+				echo "Fail: " . $e->getMessage();
+			}
+
+		} catch ( \Exception $e ) {
+			$this->markTestIncomplete( $e->getMessage() );
+		}
+	}
+	function testCreatePaymentPayloadForcedSigningReUseMockFailSimplified() {
+		$this->checkEnvironment();
+		try {
+			$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_SIMPLIFIED );
+			$this->rb->setBillingByGetAddress( "198305147715" );
+			$this->rb->setCustomer( null, "0808080808", "0707070707", "test@test.com", "NATURAL" );
+			$this->addRandomOrderLine( "Art " . rand( 1024, 2048 ), "Beskrivning " . rand( 2048, 4096 ), "0.80", 25, null, 10 );
+			$this->addRandomOrderLine( "Art " . rand( 1024, 2048 ), "Beskrivning " . rand( 2048, 4096 ), "0.80", 25, null, 10 );
+			$this->addRandomOrderLine( "Art " . rand( 1024, 2048 ), "Beskrivning " . rand( 2048, 4096 ), "0.80", 25, null, 10 );
+			$this->addRandomOrderLine( "Art " . rand( 1024, 2048 ), "Beskrivning " . rand( 2048, 4096 ), "0.80", 25, null, 10 );
+			$useThisPaymentId = $this->rb->getPreferredPaymentId();
+			$this->rb->setSigning( $this->signUrl . '&success=true', $this->signUrl . '&success=false', true );
+			try {
+				$Payment = $this->rb->createPayment( $this->availableMethods['invoice_natural'] );
+				if ( $Payment->bookPaymentStatus == "SIGNING" ) {
+					$signUrl  = $Payment->signingUrl;
+					try {
+						$signings = 0;
+						$signData[$signings++] = $this->doMockSign( $signUrl, "198305147715", true );
+						$signData[$signings++] = $this->doMockSign( $signUrl, "198305147715", true );
+					} catch (\Exception $e) {
+					}
+					$this->assertTrue( empty($signData[1]) );
+				}
+			} catch ( \Exception $e ) {
+				echo "Fail: " . $e->getMessage();
+			}
+
+		} catch ( \Exception $e ) {
+			$this->markTestIncomplete( $e->getMessage() );
+		}
+	}
+	/*function testCreatePaymentPayloadForcedSigningReUseMockFailNewCardSimplified() {
+		$this->checkEnvironment();
+		try {
+			///// card_new
+
+			$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_SIMPLIFIED );
+			$this->rb->setBillingByGetAddress( "198305147715" );
+			$this->rb->setCustomer( null, "0808080808", "0707070707", "test@test.com", "NATURAL" );
+			$this->addRandomOrderLine( "Art " . rand( 1024, 2048 ), "Beskrivning " . rand( 2048, 4096 ), "0.80", 25, null, 10 );
+			$this->addRandomOrderLine( "Art " . rand( 1024, 2048 ), "Beskrivning " . rand( 2048, 4096 ), "0.80", 25, null, 10 );
+			$this->addRandomOrderLine( "Art " . rand( 1024, 2048 ), "Beskrivning " . rand( 2048, 4096 ), "0.80", 25, null, 10 );
+			$this->addRandomOrderLine( "Art " . rand( 1024, 2048 ), "Beskrivning " . rand( 2048, 4096 ), "0.80", 25, null, 10 );
+			$useThisPaymentId = $this->rb->getPreferredPaymentId();
+			$this->rb->setSigning( $this->signUrl . '&success=true', $this->signUrl . '&success=false', true );
+			try {
+				$Payment = $this->rb->createPayment( $this->availableMethods['card_new'] );
+				if ( $Payment->bookPaymentStatus == "SIGNING" ) {
+					$signUrl  = $Payment->signingUrl;
+					try {
+						$signings = 0;
+						$signData[$signings++] = $this->doMockSign( $signUrl, "198305147715", true );
+						$signData[$signings++] = $this->doMockSign( $signUrl, "198305147715", true );
+					} catch (\Exception $e) {
+					}
+					$this->assertTrue( empty($signData[1]) );
+				}
+			} catch ( \Exception $e ) {
+				echo "Fail: " . $e->getMessage();
+			}
+
+		} catch ( \Exception $e ) {
+			$this->markTestIncomplete( $e->getMessage() );
+		}
+	}*/
 
 	/**
 	 * Creating payment with own billing address but happyflow govId
