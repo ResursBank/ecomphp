@@ -207,6 +207,8 @@ class ResursBank {
 
 	/** @var string How EcomPHP should identify with the web services */
 	private $myUserAgent = null;
+	/** @var array Internally set flags */
+	private $internalFlags = array();
 
 	/**
 	 * @var null
@@ -578,6 +580,31 @@ class ResursBank {
 		}
 		return null;
 	}
+
+	/**
+	 * Clean up internal flags
+	 * @since 1.0.25
+	 * @since 1.1.25
+	 * @since 1.2.0
+	 */
+	public function clearAllFlags() {
+		$this->internalFlags = array();
+	}
+
+	/**
+	 * Remove flag
+	 *
+	 * @param $flagKey
+	 * @since 1.0.25
+	 * @since 1.1.25
+	 * @since 1.2.0
+	 */
+	public function deleteFlag($flagKey) {
+		if ($this->hasFlag($flagKey)) {
+			unset($this->internalFlags[$flagKey]);
+		}
+	}
+
 
 	/**
 	 * Check if flag is set and true
