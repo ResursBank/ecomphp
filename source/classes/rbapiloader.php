@@ -226,7 +226,7 @@ class ResursBank {
 	/** @var string The version of this gateway */
 	private $version = "1.0.25";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20171019";
+	private $lastUpdate = "20171024";
 	/** @var string This. */
 	private $clientName = "EComPHP";
 	/** @var string Replacing $clientName on usage of setClientNAme */
@@ -2129,6 +2129,7 @@ class ResursBank {
 					$this->curlStats['calls'] = 1;
 				}
 				$this->curlStats['calls'] ++;
+				$this->curlStats['internals'] = $this->CURL->getDebugData();
 			}
 			if ( ! $getResponseCode ) {
 				return $ParsedResponse;
@@ -4869,6 +4870,7 @@ class ResursBank {
 		} else {
 			return "http";
 		}
+
 	}
 
 	/**
