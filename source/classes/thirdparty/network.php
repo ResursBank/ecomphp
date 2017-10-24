@@ -14,14 +14,11 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
-
-/**
+ *
  * Tornevall Networks netCurl library - Yet another http- and network communicator library
- *
  * Each class in this library has its own version numbering to keep track of where the changes are. However, there is a major version too.
- *
- * @version 6.0.12
+ * @package TorneLIB
+ * @version 6.0.13
  */
 
 namespace Resursbank\RBEcomPHP;
@@ -35,7 +32,7 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 	 * Library for handling network related things (currently not sockets). A conversion of a legacy PHP library called "TorneEngine" and family.
 	 *
 	 * Class TorneLIB_Network
-	 * @version 6.0.2
+	 * @version 6.0.3
 	 * @link https://phpdoc.tornevall.net/TorneLIBv5/class-TorneLIB.TorneLIB_Network.html PHPDoc/Staging - TorneLIB_Network
 	 * @link https://docs.tornevall.net/x/KQCy TorneLIB (PHP) Landing documentation
 	 * @link https://bitbucket.tornevall.net/projects/LIB/repos/tornelib-php/browse Sources of TorneLIB
@@ -243,6 +240,37 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 		}
 
 		/**
+		 * Return correct data on https-detection
+		 *
+		 * @param bool $returnProtocol
+		 *
+		 * @return bool|string
+		 * @since 6.0.3
+		 */
+		public function getProtocol( $returnProtocol = false ) {
+			if ( isset( $_SERVER['HTTPS'] ) ) {
+				if ( $_SERVER['HTTPS'] == "on" ) {
+					if ( ! $returnProtocol ) {
+						return true;
+					} else {
+						return "https";
+					}
+				} else {
+					if ( ! $returnProtocol ) {
+						return false;
+					} else {
+						return "http";
+					}
+				}
+			}
+			if ( ! $returnProtocol ) {
+				return false;
+			} else {
+				return "http";
+			}
+		}
+
+		/**
 		 * Extract domain name (zone name) from hostname
 		 *
 		 * @param string $useHost Alternative hostname than the HTTP_HOST
@@ -435,7 +463,7 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 	 * Class Tornevall_cURL
 	 *
 	 * @package TorneLIB
-	 * @version 6.0.11
+	 * @version 6.0.12
 	 * @link https://docs.tornevall.net/x/KQCy TorneLIBv5
 	 * @link https://bitbucket.tornevall.net/projects/LIB/repos/tornelib-php-netcurl/browse Sources of TorneLIB
 	 * @link https://docs.tornevall.net/x/KwCy Network & Curl v5 and v6 Library usage
@@ -471,8 +499,6 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 		//// PUBLIC CONFIG THAT SHOULD GO PRIVATE
 		/** @var array Default paths to the certificates we are looking for */
 		private $sslPemLocations = array( '/etc/ssl/certs/cacert.pem', '/etc/ssl/certs/ca-certificates.crt' );
-		/** @var bool For debugging only */
-		public $_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION = false;
 		/** @var array Interfaces to use */
 		public $IpAddr = array();
 		/** @var bool If more than one ip is set in the interfaces to use, this will make the interface go random */
@@ -515,7 +541,17 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 		private $CurlSession = null;
 		/** @var null URL that was set to communicate with */
 		private $CurlURL = null;
+		/** @var array Flags controller to change behaviour on internal function */
 		private $internalFlags = array();
+		private $debugData = array(
+			'data' => array(
+				'info' => array()
+			),
+			'soapData' => array(
+				'info' => array()
+			),
+			'calls' => 0
+		);
 
 
 		//// SSL AUTODETECTION CAPABILITIES
@@ -690,7 +726,7 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 				$this->sslDriverError[] = "SSL Failure: HTTPS extension can not be found";
 			}
 			// Initial setup
-			$this->CurlUserAgent = 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; .NET CLR 1.0.3705; .NET CLR 1.1.4322; Media Center PC 4.0; +TorneLIB+cUrl ' . $this->TorneCurlVersion . '/' . $this->TorneCurlReleaseDate . ')';
+			$this->CurlUserAgent = 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; .NET CLR 1.0.3705; .NET CLR 1.1.4322; Media Center PC 4.0; +TorneLIB-NetCurl-' . TORNELIB_NETCURL_RELEASE . " +TorneLIB+cUrl-" . $this->TorneCurlVersion . ')';
 			if ( function_exists( 'curl_version' ) ) {
 				$CurlVersionRequest = curl_version();
 				$this->CurlVersion  = $CurlVersionRequest['version'];
@@ -735,6 +771,10 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 			}
 
 			return null;
+		}
+
+		public function getDebugData() {
+			return $this->debugData;
 		}
 
 		/**
@@ -873,8 +913,29 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 			}
 			return false;
 		}
+		/**
+		 * @param string $flagKey
+		 * @return bool
+		 * @since 6.0.13 Consider using unsetFlag
+		 */
 		public function removeFlag($flagKey = '') {
 			return $this->unsetFlag($flagKey);
+		}
+
+		/**
+		 * @param string $flagKey
+		 * @return bool
+		 * @since 6.0.13 Consider using unsetFlag
+		 */
+		public function deleteFlag($flagKey = '') {
+			return $this->unsetFlag($flagKey);
+		}
+
+		/**
+		 * @since 6.0.13
+		 */
+		public function clearAllFlags() {
+			$this->internalFlags = array();
 		}
 
 		/**
@@ -1200,9 +1261,9 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 		public function setUserAgent( $CustomUserAgent = "" ) {
 			if ( ! empty( $CustomUserAgent ) ) {
 				$this->CustomUserAgent .= preg_replace( "/\s+$/", '', $CustomUserAgent );
-				$this->CurlUserAgent   = $this->CustomUserAgent . " +TorneLIB-NetCurl-" . TORNELIB_NETCURL_RELEASE . " +TorneLIB+cUrl " . $this->TorneCurlVersion . '/' . $this->TorneCurlReleaseDate;
+				$this->CurlUserAgent   = $this->CustomUserAgent . " +TorneLIB-NetCurl-" . TORNELIB_NETCURL_RELEASE . " +TorneLIB+cUrl-" . $this->TorneCurlVersion;
 			} else {
-				$this->CurlUserAgent = 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; .NET CLR 1.0.3705; .NET CLR 1.1.4322; Media Center PC 4.0; +TorneLIB-NetCurl-' . TORNELIB_NETCURL_RELEASE . " +TorneLIB+cUrl " . $this->TorneCurlVersion . '/' . $this->TorneCurlReleaseDate . ')';
+				$this->CurlUserAgent = 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; .NET CLR 1.0.3705; .NET CLR 1.1.4322; Media Center PC 4.0; +TorneLIB-NetCurl-' . TORNELIB_NETCURL_RELEASE . " +TorneLIB+cUrl-" . $this->TorneCurlVersion . ')';
 			}
 		}
 
@@ -1646,7 +1707,7 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 									}
 								}
 								// For unit testing
-								if ( $this->TargetEnvironment == TORNELIB_CURL_ENVIRONMENT::ENVIRONMENT_TEST && isset( $this->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION ) && $this->_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION === true ) {
+								if ( $this->TargetEnvironment == TORNELIB_CURL_ENVIRONMENT::ENVIRONMENT_TEST && $this->hasFlag('_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION') && $this->isFlag('_DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION') ) {
 									// Enforce wrong certificate location
 									$this->hasCertFile = false;
 									$this->useCertFile = null;
@@ -2526,6 +2587,8 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 				$this->CurlURL = $url;
 			}
 
+			$this->debugData['calls'] ++;
+
 			if (is_null($this->CurlSession)) {
 				$this->init();
 			}
@@ -2734,7 +2797,19 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 				$Soap->setSoapTryOnce($this->SoapTryOnce);
 				try {
 					$getSoapResponse = $Soap->getSoap();
+					$this->debugData['soapdata']['url'][] = array(
+						'url'=>$this->CurlURL,
+						'opt'=>$this->getCurlOptByKeys(),
+						'success' => true,
+						'exception' => null
+					);
 				} catch ( \Exception $getSoapResponseException ) {
+					$this->debugData['soapdata']['url'][] = array(
+						'url'=>$this->CurlURL,
+						'opt'=>$this->getCurlOptByKeys(),
+						'success' => false,
+						'exception' => $getSoapResponseException
+					);
 					throw new \Exception( $this->ModuleName . " exception from soapClient: " . $getSoapResponseException->getMessage(), $getSoapResponseException->getCode() );
 				}
 
@@ -2743,7 +2818,15 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 
 			$returnContent = curl_exec( $this->CurlSession );
 
-			if ( curl_errno( $this->CurlSession ) ) {
+			if ( curl_errno( $this->CurlSession ) )  {
+
+				$this->debugData['data']['url'][] = array(
+					'url'=>$this->CurlURL,
+					'opt'=>$this->getCurlOptByKeys(),
+					'success' => false,
+					'exception' => curl_error($this->CurlSession)
+				);
+
 				if ( $this->canStoreSessionException ) {
 					$this->sessionsExceptions[] = array(
 						'Content'     => $returnContent,
@@ -2782,6 +2865,13 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 					return $this->executeCurl( $this->CurlURL, $postData, $CurlMethod );
 				}
 				throw new \Exception( $this->ModuleName . " exception from PHP/CURL at " . __FUNCTION__ . ": " . curl_error( $this->CurlSession ), curl_errno( $this->CurlSession ) );
+			} else {
+				$this->debugData['data']['url'][] = array(
+					'url'=>$this->CurlURL,
+					'opt'=>$this->getCurlOptByKeys(),
+					'success' => true,
+					'exception' => null
+				);
 			}
 
 			return $returnContent;
