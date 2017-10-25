@@ -5260,6 +5260,14 @@ class ResursBank {
 	 */
 	public function getPayload() {
 		$this->preparePayload();
+		// Making sure payloads are returned as they should look
+		if (isset($this->Payload)) {
+			if (!is_array($this->Payload)) {
+				$this->Payload = array();
+			}
+		} else {
+			$this->Payload = array();
+		}
 		return $this->Payload;
 	}
 

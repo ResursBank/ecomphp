@@ -5,7 +5,7 @@
  *
  * @package EcomPHPTest
  * @author Resurs Bank Ecommrece <ecommerce.support@resurs.se>
- * @version 0.9
+ * @version 0.10
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @license -
  *
@@ -37,24 +37,49 @@ class ResursBankTest extends TestCase
 	 * @subpackage EcomPHPClient
 	 */
 
+	public function setUp() {
+		$this->globalInitialize();
+	}
+	public function tearDown() {}
+
 	/**
-	 * The heart of this unit. To make tests "nicely" compatible with 1.1, this should be placed on top of this class as it looks different there.
+	 * Plugin initializer (global as there are functions in the units that re-initializes the module)
+	 * @throws Exception
 	 */
-	private function initServices($overrideUsername = null, $overridePassword = null) {
-		if ( empty( $overrideUsername ) ) {
-			$this->rb = new ResursBank( $this->username, $this->password );
-		} else {
-			$this->rb = new ResursBank( $overrideUsername, $overridePassword );
+	private function globalInitialize() {
+		$this->setupConfig();
+
+		$this->CURL    = new Tornevall_cURL();
+		$this->NETWORK = new TorneLIB_Network();
+		if ( version_compare( PHP_VERSION, '5.3.0', "<" ) ) {
+			if ( ! $this->allowObsoletePHP ) {
+				throw new \Exception( "PHP 5.3 or later are required for this module to work. If you feel safe with running this with an older version, please see " );
+			}
 		}
-		$this->rb->setPushCustomerUserAgent(true);
-		$this->rb->setUserAgent("EComPHP/TestSuite");
-		$this->rb->setDebug();
+		register_shutdown_function( array( $this, 'shutdownSuite' ) );
+		if ( $this->environmentName === "nonmock" ) {
+			$this->username = $this->usernameNonmock;
+			$this->password = $this->passwordNonmock;
+		}
+		/* Set up default government id for bookings */
+		$this->testGovId       = $this->govIdNatural;
+		$this->testGovIdNorway = $this->govIdNaturalNorway;
+
 		/*
 		 * If HTTP_HOST is not set, Resurs Checkout will not run properly, since the iFrame requires a valid internet connection (actually browser vs http server).
 		 */
 		if (!isset($_SERVER['HTTP_HOST'])) {
 			$_SERVER['HTTP_HOST'] = "localhost";
 		}
+		if ( empty( $overrideUsername ) ) {
+			$this->rb = new ResursBank( $this->username, $this->password );
+		} else {
+			//$this->rb = new ResursBank( $overrideUsername, $overridePassword );
+			throw new \Exception("User- and pass overriders are deprecated", 500);
+		}
+		$this->rb->setPushCustomerUserAgent(true);
+		$this->rb->setUserAgent("EComPHP/TestSuite");
+		$this->rb->setDebug();
 	}
 
 	////////// Public variables
@@ -83,7 +108,6 @@ class ResursBankTest extends TestCase
 	 * @deprecated 1.1.12
 	 */
 	private $paymentMethodCountNorway = array( 'mock' => 3 );
-
 	private $paymentIdAuthed = "20170519125223-9587503794";
 	private $paymentIdAuthAnnulled = "20170519125725-8589567180";
 	private $paymentIdDebited = "20170519125216-8830457943";
@@ -97,35 +121,6 @@ class ResursBankTest extends TestCase
 		}
 
 		return false;
-	}
-
-	/** Before each test, invoke this */
-	public function setUp() {
-		$this->CURL    = new Tornevall_cURL();
-		$this->NETWORK = new TorneLIB_Network();
-
-		if ( version_compare( PHP_VERSION, '5.3.0', "<" ) ) {
-			if ( ! $this->allowObsoletePHP ) {
-				throw new \Exception( "PHP 5.3 or later are required for this module to work. If you feel safe with running this with an older version, please see " );
-			}
-		}
-
-		register_shutdown_function( array( $this, 'shutdownSuite' ) );
-		if ( $this->environmentName === "nonmock" ) {
-			$this->username = $this->usernameNonmock;
-			$this->password = $this->passwordNonmock;
-		}
-
-		$this->setupConfig();
-
-		/* Set up default government id for bookings */
-		$this->testGovId       = $this->govIdNatural;
-		$this->testGovIdNorway = $this->govIdNaturalNorway;
-		$this->initServices();
-	}
-
-	/** After each test, invoke this */
-	public function tearDown() {
 	}
 
 	////////// Private variables
@@ -265,29 +260,6 @@ class ResursBankTest extends TestCase
 	}
 
 	/**
-	 * Initialization of environment with ability to change into others.
-	 */
-	private function checkEnvironment() {
-		$this->initServices();
-	}
-
-	/**
-	 * Check if environment is working by making a getPaymentMethods-call.
-	 *
-	 * @return bool If everything works, we get our payment methods and returns true. All exceptions says environment is down.
-	 */
-	private function isUp() {
-		try {
-			$paymentMethods = $this->rb->getPaymentMethods();
-		} catch ( \Exception $e ) {
-			return false;
-		}
-		if ( count( $paymentMethods ) > 0 ) {
-			return true;
-		}
-	}
-
-	/**
 	 * Send mail alerts to defined users in case of special errors
 	 */
 	private function alertSender() {
@@ -373,9 +345,7 @@ class ResursBankTest extends TestCase
 	 * @return bool Returning true if booking went as you expected
 	 */
 	private function doBookPayment( $setMethod = '', $bookSuccess = true, $forceSigning = false, $signSuccess = true, $country = 'SE', $ownSpecline = array() ) {
-		$this->setCountry( $country );
 		$paymentServiceSet = $this->rb->getPreferredPaymentService();
-		//$this->checkEnvironment();
 		$useMethodList      = $this->availableMethods;
 		$useGovIdLegalCivic = $this->govIdLegalCivic;
 		$useGovId           = $this->testGovId;
@@ -516,23 +486,6 @@ class ResursBankTest extends TestCase
 		return false;
 	}
 
-	/** Setup a country for webservices */
-	private function setCountry( $country = 'SE' ) {
-		if ( $country == "SE" ) {
-			$this->username = $this->usernameSweden;
-			$this->password = $this->passwordSweden;
-		} elseif ( $country == "NO" ) {
-			$this->username = $this->usernameNorway;
-			$this->password = $this->passwordNorway;
-		}
-		/* Re-Initialize services if country has changed */
-		if ( $this->chosenCountry != $country ) {
-			$this->initServices();
-		}
-		$this->chosenCountry = $country;
-	}
-
-
 	/*********** PUBLICS ************/
 
 	private function getSpecLine( $specialSpecline = array() ) {
@@ -592,8 +545,12 @@ class ResursBankTest extends TestCase
 		if ( $this->ignoreDefaultTests ) {
 			$this->markTestSkipped();
 		}
-		$this->checkEnvironment();
-		$this->assertTrue( $this->isUp() === true );
+
+		try {
+			$paymentMethods = $this->rb->getPaymentMethods();
+		} catch ( \Exception $e ) {
+		}
+		$this->assertTrue(count( $paymentMethods ) > 0);
 	}
 
 	/**
@@ -603,7 +560,6 @@ class ResursBankTest extends TestCase
 		if ( $this->ignoreDefaultTests ) {
 			$this->markTestSkipped();
 		}
-		$this->checkEnvironment();
 		$paymentMethods = $this->rb->getPaymentMethods();
 		if ( ! count( $paymentMethods ) ) {
 			$this->alertRender( "No payment methods received from ecommerce" );
@@ -618,7 +574,6 @@ class ResursBankTest extends TestCase
 		if ( $this->ignoreDefaultTests ) {
 			$this->markTestSkipped();
 		}
-		$this->checkEnvironment();
 		$paymentMethods = $this->rb->getPaymentMethods();
 		if ( count( $paymentMethods ) !== $this->paymentMethodCount[ $this->environmentName ] ) {
 			$this->alertRender( "Payment method mismatch - got " . count( $paymentMethods ) . ", expected 5." );
@@ -633,7 +588,6 @@ class ResursBankTest extends TestCase
 		if ( $this->ignoreDefaultTests ) {
 			$this->markTestSkipped();
 		}
-		$this->checkEnvironment();
 		$getAddressData = array();
 		try {
 			$getAddressData = $this->rb->getAddress( $this->govIdNatural, 'NATURAL', '127.0.0.1' );
@@ -649,7 +603,6 @@ class ResursBankTest extends TestCase
 		if ( $this->ignoreDefaultTests ) {
 			$this->markTestSkipped();
 		}
-		$this->checkEnvironment();
 		$getAddressData = array();
 		try {
 			$getAddressData = $this->rb->getAddress( $this->govIdLegalCivic, 'LEGAL', '127.0.0.1' );
@@ -665,7 +618,6 @@ class ResursBankTest extends TestCase
 		if ( $this->ignoreDefaultTests ) {
 			$this->markTestSkipped();
 		}
-		$this->checkEnvironment();
 		$getAddressData = array();
 		try {
 			$getAddressData = $this->rb->getAddress( $this->govIdLegalOrg, 'LEGAL', '127.0.0.1' );
@@ -681,7 +633,6 @@ class ResursBankTest extends TestCase
 		if ( $this->ignoreDefaultTests ) {
 			$this->markTestSkipped();
 		}
-		$this->checkEnvironment();
 		$annuity = false;
 		$methods = $this->rb->getPaymentMethods();
 		if ( is_array( $methods ) ) {
@@ -701,7 +652,6 @@ class ResursBankTest extends TestCase
 		if ( $this->ignoreBookingTests ) {
 			$this->markTestSkipped();
 		}
-		$this->checkEnvironment();
 		$bookResult = $this->doBookPayment( $this->availableMethods['invoice_natural'], true, false, true );
 		$this->assertTrue( $bookResult );
 	}
@@ -716,7 +666,6 @@ class ResursBankTest extends TestCase
 		if ( $this->ignoreBookingTests ) {
 			$this->markTestSkipped();
 		}
-		$this->checkEnvironment();
 		$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_HOSTED );
 		$bookResult = $this->doBookPayment( $this->availableMethods['invoice_natural'], true, false, true );
 		// Can't do bookings yet, since this is a forwarder. We would like to emulate browser clicking here, to complete the order.
@@ -727,7 +676,6 @@ class ResursBankTest extends TestCase
 	 * Test findPayments()
 	 */
 	public function testFindPayments() {
-		$this->checkEnvironment();
 		$paymentList = $this->rb->findPayments();
 		$this->assertGreaterThan( 0, count( $paymentList ) );
 	}
@@ -739,7 +687,6 @@ class ResursBankTest extends TestCase
 		if ( $this->ignoreBookingTests ) {
 			$this->markTestSkipped();
 		}
-		$this->checkEnvironment();
 		$paymentList = $this->rb->findPayments();
 		if ( is_array( $paymentList ) && count( $paymentList ) ) {
 			$existingPayment = array_pop( $paymentList );
@@ -758,7 +705,6 @@ class ResursBankTest extends TestCase
 		if ( $this->ignoreBookingTests ) {
 			$this->markTestSkipped();
 		}
-		$this->checkEnvironment();
 		try {
 			$invoicesArray = $this->rb->getPaymentInvoices( "20170802114006-2638609880" );
 		} catch ( \Exception $e ) {
@@ -779,7 +725,6 @@ class ResursBankTest extends TestCase
 	}
 
 	private function getAPayment( $paymentId = null, $randomize = false, $paymentType = null ) {
-		$this->checkEnvironment();
 		$paymentList = $this->rb->findPayments( array(), 1, 100 );
 		if ( is_null( $paymentId ) ) {
 			if ( is_array( $paymentList ) && count( $paymentList ) ) {
@@ -806,7 +751,6 @@ class ResursBankTest extends TestCase
 		if ( $this->ignoreBookingTests ) {
 			$this->markTestSkipped();
 		}
-		$this->checkEnvironment();
 		$this->zeroSpecLine = true;
 		$hasException       = false;
 		try {
@@ -826,7 +770,6 @@ class ResursBankTest extends TestCase
 		if ( $this->ignoreBookingTests ) {
 			$this->markTestSkipped();
 		}
-		$this->checkEnvironment();
 		$this->testGovId = $this->govIdNaturalDenied;
 		$bookResult      = $this->doBookPayment( $this->availableMethods['invoice_natural'], false, false, true );
 		$this->assertTrue( $bookResult );
@@ -843,7 +786,6 @@ class ResursBankTest extends TestCase
 		}
 		$this->username = $this->usernameSweden;
 		$this->password = $this->passwordSweden;
-		$this->checkEnvironment();
 		$this->testGovId = $this->govIdLegalOrg;
 		$bookResult      = $this->doBookPayment( $this->availableMethods['invoice_legal'], false, false, true );
 		$this->assertTrue( $bookResult );
@@ -856,7 +798,6 @@ class ResursBankTest extends TestCase
 		if ( $this->ignoreBookingTests ) {
 			$this->markTestSkipped();
 		}
-		$this->checkEnvironment();
 		$bookResult = $this->doBookPayment( $this->availableMethods['card'], true, false, true, 'SE' );
 		$this->assertTrue( $bookResult === true );
 	}
@@ -868,22 +809,7 @@ class ResursBankTest extends TestCase
 		if ( $this->ignoreBookingTests ) {
 			$this->markTestSkipped();
 		}
-		$this->checkEnvironment();
 		$bookResult = $this->doBookPayment( $this->availableMethods['card_new'], true, false, true, 'SE' );
-		$this->assertTrue( $bookResult === true );
-	}
-
-	/**
-	 * Test booking (NO).
-	 * Payment Method: Invoice
-	 * Customer Type: NATURAL, GRANTED
-	 */
-	public function testBookPaymentInvoiceNaturalNorway() {
-		if ( $this->ignoreBookingTests ) {
-			$this->markTestSkipped();
-		}
-		$this->checkEnvironment();
-		$bookResult = $this->doBookPayment( $this->availableMethodsNorway['invoice_natural'], true, false, true, 'NO' );
 		$this->assertTrue( $bookResult === true );
 	}
 
@@ -892,7 +818,6 @@ class ResursBankTest extends TestCase
 	 * @throws Exception
 	 */
 	public function testSekkiSimple() {
-		$this->checkEnvironment();
 		if ( $this->ignoreSEKKItests ) {
 			$this->markTestSkipped();
 		}
@@ -919,7 +844,6 @@ class ResursBankTest extends TestCase
 	 * @throws Exception
 	 */
 	public function testSekkiArray() {
-		$this->checkEnvironment();
 		if ( $this->ignoreSEKKItests ) {
 			$this->markTestSkipped();
 		}
@@ -974,7 +898,6 @@ class ResursBankTest extends TestCase
 	 * Test curstom url
 	 */
 	public function testSekkiCustom() {
-		$this->checkEnvironment();
 		if ( $this->ignoreSEKKItests ) {
 			$this->markTestSkipped();
 		}
@@ -1024,7 +947,6 @@ class ResursBankTest extends TestCase
 	 * Try to fetch the iframe (Resurs Checkout). When the iframe url has been received, check if there's content.
 	 */
 	public function testGetIFrame() {
-		$this->checkEnvironment();
 		try {
 			$getFrameUrl = $this->getCheckoutFrame( true );
 		} catch ( \Exception $e ) {
@@ -1040,7 +962,6 @@ class ResursBankTest extends TestCase
 	}
 
 	public function testCheckoutAsFromDocs() {
-		$this->checkEnvironment();
 		$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_CHECKOUT );
 		$iframePaymentReference = $this->rb->getPreferredPaymentId( 30, "CREATE-" );
 		$this->rb->addOrderLine(
@@ -1063,12 +984,11 @@ class ResursBankTest extends TestCase
 	 * Try to update a payment reference by first creating the iframe
 	 */
 	public function testUpdatePaymentReference() {
-		$this->checkEnvironment();
 		$iframePaymentReference = $this->rb->getPreferredPaymentId( 30, "CREATE-" );
 		try {
 			$iFrameUrl = $this->getCheckoutFrame( true );
 		} catch ( \Exception $e ) {
-			$this->markTestIncomplete( "Exception: " . $e->getMessage() );
+			$this->markTestIncomplete( "Exception: " . $e->getCode() . ": " . $e->getMessage() );
 		}
 		$this->CURL->setAuthentication( $this->username, $this->password );
 		$this->CURL->setLocalCookies( true );
@@ -1088,7 +1008,6 @@ class ResursBankTest extends TestCase
 				$Success    = $this->rb->updatePaymentReference( $iframePaymentReference, $newReference );
 				$updateCart = $this->rb->updateCheckoutOrderLines( $newReference, $orderLines );
 				$this->assertTrue( $updateCart );
-
 				return;
 			} catch ( \Exception $e ) {
 				$this->markTestIncomplete( "Exception: " . $e->getCode() . ": " . $e->getMessage() );
@@ -1101,7 +1020,6 @@ class ResursBankTest extends TestCase
 	 * Test that fails when updatePaymentReference is successful and the old payment reference gets the cart update
 	 */
 	public function testUpdatePaymentReferenceFail() {
-		$this->checkEnvironment();
 		$iframePaymentReference = $this->rb->getPreferredPaymentId( 30, "CREATE-" );
 		try {
 			$iFrameUrl = $this->getCheckoutFrame( true );
@@ -1132,7 +1050,6 @@ class ResursBankTest extends TestCase
 	}
 
 	public function testUpdateWrongPaymentReference() {
-		$this->checkEnvironment();
 		$iframePaymentReference = $this->rb->getPreferredPaymentId( 30, "CREATE-" );
 		try {
 			$iFrameUrl = $this->getCheckoutFrame( true );
@@ -1237,7 +1154,6 @@ class ResursBankTest extends TestCase
 	 * @return array
 	 */
 	private function renderCallbackData( $UseCurl = false, $UseUrlRewrite = false ) {
-		$this->checkEnvironment();
 		$returnCallbackArray = array();
 		$parameter           = array(
 			'ANNULMENT'               => array( 'paymentId' ),
@@ -1292,7 +1208,6 @@ class ResursBankTest extends TestCase
 	 * Register new callback urls via SOAP
 	 */
 	public function testSetRegisterCallbacksSoap() {
-		$this->checkEnvironment();
 		$callbackArrayData = $this->renderCallbackData( true );
 		$globalDigest      = $this->rb->setCallbackDigest( $this->mkpass() );
 		$cResponse         = array();
@@ -1313,7 +1228,6 @@ class ResursBankTest extends TestCase
 	 * Register new callback urls via SOAP
 	 */
 	public function testSetRegisterCallbacksSoapUrlRewrite() {
-		$this->checkEnvironment();
 		$callbackArrayData = $this->renderCallbackData( true, true );
 		$globalDigest      = $this->rb->setCallbackDigest( $this->mkpass() );
 		$cResponse         = array();
@@ -1336,7 +1250,6 @@ class ResursBankTest extends TestCase
 	public function testSetRegisterCallbacksRest() {
 		$callbackArrayData = $this->renderCallbackData( true );
 		$cResponse         = array();
-		$this->checkEnvironment();
 		$globalDigest = $this->rb->setCallbackDigest( $this->mkpass() );
 		$this->rb->setRegisterCallbacksViaRest( true );
 		foreach ( $callbackArrayData as $indexCB => $callbackInfo ) {
@@ -1360,7 +1273,6 @@ class ResursBankTest extends TestCase
 	public function testSetRegisterCallbacksRestUrlRewrite() {
 		$callbackArrayData = $this->renderCallbackData( true, true );
 		$cResponse         = array();
-		$this->checkEnvironment();
 		$globalDigest = $this->rb->setCallbackDigest( $this->mkpass() );
 		$this->rb->setRegisterCallbacksViaRest( true );
 		foreach ( $callbackArrayData as $indexCB => $callbackInfo ) {
@@ -1379,7 +1291,6 @@ class ResursBankTest extends TestCase
 	}
 
 	public function testValidateExternalUrlSuccess() {
-		$this->checkEnvironment();
 		$callbackArrayData = $this->renderCallbackData( true );
 		$this->rb->setValidateExternalCallbackUrl( $callbackArrayData[0][1] );
 		$Reachable = $this->rb->validateExternalAddress();
@@ -1394,7 +1305,6 @@ class ResursBankTest extends TestCase
 	 */
 	public function testSetRegisterCallbacksWithValidatedUrlViaRest() {
 		if ( ! $this->ignoreUrlExternalValidation ) {
-			$this->checkEnvironment();
 			$this->rb->setRegisterCallbacksViaRest( true );
 			$callbackArrayData = $this->renderCallbackData( true );
 			$this->rb->setCallbackDigest( $this->mkpass() );
@@ -1423,7 +1333,6 @@ class ResursBankTest extends TestCase
 	 * Testing of unregisterEventCallback via rest calls
 	 */
 	public function testUnregisterEventCallbackViaRest() {
-		$this->checkEnvironment();
 		$this->rb->setRegisterCallbacksViaRest( true );
 
 		$this->assertTrue( $this->rb->unregisterEventCallback( ResursCallbackTypes::ANNULMENT ) );
@@ -1433,7 +1342,6 @@ class ResursBankTest extends TestCase
 	 * Testing of unregisterEventCallback via soap calls
 	 */
 	public function testUnregisterEventCallbackViaSoap() {
-		$this->checkEnvironment();
 		$this->rb->setRegisterCallbacksViaRest( false );
 		$this->assertTrue( $this->rb->unregisterEventCallback( ResursCallbackTypes::ANNULMENT ) );
 	}
@@ -1442,7 +1350,6 @@ class ResursBankTest extends TestCase
 	 * Register new callback urls but without the digest key (Fail)
 	 */
 	public function testSetRegisterCallbacksWithoutDigest() {
-		$this->checkEnvironment();
 		$callbackArrayData = $this->renderCallbackData( true );
 		try {
 			foreach ( $callbackArrayData as $indexCB => $callbackInfo ) {
@@ -1494,17 +1401,13 @@ class ResursBankTest extends TestCase
 	}
 	*/
 
-	/// 1.0.2 features
 	function testSetCustomerNatural() {
-		$this->checkEnvironment();
-
 		$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_CHECKOUT );
 		$ReturnedPayload = $this->rb->setBillingByGetAddress( $this->govIdNatural );
 		$this->assertEquals( $this->govIdNatural, $ReturnedPayload['customer']['governmentId'] );
 	}
 
 	function testSetCustomerLegal() {
-		$this->checkEnvironment();
 		$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_CHECKOUT );
 		$ReturnedPayload = $this->rb->setBillingByGetAddress( $this->govIdLegalCivic, "LEGAL" );
 		$this->assertTrue( $ReturnedPayload['customer']['governmentId'] == $this->govIdLegalCivic && $ReturnedPayload['customer']['address']['fullName'] == $this->govIdLegalFullname );
@@ -1561,7 +1464,6 @@ class ResursBankTest extends TestCase
 	 * Basic payment
 	 */
 	function testCreatePaymentPayloadSimplified() {
-		$this->checkEnvironment();
 		try {
 			$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_SIMPLIFIED );
 			$this->rb->setBillingByGetAddress( "198305147715" );
@@ -1614,7 +1516,6 @@ class ResursBankTest extends TestCase
 	 * Creating payment with own billing address but happyflow govId
 	 */
 	function testCreatePaymentPayloadForcedSigningSimplified() {
-		$this->checkEnvironment();
 		try {
 			$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_SIMPLIFIED );
 			$this->rb->setBillingByGetAddress( "198305147715" );
@@ -1641,7 +1542,6 @@ class ResursBankTest extends TestCase
 		}
 	}
 	function testCreatePaymentPayloadForcedSigningMultipleSimplified() {
-		$this->checkEnvironment();
 		try {
 			$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_SIMPLIFIED );
 			$this->rb->setBillingByGetAddress( "198305147715" );
@@ -1676,7 +1576,6 @@ class ResursBankTest extends TestCase
 		}
 	}
 	function testCreatePaymentPayloadForcedSigningReUseMockFailSimplified() {
-		$this->checkEnvironment();
 		try {
 			$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_SIMPLIFIED );
 			$this->rb->setBillingByGetAddress( "198305147715" );
@@ -1708,7 +1607,6 @@ class ResursBankTest extends TestCase
 		}
 	}
 	/*function testCreatePaymentPayloadForcedSigningReUseMockFailNewCardSimplified() {
-		$this->checkEnvironment();
 		try {
 			///// card_new
 
@@ -1746,7 +1644,6 @@ class ResursBankTest extends TestCase
 	 * Creating payment with own billing address but happyflow govId
 	 */
 	function testCreatePaymentPayloadUseExecuteSimplified() {
-		$this->checkEnvironment();
 		try {
 			$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_SIMPLIFIED );
 			$this->rb->setBillingByGetAddress( "198305147715" );
@@ -1778,7 +1675,6 @@ class ResursBankTest extends TestCase
 	 * Creating payment with own billing address but happyflow govId
 	 */
 	function testCreatePaymentPayloadUseExecuteResursCheckout() {
-		$this->checkEnvironment();
 		try {
 			$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_CHECKOUT );
 			$this->rb->setBillingByGetAddress( "198305147715" );
@@ -1839,12 +1735,12 @@ class ResursBankTest extends TestCase
 
 	private function getPaymentIdFromOrderByClientChoice( $orderLines = 8, $quantity = 1, $minAmount = 1000, $maxAmount = 2000 ) {
 		$Payment = $this->generateOrderByClientChoice( $orderLines, $quantity, $minAmount, $maxAmount );
-
-		return $Payment->paymentId;
+		if (isset($Payment)) {
+			return $Payment->paymentId;
+		}
 	}
 
 	function testHugeQuantity() {
-		$this->checkEnvironment();
 		try {
 			$hasOrder = $this->generateOrderByClientChoice( 2, 16000, 1, 1 );
 			$this->assertTrue( $hasOrder->bookPaymentStatus == "BOOKED" );
