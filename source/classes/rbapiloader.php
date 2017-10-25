@@ -288,8 +288,6 @@ class ResursBank {
 	);
 	private $curlSslDisable = false;
 
-	/** @var string The current directory of RB Classes */
-	private $classPath = "";
 	/** @var array Files to look for in class directories, to find RB */
 	private $classPathFiles = array(
 		'/simplifiedshopflowservice-client/Resurs_SimplifiedShopFlowService.php',
@@ -370,9 +368,6 @@ class ResursBank {
 	 * @throws \Exception
 	 */
 	function __construct( $login = '', $password = '', $targetEnvironment = ResursEnvironments::ENVIRONMENT_NOT_SET ) {
-		if ( defined( 'RB_API_PATH' ) ) {
-			$this->classPath = RB_API_PATH;
-		}
 		if ( isset( $_SERVER['HTTP_HOST'] ) ) {
 			$theHost = $_SERVER['HTTP_HOST'];
 		} else {
@@ -509,21 +504,31 @@ class ResursBank {
 	 * @since 1.2.0
 	 */
 	public function setSslValidation($validationEnabled = false) {
+		$this->InitializeServices();
 		if ($this->debug && $this->current_environment == ResursEnvironments::ENVIRONMENT_TEST) {
-			$this->CURL->setSslUnverified( true );
-			$this->CURL->setCertAuto( false, false );
+			$this->curlSslDisable = true;
 		} else {
 			throw new \Exception("Can't set SSL validation in relaxed mode. Debug mode is disabled and/or test environment are not set", 403);
 		}
 	}
 
+	/**
+	 * @since 1.0.23
+	 * @since 1.1.23
+	 * @since 1.2.0
+	 */
 	private function getSslValidation() {
-		if ($this->curlSslDisable) {
-			$this->CURL->setSslUnverified( true );
-			$this->CURL->setCertAuto( false, false );
-		}
+		return $this->curlSslDisable;
 	}
 
+	/**
+	 * Returns true if the URL call was set to be unsafe (disabled)
+	 *
+	 * @return bool
+	 * @since 1.0.23
+	 * @since 1.1.23
+	 * @since 1.2.0
+	 */
 	public function getSslIsUnsafe() {
 		return $this->CURL->getSslIsUnsafe();
 	}
@@ -758,7 +763,7 @@ class ResursBank {
 	 * @return string
 	 */
 	private function base64url_encode( $data ) {
-		return $this->NETWORK->base64url_encode($data);
+		return rtrim( strtr( base64_encode( $data ), '+/', '-_' ), '=' );
 	}
 
 	/**
@@ -769,7 +774,7 @@ class ResursBank {
 	 * @return string
 	 */
 	private function base64url_decode( $data ) {
-		return $this->NETWORK->base64url_decode($data);
+		return base64_decode( str_pad( strtr( $data, '-_', '+/' ), strlen( $data ) % 4, '=', STR_PAD_RIGHT ) );
 	}
 
 
@@ -831,7 +836,10 @@ class ResursBank {
 		for ( $i = 0; $i < $max; $i ++ ) {
 			$charListId = rand( 0, count( $characterListArray ) - 1 );
 			// Set $numchars[ $charListId ] to a zero a value if not set before. This might render ugly notices about undefined offsets in some cases.
-			if (!isset($numchars[ $charListId ])) {$numchars[ $charListId ] = 0;}			$numchars[ $charListId ] ++;
+			if ( ! isset( $numchars[ $charListId ] ) ) {
+				$numchars[ $charListId ] = 0;
+			}
+			$numchars[ $charListId ] ++;
 			$chars[] = $characterListArray[ $charListId ]{mt_rand( 0, ( strlen( $characterListArray[ $charListId ] ) - 1 ) )};
 		}
 		shuffle( $chars );
@@ -4519,8 +4527,7 @@ class ResursBank {
 		$Result              = $this->postService( "additionalDebitOfPayment", $additionalDataArray, true );
 		if ( $Result >= 200 && $Result <= 250 ) {
 			// Reset orderData for each addition
-			$this->Payload['orderData'] = array();
-			$this->SpecLines            = array();
+			$this->resetPayload();
 			return true;
 		} else {
 			return false;
