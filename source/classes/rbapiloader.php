@@ -112,7 +112,7 @@ class ResursBank {
 	/** @var string The version of this gateway */
 	private $version = "1.2.0";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20171024";
+	private $lastUpdate = "20171025";
 	/** @var string This. */
 	private $clientName = "EComPHP";
 	/** @var string Replacing $clientName on usage of setClientNAme */
@@ -287,15 +287,6 @@ class ResursBank {
 		'trace'              => 1
 	);
 	private $curlSslDisable = false;
-
-	/** @var array Files to look for in class directories, to find RB */
-	private $classPathFiles = array(
-		'/simplifiedshopflowservice-client/Resurs_SimplifiedShopFlowService.php',
-		'/configurationservice-client/Resurs_ConfigurationService.php',
-		'/aftershopflowservice-client/Resurs_AfterShopFlowService.php',
-		'/shopflowservice-client/Resurs_ShopFlowService.php'
-	);
-
 
 	///// ShopRelated
 	/// Customizable
