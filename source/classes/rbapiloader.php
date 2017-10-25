@@ -4604,8 +4604,10 @@ class ResursBank {
 		// Using this function to validate that card data info is properly set up during the deprecation state in >= 1.0.2/1.1.1
 		if ( $myFlow == ResursMethodTypes::METHOD_SIMPLIFIED ) {
 			$paymentMethodInfo = $this->getPaymentMethodSpecific( $payment_id_or_method );
-			if ( $paymentMethodInfo->specificType == "CARD" || $paymentMethodInfo->specificType == "NEWCARD" || $paymentMethodInfo->specificType == "REVOLVING_CREDIT" ) {
-				$this->validateCardData($paymentMethodInfo->specificType);
+			if ( isset($paymentMethodInfo) && is_object($paymentMethodInfo) ) {
+				if (isset($paymentMethodInfo->specificType) && $paymentMethodInfo->specificType == "CARD" || $paymentMethodInfo->specificType == "NEWCARD" || $paymentMethodInfo->specificType == "REVOLVING_CREDIT") {
+					$this->validateCardData( $paymentMethodInfo->specificType );
+				}
 			}
 			$myFlowResponse  = $this->postService( 'bookPayment', $this->Payload );
 			$this->resetPayload();
