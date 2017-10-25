@@ -4303,6 +4303,7 @@ class ResursBank {
 
 	/**
 	 * Clean up payload after usage
+	 * @since 1.1.22
 	 */
 	private function resetPayload() {
 		$this->SpecLines = array();
