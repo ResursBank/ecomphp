@@ -12,7 +12,7 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.0
- * @version 1.0.25
+ * @version 1.0.26
  * @deprecated Maintenance version only
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
@@ -224,9 +224,9 @@ class ResursBank {
 	////////// Private variables
 	///// Client Specific Settings
 	/** @var string The version of this gateway */
-	private $version = "1.0.25";
+	private $version = "1.0.26";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20171024";
+	private $lastUpdate = "20171025";
 	/** @var string This. */
 	private $clientName = "EComPHP";
 	/** @var string Replacing $clientName on usage of setClientNAme */
@@ -487,9 +487,16 @@ class ResursBank {
 	);
 	private $curlSslDisable = false;
 
-	/** @var string The current directory of RB Classes */
+	/**
+	 * @var string The current directory of RB Classes
+	 * @deprecated Removed in 1.2
+	 */
 	private $classPath = "";
-	/** @var array Files to look for in class directories, to find RB */
+
+	/**
+	 * @var array Files to look for in class directories, to find RB
+	 * @deprecated Removed in 1.2
+	 */
 	private $classPathFiles = array(
 		'/simplifiedshopflowservice-client/Resurs_SimplifiedShopFlowService.php',
 		'/configurationservice-client/Resurs_ConfigurationService.php',
@@ -879,10 +886,7 @@ class ResursBank {
 	 * @since 1.2.0
 	 */
 	private function getSslValidation() {
-		if ($this->curlSslDisable) {
-			$this->CURL->setSslUnverified( true );
-			$this->CURL->setCertAuto( false, false );
-		}
+		return $this->curlSslDisable;
 	}
 
 	/**
@@ -1543,7 +1547,9 @@ class ResursBank {
 		for ( $i = 0; $i < $max; $i ++ ) {
 			$charListId = rand( 0, count( $characterListArray ) - 1 );
 			// Set $numchars[ $charListId ] to a zero a value if not set before. This might render ugly notices about undefined offsets in some cases.
-			if (!isset($numchars[ $charListId ])) {$numchars[ $charListId ] = 0;}
+			if ( ! isset( $numchars[ $charListId ] ) ) {
+				$numchars[ $charListId ] = 0;
+			}
 			$numchars[ $charListId ] ++;
 			$chars[] = $characterListArray[ $charListId ]{mt_rand( 0, ( strlen( $characterListArray[ $charListId ] ) - 1 ) )};
 		}
@@ -2160,10 +2166,8 @@ class ResursBank {
 	 * @since 1.2.0
 	 */
 	public function setPushCustomerUserAgent($enableCustomerUserAgent = false) {
-		if ( class_exists( '\Resursbank\RBEcomPHP\TorneLIB_Crypto' ) ) {
-			$this->T_CRYPTO = new TorneLIB_Crypto();
-		}
-		if (!empty($this->T_CRYPTO)) {
+		$this->T_CRYPTO = new TorneLIB_Crypto();
+		if ( ! empty( $this->T_CRYPTO ) ) {
 			$this->customerUserAgentPush = $enableCustomerUserAgent;
 		}
 	}
@@ -6771,6 +6775,7 @@ class ResursBank {
 
 	/**
 	 * Clean up payload after usage
+	 * @since 1.1.22
 	 */
 	private function resetPayload() {
 		$this->SpecLines = array();

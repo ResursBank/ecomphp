@@ -5,7 +5,7 @@
  *
  * @package EcomPHPTest
  * @author Resurs Bank Ecommrece <ecommerce.support@resurs.se>
- * @version 0.8
+ * @version 0.9
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @license -
  *
@@ -2229,6 +2229,37 @@ class ResursBankTest extends TestCase
 		$cancellationResult = $this->rb->paymentCancel( $paymentId );
 		$result             = $this->rb->getPaymentSpecCount( $paymentId );
 		$this->assertTrue( $cancellationResult && $result['AUTHORIZE'] == 4 && $result['DEBIT'] == 2 && $result['CREDIT'] == 2 && $result['ANNUL'] == 2 );
+	}
+
+	function testAftershopCompensationExperiment() {
+		$this->rb->addOrderLine( "a", "One orderline added with addOrderLine", 100, 25 );
+		$this->rb->addOrderLine( "b", "One orderline added with addOrderLine", 100, 25 );
+		$this->rb->addOrderLine( "c", "One orderline added with addOrderLine", 100, 25 );
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 0 );
+		$this->rb->paymentFinalize( $paymentId );
+		$this->rb->addOrderLine( "z", "One orderline added with addOrderLine", 300, 25 );
+		$this->rb->paymentCredit( $paymentId );
+	}
+	function testAftershopBuy10Annul20() {
+		$this->rb->addOrderLine( "a", "One orderline added with addOrderLine", 100, 25, null, null, 10 );
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 0 );
+		$this->rb->addOrderLine( "a", "One orderline added with addOrderLine", 100, 25, null, null, 20 );
+		try {
+			$this->rb->paymentAnnul( $paymentId );
+		} catch (\Exception $negativeException) {
+			$this->assertTrue($negativeException->getCode() > 0);
+		}
+	}
+	function testAftershopBuy10Credit20() {
+		$this->rb->addOrderLine( "a", "One orderline added with addOrderLine", 100, 25, null, null, 10 );
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 0 );
+		$this->rb->paymentFinalize( $paymentId );
+		$this->rb->addOrderLine( "a", "One orderline added with addOrderLine", 100, 25, null, null, 20 );
+		try {
+			$this->rb->paymentCredit( $paymentId );
+		} catch (\Exception $negativeException) {
+			$this->assertTrue($negativeException->getCode() > 0);
+		}
 	}
 
 	/**
