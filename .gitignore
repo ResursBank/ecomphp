@@ -8,3 +8,4 @@ vendor
 composer.phar
 source/classes/thirdparty
 source/classes/thirdparty/network.php
+Makefile
