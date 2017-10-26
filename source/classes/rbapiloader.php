@@ -1338,12 +1338,13 @@ class ResursBank {
 					$exceptionCode    = $serviceRequestException->getCode();
 					$exceptionMessage = $serviceRequestException->getMessage();
 				}
-				if (isset($previousException->detail) && is_object($previousException->detail)) {
-					if (isset($previousException->detail->errorTypeId)) {
-						$exceptionCode = $previousException->detail->errorTypeId;
+				if (isset($previousException->detail) && is_object($previousException->detail) && isset($previousException->detail->ECommerceError) && is_object($previousException->detail->ECommerceError)) {
+					$objectDetails = $previousException->detail->ECommerceError;
+					if (isset($objectDetails->errorTypeId) && intval($objectDetails->errorTypeId) > 0) {
+						$exceptionCode = $objectDetails->errorTypeId;
 					}
 					if (isset($previousException->detail->userErrorMessage)) {
-						$exceptionMessage = $previousException->detail->userErrorMessage;
+						$exceptionMessage = $objectDetails->userErrorMessage;
 					}
 				}
 				// Cast internal soap errors into a new, since the exception code is lost
