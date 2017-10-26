@@ -2092,36 +2092,21 @@ class ResursBank {
 			} catch (\Exception $serviceRequestException) {
 				// Try to fetch previous exception (This is what we actually want)
 				$previousException = $serviceRequestException->getPrevious();
-				if (isset($previousException->detail) && is_object($previousException->detail)) {
-					// TODO: Update when NetCurl 6.0.5 releases
+				$previousExceptionMessage = $previousException->getMessage();
+				$previousExceptionCOde = $previousException->getCode();
+				if (!empty($previousExceptionMessage)) {
+					$exceptionMessage = $previousExceptionMessage;
+					$exceptionCode = $previousExceptionCOde;
+				} else {
+					$exceptionCode    = $serviceRequestException->getCode();
+					$exceptionMessage = $serviceRequestException->getMessage();
 				}
-				$exceptionCode    = $serviceRequestException->getCode();
-				$exceptionMessage = $serviceRequestException->getMessage();
-				$soapObject       = $Service->getSoap();
-				$soapLibResponse  = $soapObject->getLibResponse();
-				if ( isset( $soapLibResponse['code'] ) && intval( $exceptionCode ) == 0 && $soapLibResponse['code'] > 0 ) {
-					// Fetch any internal errors
-					$exceptionCode = $soapLibResponse['code'];
-					try {
-						$soapBody = $this->CURL->ParseContent( $soapLibResponse['body'], false, "xml" );
-						// If the parsed object is an object and has an xpath-method available, there are great chances that we can extract something more from it
-						if ( is_object( $soapBody ) && method_exists( $soapBody, "xpath" ) ) {
-							$getSoapFault = $soapBody->xpath( "//soap:Fault/detail/*" );
-							if ( is_array( $getSoapFault ) && isset( $getSoapFault[0] ) ) {
-								$internalSoapFault = $getSoapFault[0];
-								if ( is_object( $internalSoapFault ) && isset( $internalSoapFault->errorTypeId ) ) {
-									$errorTypeId = intval( $internalSoapFault->errorTypeId );
-									// Make sure this is not zero
-									if ( $errorTypeId ) {
-										$exceptionCode = $errorTypeId;
-									}
-									if ( $internalSoapFault->userErrorMessage ) {
-										$exceptionMessage = $internalSoapFault->userErrorMessage;
-									}
-								}
-							}
-						}
-					} catch ( \Exception $soapFaultExtractionException ) {
+				if (isset($previousException->detail) && is_object($previousException->detail)) {
+					if (isset($previousException->detail->errorTypeId)) {
+						$exceptionCode = $previousException->detail->errorTypeId;
+					}
+					if (isset($previousException->detail->userErrorMessage)) {
+						$exceptionMessage = $previousException->detail->userErrorMessage;
 					}
 				}
 				// Cast internal soap errors into a new, since the exception code is lost
