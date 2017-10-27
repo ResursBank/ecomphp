@@ -3,8 +3,43 @@
 /**
  * Class ResursExceptions Exception handling for EComPHP
  */
-abstract class ResursExceptions
+abstract class RESURS_EXCEPTIONS
 {
+	const ECOMMERCEERROR_ILLEGAL_ARGUMENT = 1;
+	const ECOMMERCEERROR_INTERNAL_ERROR = 3;
+	const ECOMMERCEERROR_NOT_ALLOWED = 4;
+	const ECOMMERCEERROR_REFERENCED_DATA_DONT_EXISTS = 8;
+	const ECOMMERCEERROR_NOT_ALLOWED_IN_ORDER_STATE = 9;
+	const ECOMMERCEERROR_CREDITAPPLICATION_FAILED = 10;
+	const ECOMMERCEERROR_NOT_IMPLEMENTED = 11;
+	const ECOMMERCEERROR_INVALID_CREDITAPPLICATION_SUBMISSION = 14;
+	const ECOMMERCEERROR_SIGNING_REQUIRED = 15;
+	const ECOMMERCEERROR_AUTHORIZATION_FAILED = 17;
+	const ECOMMERCEERROR_APPLICATION_VALIDATION_ERROR = 18;
+	const ECOMMERCEERROR_OBJECT_WITH_ID_ALREADY_EXIST = 19;
+	const ECOMMERCEERROR_NOT_ALLOWED_IN_PAYMENT_STATE = 20;
+	const ECOMMERCEERROR_CUSTOMER_CONFIGURATION_EXCEPTION = 21;
+	const ECOMMERCEERROR_SERVICE_CONFIGURATION_EXCEPTION = 22;
+	const ECOMMERCEERROR_INVALID_CREDITING = 23;
+	const ECOMMERCEERROR_LIMIT_PER_TIME_EXCEEDED = 24;
+	const ECOMMERCEERROR_NOT_ALLOWED_IN_CURRENT_STATE = 25;
+	const ECOMMERCEERROR_INVALID_FINALIZATION = 26;
+	const ECOMMERCEERROR_FORM_PARSING = 27;
+	const ECOMMERCEERROR_NOT_ALLOWED_INVOICE_ID = 28;
+	const ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID = 29;
+	const ECOMMERCEERROR_INVALID_IDENTIFICATION = 30;
+	const ECOMMERCEERROR_TO_MANY_TOKENS = 31;
+	const ECOMMERCEERROR_TOO_MANY_TOKENS = 31; // EComPHP typo fix
+	const ECOMMERCEERROR_CUSTOMER_ALREADY_HAVE_VALID_CARD = 32;
+	const ECOMMERCEERROR_CUSTOMER_HAS_NO_VALID_CARD = 33;
+	const ECOMMERCEERROR_CUSTOMER_HAS_MORE_THAN_ONE_VALID_CARD = 34;
+	const ECOMMERCEERROR_INVALID_AUTHENTICATION = 35;
+	const ECOMMERCEERROR_ANNUL_FAILED = 36;
+	const ECOMMERCEERROR_CUSTOMER_HAS_NO_VALID_ACCOUNT = 37;
+	const ECOMMERCEERROR_LEGACY_EXCEPTION = 99; // V3LegacyModeException
+	const ECOMMERCEERROR_WEAK_PASSWORD = 502;
+	const ECOMMERCEERROR_NOT_AUTHORIZED = 503;
+
 	/**
 	 * Miscellaneous exceptions
 	 */
@@ -53,24 +88,36 @@ abstract class ResursExceptions
 	const CREATEPAYMENT_NO_ID_SET = 7008;
 }
 
-class ResursException extends \Exception {
-    private $fromFunction = null;
-    public function __construct($message = 'Unknown exception', $code = 0, $fromFunction = '', \Exception $previous = null) {
-        $this->fromFunction = $fromFunction;
-        parent::__construct($message, $code, $previous);
-    }
-    public function __toString() {
-        if (null === $this->fromFunction) {
-            return "RBEcomPHP Exception: [{$this->code}]: {$this->message}";
-        } else {
-            return "RBEcomPHP {$this->fromFunction}Exception {$this->code}: {$this->message}";
-        }
-    }
-    public function getFromFunction()
-    {
-        if (empty($this->fromFunction)) {
-            return "NaN";
-        }
-        return $this->fromFunction;
-    }
+class RESURS_EXCEPTION_CLASS extends \Exception {
+	private $fromFunction = null;
+	public function __construct($message = 'Unknown exception', $code = 0, $fromFunction = '', \Exception $previous = null) {
+		$this->fromFunction = $fromFunction;
+		parent::__construct($message, $code, $previous);
+	}
+	public function __toString() {
+		if (null === $this->fromFunction) {
+			return "RBEcomPHP Exception: [{$this->code}]: {$this->message}";
+		} else {
+			return "RBEcomPHP {$this->fromFunction}Exception {$this->code}: {$this->message}";
+		}
+	}
+	public function getFromFunction()
+	{
+		if (empty($this->fromFunction)) {
+			return "NaN";
+		}
+		return $this->fromFunction;
+	}
 }
+
+/**
+ * Class ResursExceptions
+ * @deprecated Use RESURS_EXCEPTIONS
+ */
+abstract class ResursExceptions extends RESURS_EXCEPTIONS {}
+
+/**
+ * Class ResursException
+ * @deprecated Use RESURS_EXCEPTION_CLASS
+ */
+class ResursException extends RESURS_EXCEPTION_CLASS {}

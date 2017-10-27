@@ -112,6 +112,7 @@ class ResursBankTest extends TestCase
 	private $paymentIdAuthAnnulled = "20170519125725-8589567180";
 	private $paymentIdDebited = "20170519125216-8830457943";
 
+	/** @var $NETWORK TorneLIB_Network */
 	private $NETWORK;
 
 	private function isSpecialAccount() {
@@ -2102,7 +2103,7 @@ class ResursBankTest extends TestCase
 			$this->rb->paymentFinalizeTest();
 		} catch ( \Exception $paymentFinalizeException ) {
 			$exceptionCode = $paymentFinalizeException->getCode();
-			$this->assertTrue( $exceptionCode == 8 || $exceptionCode >= 500 );
+			$this->assertTrue( $exceptionCode == RESURS_EXCEPTIONS::ECOMMERCEERROR_REFERENCED_DATA_DONT_EXISTS || $exceptionCode >= 500 );
 		}
 	}
 
@@ -2338,5 +2339,15 @@ class ResursBankTest extends TestCase
 		} else {
 			$this->markTestIncomplete( "Current account does not have any PSP methods" );
 		}
+	}
+
+	public function testGitTags() {
+		$tagVersions = $this->rb->getVersionsByGitTag();
+		$currentTag = array_pop($tagVersions);
+		$lastTag = array_pop($tagVersions);
+		$notCurrent = $this->rb->getIsCurrent($lastTag);
+		$perfect = $this->rb->getIsCurrent($currentTag);
+		echo "TooOld $lastTag = $notCurrent, is perfect $currentTag = $perfect\n";
+		$this->assertTrue($notCurrent === false && $perfect === true);
 	}
 }

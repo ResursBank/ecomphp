@@ -226,7 +226,9 @@ class ResursBank {
 	/** @var string The version of this gateway */
 	private $version = "1.0.26";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20171026";
+	private $lastUpdate = "20171027";
+	/** @var string URL to git storage */
+	private $gitUrl = "https://bitbucket.org/resursbankplugins/resurs-ecomphp";
 	/** @var string This. */
 	private $clientName = "EComPHP";
 	/** @var string Replacing $clientName on usage of setClientNAme */
@@ -899,6 +901,36 @@ class ResursBank {
 	 */
 	public function getSslIsUnsafe() {
 		return $this->CURL->getSslIsUnsafe();
+	}
+
+	/**
+	 * Returns true if your version of EComPHP is the current (based on git tags)
+	 *
+	 * @param null $testVersion
+	 *
+	 * @return bool
+	 * @since 1.0.26
+	 * @since 1.1.26
+	 * @since 1.2.0
+	 */
+	public function getIsCurrent( $testVersion = null ) {
+		if ( is_null( $testVersion ) ) {
+			return ! $this->NETWORK->getVersionTooOld( $this->getVersionNumber( false ), $this->gitUrl );
+		} else {
+			return ! $this->NETWORK->getVersionTooOld( $testVersion, $this->gitUrl );
+		}
+	}
+
+	/**
+	 * Try to fetch a list of versions for EComPHP by its git tags
+	 *
+	 * @return array
+	 * @since 1.0.26
+	 * @since 1.1.26
+	 * @since 1.2.0
+	 */
+	public function getVersionsByGitTag() {
+		return $this->NETWORK->getGitTagsByUrl( $this->gitUrl );
 	}
 
 	/**
@@ -2165,7 +2197,7 @@ class ResursBank {
 	 * @param int $firstInvoiceNumber Initializes invoice number sequence with this value if not set and requested
 	 *
 	 * @return int Returns If 0, the set up might have failed
-	 * @throws ResursException
+	 * @throws \Exception
 	 * @since 1.0.0
 	 * @since 1.1.0
 	 */
@@ -3129,7 +3161,7 @@ class ResursBank {
 	 */
 	protected function getVersionNumber( $getDecimals = false ) {
 		if ( ! $getDecimals ) {
-			return $this->version . "-" . $this->lastUpdate;
+			return $this->version; // . "-" . $this->lastUpdate;
 		} else {
 			return $this->versionToDecimals();
 		}
@@ -6012,7 +6044,7 @@ class ResursBank {
 	 * @param $paymentMethodId
 	 * @param array $paymentDataArray
 	 *
-	 * @throws ResursException
+	 * @throws \Exception
 	 * @deprecated 1.0.2
 	 * @deprecated 1.1.2
 	 */
@@ -6130,7 +6162,7 @@ class ResursBank {
 	 *
 	 * @param array $specLineArray
 	 *
-	 * @throws ResursException
+	 * @throws \Exception
 	 * @deprecated 1.0.2
 	 * @deprecated 1.1.2
 	 */
@@ -6158,7 +6190,7 @@ class ResursBank {
 	 * @param array $addressArray
 	 * @param array $customerArray
 	 *
-	 * @throws ResursException
+	 * @throws \Exception
 	 * @deprecated 1.0.2
 	 * @deprecated 1.1.2
 	 */
