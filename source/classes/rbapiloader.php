@@ -7085,4 +7085,89 @@ class ResursBank {
 		}
 		return $invoices;
 	}
+
+	/**
+	 * Generic orderstatus content information that checks payment statuses instead of callback input and decides what happened to the payment
+	 *
+	 * @param array $paymentData
+	 *
+	 * @return int
+	 * @since 1.0.26
+	 * @since 1.1.26
+	 * @since 1.2.0
+	 */
+	private function getOrderStatusByPaymentStatuses($paymentData = array()) {
+		$resursTotalAmount = $paymentData->totalAmount;
+		if ($this->canDebit($paymentData) && $this->getIsDebited($paymentData) && $resursTotalAmount > 0) {
+			return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED;
+		}
+		if ($this->getIsAnnulled($paymentData) && $this->getIsCredited($paymentData) && $resursTotalAmount == 0) {
+			return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_CANCELLED;
+		}
+		if ($this->getIsCredited($paymentData) && $resursTotalAmount == 0) {
+			return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_REFUND;
+		}
+		// Return generic
+		return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET;
+	}
+
+	/**
+	 * Return "best practice"-order statuses for a payment.
+	 *
+	 * @param string $paymentIdOrPaymentObject
+	 * @param int $byCallbackEvent If this variable is set, controls are also being made, compared to what happened on a callback event
+	 * @param array|string $callbackEventData On for example AUTOMATIC_FRAUD_CONTROL, a result based on THAWED or FROZEN are received, which you should add here
+	 *
+	 * @return int
+	 * @throws \Exception
+	 * @since 1.0.26
+	 * @since 1.1.26
+	 * @since 1.2.0
+	 */
+	public function getOrderStatusByPayment($paymentIdOrPaymentObject = '', $byCallbackEvent = RESURS_CALLBACK_TYPES::CALLBACK_TYPE_NOT_SET, $callbackEventDataArrayOrString = array()) {
+
+		if (is_string($paymentIdOrPaymentObject)) {
+			$paymentData = $this->getPayment( $paymentIdOrPaymentObject );
+		} else if (is_object($paymentIdOrPaymentObject)) {
+			$paymentData = $paymentIdOrPaymentObject;
+		} else {
+			throw new \Exception("Payment data object or id is not valid", 500);
+		}
+
+		// Analyzed during a callback event, which have higher priority than a regular control
+
+		switch ( $byCallbackEvent ) {
+			case RESURS_CALLBACK_TYPES::CALLBACK_TYPE_NOT_SET:
+				break;
+			case RESURS_CALLBACK_TYPES::CALLBACK_TYPE_ANNULMENT:
+				return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_CANCELLED;
+			case RESURS_CALLBACK_TYPES::CALLBACK_TYPE_AUTOMATIC_FRAUD_CONTROL:
+				if (is_string($callbackEventDataArrayOrString)) {
+					if ( $callbackEventDataArrayOrString == "THAWED" ) {
+						return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PROCESSING;
+					} else {
+						return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING;
+					}
+				}
+			case RESURS_CALLBACK_TYPES::CALLBACK_TYPE_BOOKED:
+				if ( $paymentData->frozen ) {
+					return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PROCESSING;
+				} else {
+					return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING;
+				}
+			case RESURS_CALLBACK_TYPES::CALLBACK_TYPE_FINALIZATION:
+				return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED;
+			case RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UNFREEZE:
+				return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PROCESSING;
+			case RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UPDATE:
+				return $this->getOrderStatusByPaymentStatuses($paymentData);
+			default:    // RESURS_CALLBACK_TYPES::CALLBACK_TYPE_NOT_SET
+				break;
+		}
+
+		// case RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UPDATE
+		$returnThisAfterAll = $this->getOrderStatusByPaymentStatuses($paymentData);
+
+		return $returnThisAfterAll;
+	}
 }

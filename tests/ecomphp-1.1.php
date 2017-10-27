@@ -16,7 +16,8 @@ require_once( '../source/classes/rbapiloader.php' );
 use PHPUnit\Framework\TestCase;
 use \Resursbank\RBEcomPHP\ResursBank;
 use \Resursbank\RBEcomPHP\ResursAfterShopRenderTypes;
-use \Resursbank\RBEcomPHP\ResursCallbackTypes;
+use \Resursbank\RBEcomPHP\RESURS_CALLBACK_TYPES;
+use \Resursbank\RBEcomPHP\RESURS_PAYMENT_STATUS_RETURNCODES;
 use \Resursbank\RBEcomPHP\ResursMethodTypes;
 use \Resursbank\RBEcomPHP\ResursCallbackReachability;
 use \Resursbank\RBEcomPHP\Tornevall_cURL;
@@ -2352,7 +2353,13 @@ class ResursBankTest extends TestCase
 		$lastTag = array_pop($tagVersions);
 		$notCurrent = $this->rb->getIsCurrent($lastTag);
 		$perfect = $this->rb->getIsCurrent($currentTag);
-		echo "TooOld $lastTag = $notCurrent, is perfect $currentTag = $perfect\n";
 		$this->assertTrue($notCurrent === false && $perfect === true);
+	}
+
+	public function testBasicOrderStatusFinalizationEvent() {
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1 );
+		$this->rb->paymentFinalize( $paymentId );
+		// Finalizing test
+		$this->assertTrue($this->rb->getOrderStatusByPayment($paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_FINALIZATION) === RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED);
 	}
 }
