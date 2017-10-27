@@ -134,22 +134,23 @@ abstract class RESURS_PAYMENT_STATUS_RETURNCODES {
  * @since 1.0.0
  * @deprecated Use RESURS_CALLBACK_REACHABILITY
  */
-abstract class ResursCallbackReachability extends RESURS_CALLBACK_REACHABILITY {}
+abstract class ResursCallbackReachability extends RESURS_CALLBACK_REACHABILITY {
+}
 
 /**
  * Class ResursCurlMethods
  * @since 1.0.0
  * @deprecated Use RESURS_CURL_METHODS
  */
-abstract class ResursCurlMethods extends RESURS_CURL_METHODS {}
+abstract class ResursCurlMethods extends RESURS_CURL_METHODS {
+}
 
 /**
  * Class ResursAfterShopRenderTypes
  * @since 1.0.0
  * @deprecated Use RESURS_AFTERSHOP_RENDER_TYPES
  */
-abstract class ResursAfterShopRenderTypes extends RESURS_AFTERSHOP_RENDER_TYPES
-{
+abstract class ResursAfterShopRenderTypes extends RESURS_AFTERSHOP_RENDER_TYPES {
 	/** @deprecated */
 	const NONE = 0;
 	/** @deprecated */
@@ -171,7 +172,8 @@ abstract class ResursAfterShopRenderTypes extends RESURS_AFTERSHOP_RENDER_TYPES
  * @since 1.0.2
  * @deprecated Use RESURS_CHECKOUT_CALL_TYPES
  */
-abstract class ResursCheckoutCallTypes extends RESURS_CHECKOUT_CALL_TYPES {}
+abstract class ResursCheckoutCallTypes extends RESURS_CHECKOUT_CALL_TYPES {
+}
 
 /**
  * Class ResursCallbackTypes Callbacks that can be registered with Resurs Bank.
@@ -246,18 +248,21 @@ abstract class ResursCallbackTypes extends RESURS_CALLBACK_TYPES {
 	 * @link https://test.resurs.com/docs/display/ecom/BOOKED
 	 * @deprecated Use CALLBACK_TYPE_BOOKED
 	 */
-	const BOOKED = 7;}
+	const BOOKED = 7;
+}
 
 /**
  * Class ResursMethodTypes Preferred payment method types if called.
  * @since 1.0.0
  * @deprecated Use RESURS_FLOW_TYPES
  */
-abstract class ResursMethodTypes extends RESURS_FLOW_TYPES {}
+abstract class ResursMethodTypes extends RESURS_FLOW_TYPES {
+}
 
 /**
  * Class ResursCountry
  * @since 1.0.2
  * @deprecated Use RESURS_COUNTRY
  */
-abstract class ResursCountry extends RESURS_COUNTRY {}
+abstract class ResursCountry extends RESURS_COUNTRY {
+}
