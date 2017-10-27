@@ -1,11 +1,12 @@
 <?php
 
 /**
- * Class ResursMethodTypes
- * Preferred payment method types if called.
+ * Class RESURS_FLOW_TYPES
+ * @since 1.0.26
+ * @since 1.1.26
+ * @since 1.2.0
  */
-abstract class ResursMethodTypes
-{
+abstract class RESURS_FLOW_TYPES {
 	/** Default method */
 	const METHOD_UNDEFINED = 0;
 	const METHOD_SIMPLIFIED = 1;
@@ -23,40 +24,38 @@ abstract class ResursMethodTypes
 }
 
 /**
- * Class ResursCountry
- * @since 1.0.2
+ * Class RESURS_COUNTRY Country selector
+ * @since 1.0.26
+ * @since 1.1.26
+ * @since 1.2.0
  */
-abstract class ResursCountry {
-	const COUNTRY_UNSET = 0;
+abstract class RESURS_COUNTRY {
+	const COUNTRY_NOT_SET = 0;
 	const COUNTRY_SE = 1;
 	const COUNTRY_DK = 2;
 	const COUNTRY_NO = 3;
 	const COUNTRY_FI = 4;
+
 }
 
 /**
- * Class ResursOmniCallTypes
- * Omnicheckout callback types
- * @since 1.0.2
+ * Class RESURS_CHECKOUT_CALL_TYPES
+ * @since 1.0.26
+ * @since 1.1.26
+ * @since 1.2.0
  */
-abstract class ResursCheckoutCallTypes
-{
+abstract class RESURS_CHECKOUT_CALL_TYPES {
 	const METHOD_PAYMENTS = 0;
 	const METHOD_CALLBACK = 1;
 }
 
 /**
- * Class ResursCallbackTypes Callbacks that can be registered with Resurs Bank.
+ * Class RESURS_CALLBACK_TYPES
+ * @since 1.0.26
+ * @since 1.1.26
+ * @since 1.2.0
  */
-abstract class ResursCallbackTypes
-{
-
-	/**
-	 * Resurs Callback Types. Callback types available from Resurs Ecommerce.
-	 *
-	 * @subpackage ResursCallbackTypes
-	 */
-
+abstract class RESURS_CALLBACK_TYPES {
 	/**
 	 * Callbacktype not defined
 	 */
@@ -115,29 +114,29 @@ abstract class ResursCallbackTypes
 	const BOOKED = 7;
 }
 
-
 /**
- * Class ResursAfterShopRenderTypes
+ * Class RESURS_AFTERSHOP_RENDER_TYPES
+ * @since 1.0.26
+ * @since 1.1.26
+ * @since 1.2.0
  */
-abstract class ResursAfterShopRenderTypes
-{
+abstract class RESURS_AFTERSHOP_RENDER_TYPES {
 	const NONE = 0;
 	const FINALIZE = 1;
 	const CREDIT = 2;
 	const ANNUL = 4;
 	const AUTHORIZE = 8;
-
-	/** @deprecated */
-	const UPDATE = 16;
 }
 
+
 /**
- * Class ResursCurlMethods (Those are types, but class is not named as this)
+ * Class RESURS_CURL_METHODS Curl HTTP methods
  *
- * How CURL should handle calls
+ * @since 1.0.26
+ * @since 1.1.26
+ * @since 1.2.0
  */
-abstract class ResursCurlMethods
-{
+abstract class RESURS_CURL_METHODS {
 	const METHOD_GET = 0;
 	const METHOD_POST = 1;
 	const METHOD_PUT = 2;
@@ -145,13 +144,86 @@ abstract class ResursCurlMethods
 }
 
 /**
- * Class ResursCallbackReachability While using external controls on url reachability, this is required (also types)
+ * Class RESURS_CALLBACK_REACHABILITY External API callback URI control codes
+ * @since 1.0.26
+ * @since 1.1.26
+ * @since 1.2.0
  */
-abstract class ResursCallbackReachability
-{
+abstract class RESURS_CALLBACK_REACHABILITY {
 	const IS_REACHABLE_NOT_AVAILABLE = 0;
 	const IS_FULLY_REACHABLE = 1;
 	const IS_REACHABLE_WITH_PROBLEMS = 2;
 	const IS_NOT_REACHABLE = 3;
 	const IS_REACHABLE_NOT_KNOWN = 4;
 }
+
+/**
+ * Class RESURS_STATUS_RETURNCODES Order status return codes
+ *
+ * @since 1.0.26
+ * @since 1.1.26
+ * @since 1.2.0
+ */
+abstract class RESURS_STATUS_RETURNCODES {
+	const PAYMENT_PENDING = 0;     // Waiting for callback or frozen
+	const PAYMENT_PROCESSING = 10;  // Booked, waiting for next action
+	const PAYMENT_COMPLETED = 20;   // Fully finalized (debited)
+	const PAYMENT_CANCELLED = 30;   // Fully annulled
+	const PAYMENT_REFUND = 40;      // Fully credited
+}
+
+///
+
+/**
+ * Class ResursCallbackReachability
+ * @since 1.0.0
+ * @deprecated Use RESURS_CALLBACK_REACHABILITY
+ */
+abstract class ResursCallbackReachability extends RESURS_CALLBACK_REACHABILITY {}
+
+/**
+ * Class ResursCurlMethods
+ * @since 1.0.0
+ * @deprecated Use RESURS_CURL_METHODS
+ */
+abstract class ResursCurlMethods extends RESURS_CURL_METHODS {}
+
+/**
+ * Class ResursAfterShopRenderTypes
+ * @since 1.0.0
+ * @deprecated Use RESURS_AFTERSHOP_RENDER_TYPES
+ */
+abstract class ResursAfterShopRenderTypes extends RESURS_AFTERSHOP_RENDER_TYPES
+{
+	/** @deprecated */
+	const UPDATE = 16;
+}
+
+/**
+ * Class ResursOmniCallTypes
+ * Omnicheckout callback types
+ * @since 1.0.2
+ * @deprecated Use RESURS_CHECKOUT_CALL_TYPES
+ */
+abstract class ResursCheckoutCallTypes extends RESURS_CHECKOUT_CALL_TYPES {}
+
+/**
+ * Class ResursCallbackTypes Callbacks that can be registered with Resurs Bank.
+ * @since 1.0.0
+ * @deprecated RESURS_CALLBACK_TYPES
+ */
+abstract class ResursCallbackTypes extends RESURS_CALLBACK_TYPES {}
+
+/**
+ * Class ResursMethodTypes Preferred payment method types if called.
+ * @since 1.0.0
+ * @deprecated Use RESURS_FLOW_TYPES
+ */
+abstract class ResursMethodTypes extends RESURS_FLOW_TYPES {}
+
+/**
+ * Class ResursCountry
+ * @since 1.0.2
+ * @deprecated Use RESURS_COUNTRY
+ */
+abstract class ResursCountry extends RESURS_COUNTRY {}
