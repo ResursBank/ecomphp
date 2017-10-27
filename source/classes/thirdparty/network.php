@@ -18,7 +18,7 @@
  * Tornevall Networks netCurl library - Yet another http- and network communicator library
  * Each class in this library has its own version numbering to keep track of where the changes are. However, there is a major version too.
  * @package TorneLIB
- * @version 6.0.14
+ * @version 6.0.15
  */
 
 namespace Resursbank\RBEcomPHP;
@@ -36,7 +36,7 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 	 * Library for handling network related things (currently not sockets). A conversion of a legacy PHP library called "TorneEngine" and family.
 	 *
 	 * Class TorneLIB_Network
-	 * @version 6.0.4
+	 * @version 6.0.5
 	 * @link https://phpdoc.tornevall.net/TorneLIBv5/class-TorneLIB.TorneLIB_Network.html PHPDoc/Staging - TorneLIB_Network
 	 * @link https://docs.tornevall.net/x/KQCy TorneLIB (PHP) Landing documentation
 	 * @link https://bitbucket.tornevall.net/projects/LIB/repos/tornelib-php/browse Sources of TorneLIB
@@ -157,15 +157,16 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 											$tagArrayUncombined[] = $val;
 										} else {
 											if ( $sanitizeNumerics ) {
-												$tagArrayUncombined[] = preg_replace( "/[^0-9$]/is", '', $val );
+												$vNum                 = preg_replace( "/[^0-9$]/is", '', $val );
+												$tagArrayUncombined[] = $vNum;
 											}
 										}
 									}
 									$tag = implode( ".", $tagArrayUncombined );
 								}
 								// Fill the list here,if it has not already been added
-								if ( ! in_array( $tag, $tagArray ) ) {
-									$tagArray[] = $tag;
+								if ( ! isset( $tagArray[ $tag ] ) ) {
+									$tagArray[ $tag ] = $tag;
 								}
 							}
 						}
@@ -174,7 +175,12 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 					$exceptionMessage = "Request failure, got $code from URL";
 				}
 				if ( count( $tagArray ) ) {
-					sort( $tagArray );
+					asort( $tagArray, SORT_NATURAL );
+					$newArray = array();
+					foreach ( $tagArray as $arrayKey => $arrayValue ) {
+						$newArray[] = $arrayValue;
+					}
+					$tagArray = $newArray;
 				}
 			} catch ( \Exception $gitGetException ) {
 				$exceptionMessage = $gitGetException->getMessage();
@@ -197,11 +203,9 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 		public function getMyVersionByGitTag( $myVersion = '', $gitUrl = '' ) {
 			$versionArray   = $this->getGitTagsByUrl( $gitUrl, true, true );
 			$versionsHigher = array();
-			if ( in_array( $myVersion, $versionArray ) ) {
-				foreach ( $versionArray as $tagVersion ) {
-					if ( version_compare( $tagVersion, $myVersion, ">" ) ) {
-						$versionsHigher[] = $tagVersion;
-					}
+			foreach ( $versionArray as $tagVersion ) {
+				if ( version_compare( $tagVersion, $myVersion, ">" ) ) {
+					$versionsHigher[] = $tagVersion;
 				}
 			}
 
