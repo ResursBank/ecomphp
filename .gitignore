@@ -11,3 +11,4 @@ composer.lock
 vendor
 source/classes/thirdparty/setnamespace.sh
 composer.phar
+source/classes/thirdparty/fixall
