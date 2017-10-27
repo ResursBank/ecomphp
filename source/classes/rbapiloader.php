@@ -215,7 +215,7 @@ class ResursBank {
 	private $internalFlags = array();
 
 	/**
-	 * @var null
+	 * @var RESURS_FLOW_TYPES
 	 */
 	private $enforceService = null;
 	/**
@@ -1305,19 +1305,43 @@ class ResursBank {
 	/**
 	 * Enforce another method than the simplified flow
 	 *
-	 * @param int $methodType
+	 * @param int $flowType
+	 *
 	 * @since 1.0.0
 	 * @since 1.1.0
+	 * @deprecated Use setPreferredPaymentFlowService
 	 */
-	public function setPreferredPaymentService( $methodType = ResursMethodTypes::METHOD_UNDEFINED ) {
-		$this->enforceService = $methodType;
-		if ( $methodType == ResursMethodTypes::METHOD_HOSTED ) {
+	public function setPreferredPaymentService( $flowType = RESURS_FLOW_TYPES::METHOD_UNDEFINED ) {
+		$this->setPreferredPaymentFlowService($flowType);
+	}
+
+	/**
+	 * Return the current set "preferred payment service" (hosted, checkout, simplified)
+	 * @return RESURS_FLOW_TYPES
+	 * @since 1.0.0
+	 * @since 1.1.0
+	 * @deprecated getPreferredPaymentFlowService
+	 */
+	public function getPreferredPaymentService() {
+		return $this->enforceService;
+	}
+
+	/**
+	 * Configure EComPHP to use a specific flow
+	 * @param int $flowType
+	 * @since 1.0.26
+	 * @since 1.1.26
+	 * @since 1.2.0
+	 */
+	public function setPreferredPaymentFlowService( $flowType = RESURS_FLOW_TYPES::METHOD_UNDEFINED ) {
+		$this->enforceService = $flowType;
+		if ( $flowType == RESURS_FLOW_TYPES::METHOD_HOSTED ) {
 			$this->isHostedFlow = true;
 			$this->isOmniFlow   = false;
-		} elseif ( $methodType == ResursMethodTypes::METHOD_CHECKOUT ) {
+		} elseif ( $flowType == RESURS_FLOW_TYPES::METHOD_CHECKOUT ) {
 			$this->isHostedFlow = false;
 			$this->isOmniFlow   = true;
-		} elseif ( $methodType == ResursMethodTypes::METHOD_SIMPLIFIED ) {
+		} elseif ( $flowType == RESURS_FLOW_TYPES::METHOD_SIMPLIFIED ) {
 			$this->isHostedFlow = false;
 			$this->isOmniFlow   = false;
 		} else {
@@ -1327,12 +1351,10 @@ class ResursBank {
 	}
 
 	/**
-	 * Return the current set "preferred payment service" (hosted, checkout, simplified)
-	 * @return null
-	 * @since 1.0.0
-	 * @since 1.1.0
+	 *
+	 * @return RESURS_FLOW_TYPES
 	 */
-	public function getPreferredPaymentService() {
+	public function getPreferredPaymentFlowService() {
 		return $this->enforceService;
 	}
 

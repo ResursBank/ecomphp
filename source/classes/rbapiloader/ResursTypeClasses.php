@@ -9,20 +9,12 @@ namespace Resursbank\RBEcomPHP;
  * @since 1.2.0
  */
 abstract class RESURS_FLOW_TYPES {
-	/** Default method */
-	const METHOD_UNDEFINED = 0;
-	const METHOD_SIMPLIFIED = 1;
-	const METHOD_HOSTED = 2;
-	const METHOD_CHECKOUT = 3;
 
-	/**
-	 * @deprecated 1.0.0 Use METHOD_CHECKOUT instead
-	 */
-	const METHOD_OMNI = 3;
-	/**
-	 * @deprecated 1.0.0 Use METHOD_CHECKOUT instead
-	 */
-	const METHOD_RESURSCHECKOUT = 3;
+	const FLOW_NOT_SET = 0;
+	const FLOW_SIMPLIFIED_FLOW = 1;
+	const FLOW_HOSTED_FLOW = 2;
+	const FLOW_RESURS_CHECKOUT = 3;
+
 }
 
 /**
@@ -259,6 +251,23 @@ abstract class ResursCallbackTypes extends RESURS_CALLBACK_TYPES {
  * @deprecated Use RESURS_FLOW_TYPES
  */
 abstract class ResursMethodTypes extends RESURS_FLOW_TYPES {
+
+	/** @deprecated Use FLOW_NOT_SET */
+	const METHOD_UNDEFINED = 0;
+	/** @deprecated Use FLOW_SIMPLIFIED_FLOW */
+	const METHOD_SIMPLIFIED = 1;
+	/** @deprecated Use FLOW_HOSTED_FLOW */
+	const METHOD_HOSTED = 2;
+
+	/** @deprecated Use FLOW_RESURS_CHECKOUT */
+	const METHOD_CHECKOUT = 3;
+	/** @deprecated 1.0.0 Use METHOD_CHECKOUT */
+	const METHOD_OMNI = 3;
+	/** @deprecated 1.0.0 Use METHOD_CHECKOUT */
+	const METHOD_RESURSCHECKOUT = 3;
+
+	/** @deprecated Legacy shopflow (removed) */
+	const FLOW_LEGACY = 99;
 }
 
 /**
