@@ -5,7 +5,7 @@
  *
  * @package EcomPHPTest
  * @author Resurs Bank Ecommrece <ecommerce.support@resurs.se>
- * @version 0.10
+ * @version 0.11
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @license -
  *
@@ -15,10 +15,11 @@ require_once('../source/classes/rbapiloader.php');
 
 use PHPUnit\Framework\TestCase;
 use \Resursbank\RBEcomPHP\ResursBank;
-use \Resursbank\RBEcomPHP\ResursAfterShopRenderTypes;
-use \Resursbank\RBEcomPHP\ResursCallbackTypes;
-use \Resursbank\RBEcomPHP\ResursMethodTypes;
-use \Resursbank\RBEcomPHP\ResursCallbackReachability;
+use \Resursbank\RBEcomPHP\RESURS_CALLBACK_TYPES;
+use \Resursbank\RBEcomPHP\RESURS_PAYMENT_STATUS_RETURNCODES;
+use \Resursbank\RBEcomPHP\RESURS_FLOW_TYPES;
+use \Resursbank\RBEcomPHP\RESURS_CALLBACK_REACHABILITY;
+use \Resursbank\RBEcomPHP\RESURS_AFTERSHOP_RENDER_TYPES;
 use \Resursbank\RBEcomPHP\Tornevall_cURL;
 use \Resursbank\RBEcomPHP\TorneLIB_Network;
 
@@ -350,7 +351,7 @@ class ResursBankTest extends TestCase
 	 * @return bool Returning true if booking went as you expected
 	 */
 	private function doBookPayment( $setMethod = '', $bookSuccess = true, $forceSigning = false, $signSuccess = true, $country = 'SE', $ownSpecline = array() ) {
-		$paymentServiceSet = $this->rb->getPreferredPaymentService();
+		$paymentServiceSet = $this->rb->getPreferredPaymentFlowService();
 		$useMethodList      = $this->availableMethods;
 		$useGovIdLegalCivic = $this->govIdLegalCivic;
 		$useGovId           = $this->testGovId;
@@ -412,15 +413,15 @@ class ResursBankTest extends TestCase
 		}
 		$bookData['paymentData']['waitForFraudControl'] = $this->waitForFraudControl;
 		$bookData['signing']                            = array(
-			'successUrl'   => $this->signUrl . '&success=true&preferredService=' . $this->rb->getPreferredPaymentService(),
-			'failUrl'      => $this->signUrl . '&success=false&preferredService=' . $this->rb->getPreferredPaymentService(),
-			'backUrl'      => $this->signUrl . '&success=backurl&preferredService=' . $this->rb->getPreferredPaymentService(),
+			'successUrl'   => $this->signUrl . '&success=true&preferredService=' . $this->rb->getPreferredPaymentFlowService(),
+			'failUrl'      => $this->signUrl . '&success=false&preferredService=' . $this->rb->getPreferredPaymentFlowService(),
+			'backUrl'      => $this->signUrl . '&success=backurl&preferredService=' . $this->rb->getPreferredPaymentFlowService(),
 			'forceSigning' => $forceSigning
 		);
 
-		if ( $paymentServiceSet !== ResursMethodTypes::METHOD_CHECKOUT ) {
+		if ( $paymentServiceSet !== RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT ) {
 			$res = $this->rb->createPayment( $setMethod, $bookData );
-			if ( $paymentServiceSet == ResursMethodTypes::METHOD_HOSTED ) {
+			if ( $paymentServiceSet == RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW ) {
 				$domainInfo = $this->NETWORK->getUrlDomain( $res );
 				if ( preg_match( "/^http/i", $domainInfo[1] ) ) {
 					$hostedContent = $this->CURL->getResponseBody( $this->CURL->doGet( $res ) );
@@ -439,7 +440,7 @@ class ResursBankTest extends TestCase
 			$bookStatus = $res->bookPaymentStatus;
 		}
 
-		if ( $paymentServiceSet == ResursMethodTypes::METHOD_CHECKOUT ) {
+		if ( $paymentServiceSet == RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT ) {
 			return $res;
 		}
 
@@ -451,7 +452,16 @@ class ResursBankTest extends TestCase
 				$NETWORK         = new TorneLIB_Network();
 				$signUrlHostInfo = $NETWORK->getUrlDomain( $signUrl );
 				$getUrlHost      = $signUrlHostInfo[1] . "://" . $signUrlHostInfo[0];
-				$mockSuccessUrl  = preg_replace( "/\/$/", '', $getUrlHost . preg_replace( '/(.*?)\<a href=\"(.*?)\">(.*?)\>Mock success(.*)/is', '$2', $getSigningPage ) );
+				$hostUri = explode("/", isset($signUrlHostInfo[2]) ? $signUrlHostInfo[2] : null);
+				$uriPath = "";
+				if (is_array($hostUri) && count($hostUri) > 1) {
+					array_shift($hostUri);
+					if (count($hostUri) >= 2) {
+						array_pop($hostUri);
+						$uriPath = implode("/", $hostUri);
+					}
+				}
+				$mockSuccessUrl  = preg_replace( "/\/$/", '', $getUrlHost . "/" . $uriPath . "/" . preg_replace( '/(.*?)\<a href=\"(.*?)\">(.*?)\>Mock success(.*)/is', '$2', $getSigningPage ) );
 				// Split up in case of test requirements
 				$getPostCurlObject = $this->CURL->doPost( $mockSuccessUrl );
 				$getSuccessContent = $this->CURL->getParsedResponse( $getPostCurlObject );
@@ -671,7 +681,7 @@ class ResursBankTest extends TestCase
 		if ( $this->ignoreBookingTests ) {
 			$this->markTestSkipped();
 		}
-		$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_HOSTED );
+		$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW );
 		$bookResult = $this->doBookPayment( $this->availableMethods['invoice_natural'], true, false, true );
 		// Can't do bookings yet, since this is a forwarder. We would like to emulate browser clicking here, to complete the order.
 		$this->assertTrue( strlen( $bookResult ) > 1024 );
@@ -882,11 +892,11 @@ class ResursBankTest extends TestCase
 		}
 		$amount    = rand( 1000, 10000 );
 		$sekkiUrls = $this->rb->getSekkiUrls( $amount );
-		foreach ( $sekkiUrls as $method => $sekkiUrls ) {
+		foreach ( $sekkiUrls as $method => $sekkiUrlsVal ) {
 			$matches   = 0;
 			$appenders = 0;
-			if ( is_array( $sekkiUrls ) ) {
-				foreach ( $sekkiUrls as $UrlData ) {
+			if ( is_array( $sekkiUrlsVal ) ) {
+				foreach ( $sekkiUrlsVal as $UrlData ) {
 					if ( $UrlData->appendPriceLast ) {
 						$appenders ++;
 						if ( preg_match( "/amount=$amount/i", $UrlData->url ) ) {
@@ -927,7 +937,7 @@ class ResursBankTest extends TestCase
 		if ( $this->ignoreBookingTests ) {
 			$this->markTestSkipped();
 		}
-		$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_CHECKOUT );
+		$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT );
 		$newReferenceId = $this->rb->getPreferredPaymentId();
 		$bookResult     = $this->doBookPayment( $newReferenceId, true, false, true );
 		if ( is_string( $bookResult ) && preg_match( "/iframe src/i", $bookResult ) ) {
@@ -967,7 +977,7 @@ class ResursBankTest extends TestCase
 	}
 
 	public function testCheckoutAsFromDocs() {
-		$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_CHECKOUT );
+		$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT );
 		$iframePaymentReference = $this->rb->getPreferredPaymentId( 30, "CREATE-" );
 		$this->rb->addOrderLine(
 			"HORSE",
@@ -1174,19 +1184,19 @@ class ResursBankTest extends TestCase
 				'digestParameters' => $parameterArray
 			);
 			if ( $callbackType == "ANNULMENT" ) {
-				$setCallbackType = ResursCallbackTypes::ANNULMENT;
+				$setCallbackType = RESURS_CALLBACK_TYPES::CALLBACK_TYPE_ANNULMENT;
 			}
 			if ( $callbackType == "AUTOMATIC_FRAUD_CONTROL" ) {
-				$setCallbackType = ResursCallbackTypes::AUTOMATIC_FRAUD_CONTROL;
+				$setCallbackType = RESURS_CALLBACK_TYPES::CALLBACK_TYPE_AUTOMATIC_FRAUD_CONTROL;
 			}
 			if ( $callbackType == "FINALIZATION" ) {
-				$setCallbackType = ResursCallbackTypes::FINALIZATION;
+				$setCallbackType = RESURS_CALLBACK_TYPES::CALLBACK_TYPE_FINALIZATION;
 			}
 			if ( $callbackType == "UNFREEZE" ) {
-				$setCallbackType = ResursCallbackTypes::UNFREEZE;
+				$setCallbackType = RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UNFREEZE;
 			}
 			if ( $callbackType == "UPDATE" ) {
-				$setCallbackType = ResursCallbackTypes::UPDATE;
+				$setCallbackType = RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UPDATE;
 			}
 			$renderArray = array();
 			if ( is_array( $parameterArray ) ) {
@@ -1299,10 +1309,10 @@ class ResursBankTest extends TestCase
 		$callbackArrayData = $this->renderCallbackData( true );
 		$this->rb->setValidateExternalCallbackUrl( $callbackArrayData[0][1] );
 		$Reachable = $this->rb->validateExternalAddress();
-		if ( $Reachable !== ResursCallbackReachability::IS_FULLY_REACHABLE ) {
-			$this->markTestIncomplete( "External address validation returned $Reachable instead of " . ResursCallbackReachability::IS_FULLY_REACHABLE . ".\nPlease check your callback url (" . $callbackArrayData[0][1] . ") so that is properly configured and reachable." );
+		if ( $Reachable !== RESURS_CALLBACK_REACHABILITY::IS_FULLY_REACHABLE ) {
+			$this->markTestIncomplete( "External address validation returned $Reachable instead of " . RESURS_CALLBACK_REACHABILITY::IS_FULLY_REACHABLE . ".\nPlease check your callback url (" . $callbackArrayData[0][1] . ") so that is properly configured and reachable." );
 		}
-		$this->assertTrue( $Reachable === ResursCallbackReachability::IS_FULLY_REACHABLE );
+		$this->assertTrue( $Reachable === RESURS_CALLBACK_REACHABILITY::IS_FULLY_REACHABLE );
 	}
 
 	/**
@@ -1340,7 +1350,7 @@ class ResursBankTest extends TestCase
 	public function testUnregisterEventCallbackViaRest() {
 		$this->rb->setRegisterCallbacksViaRest( true );
 
-		$this->assertTrue( $this->rb->unregisterEventCallback( ResursCallbackTypes::ANNULMENT ) );
+		$this->assertTrue( $this->rb->unregisterEventCallback( RESURS_CALLBACK_TYPES::CALLBACK_TYPE_ANNULMENT ) );
 	}
 
 	/**
@@ -1348,7 +1358,7 @@ class ResursBankTest extends TestCase
 	 */
 	public function testUnregisterEventCallbackViaSoap() {
 		$this->rb->setRegisterCallbacksViaRest( false );
-		$this->assertTrue( $this->rb->unregisterEventCallback( ResursCallbackTypes::ANNULMENT ) );
+		$this->assertTrue( $this->rb->unregisterEventCallback( RESURS_CALLBACK_TYPES::CALLBACK_TYPE_ANNULMENT ) );
 	}
 
 	/**
@@ -1361,7 +1371,8 @@ class ResursBankTest extends TestCase
 				$cResponse = $this->rb->setRegisterCallback( $callbackInfo[0], $callbackInfo[1], $callbackInfo[2] );
 			}
 		} catch ( \Exception $e ) {
-			$this->assertTrue( ! empty( $e->getMessage() ) );
+			$errorMessage = $e->getMessage();
+			$this->assertTrue( ! empty( $errorMessage ) );
 		}
 	}
 
@@ -1407,13 +1418,13 @@ class ResursBankTest extends TestCase
 	*/
 
 	function testSetCustomerNatural() {
-		$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_CHECKOUT );
+		$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT );
 		$ReturnedPayload = $this->rb->setBillingByGetAddress( $this->govIdNatural );
 		$this->assertEquals( $this->govIdNatural, $ReturnedPayload['customer']['governmentId'] );
 	}
 
 	function testSetCustomerLegal() {
-		$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_CHECKOUT );
+		$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT );
 		$ReturnedPayload = $this->rb->setBillingByGetAddress( $this->govIdLegalCivic, "LEGAL" );
 		$this->assertTrue( $ReturnedPayload['customer']['governmentId'] == $this->govIdLegalCivic && $ReturnedPayload['customer']['address']['fullName'] == $this->govIdLegalFullname );
 	}
@@ -1470,7 +1481,7 @@ class ResursBankTest extends TestCase
 	 */
 	function testCreatePaymentPayloadSimplified() {
 		try {
-			$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_SIMPLIFIED );
+			$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW );
 			$this->rb->setBillingByGetAddress( "198305147715" );
 			//$this->rb->setBillingAddress("Anders Andersson", "Anders", "Andersson", "Hamngatan 2", null, "Ingestans", "12345", "SE");
 			$this->rb->setCustomer( "198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL" );
@@ -1522,7 +1533,7 @@ class ResursBankTest extends TestCase
 	 */
 	function testCreatePaymentPayloadForcedSigningSimplified() {
 		try {
-			$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_SIMPLIFIED );
+			$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW );
 			$this->rb->setBillingByGetAddress( "198305147715" );
 			$this->rb->setCustomer( null, "0808080808", "0707070707", "test@test.com", "NATURAL" );
 			$this->addRandomOrderLine( "Art " . rand( 1024, 2048 ), "Beskrivning " . rand( 2048, 4096 ), "0.80", 25, null, 10 );
@@ -1548,7 +1559,7 @@ class ResursBankTest extends TestCase
 	}
 	function testCreatePaymentPayloadForcedSigningMultipleSimplified() {
 		try {
-			$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_SIMPLIFIED );
+			$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW );
 			$this->rb->setBillingByGetAddress( "198305147715" );
 			$this->rb->setCustomer( null, "0808080808", "0707070707", "test@test.com", "NATURAL" );
 			$this->addRandomOrderLine( "Art " . rand( 1024, 2048 ), "Beskrivning " . rand( 2048, 4096 ), "0.80", 25, null, 10 );
@@ -1582,7 +1593,7 @@ class ResursBankTest extends TestCase
 	}
 	function testCreatePaymentPayloadForcedSigningReUseMockFailSimplified() {
 		try {
-			$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_SIMPLIFIED );
+			$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW );
 			$this->rb->setBillingByGetAddress( "198305147715" );
 			$this->rb->setCustomer( null, "0808080808", "0707070707", "test@test.com", "NATURAL" );
 			$this->addRandomOrderLine( "Art " . rand( 1024, 2048 ), "Beskrivning " . rand( 2048, 4096 ), "0.80", 25, null, 10 );
@@ -1615,7 +1626,7 @@ class ResursBankTest extends TestCase
 		try {
 			///// card_new
 
-			$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_SIMPLIFIED );
+			$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW );
 			$this->rb->setBillingByGetAddress( "198305147715" );
 			$this->rb->setCustomer( null, "0808080808", "0707070707", "test@test.com", "NATURAL" );
 			$this->addRandomOrderLine( "Art " . rand( 1024, 2048 ), "Beskrivning " . rand( 2048, 4096 ), "0.80", 25, null, 10 );
@@ -1650,7 +1661,7 @@ class ResursBankTest extends TestCase
 	 */
 	function testCreatePaymentPayloadUseExecuteSimplified() {
 		try {
-			$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_SIMPLIFIED );
+			$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW );
 			$this->rb->setBillingByGetAddress( "198305147715" );
 			$this->rb->setCustomer( null, "0808080808", "0707070707", "test@test.com", "NATURAL" );
 			$this->addRandomOrderLine( "Art " . rand( 1024, 2048 ), "Beskrivning " . rand( 2048, 4096 ), "0.80", 25, null, 10 );
@@ -1681,7 +1692,7 @@ class ResursBankTest extends TestCase
 	 */
 	function testCreatePaymentPayloadUseExecuteResursCheckout() {
 		try {
-			$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_CHECKOUT );
+			$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT );
 			$this->rb->setBillingByGetAddress( "198305147715" );
 			$this->rb->setCustomer( null, "0808080808", "0707070707", "test@test.com", "NATURAL" );
 			$this->addRandomOrderLine( "Art " . rand( 1024, 2048 ), "Beskrivning " . rand( 2048, 4096 ), "0.80", 25, 'ORDER_LINE', 10 );
@@ -1719,7 +1730,7 @@ class ResursBankTest extends TestCase
 	}
 
 	private function generateOrderByClientChoice( $orderLines = 8, $quantity = 1, $minAmount = 1000, $maxAmount = 2000 ) {
-		$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_SIMPLIFIED );
+		$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW );
 		$this->rb->setBillingByGetAddress( "198305147715" );
 		$this->rb->setCustomer( "198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL" );
 		if ( $orderLines > 0 ) {
@@ -1771,7 +1782,7 @@ class ResursBankTest extends TestCase
 	function testAdditionalDebitResursCheckout() {
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
 		$this->rb->annulPayment( $paymentId );
-		$this->rb->setPreferredPaymentService( ResursMethodTypes::METHOD_CHECKOUT );
+		$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT );
 		$this->rb->addOrderLine( "myExtraOrderLine-1", "One orderline added with additionalDebitOfPayment", 100, 25 );
 		$this->rb->addOrderLine( "myExtraOrderLine-2", "One orderline added with additionalDebitOfPayment", 200, 25 );
 		$this->assertTrue( $this->rb->setAdditionalDebitOfPayment( $paymentId ) );
@@ -1803,7 +1814,9 @@ class ResursBankTest extends TestCase
 			$this->rb->addOrderLine( "myExtraOrderLine-2", "One orderline added with additionalDebitOfPayment", 200, 25, null, null, - 5 );
 			$this->rb->setAdditionalDebitOfPayment( $paymentId );
 		} catch ( \Exception $e ) {
-			$this->assertTrue( $e->getCode() == 500 );
+			// Exceptions that comes from this part of the system does not seem to generate any exception code.
+			echo $e->getCode();
+			$this->assertTrue( $e->getCode() == 500 || $e->getCode() == \RESURS_EXCEPTIONS::UNKOWN_SOAP_EXCEPTION_CODE_ZERO);
 		}
 	}
 
@@ -1915,7 +1928,7 @@ class ResursBankTest extends TestCase
 
 	function testAfterShopSanitizer() {
 		$paymentId         = $this->getPaymentIdFromOrderByClientChoice( 2 );
-		$sanitizedShopSpec = $this->rb->sanitizeAfterShopSpec( $paymentId, ResursAfterShopRenderTypes::FINALIZE );
+		$sanitizedShopSpec = $this->rb->sanitizeAfterShopSpec( $paymentId, RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_FINALIZE );
 		$this->assertCount( 2, $sanitizedShopSpec );
 	}
 
@@ -2225,7 +2238,7 @@ class ResursBankTest extends TestCase
 		$this->rb->paymentAnnul( $paymentId );
 
 		//$this->resetConnection();
-		$remainArray = $this->rb->sanitizeAfterShopSpec( $paymentId, ( ResursAfterShopRenderTypes::ANNUL + ResursAfterShopRenderTypes::CREDIT ) );
+		$remainArray = $this->rb->sanitizeAfterShopSpec( $paymentId, ( RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_ANNUL + RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_CREDIT ) );
 		$this->assertCount( 2, $remainArray );
 	}
 
@@ -2260,6 +2273,7 @@ class ResursBankTest extends TestCase
 		$paymentSpecCount = $this->rb->getPaymentSpecCount( $paymentId );
 		$this->assertTrue( $paymentSpecCount['AUTHORIZE'] == 4 && $paymentSpecCount['DEBIT'] == 2 && $paymentSpecCount['CREDIT'] == 2 && $paymentSpecCount['ANNUL'] == 2 );
 	}
+
 	function testAfterShopFaultyDebitAnnulOldMerge() {
 		$this->rb->setFlag("MERGEBYSTATUS_DEPRECATED_METHOD");
 		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
@@ -2362,7 +2376,7 @@ class ResursBankTest extends TestCase
 	}
 
 	public function testHostedCountryCode() {
-		$this->rb->setPreferredPaymentFlowService(\Resursbank\RBEcomPHP\RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW);
+		$this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW);
 		$this->rb->setBillingAddress(
 			"Given Name",
 			"Given",
