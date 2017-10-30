@@ -2800,18 +2800,29 @@ class ResursBank {
 	 * @since 1.0.2
 	 * @since 1.1.2
 	 */
-	public function setCountry( $Country = ResursCountry::COUNTRY_UNSET ) {
-		if ( $Country === ResursCountry::COUNTRY_DK ) {
+	public function setCountry( $Country = RESURS_COUNTRY::COUNTRY_UNSET ) {
+		if ( $Country === RESURS_COUNTRY::COUNTRY_DK ) {
 			$this->envCountry = "DK";
-		} else if ( $Country === ResursCountry::COUNTRY_NO ) {
+		} else if ( $Country === RESURS_COUNTRY::COUNTRY_NO ) {
 			$this->envCountry = "NO";
-		} else if ( $Country === ResursCountry::COUNTRY_FI ) {
+		} else if ( $Country === RESURS_COUNTRY::COUNTRY_FI ) {
 			$this->envCountry = "FI";
-		} else if ( $Country === ResursCountry::COUNTRY_SE ) {
+		} else if ( $Country === RESURS_COUNTRY::COUNTRY_SE ) {
 			$this->envCountry = "SE";
 		} else {
 			$this->envCountry = null;
 		}
+		return $this->envCountry;
+	}
+
+	/**
+	 * Returns current set target country
+	 * @return string
+	 * @since 1.0.26
+	 * @since 1.1.26
+	 * @since 1.2.0
+	 */
+	public function getCountry() {
 		return $this->envCountry;
 	}
 
@@ -2822,13 +2833,13 @@ class ResursBank {
 	 */
 	public function setCountryByCountryCode( $countryCodeString = "" ) {
 		if ( strtolower( $countryCodeString ) == "dk" ) {
-			$this->setCountry( ResursCountry::COUNTRY_DK );
+			$this->setCountry( RESURS_COUNTRY::COUNTRY_DK );
 		} else if ( strtolower( $countryCodeString ) == "no" ) {
-			$this->setCountry( ResursCountry::COUNTRY_NO );
+			$this->setCountry( RESURS_COUNTRY::COUNTRY_NO );
 		} else if ( strtolower( $countryCodeString ) == "fi" ) {
-			$this->setCountry( ResursCountry::COUNTRY_FI );
+			$this->setCountry( RESURS_COUNTRY::COUNTRY_FI );
 		} else {
-			$this->setCountry( ResursCountry::COUNTRY_SE );
+			$this->setCountry( RESURS_COUNTRY::COUNTRY_SE );
 		}
 	}
 
@@ -3151,16 +3162,16 @@ class ResursBank {
 			$this->setDefaultUnitMeasure();
 		}
 		if ( ! $this->enforceService ) {
-			$this->setPreferredPaymentService( ResursMethodTypes::METHOD_SIMPLIFIED );
+			$this->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW );
 		}
-		if ( $this->enforceService === ResursMethodTypes::METHOD_CHECKOUT ) {
+		if ( $this->enforceService === RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT ) {
 			if ( empty( $payment_id_or_method ) && empty($this->preferredId)) {
-				throw new \Exception( "A payment method or payment id must be defined", \ResursExceptions::CREATEPAYMENT_NO_ID_SET );
+				throw new \Exception( "A payment method or payment id must be defined", \RESURS_EXCEPTIONS::CREATEPAYMENT_NO_ID_SET );
 			}
 			$payment_id_or_method = $this->preferredId;
 		}
 		if ( ! count( $this->Payload ) ) {
-			throw new \Exception( "No payload are set for this payment", \ResursExceptions::BOOKPAYMENT_NO_BOOKDATA );
+			throw new \Exception( "No payload are set for this payment", \RESURS_EXCEPTIONS::BOOKPAYMENT_NO_BOOKDATA );
 		}
 
 		// Obsolete way to handle multidimensional specrows
@@ -3183,24 +3194,24 @@ class ResursBank {
 			$this->Payload['orderLines'] = $this->SpecLines;
 			$this->renderPaymentSpec();
 		}
-		if ( $this->enforceService === ResursMethodTypes::METHOD_HOSTED || $this->enforceService === ResursMethodTypes::METHOD_SIMPLIFIED ) {
+		if ( $this->enforceService === RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW || $this->enforceService === RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW ) {
 			$paymentDataPayload ['paymentData'] = array(
 				'paymentMethodId'   => $payment_id_or_method,
 				'preferredId'       => $this->getPreferredPaymentId(),
 				'customerIpAddress' => $this->getCustomerIp()
 			);
-			if ( $this->enforceService === ResursMethodTypes::METHOD_SIMPLIFIED ) {
+			if ( $this->enforceService === RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW ) {
 				if ( ! isset( $this->Payload['storeId'] ) && ! empty( $this->storeId ) ) {
 					$this->Payload['storeId'] = $this->storeId;
 				}
 			}
 			$this->handlePayload( $paymentDataPayload );
 		}
-		if ( ( $this->enforceService == ResursMethodTypes::METHOD_CHECKOUT || $this->enforceService == ResursMethodTypes::METHOD_HOSTED ) ) {
+		if ( ( $this->enforceService == RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT || $this->enforceService == RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW ) ) {
 			// Convert signing to checkouturls if exists (not receommended as failurl might not always be the backurl)
 			// However, those variables will only be replaced in the correct payload if they are not already there.
 			if ( isset( $this->Payload['signing'] ) ) {
-				if ( $this->enforceService == ResursMethodTypes::METHOD_HOSTED ) {
+				if ( $this->enforceService == RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW ) {
 					if ( isset( $this->Payload['signing']['forceSigning'] ) ) {
 						$this->Payload['forceSigning'] = $this->Payload['signing']['forceSigning'];
 					}
@@ -3220,7 +3231,7 @@ class ResursBank {
 				unset( $this->Payload['signing'] );
 			}
 			// Rules for customer only applies to checkout. As this also involves the hosted flow (see above) this must only specifically occur on the checkout
-			if ( $this->enforceService == ResursMethodTypes::METHOD_CHECKOUT ) {
+			if ( $this->enforceService == RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT ) {
 				if ( ! isset( $this->Payload['storeId'] ) && ! empty( $this->storeId ) ) {
 					$this->Payload['storeId'] = $this->storeId;
 				}
@@ -3415,7 +3426,14 @@ class ResursBank {
 		if ( ! empty( $trimAddress ) ) {
 			$ReturnAddress['addressRow2'] = $addressRow2;
 		}
-		if ( $this->enforceService === ResursMethodTypes::METHOD_SIMPLIFIED ) {
+		$targetCountry = $this->getCountry();
+		if (empty($country) && !empty($targetCountry)) {
+			$country = $targetCountry;
+		} else if (!empty($country) && empty($targetCountry)) {
+			// Giving internal country data more influence on this method
+			$this->setCountryByCountryCode($targetCountry);
+		}
+		if ( $this->enforceService === RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW ) {
 			$ReturnAddress['country'] = $country;
 		} else {
 			$ReturnAddress['countryCode'] = $country;
@@ -3462,6 +3480,13 @@ class ResursBank {
 				isset( $addressData->country ) && ! empty( $addressData->country ) ? $addressData->country : ""
 			) );
 		} else if ( is_array( $addressData ) ) {
+			// If there is an inbound countryCode here, there is a consideration of hosted flow.
+			// In this case we need to normalize the address data first as renderAddress() are rerunning also during setBillingAddress()-process.
+			// If we don't do this, EComPHP will drop the countryCode and leave the payload empty  - see ECOMPHP-168.
+			if (isset($addressData['countryCode']) && !empty($addressData['countryCode'])) {
+				$addressData['country'] = $addressData['countryCode'];
+				unset($addressData['countryCode']);
+			}
 			$this->setPayloadArray( $addressKey, $this->renderAddress(
 				isset( $addressData['fullName'] ) && ! empty( $addressData['fullName'] ) ? $addressData['fullName'] : "",
 				isset( $addressData['firstName'] ) && ! empty( $addressData['firstName'] ) ? $addressData['firstName'] : "",
@@ -3620,7 +3645,7 @@ class ResursBank {
 	 * @since 1.1.2
 	 */
 	private function handlePayload( $userDefinedPayload = array() ) {
-		$myFlow = $this->getPreferredPaymentService();
+		$myFlow = $this->getPreferredPaymentFlowService();
 		if ( is_array( $userDefinedPayload ) && count( $userDefinedPayload ) ) {
 			foreach ( $userDefinedPayload as $payloadKey => $payloadContent ) {
 				if ( ! isset( $this->Payload[ $payloadKey ] ) ) {
@@ -3639,14 +3664,14 @@ class ResursBank {
 		// Address and deliveryAddress should move to the correct location
 		if ( isset( $this->Payload['address'] ) ) {
 			$this->Payload['customer']['address'] = $this->Payload['address'];
-			if ( $myFlow == ResursMethodTypes::METHOD_HOSTED && isset( $this->Payload['customer']['address']['country'] ) ) {
+			if ( $myFlow == RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW && isset( $this->Payload['customer']['address']['country'] ) ) {
 				$this->Payload['customer']['address']['countryCode'] = $this->Payload['customer']['address']['country'];
 			}
 			unset( $this->Payload['address'] );
 		}
 		if ( isset( $this->Payload['deliveryAddress'] ) ) {
 			$this->Payload['customer']['deliveryAddress'] = $this->Payload['deliveryAddress'];
-			if ( $myFlow == ResursMethodTypes::METHOD_HOSTED && isset( $this->Payload['customer']['deliveryAddress']['country'] ) ) {
+			if ( $myFlow == RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW && isset( $this->Payload['customer']['deliveryAddress']['country'] ) ) {
 				$this->Payload['customer']['deliveryAddress']['countryCode'] = $this->Payload['customer']['deliveryAddress']['country'];
 			}
 			unset( $this->Payload['deliveryAddress'] );
