@@ -2359,7 +2359,7 @@ class ResursBankTest extends TestCase
 		$lastTag = array_pop($tagVersions);
 		$notCurrent = $this->rb->getIsCurrent($lastTag);
 		$perfect = $this->rb->getIsCurrent($currentTag);
-		$this->assertTrue($notCurrent === false && $perfect === true);cd
+		$this->assertTrue($notCurrent === false && $perfect === true);
 	}
 
 	public function testBasicOrderStatusFinalizationEvent() {
@@ -2370,7 +2370,7 @@ class ResursBankTest extends TestCase
 	}
 
 	public function testHostedCountryCode() {
-		$this->rb->setPreferredPaymentFlowService(\Resursbank\RBEcomPHP\RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW);
+		$this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW);
 		$this->rb->setBillingAddress(
 			"Given Name",
 			"Given",
