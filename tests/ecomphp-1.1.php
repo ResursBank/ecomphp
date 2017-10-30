@@ -1815,7 +1815,6 @@ class ResursBankTest extends TestCase
 			$this->rb->setAdditionalDebitOfPayment( $paymentId );
 		} catch ( \Exception $e ) {
 			// Exceptions that comes from this part of the system does not seem to generate any exception code.
-			echo $e->getCode();
 			$this->assertTrue( $e->getCode() == 500 || $e->getCode() == \RESURS_EXCEPTIONS::UNKOWN_SOAP_EXCEPTION_CODE_ZERO);
 		}
 	}
@@ -2376,7 +2375,7 @@ class ResursBankTest extends TestCase
 	}
 
 	public function testHostedCountryCode() {
-		$this->rb->setPreferredPaymentFlowService(\Resursbank\RBEcomPHP\RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW);
+		$this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW);
 		$this->rb->setBillingAddress(
 			"Given Name",
 			"Given",
