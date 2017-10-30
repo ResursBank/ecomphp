@@ -254,6 +254,8 @@ abstract class ResursMethodTypes extends RESURS_FLOW_TYPES {
 	const METHOD_UNDEFINED = 0;
 	/** @deprecated Use FLOW_SIMPLIFIED_FLOW */
 	const METHOD_SIMPLIFIED = 1;
+	/** @deprecated Use FLOW_SIMPLIFIED_FLOW */
+	const FLOW_SIMPLIFIED_SHOPFLOW = 1;
 	/** @deprecated Use FLOW_HOSTED_FLOW */
 	const METHOD_HOSTED = 2;
 

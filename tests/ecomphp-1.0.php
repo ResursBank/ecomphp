@@ -2347,7 +2347,30 @@ class ResursBankTest extends TestCase
 		$lastTag = array_pop($tagVersions);
 		$notCurrent = $this->rb->getIsCurrent($lastTag);
 		$perfect = $this->rb->getIsCurrent($currentTag);
-		echo "TooOld $lastTag = $notCurrent, is perfect $currentTag = $perfect\n";
 		$this->assertTrue($notCurrent === false && $perfect === true);
+	}
+
+	public function testBasicOrderStatusFinalizationEvent() {
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1 );
+		$this->rb->paymentFinalize( $paymentId );
+		// Finalizing test
+		$this->assertTrue($this->rb->getOrderStatusByPayment($paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_FINALIZATION) === RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED);
+	}
+
+	public function testHostedCountryCode() {
+		$this->rb->setPreferredPaymentFlowService(\Resursbank\RBEcomPHP\RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW);
+		$this->rb->setBillingAddress(
+			"Given Name",
+			"Given",
+			"Name",
+			"Address row 1",
+			"",
+			"Location",
+			"12345",
+			"SE"
+		);
+		$this->addRandomOrderLine();
+		$payloadResult = $this->rb->getPayload();
+		$this->assertTrue(isset($payloadResult['customer']['address']['countryCode']) && $payloadResult['customer']['address']['countryCode'] == "SE");
 	}
 }
