@@ -2059,13 +2059,14 @@ class ResursBank {
 	}
 
 	/**
-	 * Enforce another method than the simplified flow
+	 * Enforce another flow than the simplified flow
 	 *
 	 * @param int $flowType
 	 *
 	 * @since 1.0.0
 	 * @since 1.1.0
-	 * @deprecated Use setPreferredPaymentFlowService
+	 * @deprecated 1.0.26 Use setPreferredPaymentFlowService
+	 * @deprecated 1.1.26 Use setPreferredPaymentFlowService
 	 */
 	public function setPreferredPaymentService( $flowType = RESURS_FLOW_TYPES::FLOW_NOT_SET ) {
 		$this->setPreferredPaymentFlowService($flowType);
@@ -2076,7 +2077,8 @@ class ResursBank {
 	 * @return RESURS_FLOW_TYPES
 	 * @since 1.0.0
 	 * @since 1.1.0
-	 * @deprecated getPreferredPaymentFlowService
+	 * @deprecated 1.0.26 Use getPreferredPaymentFlowService
+	 * @deprecated 1.1.26 Use getPreferredPaymentFlowService
 	 */
 	public function getPreferredPaymentService() {
 		return $this->getPreferredPaymentFlowService();
@@ -2107,8 +2109,11 @@ class ResursBank {
 	}
 
 	/**
-	 *
+	 * Return the current set by user preferred payment flow service
 	 * @return RESURS_FLOW_TYPES
+	 * @since 1.0.26
+	 * @since 1.1.26
+	 * @since 1.2.0
 	 */
 	public function getPreferredPaymentFlowService() {
 		return $this->enforceService;
