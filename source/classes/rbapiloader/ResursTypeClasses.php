@@ -119,7 +119,21 @@ abstract class RESURS_PAYMENT_STATUS_RETURNCODES {
 	const PAYMENT_REFUND = 50;      // Fully credited
 }
 
+abstract class RESURS_ENVIRONMENTS {
+	const ENVIRONMENT_PRODUCTION = 0;
+	const ENVIRONMENT_TEST = 1;
+	const ENVIRONMENT_NOT_SET = 2;
+}
+
 ///
+
+/**
+ * Class ResursEnvironments
+ * @since 1.0.0
+ * @deprecated Use RESURS_ENVIRONMENTS
+ */
+abstract class ResursEnvironments extends RESURS_ENVIRONMENTS {
+}
 
 /**
  * Class ResursCallbackReachability
@@ -254,8 +268,6 @@ abstract class ResursMethodTypes extends RESURS_FLOW_TYPES {
 	const METHOD_UNDEFINED = 0;
 	/** @deprecated Use FLOW_SIMPLIFIED_FLOW */
 	const METHOD_SIMPLIFIED = 1;
-	/** @deprecated Use FLOW_SIMPLIFIED_FLOW */
-	const FLOW_SIMPLIFIED_SHOPFLOW = 1;
 	/** @deprecated Use FLOW_HOSTED_FLOW */
 	const METHOD_HOSTED = 2;
 
