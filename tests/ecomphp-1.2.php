@@ -1729,10 +1729,10 @@ class ResursBankTest extends TestCase
 		}
 	}
 
-	private function generateOrderByClientChoice( $orderLines = 8, $quantity = 1, $minAmount = 1000, $maxAmount = 2000 ) {
+	private function generateOrderByClientChoice( $orderLines = 8, $quantity = 1, $minAmount = 1000, $maxAmount = 2000, $govId = '198305147715' ) {
 		$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW );
-		$this->rb->setBillingByGetAddress( "198305147715" );
-		$this->rb->setCustomer( "198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL" );
+		$this->rb->setBillingByGetAddress( $govId );
+		$this->rb->setCustomer( $govId, "0808080808", "0707070707", "test@test.com", "NATURAL" );
 		if ( $orderLines > 0 ) {
 			while ( $orderLines -- > 0 ) {
 				$this->addRandomOrderLine( "Art " . rand( 1024, 2048 ), "Beskrivning " . rand( 2048, 4096 ), rand( $minAmount, $maxAmount ), 25, null, $quantity );
@@ -1744,13 +1744,16 @@ class ResursBankTest extends TestCase
 		} catch ( \Exception $e ) {
 			echo $e->getMessage();
 		}
-		if ( $Payment->bookPaymentStatus == "BOOKED" ) {
-			return $Payment;
-		}
+
+		//if ( $Payment->bookPaymentStatus == "BOOKED" ) {
+		//	return $Payment;
+		//}
+		// Always return instead of only booked so we can test other than BOOEKD
+		return $Payment;
 	}
 
-	private function getPaymentIdFromOrderByClientChoice( $orderLines = 8, $quantity = 1, $minAmount = 1000, $maxAmount = 2000 ) {
-		$Payment = $this->generateOrderByClientChoice( $orderLines, $quantity, $minAmount, $maxAmount );
+	private function getPaymentIdFromOrderByClientChoice( $orderLines = 8, $quantity = 1, $minAmount = 1000, $maxAmount = 2000, $govId = '198305147715' ) {
+		$Payment = $this->generateOrderByClientChoice( $orderLines, $quantity, $minAmount, $maxAmount, $govId );
 		if (isset($Payment)) {
 			return $Payment->paymentId;
 		}
@@ -2367,13 +2370,6 @@ class ResursBankTest extends TestCase
 		$this->assertTrue($notCurrent === false && $perfect === true);
 	}
 
-	public function testBasicOrderStatusFinalizationEvent() {
-		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1 );
-		$this->rb->paymentFinalize( $paymentId );
-		// Finalizing test
-		$this->assertTrue($this->rb->getOrderStatusByPayment($paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_FINALIZATION) === RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED);
-	}
-
 	public function testHostedCountryCode() {
 		$this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW);
 		$this->rb->setBillingAddress(
@@ -2393,5 +2389,33 @@ class ResursBankTest extends TestCase
 
 	public function testOldEnvironmentClass() {
 		$this->assertTrue(\Resursbank\RBEcomPHP\ResursEnvironments::ENVIRONMENT_TEST === 1);
+	}
+
+	public function testBasicOrderStatusFinalizationEvent() {
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1, 1, 1000, 2000 );
+		$this->rb->paymentFinalize( $paymentId );
+		$this->assertTrue($this->rb->getOrderStatusByPayment($paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_FINALIZATION) === RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED);
+	}
+	public function testBasicOrderStatusAnnulEvent() {
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1 );
+		$this->rb->paymentAnnul( $paymentId );
+		$this->assertTrue($this->rb->getOrderStatusByPayment($paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_ANNULMENT) === RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_ANNULLED);
+	}
+	public function testBookedCallbackByDelayedCustomer() {
+		// Unfreeze after 10m
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1, 1, 1000, 2000, '198101010000' );
+		$this->assertTrue($this->rb->getOrderStatusByPayment($paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_BOOKED) == RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING);
+	}
+	public function testUnfreezeCallbackByHappyFlow() {
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1, 1, 1000, 2000, '198305147715' );
+		$this->assertTrue($this->rb->getOrderStatusByPayment($paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UNFREEZE) == RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PROCESSING);
+	}
+	public function testAutoFraudCallbackByHappyFlow() {
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1, 1, 1000, 2000, '198305147715' );
+		$this->assertTrue($this->rb->getOrderStatusByPayment($paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_AUTOMATIC_FRAUD_CONTROL, 'THAWED') == RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PROCESSING);
+	}
+	public function testAutoFraudCallbackByFrozenFlow() {
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1, 1, 1000, 2000, '198209123705' );
+		$this->assertTrue($this->rb->getOrderStatusByPayment($paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_AUTOMATIC_FRAUD_CONTROL, 'FROZEN') == RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING);
 	}
 }
