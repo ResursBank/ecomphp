@@ -4748,7 +4748,7 @@ class ResursBank {
 			case RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_CREDITED;
 				return "credit";
 			default:
-				return "not_set";
+				return "";
 		}
 	}
 }
