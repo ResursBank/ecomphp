@@ -27,7 +27,6 @@ if ( ! defined( 'RB_API_PATH' ) ) {
 require_once(RB_API_PATH . '/thirdparty/network.php');
 require_once(RB_API_PATH . '/thirdparty/crypto.php');
 require_once(RB_API_PATH . '/rbapiloader/ResursTypeClasses.php');
-require_once(RB_API_PATH . '/rbapiloader/ResursEnvironments.php');
 require_once(RB_API_PATH . '/rbapiloader/ResursException.php');
 
 if (file_exists(__DIR__ . "/../../vendor/autoload.php")) {
@@ -225,7 +224,7 @@ class ResursBank {
 	/** @var string The version of this gateway */
 	private $version = "1.1.26";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20171030";
+	private $lastUpdate = "20171031";
 	/** @var string URL to git storage */
 	private $gitUrl = "https://bitbucket.org/resursbankplugins/resurs-ecomphp";
 	/** @var string This. */
@@ -7177,15 +7176,16 @@ class ResursBank {
 				return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_CANCELLED;
 			case RESURS_CALLBACK_TYPES::CALLBACK_TYPE_AUTOMATIC_FRAUD_CONTROL:
 				if (is_string($callbackEventDataArrayOrString)) {
+					// Thawed means not frozen
 					if ( $callbackEventDataArrayOrString == "THAWED" ) {
 						return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PROCESSING;
-					} else {
-						return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING;
 					}
 				}
+				return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING;
 				break;
 			case RESURS_CALLBACK_TYPES::CALLBACK_TYPE_BOOKED:
-				if ( $paymentData->frozen ) {
+				// Frozen set, but not true OR frozen not set at all - Go processing
+				if ( ( isset( $paymentData->frozen ) && ! $paymentData->frozen ) || ! isset( $paymentData->frozen ) ) {
 					return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PROCESSING;
 				} else {
 					return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING;
@@ -7205,5 +7205,30 @@ class ResursBank {
 		$returnThisAfterAll = $this->getOrderStatusByPaymentStatuses($paymentData);
 
 		return $returnThisAfterAll;
+	}
+
+	/**
+	 * @param $returnCode
+	 *
+	 * @return string
+	 * @since 1.0.26
+	 * @since 1.1.26
+	 * @since 1.2.0
+	 */
+	public function getOrderStatusStringByReturnCode($returnCode = RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET) {
+		switch ($returnCode) {
+			case RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING:
+				return "pending";
+			case RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PROCESSING;
+				return "processing";
+			case RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED;
+				return "completed";
+			case RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_CANCELLED;
+				return "annul";
+			case RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_REFUND;
+				return "credit";
+			default:
+				return "not_set";
+		}
 	}
 }
