@@ -4647,17 +4647,18 @@ class ResursBank {
 	 * @since 1.1.26
 	 * @since 1.2.0
 	 */
-	private function getOrderStatusByPaymentStatuses($paymentData = array()) {
+	private function getOrderStatusByPaymentStatuses( $paymentData = array() ) {
 		$resursTotalAmount = $paymentData->totalAmount;
-		if ($this->canDebit($paymentData) && $this->getIsDebited($paymentData) && $resursTotalAmount > 0) {
+		if ( ! $this->canDebit( $paymentData ) && $this->getIsDebited( $paymentData ) && $resursTotalAmount > 0 ) {
 			return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED;
 		}
-		if ($this->getIsAnnulled($paymentData) && $this->getIsCredited($paymentData) && $resursTotalAmount == 0) {
+		if ( $this->getIsAnnulled( $paymentData ) && ! $this->getIsCredited( $paymentData ) && $resursTotalAmount == 0 ) {
 			return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_CANCELLED;
 		}
-		if ($this->getIsCredited($paymentData) && $resursTotalAmount == 0) {
+		if ( $this->getIsCredited( $paymentData ) && $resursTotalAmount == 0 ) {
 			return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_REFUND;
 		}
+
 		// Return generic
 		return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET;
 	}
