@@ -7141,10 +7141,10 @@ class ResursBank {
 			return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED;
 		}
 		if ( $this->getIsAnnulled( $paymentData ) && ! $this->getIsCredited( $paymentData ) && $resursTotalAmount == 0 ) {
-			return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_CANCELLED;
+			return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_ANNULLED;
 		}
 		if ( $this->getIsCredited( $paymentData ) && $resursTotalAmount == 0 ) {
-			return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_REFUND;
+			return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_CREDITED;
 		}
 
 		// Return generic
@@ -7163,32 +7163,34 @@ class ResursBank {
 	 * @since 1.1.26
 	 * @since 1.2.0
 	 */
-	public function getOrderStatusByPayment($paymentIdOrPaymentObject = '', $byCallbackEvent = RESURS_CALLBACK_TYPES::CALLBACK_TYPE_NOT_SET, $callbackEventDataArrayOrString = array()) {
+	public function getOrderStatusByPayment( $paymentIdOrPaymentObject = '', $byCallbackEvent = RESURS_CALLBACK_TYPES::CALLBACK_TYPE_NOT_SET, $callbackEventDataArrayOrString = array() ) {
 
-		if (is_string($paymentIdOrPaymentObject)) {
+		if ( is_string( $paymentIdOrPaymentObject ) ) {
 			$paymentData = $this->getPayment( $paymentIdOrPaymentObject );
-		} else if (is_object($paymentIdOrPaymentObject)) {
+		} else if ( is_object( $paymentIdOrPaymentObject ) ) {
 			$paymentData = $paymentIdOrPaymentObject;
 		} else {
-			throw new \Exception("Payment data object or id is not valid", 500);
+			throw new \Exception( "Payment data object or id is not valid", 500 );
 		}
 
-		// Analyzed during a callback event, which have higher priority than a regular control
+		// If nothing else suits us, this will be used
+		$preAnalyzePayment = $this->getOrderStatusByPaymentStatuses( $paymentData );
 
+		// Analyzed during a callback event, which have higher priority than a regular control
 		switch ( $byCallbackEvent ) {
 			case RESURS_CALLBACK_TYPES::CALLBACK_TYPE_NOT_SET:
 				break;
 			case RESURS_CALLBACK_TYPES::CALLBACK_TYPE_ANNULMENT:
-				return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_CANCELLED;
+				return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_ANNULLED;
 			case RESURS_CALLBACK_TYPES::CALLBACK_TYPE_AUTOMATIC_FRAUD_CONTROL:
-				if (is_string($callbackEventDataArrayOrString)) {
+				if ( is_string( $callbackEventDataArrayOrString ) ) {
 					// Thawed means not frozen
 					if ( $callbackEventDataArrayOrString == "THAWED" ) {
 						return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PROCESSING;
 					}
 				}
+
 				return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING;
-				break;
 			case RESURS_CALLBACK_TYPES::CALLBACK_TYPE_BOOKED:
 				// Frozen set, but not true OR frozen not set at all - Go processing
 				if ( ( isset( $paymentData->frozen ) && ! $paymentData->frozen ) || ! isset( $paymentData->frozen ) ) {
@@ -7202,13 +7204,13 @@ class ResursBank {
 			case RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UNFREEZE:
 				return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PROCESSING;
 			case RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UPDATE:
-				return $this->getOrderStatusByPaymentStatuses($paymentData);
+				return $this->getOrderStatusByPaymentStatuses( $paymentData );
 			default:    // RESURS_CALLBACK_TYPES::CALLBACK_TYPE_NOT_SET
 				break;
 		}
 
 		// case RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UPDATE
-		$returnThisAfterAll = $this->getOrderStatusByPaymentStatuses($paymentData);
+		$returnThisAfterAll = $preAnalyzePayment;
 
 		return $returnThisAfterAll;
 	}
@@ -7229,9 +7231,9 @@ class ResursBank {
 				return "processing";
 			case RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED;
 				return "completed";
-			case RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_CANCELLED;
+			case RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_ANNULLED;
 				return "annul";
-			case RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_REFUND;
+			case RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_CREDITED;
 				return "credit";
 			default:
 				return "not_set";
