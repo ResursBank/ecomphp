@@ -2390,4 +2390,8 @@ class ResursBankTest extends TestCase
 		$payloadResult = $this->rb->getPayload();
 		$this->assertTrue(isset($payloadResult['customer']['address']['countryCode']) && $payloadResult['customer']['address']['countryCode'] == "SE");
 	}
+
+	public function testOldEnvironmentClass() {
+		$this->assertTrue(\Resursbank\RBEcomPHP\ResursEnvironments::ENVIRONMENT_TEST === 1);
+	}
 }

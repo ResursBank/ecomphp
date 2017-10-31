@@ -121,7 +121,21 @@ abstract class RESURS_PAYMENT_STATUS_RETURNCODES {
 	const PAYMENT_REFUND = 50;      // Fully credited
 }
 
+abstract class RESURS_ENVIRONMENTS {
+	const ENVIRONMENT_PRODUCTION = 0;
+	const ENVIRONMENT_TEST = 1;
+	const ENVIRONMENT_NOT_SET = 2;
+}
+
 ///
+
+/**
+ * Class ResursEnvironments
+ * @since 1.0.0
+ * @deprecated Use RESURS_ENVIRONMENTS
+ */
+abstract class ResursEnvironments extends RESURS_ENVIRONMENTS {
+}
 
 /**
  * Class ResursCallbackReachability
