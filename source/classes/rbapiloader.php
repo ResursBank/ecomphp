@@ -21,20 +21,15 @@ namespace Resursbank\RBEcomPHP;
 if ( ! defined( 'RB_API_PATH' ) ) {
 	define( 'RB_API_PATH', __DIR__ );
 }
-require_once(RB_API_PATH . '/thirdparty/network.php');
-require_once(RB_API_PATH . '/thirdparty/crypto.php');
 require_once(RB_API_PATH . '/rbapiloader/ResursTypeClasses.php');
 require_once(RB_API_PATH . '/rbapiloader/ResursException.php');
 
 if (file_exists(__DIR__ . "/../../vendor/autoload.php")) {
 	require_once(__DIR__ . '/../../vendor/autoload.php');
 }
-
-//use Resursbank\RBEcomPHP\Tornevall_cURL;
-//use Resursbank\RBEcomPHP\TorneLIB_Network;
-//use Resursbank\RBEcomPHP\TorneLIB_Crypto;
-
-use Resursbank\RBEcomPHP\RESURS_FLOW_TYPES;
+use \TorneLIB\TorneLIB_Crypto;
+use \TorneLIB\TorneLIB_Network;
+use \TorneLIB\Tornevall_cURL;
 use Resursbank\RBEcomPHP\CURL_POST_AS;
 
 /**
