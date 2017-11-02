@@ -11,19 +11,24 @@
  *
  */
 
-require_once('../source/classes/rbapiloader.php');
-
-use PHPUnit\Framework\TestCase;
+if (file_exists(__DIR__ . "/../vendor/autoload.php")) {
+	require_once(__DIR__ . '/../vendor/autoload.php');
+} else {
+	require_once('../source/classes/rbapiloader.php');
+}
 use \Resursbank\RBEcomPHP\ResursBank;
 use \Resursbank\RBEcomPHP\RESURS_CALLBACK_TYPES;
 use \Resursbank\RBEcomPHP\RESURS_PAYMENT_STATUS_RETURNCODES;
 use \Resursbank\RBEcomPHP\RESURS_FLOW_TYPES;
 use \Resursbank\RBEcomPHP\RESURS_CALLBACK_REACHABILITY;
 use \Resursbank\RBEcomPHP\RESURS_AFTERSHOP_RENDER_TYPES;
+
+// Split library section - Set up the correct curl- and network pointers here depending on release version
 use \Resursbank\RBEcomPHP\Tornevall_cURL;
 use \Resursbank\RBEcomPHP\TorneLIB_Network;
 
 ///// ADD ALWAYS SECTION
+use PHPUnit\Framework\TestCase;
 
 // Automatically set to test the pushCustomerUserAgent
 if (!isset($_SERVER['HTTP_USER_AGENT'])) {
