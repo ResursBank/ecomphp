@@ -111,7 +111,7 @@ class ResursBank {
 	/** @var string The version of this gateway */
 	private $version = "1.2.0";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20171031";
+	private $lastUpdate = "20171102";
 	/** @var string URL to git storage */
 	private $gitUrl = "https://bitbucket.org/resursbankplugins/resurs-ecomphp";
 	/** @var string This. */
@@ -1386,8 +1386,10 @@ class ResursBank {
 			} catch (\Exception $serviceRequestException) {
 				// Try to fetch previous exception (This is what we actually want)
 				$previousException = $serviceRequestException->getPrevious();
-				$previousExceptionMessage = $previousException->getMessage();
-				$previousExceptionCode = $previousException->getCode();
+				if ( !empty($previousException)) {
+					$previousExceptionMessage = $previousException->getMessage();
+					$previousExceptionCode    = $previousException->getCode();
+				}
 				if (!empty($previousExceptionMessage)) {
 					$exceptionMessage = $previousExceptionMessage;
 					$exceptionCode = $previousExceptionCode;
@@ -1408,7 +1410,7 @@ class ResursBank {
 					$exceptionCode = \RESURS_EXCEPTIONS::UNKOWN_SOAP_EXCEPTION_CODE_ZERO;
 				}
 				// Cast internal soap errors into a new, since the exception code is lost
-				throw new \Exception( $exceptionMessage, $exceptionCode );
+				throw new \Exception( $exceptionMessage, $exceptionCode, $serviceRequestException );
 			}
 			$ParsedResponse = $Service->getParsedResponse( $RequestService );
 			$ResponseCode   = $Service->getResponseCode();
@@ -3128,6 +3130,7 @@ class ResursBank {
 	 * If no unit measure are set but setCountry() have been used, this function will try to set a matching string depending on the country.
 	 *
 	 * @param null $unitMeasure
+	 *
 	 * @since 1.0.2
 	 * @since 1.1.2
 	 */
@@ -3146,7 +3149,20 @@ class ResursBank {
 			} else {
 				$this->defaultUnitMeasure = "st";
 			}
+		} else {
+			$this->defaultUnitMeasure = $unitMeasure;
 		}
+	}
+
+	/**
+	 * Returns current set unitmeasure (st, kpl, etc)
+	 * @return string
+	 * @since 1.0.26
+	 * @since 1.1.26
+	 * @since 1.2.0
+	 */
+	public function getDefaultUnitMeasure() {
+		return $this->defaultUnitMeasure;
 	}
 
 	/**
