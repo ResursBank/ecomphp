@@ -30,13 +30,6 @@ if (file_exists(__DIR__ . "/../../vendor/autoload.php")) {
 	require_once(__DIR__ . '/../../vendor/autoload.php');
 }
 
-//use Resursbank\RBEcomPHP\Tornevall_cURL;
-//use Resursbank\RBEcomPHP\TorneLIB_Network;
-//use Resursbank\RBEcomPHP\TorneLIB_Crypto;
-
-use Resursbank\RBEcomPHP\RESURS_FLOW_TYPES;
-use Resursbank\RBEcomPHP\CURL_POST_AS;
-
 /**
  * Class ResursBank Primary class for EComPHP
  * Works with dynamic data arrays. By default, the API-gateway will connect to Resurs Bank test environment, so to use production mode this must be configured at runtime.
