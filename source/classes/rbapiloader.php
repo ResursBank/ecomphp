@@ -167,6 +167,14 @@ class ResursBank {
 	private $paymentMethodsIsStrictPsp = false;
 	/** @var bool Setting this to true should help developers have their payment method ids returned in a consistent format */
 	private $paymentMethodIdSanitizing = false;
+	/**
+	 * If a choice of payment method are discovered during the flow, this is set here
+	 * @var $desiredPaymentMethod
+	 * @since 1.0.26
+	 * @since 1.1.26
+	 * @since 1.2.0
+	 */
+	private $desiredPaymentMethod;
 
 	/** @var bool Enable the possibility to push over User-Agent from customer into header (debugging related) */
 	private $customerUserAgentPush = false;
@@ -225,7 +233,7 @@ class ResursBank {
 	/** @var string The version of this gateway */
 	private $version = "1.0.26";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20171102";
+	private $lastUpdate = "20171103";
 	/** @var string URL to git storage */
 	private $gitUrl = "https://bitbucket.org/resursbankplugins/resurs-ecomphp";
 	/** @var string This. */
@@ -2138,7 +2146,7 @@ class ResursBank {
 		$serviceNameUrl = $this->getServiceUrl( $serviceName );
 		$soapBody = null;
 		if (!empty($serviceNameUrl) && !is_null($this->CURL)) {
-			$Service = $this->CURL->doGet( $serviceNameUrl );
+			$Service        = $this->CURL->doGet( $serviceNameUrl );
 			try {
 				$RequestService = $Service->$serviceName( $resursParameters );
 			} catch (\Exception $serviceRequestException) {
@@ -4619,6 +4627,7 @@ class ResursBank {
 		$myFlow = $this->getPreferredPaymentFlowService();
 		try {
 			if ($myFlow !== RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT) {
+				$this->desiredPaymentMethod = $payment_id_or_method;
 				$paymentMethodInfo = $this->getPaymentMethodSpecific( $payment_id_or_method );
 				if ( isset( $paymentMethodInfo->id ) ) {
 					$this->PaymentMethod = $paymentMethodInfo;
@@ -5326,6 +5335,29 @@ class ResursBank {
 				$this->Payload['customer']['deliveryAddress']['countryCode'] = $this->Payload['customer']['deliveryAddress']['country'];
 			}
 			unset( $this->Payload['deliveryAddress'] );
+		}
+		if (isset($this->Payload['customer'])) {
+			$noCustomerType = false;
+			if ( ( ! isset( $this->Payload['customer']['type'] ) ) || isset($this->Payload['customer']['type']) && empty($this->Payload['customer']['type']) ) {
+				$noCustomerType = true;
+			}
+			if ($noCustomerType) {
+				if (!empty($this->desiredPaymentMethod)) {
+					$paymentMethodInfo = $this->getPaymentMethodSpecific($this->desiredPaymentMethod);
+					if (isset($paymentMethodInfo->customerType)) {
+						if (!is_array($paymentMethodInfo->customerType) && !empty($paymentMethodInfo->customerType)) {
+							$this->Payload['customer']['type'] = $paymentMethodInfo->customerType;
+						} else {
+							// At this stage, we have no idea of which customer type it is about, so we will fail over to NATURAL
+							// when it is not set by the customer itself. We could do a getAddress here, but that may not be safe enough
+							// to decide customer types automatically. Also, it is in for example hosted flow not even necessary to
+							// enter a government id here.
+							// Besides this? It lowers the performance of the actions.
+							$this->Payload['customer']['type'] = "NATURAL";
+						}
+					}
+				}
+			}
 		}
 	}
 
@@ -6928,7 +6960,7 @@ class ResursBank {
 	 * @since 1.1.22
 	 * @since 1.2.0
 	 */
-	public function paymentCredit( $paymentId = "", $customPayloadItemList = array()) {
+	public function paymentCredit( $paymentId = "", $customPayloadItemList = array() ) {
 		$afterShopObject = $this->getAfterShopObjectByPayload( $paymentId, $customPayloadItemList, RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_CREDIT );
 		$this->aftershopPrepareMetaData( $paymentId );
 		$afterShopResponseCode = $this->postService( "creditPayment", $afterShopObject, true );
@@ -6986,6 +7018,7 @@ class ResursBank {
 
 				// Clean up selected rows from the credit element and keep those rows than still can be annulled and matches the orderRow-request
 				$newAnnulObject = $this->objectsIntoArray($this->removeFromArray($validatedAnnulmentObject, $currentOrderLines, true));
+
 				if (count($newCreditObject)) {$this->paymentCredit( $paymentId, $newCreditObject );}
 				if (count($newAnnulObject)) {$this->paymentAnnul( $paymentId, $newAnnulObject );}
 			} else {
