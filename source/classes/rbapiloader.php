@@ -576,6 +576,18 @@ class ResursBank {
 	}
 
 	/**
+	 * Get current user agent info IF has been forced to set (returns null if we are using default)
+	 *
+	 * @return string
+	 * @since 1.0.26
+	 * @since 1.1.26
+	 * @since 1.2.0
+	 */
+	public function getUserAgent() {
+		return $this->myUserAgent;
+	}
+
+	/**
 	 * Set internal flag parameter
 	 *
 	 * @param string $flagKey
@@ -2323,7 +2335,7 @@ class ResursBank {
 	 * @since 1.0.0
 	 * @since 1.1.0
 	 */
-	protected function getVersionFull( $getDecimals = false ) {
+	public function getVersionFull( $getDecimals = false ) {
 		if ( ! $getDecimals ) {
 			return $this->clientName . " v" . $this->version . "-" . $this->lastUpdate;
 		}
@@ -2340,7 +2352,7 @@ class ResursBank {
 	 * @since 1.0.0
 	 * @since 1.1.0
 	 */
-	protected function getVersionNumber( $getDecimals = false ) {
+	public function getVersionNumber( $getDecimals = false ) {
 		if ( ! $getDecimals ) {
 			return $this->version; // . "-" . $this->lastUpdate;
 		} else {
@@ -2354,7 +2366,7 @@ class ResursBank {
 	 * @since 1.0.0
 	 * @since 1.1.0
 	 */
-	protected function getCreatedBy() {
+	public function getCreatedBy() {
 		$createdBy = $this->realClientName . "_" . $this->getVersionNumber( true );
 		if ( ! empty( $this->loggedInuser ) ) {
 			$createdBy .= "/" . $this->loggedInuser;
