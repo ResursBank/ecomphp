@@ -22,6 +22,13 @@ Then you may go with something like this in your first born code:
         print_r($methods);
     ?>
 
+### NOTES
+
+As long as there is no public tag for the composerized version, the commits might get stuck. To solve this, do the following steps from where the module is installed:
+
+    cd vendor/resursbank/ecomphp/
+    git pull
+
 
 ## Regular requirements and dependencies
 
@@ -37,9 +44,9 @@ As this module uses [curl](https://curl.haxx.se) and [SoapClient](http://php.net
 
 ## PHP 7.2
 
-PHP 7.2 is underway. Does the library work with PHP 7.2?
+Does the library work with PHP 7.2?
 
-- Tests are confirmed to run with 7.2 RC1 so far
+- Tests are verified to [run with 7.2 RC5](https://resursbankplugins.atlassian.net/browse/ECOMPHP-180) so far
 
 
 ## What this library do and do not
