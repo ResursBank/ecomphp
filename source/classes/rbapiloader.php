@@ -233,7 +233,7 @@ class ResursBank {
 	/** @var string The version of this gateway */
 	private $version = "1.0.26";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20171103";
+	private $lastUpdate = "20171106";
 	/** @var string URL to git storage */
 	private $gitUrl = "https://bitbucket.org/resursbankplugins/resurs-ecomphp";
 	/** @var string This. */
@@ -1116,6 +1116,18 @@ class ResursBank {
 		if ($this->customerUserAgentPush && isset($_SERVER['HTTP_USER_AGENT'])) {
 			$this->myUserAgent .= " +CLI-" . $this->T_CRYPTO->base64_compress($_SERVER['HTTP_USER_AGENT']);
 		}
+	}
+
+	/**
+	 * Get current user agent info IF has been forced to set (returns null if we are using default)
+	 *
+	 * @return string
+	 * @since 1.0.26
+	 * @since 1.1.26
+	 * @since 1.2.0
+	 */
+	public function getUserAgent() {
+		return $this->myUserAgent;
 	}
 
 	/**
@@ -3174,7 +3186,7 @@ class ResursBank {
 	 * @since 1.0.0
 	 * @since 1.1.0
 	 */
-	protected function getVersionFull( $getDecimals = false ) {
+	public function getVersionFull( $getDecimals = false ) {
 		if ( ! $getDecimals ) {
 			return $this->clientName . " v" . $this->version . "-" . $this->lastUpdate;
 		}
@@ -3191,7 +3203,7 @@ class ResursBank {
 	 * @since 1.0.0
 	 * @since 1.1.0
 	 */
-	protected function getVersionNumber( $getDecimals = false ) {
+	public function getVersionNumber( $getDecimals = false ) {
 		if ( ! $getDecimals ) {
 			return $this->version; // . "-" . $this->lastUpdate;
 		} else {
@@ -3201,11 +3213,12 @@ class ResursBank {
 
 	/**
 	 * Get "Created by" if set (used by aftershop)
+	 *
 	 * @return string
 	 * @since 1.0.0
 	 * @since 1.1.0
 	 */
-	protected function getCreatedBy() {
+	public function getCreatedBy() {
 		$createdBy = $this->realClientName . "_" . $this->getVersionNumber( true );
 		if ( ! empty( $this->loggedInuser ) ) {
 			$createdBy .= "/" . $this->loggedInuser;
