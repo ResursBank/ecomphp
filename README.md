@@ -19,9 +19,9 @@ As this module uses [curl](https://curl.haxx.se) and [SoapClient](http://php.net
 
 ## PHP 7.2
 
-PHP 7.2 is underway. Does the library work with PHP 7.2?
+Does the library work with PHP 7.2?
 
-- Tests are confirmed to run with 7.2 RC1 so far
+- Tests are verified to [run with 7.2 RC5](https://resursbankplugins.atlassian.net/browse/ECOMPHP-180) so far
 
 
 ## What this library do and do not
