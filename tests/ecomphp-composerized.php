@@ -5,7 +5,7 @@
  *
  * @package EcomPHPTest
  * @author Resurs Bank Ecommrece <ecommerce.support@resurs.se>
- * @version 0.11
+ * @version 0.12
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @license -
  *
@@ -28,7 +28,6 @@ use \TorneLIB\Tornevall_cURL;
 use \TorneLIB\TorneLIB_Network;
 
 ///// ADD ALWAYS SECTION
-use PHPUnit\Framework\TestCase;
 
 // Automatically set to test the pushCustomerUserAgent
 if (!isset($_SERVER['HTTP_USER_AGENT'])) {
@@ -1402,7 +1401,7 @@ class ResursBankTest extends TestCase
 				$cResponse           = $this->rb->setRegisterCallback( $callbackInfo[0], $callbackInfo[1], $callbackInfo[2] );
 				$callbackSetResult[] = $callbackInfo[0];
 			} catch ( \Exception $e ) {
-				echo $e->getMessage();
+				echo __FUNCTION__ . ": " . $e->getMessage() . "\n";
 			}
 		}
 		// Registered callbacks must be at least 4 to be successful, as there are at least 4 important callbacks to pass through
@@ -1525,7 +1524,7 @@ class ResursBankTest extends TestCase
 				$Payment = $this->rb->createPayment( $this->availableMethods['invoice_natural'] );
 				$this->assertTrue( $Payment->bookPaymentStatus == "BOOKED" );
 			} catch ( \Exception $e ) {
-				echo "Fail: " . $e->getMessage();
+				echo __FUNCTION__ . ": " . $e->getMessage() . "\n";
 			}
 
 		} catch ( \Exception $e ) {
@@ -1555,7 +1554,7 @@ class ResursBankTest extends TestCase
 					$this->assertTrue( $signData->success == "true" );
 				}
 			} catch ( \Exception $e ) {
-				echo "Fail: " . $e->getMessage();
+				echo __FUNCTION__ . ": " . $e->getMessage() . "\n";
 			}
 
 		} catch ( \Exception $e ) {
@@ -1589,7 +1588,7 @@ class ResursBankTest extends TestCase
 					$this->assertCount( 4, $signData );
 				}
 			} catch ( \Exception $e ) {
-				echo "Fail: " . $e->getMessage();
+				echo __FUNCTION__ . ": " . $e->getMessage() . "\n";
 			}
 
 		} catch ( \Exception $e ) {
@@ -1620,7 +1619,7 @@ class ResursBankTest extends TestCase
 					$this->assertTrue( empty($signData[1]) );
 				}
 			} catch ( \Exception $e ) {
-				echo "Fail: " . $e->getMessage();
+				echo __FUNCTION__ . ": " . $e->getMessage() . "\n";
 			}
 
 		} catch ( \Exception $e ) {
@@ -1653,7 +1652,7 @@ class ResursBankTest extends TestCase
 					$this->assertTrue( empty($signData[1]) );
 				}
 			} catch ( \Exception $e ) {
-				echo "Fail: " . $e->getMessage();
+				echo __FUNCTION__ . ": " . $e->getMessage() . "\n";
 			}
 
 		} catch ( \Exception $e ) {
@@ -1747,7 +1746,7 @@ class ResursBankTest extends TestCase
 		try {
 			$Payment = $this->rb->createPayment( $this->availableMethods['invoice_natural'] );
 		} catch ( \Exception $e ) {
-			echo $e->getMessage();
+			echo __FUNCTION__ . ": " . $e->getMessage() . "\n";
 		}
 
 		//if ( $Payment->bookPaymentStatus == "BOOKED" ) {
