@@ -1,6 +1,8 @@
 #!/bin/bash
 
 phpunit=`which phpunit`
+testfile=`ls -1 ecomphp-*.php`
+
 if [ "$phpunit" = "" ] ; then
 	if [ -f "./phpunit.phar" ] ; then
 		phpunit="./phpunit.phar"
@@ -8,7 +10,7 @@ if [ "$phpunit" = "" ] ; then
 fi
 
 if [ "$phpunit" != "" ] ; then
-	$phpunit ecomphp-1.2.php
+	$phpunit $testfile
 else
 	echo "No phpunit.phar found"
 fi
