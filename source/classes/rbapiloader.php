@@ -12,7 +12,7 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.0
- * @version 1.0.26
+ * @version 1.0.27
  * @deprecated Maintenance version only
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
@@ -231,9 +231,9 @@ class ResursBank {
 	////////// Private variables
 	///// Client Specific Settings
 	/** @var string The version of this gateway */
-	private $version = "1.0.26";
+	private $version = "1.1.27";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20171106";
+	private $lastUpdate = "20171107";
 	/** @var string URL to git storage */
 	private $gitUrl = "https://bitbucket.org/resursbankplugins/resurs-ecomphp";
 	/** @var string This. */
@@ -748,7 +748,7 @@ class ResursBank {
 	 *
 	 * @throws \Exception
 	 */
-	function __construct( $login = '', $password = '', $targetEnvironment = ResursEnvironments::ENVIRONMENT_NOT_SET ) {
+	function __construct( $login = '', $password = '', $targetEnvironment = RESURS_ENVIRONMENTS::ENVIRONMENT_NOT_SET ) {
 		if ( defined( 'RB_API_PATH' ) ) {
 			$this->classPath = RB_API_PATH;
 		}
@@ -762,7 +762,7 @@ class ResursBank {
 		$this->soapOptions['ssl_method'] = ( defined( 'SOAP_SSL_METHOD_TLS' ) ? SOAP_SSL_METHOD_TLS : false );
 
 		$this->setAuthentication($login, $password);
-		if ( $targetEnvironment != ResursEnvironments::ENVIRONMENT_NOT_SET ) {
+		if ( $targetEnvironment != RESURS_ENVIRONMENTS::ENVIRONMENT_NOT_SET ) {
 			$this->setEnvironment( $targetEnvironment );
 		}
 		$this->setUserAgent();
@@ -882,7 +882,7 @@ class ResursBank {
 	 */
 	public function setSslValidation($validationEnabled = false) {
 		$this->InitializeServices();
-		if ($this->debug && $this->current_environment == ResursEnvironments::ENVIRONMENT_TEST) {
+		if ($this->debug && $this->current_environment == RESURS_ENVIRONMENTS::ENVIRONMENT_TEST) {
 			$this->curlSslDisable = true;
 		} else {
 			throw new \Exception("Can't set SSL validation in relaxed mode. Debug mode is disabled and/or test environment are not set", 403);
@@ -1371,7 +1371,7 @@ class ResursBank {
 	 *
 	 * @param int $environmentType
 	 */
-	public function setEnvironment( $environmentType = ResursEnvironments::ENVIRONMENT_TEST ) {
+	public function setEnvironment( $environmentType = RESURS_ENVIRONMENTS::ENVIRONMENT_TEST ) {
 		$this->current_environment         = $environmentType;
 		$this->current_environment_updated = true;
 	}
@@ -2017,7 +2017,7 @@ class ResursBank {
 		$this->InitializeServices();
 		$envUrl = $this->env_test;
 		$curEnv = $this->getEnvironment();
-		if ($curEnv == ResursEnvironments::ENVIRONMENT_PRODUCTION) {
+		if ($curEnv == RESURS_ENVIRONMENTS::ENVIRONMENT_PRODUCTION) {
 			$envUrl = $this->env_prod;
 		}
 		$serviceUrl = $envUrl . "DeveloperWebService?wsdl";
@@ -4781,11 +4781,11 @@ class ResursBank {
 	public function setDefaultUnitMeasure( $unitMeasure = null ) {
 		if ( is_null( $unitMeasure ) ) {
 			if ( ! empty( $this->envCountry ) ) {
-				if ( $this->envCountry == ResursCountry::COUNTRY_DK ) {
+				if ( $this->envCountry == RESURS_COUNTRY::COUNTRY_DK ) {
 					$this->defaultUnitMeasure = "st";
-				} else if ( $this->envCountry == ResursCountry::COUNTRY_NO ) {
+				} else if ( $this->envCountry == RESURS_COUNTRY::COUNTRY_NO ) {
 					$this->defaultUnitMeasure = "st";
-				} else if ( $this->envCountry == ResursCountry::COUNTRY_FI ) {
+				} else if ( $this->envCountry == RESURS_COUNTRY::COUNTRY_FI ) {
 					$this->defaultUnitMeasure = "kpl";
 				} else {
 					$this->defaultUnitMeasure = "st";
@@ -5592,7 +5592,7 @@ class ResursBank {
 		if ( $this->isOmniFlow ) {
 			/* Prepare a frame for omni checkout */
 			try {
-				$preOmni = $this->prepareOmniFrame( $bookData, $paymentMethodId, ResursCheckoutCallTypes::METHOD_PAYMENTS );
+				$preOmni = $this->prepareOmniFrame( $bookData, $paymentMethodId, RESURS_CHECKOUT_CALL_TYPES::METHOD_PAYMENTS );
 				if ( isset( $preOmni->html ) ) {
 					$this->omniFrame = $preOmni->html;
 				}
@@ -5739,11 +5739,11 @@ class ResursBank {
 	 * @deprecated 1.0.2
 	 * @deprecated 1.1.2
 	 */
-	public function prepareOmniFrame( $bookData = array(), $orderReference = "", $omniCallType = ResursCheckoutCallTypes::METHOD_PAYMENTS ) {
+	public function prepareOmniFrame( $bookData = array(), $orderReference = "", $omniCallType = RESURS_CHECKOUT_CALL_TYPES::METHOD_PAYMENTS ) {
 		if ( empty( $this->preferredId ) ) {
 			$this->preferredId = $this->generatePreferredId();
 		}
-		if ( $this->current_environment == ResursEnvironments::ENVIRONMENT_TEST ) {
+		if ( $this->current_environment == RESURS_ENVIRONMENTS::ENVIRONMENT_TEST ) {
 			$this->env_omni_current = $this->env_omni_test;
 		} else {
 			$this->env_omni_current = $this->env_omni_prod;
@@ -5754,10 +5754,10 @@ class ResursBank {
 		if ( empty( $orderReference ) && isset( $bookData['orderReference'] ) ) {
 			$orderReference = $bookData['orderReference'];
 		}
-		if ( $omniCallType == ResursCheckoutCallTypes::METHOD_PAYMENTS ) {
+		if ( $omniCallType == RESURS_CHECKOUT_CALL_TYPES::METHOD_PAYMENTS ) {
 			$omniSubPath = "/checkout/payments/" . $orderReference;
 		}
-		if ( $omniCallType == ResursCheckoutCallTypes::METHOD_CALLBACK ) {
+		if ( $omniCallType == RESURS_CHECKOUT_CALL_TYPES::METHOD_CALLBACK ) {
 			$omniSubPath = "/callbacks/";
 			throw new \Exception( __FUNCTION__ . ": METHOD_CALLBACK for OmniCheckout is not yet implemented" );
 		}
@@ -5874,18 +5874,18 @@ class ResursBank {
 	 * @since 1.0.1
 	 * @since 1.1.1
 	 */
-	public function getCheckoutUrl( $EnvironmentRequest = ResursEnvironments::ENVIRONMENT_TEST, $getCurrentIfSet = true ) {
+	public function getCheckoutUrl( $EnvironmentRequest = RESURS_ENVIRONMENTS::ENVIRONMENT_TEST, $getCurrentIfSet = true ) {
 		/*
 		 * If current_environment is set, override incoming variable
 		 */
 		if ( $getCurrentIfSet && $this->current_environment_updated ) {
-			if ( $this->current_environment == ResursEnvironments::ENVIRONMENT_PRODUCTION ) {
+			if ( $this->current_environment == RESURS_ENVIRONMENTS::ENVIRONMENT_PRODUCTION ) {
 				return $this->env_omni_prod;
 			} else {
 				return $this->env_omni_test;
 			}
 		}
-		if ( $EnvironmentRequest == ResursEnvironments::ENVIRONMENT_PRODUCTION ) {
+		if ( $EnvironmentRequest == RESURS_ENVIRONMENTS::ENVIRONMENT_PRODUCTION ) {
 			return $this->env_omni_prod;
 		} else {
 			return $this->env_omni_test;
@@ -5902,7 +5902,7 @@ class ResursBank {
 	 * @deprecated 1.0.1
 	 * @deprecated 1.1.1
 	 */
-	public function getOmniUrl( $EnvironmentRequest = ResursEnvironments::ENVIRONMENT_TEST, $getCurrentIfSet = true ) {
+	public function getOmniUrl( $EnvironmentRequest = RESURS_ENVIRONMENTS::ENVIRONMENT_TEST, $getCurrentIfSet = true ) {
 		return $this->getCheckoutUrl( $EnvironmentRequest, $getCurrentIfSet );
 	}
 
@@ -6033,7 +6033,7 @@ class ResursBank {
 	 * @return string
 	 */
 	public function getHostedUrl() {
-		if ( $this->current_environment == ResursEnvironments::ENVIRONMENT_TEST ) {
+		if ( $this->current_environment == RESURS_ENVIRONMENTS::ENVIRONMENT_TEST ) {
 			return $this->env_hosted_test;
 		} else {
 			return $this->env_hosted_prod;
@@ -6057,7 +6057,7 @@ class ResursBank {
 	 * @deprecated 1.1.2
 	 */
 	private function bookPaymentHosted( $paymentMethodId = '', $bookData = array(), $getReturnedObjectAsStd = true, $keepReturnObject = false ) {
-		if ( $this->current_environment == ResursEnvironments::ENVIRONMENT_TEST ) {
+		if ( $this->current_environment == RESURS_ENVIRONMENTS::ENVIRONMENT_TEST ) {
 			$this->env_hosted_current = $this->env_hosted_test;
 		} else {
 			$this->env_hosted_current = $this->env_hosted_prod;
@@ -6895,7 +6895,7 @@ class ResursBank {
 	 * Identical to paymentFinalize but used for testing errors
 	 */
 	public function paymentFinalizeTest() {
-		if (defined('TEST_OVERRIDE_AFTERSHOP_PAYLOAD') && $this->current_environment == ResursEnvironments::ENVIRONMENT_TEST) {
+		if (defined('TEST_OVERRIDE_AFTERSHOP_PAYLOAD') && $this->current_environment == RESURS_ENVIRONMENTS::ENVIRONMENT_TEST) {
 			$this->postService( "finalizePayment", unserialize( TEST_OVERRIDE_AFTERSHOP_PAYLOAD ) );
 		}
 	}
