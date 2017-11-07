@@ -22,12 +22,6 @@ Then you may go with something like this in your first born code:
         print_r($methods);
     ?>
 
-### NOTES
-
-As long as there is no public tag for the composerized version, the commits might get stuck. To solve this, do the following steps from where the module is installed:
-
-    cd vendor/resursbank/ecomphp/
-    git pull
 
 
 ## Regular requirements and dependencies
