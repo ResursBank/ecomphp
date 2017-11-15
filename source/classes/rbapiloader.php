@@ -2157,7 +2157,7 @@ class ResursBank {
 		$serviceNameUrl = $this->getServiceUrl( $serviceName );
 		$soapBody = null;
 		if (!empty($serviceNameUrl) && !is_null($this->CURL)) {
-			$Service        = $this->CURL->doGet( $serviceNameUrl );
+			$Service = $this->CURL->doGet( $serviceNameUrl );
 			try {
 				$RequestService = $Service->$serviceName( $resursParameters );
 			} catch (\Exception $serviceRequestException) {
