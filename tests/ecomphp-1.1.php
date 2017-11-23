@@ -2436,4 +2436,26 @@ class ResursBankTest extends TestCase
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1, 1, 1000, 2000, '198209123705' );
 		$this->assertTrue($this->rb->getOrderStatusByPayment($paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_AUTOMATIC_FRAUD_CONTROL, 'FROZEN') == RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING);
 	}
+
+	public function testInvoiceSequenceReset() {
+		$this->rb->getNextInvoiceNumber(true, null);
+		$this->assertTrue($this->rb->getNextInvoiceNumber());
+	}
+	function testInvoiceSequenceAndFinalize() {
+		$this->rb->getNextInvoiceNumber(true, null);
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
+		try {
+			$successFinalize = $this->rb->paymentFinalize( $paymentId );
+			if ($successFinalize) {
+				$this->markTestIncomplete("Finalization was successful during the invoice sequence reset. You must re-run the test.");
+			}
+		} catch (\Exception $finalizeWithInitInvoiceException) {
+			$this->assertTrue($finalizeWithInitInvoiceException->getCode() == 29);
+		}
+	}
+	function testInvoiceSequenceFindByFind() {
+		$lastInvoiceNumber = $this->rb->getNextInvoiceNumberByDebits(5);
+		$this->assertTrue($lastInvoiceNumber > 1);
+	}
+
 }
