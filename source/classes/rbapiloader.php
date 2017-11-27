@@ -3,7 +3,6 @@
  * Resurs Bank Passthrough API - A pretty silent ShopFlowSimplifier for Resurs Bank.
  * Compatible with simplifiedFlow, hostedFlow and Resurs Checkout.
  *
- * Last update: See the lastUpdate variable
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.2
@@ -112,7 +111,7 @@ class ResursBank {
 	/** @var string The version of this gateway */
 	private $version = "1.2.0";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20171107";
+	private $lastUpdate = "20171127";
 	/** @var string URL to git storage */
 	private $gitUrl = "https://bitbucket.org/resursbankplugins/resurs-ecomphp";
 	/** @var string This. */
@@ -1490,17 +1489,59 @@ class ResursBank {
 
 			}
 		}
-		if ( is_numeric( $invoiceNumber ) && $invoiceNumber > 0 && $initInvoice ) {
+		if ( $initInvoice ) {
 			try {
-				$this->postService( "setInvoiceSequence", array( 'nextInvoiceNumber' => $firstInvoiceNumber ) );
+				if (is_numeric( $invoiceNumber ) && $invoiceNumber > 0) {
+					$this->postService( "setInvoiceSequence", array( 'nextInvoiceNumber' => $firstInvoiceNumber ) );
+				} else {
+					$this->postService( "setInvoiceSequence" );
+				}
 				$invoiceNumber = $firstInvoiceNumber;
 			} catch ( \Exception $e ) {
 				// If the initialization failed, due to an already set invoice number, we will fall back to the last one
 				$invoiceNumber = $this->postService( "peekInvoiceSequence", array( 'nextInvoiceNumber' => null ) )->nextInvoiceNumber;
 			}
 		}
+		if (!intval($invoiceNumber)) {
+			try {
+				$this->postService( "setInvoiceSequence", array( 'nextInvoiceNumber' => $firstInvoiceNumber ) );
+				$invoiceNumber = $this->postService( "peekInvoiceSequence" )->nextInvoiceNumber;
+			} catch (\Exception $e) {
+
+			}
+		}
 
 		return $invoiceNumber;
+	}
+
+	/**
+	 * Invoice sequence number rescuer/scanner (This function replaces old sequence numbers if there is a higher value found in the last X payments)
+	 *
+	 * @param $scanDebitCount
+	 *
+	 * @return int
+	 * @since 1.0.27
+	 * @since 1.1.27
+	 */
+	public function getNextInvoiceNumberByDebits( $scanDebitCount = 10 ) {
+		$list               = $this->findPayments( array( 'statusSet' => 'IS_DEBITED' ), 1, $scanDebitCount, array(
+			'ascending'   => false,
+			'sortColumns' => 'FINALIZED_TIME'
+		) );
+		$lastHighestInvoice = 0;
+		foreach ( $list as $payments ) {
+			$id        = $payments->paymentId;
+			$invoices  = $this->getPaymentInvoices( $id );
+			foreach ($invoices as $multipleDebitCheck) {
+				if ( $multipleDebitCheck >= $lastHighestInvoice ) {
+					$lastHighestInvoice = $multipleDebitCheck;
+				}
+			}
+		}
+		$properInvoiceNumber = intval( $lastHighestInvoice ) + 1;
+		$this->getNextInvoiceNumber( true, $properInvoiceNumber );
+
+		return $properInvoiceNumber;
 	}
 
 	/**
