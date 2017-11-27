@@ -4,11 +4,10 @@
  * Compatible with simplifiedFlow, hostedFlow and Resurs Checkout.
  * Differences between 1.0 and 1.1 is the namespacing only.
  *
- * Last update: See the lastUpdate variable
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.1
- * @version 1.1.28
+ * @version 1.1.27
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @license Apache License
