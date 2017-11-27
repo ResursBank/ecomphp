@@ -229,7 +229,7 @@ class ResursBank {
 	/** @var string The version of this gateway */
 	private $version = "1.1.27";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20171107";
+	private $lastUpdate = "20171127";
 	/** @var string URL to git storage */
 	private $gitUrl = "https://bitbucket.org/resursbankplugins/resurs-ecomphp";
 	/** @var string This. */
@@ -2282,8 +2282,8 @@ class ResursBank {
 	 * @param $scanDebitCount
 	 *
 	 * @return int
-	 * @since 1.0.28
-	 * @since 1.1.28
+	 * @since 1.0.27
+	 * @since 1.1.27
 	 */
 	public function getNextInvoiceNumberByDebits( $scanDebitCount = 10 ) {
 		$list               = $this->findPayments( array( 'statusSet' => 'IS_DEBITED' ), 1, $scanDebitCount, array(
