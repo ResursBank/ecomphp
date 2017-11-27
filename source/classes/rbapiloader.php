@@ -2,9 +2,7 @@
 /**
  * Resurs Bank Passthrough API - A pretty silent ShopFlowSimplifier for Resurs Bank.
  * Compatible with simplifiedFlow, hostedFlow and Resurs Checkout.
- * Requirements: WSDL stubs from WSDL2PHPGenerator (deprecated edition)
- * Important notes: As the WSDL files are generated, it is highly important to run tests before release.
- * Differences between 1.0 and 1.1 is primarily the namespacing, to be compatible with Magento Marketplace.
+ * Differences between 1.0 and 1.1 is the namespacing only.
  *
  * Last update: See the lastUpdate variable
  * @package RBEcomPHP
