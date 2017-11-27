@@ -16,6 +16,8 @@ if (file_exists(__DIR__ . "/../vendor/autoload.php")) {
 } else {
 	require_once('../source/classes/rbapiloader.php');
 }
+
+use PHPUnit\Framework\TestCase;
 use \Resursbank\RBEcomPHP\ResursBank;
 use \Resursbank\RBEcomPHP\RESURS_CALLBACK_TYPES;
 use \Resursbank\RBEcomPHP\RESURS_PAYMENT_STATUS_RETURNCODES;
