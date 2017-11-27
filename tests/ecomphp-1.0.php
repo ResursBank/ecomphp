@@ -2432,13 +2432,14 @@ class ResursBankTest extends TestCase
 	}
 
 	public function testInvoiceSequenceReset() {
-		$this->rb->getNextInvoiceNumber(true, null);
-		$this->assertTrue($this->rb->getNextInvoiceNumber());
+		$this->rb->resetInvoiceNumber();
+		$currentInvoiceNumber = $this->rb->getNextInvoiceNumber();
+		$this->assertTrue($currentInvoiceNumber == 1);
 		// Restore invoice sequence to the latest correct so new tests can be initated without problems.
 		$this->rb->getNextInvoiceNumberByDebits(5);
 	}
 	function testInvoiceSequenceAndFinalize() {
-		$this->rb->getNextInvoiceNumber(true, null);
+		$this->rb->resetInvoiceNumber();
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
 		try {
 			$successFinalize = $this->rb->paymentFinalize( $paymentId );
@@ -2453,7 +2454,6 @@ class ResursBankTest extends TestCase
 	}
 	function testInvoiceSequenceFindByFind() {
 		$lastInvoiceNumber = $this->rb->getNextInvoiceNumberByDebits(5);
-		$this->assertTrue($lastInvoiceNumber > 1);
+		$this->assertTrue($lastInvoiceNumber > 0);
 	}
-
 }
