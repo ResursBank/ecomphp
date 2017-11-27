@@ -2446,6 +2446,8 @@ class ResursBankTest extends TestCase
 	public function testInvoiceSequenceReset() {
 		$this->rb->getNextInvoiceNumber(true, null);
 		$this->assertTrue($this->rb->getNextInvoiceNumber());
+		// Restore invoice sequence to the latest correct so new tests can be initated without problems.
+		$this->rb->getNextInvoiceNumberByDebits(5);
 	}
 	function testInvoiceSequenceAndFinalize() {
 		$this->rb->getNextInvoiceNumber(true, null);
@@ -2458,6 +2460,8 @@ class ResursBankTest extends TestCase
 		} catch (\Exception $finalizeWithInitInvoiceException) {
 			$this->assertTrue($finalizeWithInitInvoiceException->getCode() == 29);
 		}
+		// Restore invoice sequence to the latest correct so new tests can be initated without problems.
+		$this->rb->getNextInvoiceNumberByDebits(5);
 	}
 	function testInvoiceSequenceFindByFind() {
 		$lastInvoiceNumber = $this->rb->getNextInvoiceNumberByDebits(5);
