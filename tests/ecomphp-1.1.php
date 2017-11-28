@@ -2016,6 +2016,21 @@ class ResursBankTest extends TestCase
 	}
 
 	/**
+	 * Test: Buy 100, debit 200
+	 * Result: Failure.
+	 */
+	function testAftershopDebitLargerAmount() {
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1, 1, "100", 100 );
+		$this->resetConnection();
+		$this->rb->addOrderLine( "myMoreExpensiveOrderLine", "One orderline added with addOrderLine", 200, 25 );
+		try {
+			$this->rb->paymentFinalize( $paymentId );
+		} catch (\Exception $finalizeException) {
+			$this->assertTrue($finalizeException->getCode() > 0);
+		}
+	}
+
+	/**
 	 * Test: Aftershop finalization, new method, automated by using addOrderLine
 	 * Expected result: Two rows, one added row debited
 	 */
