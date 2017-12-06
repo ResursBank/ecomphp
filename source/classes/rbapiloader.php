@@ -6504,7 +6504,7 @@ class ResursBank {
 	 */
 	private function validateCardData($specificType = "") {
 		// Keeps compatibility with card data sets
-		if ( isset( $this->Payload['orderData']['totalAmount'] ) && $this->getPreferredPaymentFlowService() == RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW ) {
+		if ( isset( $this->Payload['orderData']['totalAmount'] ) && $this->getPreferredPaymentService() == RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW ) {
 			$cardInfo = isset( $this->Payload['card'] ) ? $this->Payload['card'] : array();
 			if ( ( isset( $cardInfo['cardNumber'] ) && empty( $cardInfo['cardNumber'] ) ) || ! isset( $cardInfo['cardNumber'] ) ) {
 				if ( ( isset( $cardInfo['amount'] ) && empty( $cardInfo['amount'] ) ) || ! isset( $cardInfo['amount'] ) ) {
@@ -6514,6 +6514,13 @@ class ResursBank {
 				}
 			}
 		}
+
+		if ( isset( $this->Payload['card']['cardNumber'] ) ) {
+			if ( empty( $this->Payload['card']['cardNumber'] ) ) {
+				unset( $this->Payload['card']['cardNumber'] );
+			}
+		}
+
 		if (isset($this->Payload['customer'])) {
 			// CARD + (NEWCARD, REVOLVING_CREDIT)
 			$mandatoryExtendedCustomerFields = array('governmentId', 'address', 'phone', 'email', 'type');
