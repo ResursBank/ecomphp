@@ -4020,6 +4020,13 @@ class ResursBank {
 		}
 		if ( ! isset( $this->Payload['card']['cardNumber'] ) ) {
 			$this->Payload['card']['cardNumber'] = $cardNumber;
+		} else {
+			if (!empty($this->Payload['card']['cardNumber'])) {
+				$this->Payload['card']['cardNumber'] = $cardNumber;
+			} else {
+				// If this field is empty, it should not be included in the payload
+				unset($this->Payload['card']['cardNumber']);
+			}
 		}
 		if ( $cardAmount > 0 ) {
 			$this->Payload['card']['amount'] = $cardAmount;
