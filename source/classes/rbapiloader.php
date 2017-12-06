@@ -4017,7 +4017,7 @@ class ResursBank {
 			$this->Payload['card'] = array();
 		}
 		if ( ! isset( $this->Payload['card']['cardNumber'] ) ) {
-			$this->Payload['card']['cardNumber'] = $cardNumber;
+			$this->Payload['card']['cardNumber'] = trim( $cardNumber );
 		}
 		if ( $cardAmount > 0 ) {
 			$this->Payload['card']['amount'] = $cardAmount;
@@ -4043,6 +4043,13 @@ class ResursBank {
 				}
 			}
 		}
+
+		if ( isset( $this->Payload['card']['cardNumber'] ) ) {
+			if ( empty( $this->Payload['card']['cardNumber'] ) ) {
+				unset( $this->Payload['card']['cardNumber'] );
+			}
+		}
+
 		if (isset($this->Payload['customer'])) {
 			// CARD + (NEWCARD, REVOLVING_CREDIT)
 			$mandatoryExtendedCustomerFields = array('governmentId', 'address', 'phone', 'email', 'type');
