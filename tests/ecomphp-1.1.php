@@ -2016,21 +2016,6 @@ class ResursBankTest extends TestCase
 	}
 
 	/**
-	 * Test: Buy 100, debit 200
-	 * Result: Failure.
-	 */
-	function testAftershopDebitLargerAmount() {
-		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1, 1, "100", 100 );
-		$this->resetConnection();
-		$this->rb->addOrderLine( "myMoreExpensiveOrderLine", "One orderline added with addOrderLine", 200, 25 );
-		try {
-			$this->rb->paymentFinalize( $paymentId );
-		} catch (\Exception $finalizeException) {
-			$this->assertTrue($finalizeException->getCode() > 0);
-		}
-	}
-
-	/**
 	 * Test: Aftershop finalization, new method, automated by using addOrderLine
 	 * Expected result: Two rows, one added row debited
 	 */
@@ -2476,5 +2461,56 @@ class ResursBankTest extends TestCase
 	function testInvoiceSequenceFindByFind() {
 		$lastInvoiceNumber = $this->rb->getNextInvoiceNumberByDebits(5);
 		$this->assertTrue($lastInvoiceNumber > 0);
+	}
+
+	function testUnAuthorized() {
+		$newRb = new ResursBank("fail", "fail");
+		try {
+			print_R( $newRb->getPaymentMethods() );
+		} catch (\Exception $e) {
+			//echo $e->getMessage();
+		}
+	}
+
+
+	public function testHostedThreeFlags() {
+		$this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW);
+		$this->rb->setBillingAddress(
+			"Given Name",
+			"Given",
+			"Name",
+			"Address row 1",
+			"",
+			"Location",
+			"12345",
+			"SE"
+		);
+		$this->addRandomOrderLine();
+		$this->rb->setFinalizeIfBooked();
+		$this->rb->setAnnulIfFrozen();
+		$this->rb->setWaitForFraudControl();
+
+		$payloadResult = $this->rb->getPayload();
+		$this->assertTrue(isset($payloadResult['waitForFraudControl']) && isset($payloadResult['annulIfFrozen']) && isset($payloadResult['finalizeIfBooked']));
+	}
+	public function testSimplifiedThreeFlags() {
+		$this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW);
+		$this->rb->setBillingAddress(
+			"Given Name",
+			"Given",
+			"Name",
+			"Address row 1",
+			"",
+			"Location",
+			"12345",
+			"SE"
+		);
+		$this->addRandomOrderLine();
+		$this->rb->setFinalizeIfBooked();
+		$this->rb->setAnnulIfFrozen();
+		$this->rb->setWaitForFraudControl();
+
+		$payloadResult = $this->rb->getPayload();
+		$this->assertTrue(isset($payloadResult['paymentData']['waitForFraudControl']) && isset($payloadResult['paymentData']['annulIfFrozen']) && isset($payloadResult['paymentData']['finalizeIfBooked']));
 	}
 }
