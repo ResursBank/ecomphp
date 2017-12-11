@@ -2456,4 +2456,55 @@ class ResursBankTest extends TestCase
 		$lastInvoiceNumber = $this->rb->getNextInvoiceNumberByDebits(5);
 		$this->assertTrue($lastInvoiceNumber > 0);
 	}
+
+	function testUnAuthorized() {
+		$newRb = new ResursBank("fail", "fail");
+		try {
+			print_R( $newRb->getPaymentMethods() );
+		} catch (\Exception $e) {
+			//echo $e->getMessage();
+		}
+	}
+
+
+	public function testHostedThreeFlags() {
+		$this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW);
+		$this->rb->setBillingAddress(
+			"Given Name",
+			"Given",
+			"Name",
+			"Address row 1",
+			"",
+			"Location",
+			"12345",
+			"SE"
+		);
+		$this->addRandomOrderLine();
+		$this->rb->setFinalizeIfBooked();
+		$this->rb->setAnnulIfFrozen();
+		$this->rb->setWaitForFraudControl();
+
+		$payloadResult = $this->rb->getPayload();
+		$this->assertTrue(isset($payloadResult['waitForFraudControl']) && isset($payloadResult['annulIfFrozen']) && isset($payloadResult['finalizeIfBooked']));
+	}
+	public function testSimplifiedThreeFlags() {
+		$this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW);
+		$this->rb->setBillingAddress(
+			"Given Name",
+			"Given",
+			"Name",
+			"Address row 1",
+			"",
+			"Location",
+			"12345",
+			"SE"
+		);
+		$this->addRandomOrderLine();
+		$this->rb->setFinalizeIfBooked();
+		$this->rb->setAnnulIfFrozen();
+		$this->rb->setWaitForFraudControl();
+
+		$payloadResult = $this->rb->getPayload();
+		$this->assertTrue(isset($payloadResult['paymentData']['waitForFraudControl']) && isset($payloadResult['paymentData']['annulIfFrozen']) && isset($payloadResult['paymentData']['finalizeIfBooked']));
+	}
 }
