@@ -6,7 +6,7 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.3
- * @version 1.3.1
+ * @version 1.3.2
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @license Apache License
@@ -111,9 +111,9 @@ class ResursBank {
 	////////// Private variables
 	///// Client Specific Settings
 	/** @var string The version of this gateway */
-	private $version = "1.3.1";
+	private $version = "1.3.2";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20171206";
+	private $lastUpdate = "20171211";
 	/** @var string URL to git storage */
 	private $gitUrl = "https://bitbucket.org/resursbankplugins/resurs-ecomphp";
 	/** @var string This. */
@@ -1396,7 +1396,7 @@ class ResursBank {
 		$serviceNameUrl = $this->getServiceUrl( $serviceName );
 		$soapBody = null;
 		if (!empty($serviceNameUrl) && !is_null($this->CURL)) {
-			$Service        = $this->CURL->doGet( $serviceNameUrl );
+			$Service = $this->CURL->doGet( $serviceNameUrl );
 			try {
 				$RequestService = $Service->$serviceName( $resursParameters );
 			} catch (\Exception $serviceRequestException) {
@@ -3299,14 +3299,29 @@ class ResursBank {
 			$this->renderPaymentSpec();
 		}
 		if ( $this->enforceService === RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW || $this->enforceService === RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW ) {
-			$paymentDataPayload ['paymentData'] = array(
-				'paymentMethodId'   => $payment_id_or_method,
-				'preferredId'       => $this->getPreferredPaymentId(),
-				'customerIpAddress' => $this->getCustomerIp()
-			);
+			if (!isset($paymentDataPayload ['paymentData'])) {
+				$paymentDataPayload ['paymentData'] = array();
+			}
+			$paymentDataPayload['paymentData']['paymentMethodId'] = $payment_id_or_method;
+			$paymentDataPayload['paymentData']['preferredId'] = $this->getPreferredPaymentId();
+			$paymentDataPayload['paymentData']['customerIpAddress'] = $this->getCustomerIp();
 			if ( $this->enforceService === RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW ) {
 				if ( ! isset( $this->Payload['storeId'] ) && ! empty( $this->storeId ) ) {
 					$this->Payload['storeId'] = $this->storeId;
+				}
+			} else {
+				// The simplified flag control must run to be backward compatible with older services
+				if (isset($this->Payload['paymentData']['waitForFraudControl'])) {
+					$this->Payload['waitForFraudControl'] = $this->Payload['paymentData']['waitForFraudControl'];
+					unset($this->Payload['paymentData']['waitForFraudControl']);
+				}
+				if (isset($this->Payload['paymentData']['annulIfFrozen'])) {
+					$this->Payload['annulIfFrozen'] = $this->Payload['paymentData']['annulIfFrozen'];
+					unset($this->Payload['paymentData']['annulIfFrozen']);
+				}
+				if (isset($this->Payload['paymentData']['finalizeIfBooked'])) {
+					$this->Payload['finalizeIfBooked'] = $this->Payload['paymentData']['finalizeIfBooked'];
+					unset($this->Payload['paymentData']['finalizeIfBooked']);
 				}
 			}
 			$this->handlePayload( $paymentDataPayload );
@@ -3369,6 +3384,97 @@ class ResursBank {
 			}
 		}
 	}
+
+	private function fixPaymentData() {
+		if (!isset($this->Payload['paymentData'])) {
+			$this->Payload['paymentData'] = array();
+		}
+	}
+
+	/**
+	 * Set flag annulIfFrozen
+	 * @param bool $setBoolean
+	 * @since 1.0.29
+	 * @since 1.1.29
+	 * @since 1.2.2
+	 * @since 1.3.2
+	 */
+	public function setAnnulIfFrozen($setBoolean = true) {
+		$this->fixPaymentData();
+		$this->Payload['paymentData']['annulIfFrozen'] = $setBoolean;
+	}
+
+	/**
+	 * Set flag annulIfFrozen
+	 * @return bool
+	 * @since 1.0.29
+	 * @since 1.1.29
+	 * @since 1.2.2
+	 * @since 1.3.2
+	 */
+	public function getAnnulIfFrozen() {
+		$this->fixPaymentData();
+		return isset($this->Payload['paymentData']['annulIfFrozen']) ? $this->Payload['paymentData']['annulIfFrozen'] : false;
+	}
+
+	/**
+	 * Set flag waitForFraudControl
+	 * @param bool $setBoolean
+	 *
+	 * @return bool
+	 * @since 1.0.29
+	 * @since 1.1.29
+	 * @since 1.2.2
+	 * @since 1.3.2
+	 */
+	public function setWaitForFraudControl($setBoolean = true) {
+		$this->fixPaymentData();
+		$this->Payload['paymentData']['waitForFraudControl'] = $setBoolean;
+		return isset($this->Payload['paymentData']['waitForFraudControl']) ? $this->Payload['paymentData']['waitForFraudControl'] : false;
+	}
+
+	/**
+	 * Get flag waitForFraudControl
+	 * @return bool
+	 * @since 1.0.29
+	 * @since 1.1.29
+	 * @since 1.2.2
+	 * @since 1.3.2
+	 */
+	public function getWaitForFraudControl() {
+		$this->fixPaymentData();
+		return isset($this->Payload['paymentData']['waitForFraudControl']) ? $this->Payload['paymentData']['waitForFraudControl'] : false;
+	}
+
+	/**
+	 * Set flag finalizeIfBooked
+	 * @param bool $setBoolean
+	 *
+	 * @return bool
+	 * @since 1.0.29
+	 * @since 1.1.29
+	 * @since 1.2.2
+	 * @since 1.3.2
+	 */
+	public function setFinalizeIfBooked($setBoolean = true) {
+		$this->fixPaymentData();
+		$this->Payload['paymentData']['finalizeIfBooked'] = $setBoolean;
+		return isset($this->Payload['paymentData']['finalizeIfBooked']) ? $this->Payload['paymentData']['finalizeIfBooked'] : false;
+	}
+
+	/**
+	 * Get flag finalizeIfBooked
+	 * @return bool
+	 * @since 1.0.29
+	 * @since 1.1.29
+	 * @since 1.2.2
+	 * @since 1.3.2
+	 */
+	public function getFinalizeIfBooked() {
+		$this->fixPaymentData();
+		return isset($this->Payload['paymentData']['finalizeIfBooked']) ? $this->Payload['paymentData']['finalizeIfBooked'] : false;
+	}
+
 
 	/**
 	 * Return correct data on https-detection
