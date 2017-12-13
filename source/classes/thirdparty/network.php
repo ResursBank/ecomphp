@@ -21,6 +21,22 @@
  * @version 6.0.15
  */
 
+
+/**
+ * Want to test this library with an external library like Guzzle? Add this row to composer:
+ *
+ *     "guzzlehttp/guzzle": "6.3.0"
+ *
+ * Then call for this method on initiation:
+ *
+ *      $LIB->setDriver( TORNELIB_CURL_DRIVERS::DRIVER_GUZZLEHTTP )
+ *    or
+ *      $LIB->setDriver( TORNELIB_CURL_DRIVERS::DRIVER_GUZZLEHTTP_STREAM )
+ *
+ * Observe that you still need curl if you are running SOAP-calls
+ *
+ */
+
 namespace Resursbank\RBEcomPHP;
 
 if ( ! defined( 'TORNELIB_NETCURL_RELEASE' ) ) {
@@ -424,11 +440,36 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 		}
 
 		/**
+		 * Make sure we always return a "valid" http-host from HTTP_HOST. If the variable is missing, this will fall back to localhost.
+		 *
+		 * @return string
+		 * @sice 6.0.15
+		 */
+		public function getHttpHost() {
+			$httpHost = (isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : "");
+			if (empty($httpHost)) {
+				$httpHost = "localhost";
+			}
+			return $httpHost;
+		}
+
+		/**
+		 * @param bool $returnProtocol
+		 *
+		 * @return bool|string
+		 * @since 6.0.15
+		 */
+		public static function getCurrentServerProtocol($returnProtocol = false) {
+			return self::getProtocol($returnProtocol);
+		}
+
+		/**
 		 * Extract domain name (zone name) from hostname
 		 *
 		 * @param string $useHost Alternative hostname than the HTTP_HOST
 		 *
 		 * @return string
+		 * @since 5.0.0
 		 */
 		public function getDomainName( $useHost = "" ) {
 			$currentHost = "";
@@ -608,7 +649,6 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 		public function getAlwaysResolveHostvalidation() {
 			$this->alwaysResolveHostvalidation;
 		}
-
 	}
 }
 if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_cURL' ) ) {
@@ -659,7 +699,21 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 		/** @var null Sets a HTTP_REFERER to the http call */
 		private $CurlReferer;
 
+		/** @var $Drivers */
 		private $Drivers;
+		private $SupportedDrivers = array(
+			'GuzzleHttp\Client' => TORNELIB_CURL_DRIVERS::DRIVER_GUZZLEHTTP,
+			'WP_Http' => TORNELIB_CURL_DRIVERS::DRIVER_WORDPRESS
+		);
+		/** @var $currentDriver Current set driver */
+		private $currentDriver;
+
+		/** @var $PostData */
+		private $PostData;
+		/** @var $PostDataContainer */
+		private $PostDataContainer;
+		/** @var $PostDataReal Post data as received from client */
+		private $PostDataReal;
 
 		/**
 		 * Die on use of proxy/tunnel on first try (Incomplete).
@@ -974,6 +1028,32 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 		}
 
 		/**
+		 * Get a list of all available and supported drivers for the module
+		 *
+		 * @return array
+		 * @since 6.0.14
+		 */
+		public function getSupportedDrivers() {
+			$supportedDrivers = $this->getAvailableDrivers(true);
+			if (!is_array($supportedDrivers)) {
+				$supportedDrivers = array();
+			}
+			foreach ($this->SupportedDrivers as $driverClass => $driverClassId) {
+				if (class_exists($driverClass)) {
+					$supportedDrivers[$driverClassId] = true;
+					// Guzzle supports both curl and stream so include it here
+					if ($driverClassId == TORNELIB_CURL_DRIVERS::DRIVER_GUZZLEHTTP) {
+						if (!$this->hasCurl()) {
+							unset($supportedDrivers[TORNELIB_CURL_DRIVERS::DRIVER_GUZZLEHTTP]);
+						}
+						$supportedDrivers[TORNELIB_CURL_DRIVERS::DRIVER_GUZZLEHTTP_STREAM] = true;
+					}
+				}
+			}
+			return $supportedDrivers;
+		}
+
+		/**
 		 * If the internal driver is available, we also consider curl available
 		 * @return bool
 		 */
@@ -985,6 +1065,33 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 			return false;
 		}
 
+		/**
+		 * Automatically find the best suited driver for communication IF curl does not exist. If curl exists, internal driver will always be picked as first option
+		 *
+		 * @return int|null|string
+		 * @throws \Exception
+		 * @since 6.0.14
+		 */
+		public function setDriverAuto() {
+			if (!$this->hasCurl()) {
+				$supportedDriverList = $this->getSupportedDrivers();
+				$supportedDriverCount = count($supportedDriverList);
+				if ($supportedDriverCount) {
+					$firstAvailableDriver = key($supportedDriverList);
+					$this->setDriver($firstAvailableDriver);
+				}
+			} else {
+				return TORNELIB_CURL_DRIVERS::DRIVER_INTERNAL;
+			}
+			if (!$supportedDriverCount) {
+				throw new \Exception( $this->ModuleName . " " . __FUNCTION__ . " exception: Could not set up a proper communications driver since none exist", $this->NETWORK->getExceptionCode( 'NETCURL_NOCOMM_DRIVER' ) );
+			}
+			return $firstAvailableDriver;
+		}
+
+		/**
+		 * @return array
+		 */
 		public function getDebugData() {
 			return $this->debugData;
 		}
@@ -1072,17 +1179,43 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 			//if ($driverId !== TORNELIB_CURL_DRIVERS::DRIVER_NOT_SET) {
 			//	$this->setFlag("CHAIN");
 			//}
+
+			$guzDrivers = array(
+				TORNELIB_CURL_DRIVERS::DRIVER_GUZZLEHTTP,
+				TORNELIB_CURL_DRIVERS::DRIVER_GUZZLEHTTP_STREAM
+			);
 			if ( $driverId == TORNELIB_CURL_DRIVERS::DRIVER_WORDPRESS ) {
 				if ( in_array( "WP_Http", get_declared_classes() ) ) {
 					$this->Drivers[ TORNELIB_CURL_DRIVERS::DRIVER_WORDPRESS ] = new \WP_Http();
 					$isDriverSet                                              = true;
 				}
-			} else if ( $driverId == TORNELIB_CURL_DRIVERS::DRIVER_GUZZLEHTTP ) {
-				// GuzzleHttp does not show up on get_declared_classes  in our tests, so we'll set the class in another way instead
-				$isDriverSet = $this->setDriverByClass( TORNELIB_CURL_DRIVERS::DRIVER_GUZZLEHTTP, 'GuzzleHttp\Client' );
+			} else if ( in_array( $driverId, $guzDrivers ) ) {
+
+				if ( $this->hasCurl() && $driverId === TORNELIB_CURL_DRIVERS::DRIVER_GUZZLEHTTP) {
+					// GuzzleHttp does not show up on get_declared_classes  in our tests, so we'll set the class in another way instead
+					$isDriverSet = $this->setDriverByClass( $driverId, 'GuzzleHttp\Client' );
+				} else {
+					if (class_exists('GuzzleHttp\Handler\StreamHandler')) {
+						$streamHandler = new \GuzzleHttp\Handler\StreamHandler();
+						$isDriverSet   = $this->setDriverByClass( $driverId, 'GuzzleHttp\Client', array( 'handler' => $streamHandler ) );
+					}
+				}
 			}
 
+			$this->currentDriver = $driverId;
 			return $isDriverSet;
+		}
+
+		/**
+		 * Returns current chosen driver (if none is preset and curl exists, we're trying to use internals)
+		 *
+		 * @since 6.0.15
+		 */
+		public function getDriver() {
+			if (is_null($this->currentDriver) && $this->hasCurl()) {
+				$this->currentDriver = TORNELIB_CURL_DRIVERS::DRIVER_INTERNAL;
+			}
+			return $this->currentDriver;
 		}
 
 		/**
@@ -1108,13 +1241,18 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 		 *
 		 * @param int $driverId
 		 * @param string $className
+		 * @param array $parameters
 		 *
 		 * @return bool
 		 * @since 6.0.14
 		 */
-		private function setDriverByClass($driverId = TORNELIB_CURL_DRIVERS::DRIVER_NOT_SET, $className = '') {
+		private function setDriverByClass($driverId = TORNELIB_CURL_DRIVERS::DRIVER_NOT_SET, $className = '', $parameters = null) {
 			if (class_exists($className)) {
-				$this->Drivers[$driverId] = new $className();
+				if (is_null($parameters)) {
+					$this->Drivers[$driverId] = new $className();
+				} else {
+					$this->Drivers[$driverId] = new $className($parameters);
+				}
 				return true;
 			}
 			return false;
@@ -1328,6 +1466,20 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 			}
 
 			return false;
+		}
+
+		/**
+		 * Enable chained mode ($Module->doGet(URL)->getParsedResponse()"
+		 *
+		 * @param bool $enable
+		 * @since 6.0.14
+		 */
+		public function setChain($enable = true) {
+			if ($enable) {
+				$this->setFlag( "CHAIN" );
+			} else {
+				$this->unsetFlag("CHAIN");
+			}
 		}
 
 		public function getIsChained() {
@@ -2631,8 +2783,17 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 		 * @throws \Exception
 		 */
 		public function getParsedResponse( $ResponseContent = null ) {
-			if ( isset( $ResponseContent['code'] ) && $ResponseContent['code'] >= 400 ) {
-				throw new \Exception( $this->ModuleName . " parseResponse exception - Unexpected response code from server: " . $ResponseContent['code'], $ResponseContent['code'] );
+			if (is_array($ResponseContent)) {
+				if ( isset( $ResponseContent['code'] ) && $ResponseContent['code'] >= 400 ) {
+					throw new \Exception( $this->ModuleName . " parseResponse exception - Unexpected response code from server: " . $ResponseContent['code'], $ResponseContent['code'] );
+				}
+			}
+			// When curl is disabled or missing, this might be returned chained
+			if (is_object($ResponseContent)) {
+				if (method_exists($ResponseContent, "getParsedResponse") && isset($ResponseContent->TemporaryResponse) && !empty($ResponseContent->TemporaryResponse)) {
+					return $ResponseContent->getParsedResponse($ResponseContent->TemporaryResponse);
+				}
+				return $ResponseContent;
 			}
 			if ( is_null( $ResponseContent ) && ! empty( $this->TemporaryResponse ) ) {
 				return $this->TemporaryResponse['parsed'];
@@ -2952,6 +3113,46 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 		}
 
 		/**
+		 * Make sure that postdata is correctly rendered to interfaces before sending it
+		 * @param array $postData
+		 * @param int $postAs
+		 *
+		 * @return string
+		 * @since 6.0.15
+		 */
+		private function executePostData($postData = array(), $postAs = CURL_POST_AS::POST_AS_NORMAL) {
+			$this->PostDataReal = $postData;
+			$postDataContainer = $postData;
+
+			// Enforce postAs: If you'd like to force everything to use json you can for example use: $myLib->setPostTypeDefault(CURL_POST_AS::POST_AS_JSON)
+			if ( ! is_null( $this->forcePostType ) ) {
+				$postAs = $this->forcePostType;
+			}
+			$parsedPostData = $postData;
+			if ( is_array( $postData ) || is_object( $postData ) ) {
+				$postDataContainer = http_build_query( $postData );
+			}
+			$this->PostDataContainer = $postDataContainer;
+
+			if ( $postAs == CURL_POST_AS::POST_AS_JSON ) {
+				// Using $jsonRealData to validate the string
+				$jsonRealData = null;
+				if ( ! is_string( $postData ) ) {
+					$jsonRealData = json_encode( $postData );
+				} else {
+					$testJsonData = json_decode( $postData );
+					if ( is_object( $testJsonData ) || is_array( $testJsonData ) ) {
+						$jsonRealData = $postData;
+					}
+				}
+				$parsedPostData = $jsonRealData;
+			}
+
+			$this->PostData = $parsedPostData;
+			return $parsedPostData;
+		}
+
+		/**
 		 * cURL data handler, sets up cURL in what it believes is the correct set for you.
 		 *
 		 * @param string $url
@@ -2974,12 +3175,6 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 				$this->init();
 			}
 			$this->CurlHeaders = array();
-
-			// Enforce postAs
-			// If you'd like to force everything to use json you can for example use: $myLib->setPostTypeDefault(CURL_POST_AS::POST_AS_JSON)
-			if ( ! is_null( $this->forcePostType ) ) {
-				$postAs = $this->forcePostType;
-			}
 
 			// Find out if CURLOPT_FOLLOWLOCATION can be set by user/developer or not.
 			//
@@ -3044,11 +3239,8 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 			// This curlopt makes it possible to make a call to a specific ip address and still use the HTTP_HOST (Must override)
 			$this->setCurlOpt( CURLOPT_URL, $this->CurlURL );
 
-			if ( is_array( $postData ) || is_object( $postData ) ) {
-				$postDataContainer = http_build_query( $postData );
-			} else {
-				$postDataContainer = $postData;
-			}
+			$this->executePostData($postData, $postAs);
+			$postDataContainer = $this->PostDataContainer;
 
 			$domainArray = $this->ExtractDomain( $this->CurlURL );
 			$domainName  = null;
@@ -3077,18 +3269,10 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 
 				if ( $postAs == CURL_POST_AS::POST_AS_JSON ) {
 					// Using $jsonRealData to validate the string
-					$jsonRealData = null;
-					if ( ! is_string( $postData ) ) {
-						$jsonRealData = json_encode( $postData );
-					} else {
-						$testJsonData = json_decode( $postData );
-						if ( is_object( $testJsonData ) || is_array( $testJsonData ) ) {
-							$jsonRealData = $postData;
-						}
-					}
+					//$jsonRealData = $this->executePostData($postData, $postAs);
 					$this->CurlHeadersSystem['Content-Type']   = "application/json";
-					$this->CurlHeadersSystem['Content-Length'] = strlen( $jsonRealData );
-					$this->setCurlOpt( CURLOPT_POSTFIELDS, $jsonRealData );  // overwrite old
+					$this->CurlHeadersSystem['Content-Length'] = strlen( $this->PostData );
+					$this->setCurlOpt( CURLOPT_POSTFIELDS, $this->PostData );  // overwrite old
 				}
 			}
 
@@ -3174,9 +3358,10 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 				return $this->executeHttpSoap($url, $postData, $CurlMethod, $postAs);
 			}
 
-			$externalExecute = $this->executeHttpExternal($url, $postData, $CurlMethod);
+			$externalExecute = $this->executeHttpExternal($url, $postData, $CurlMethod, $postAs);
 
-			if ($externalExecute !== true) {
+			$isExternalDriver = $this->getDriver();
+			if (($externalExecute !== true && $this->hasCurl()) && $isExternalDriver === TORNELIB_CURL_DRIVERS::DRIVER_INTERNAL) {
 				$returnContent = curl_exec( $this->CurlSession );
 				if ( curl_errno( $this->CurlSession ) ) {
 
@@ -3234,6 +3419,9 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 						'exception' => null
 					);
 				}
+			}
+			if (!isset($returnContent) && !empty($externalExecute)) {
+				$returnContent = $externalExecute;
 			}
 
 			return $returnContent;
@@ -3296,12 +3484,13 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 				if ( ! $this->hasSoap() ) {
 					throw new \Exception( $this->ModuleName . " " . __FUNCTION__ . " exception: SoapClient is not available in this system", $this->NETWORK->getExceptionCode( 'NETCURL_SOAPCLIENT_CLASS_MISSING' ) );
 				}
-				return $this->executeHttpSoap($url, $postData, $CurlMethod);
+				return $this->executeHttpSoap($url, $this->PostData, $CurlMethod);
 			}
+			$guzDrivers = array(TORNELIB_CURL_DRIVERS::DRIVER_GUZZLEHTTP, TORNELIB_CURL_DRIVERS::DRIVER_GUZZLEHTTP_STREAM);
 			if ($this->getIsDriver(TORNELIB_CURL_DRIVERS::DRIVER_WORDPRESS)) {
-				return $this->executeWpHttp($url, $postData, $CurlMethod, $postAs);
-			} else if ($this->getIsDriver(TORNELIB_CURL_DRIVERS::DRIVER_GUZZLEHTTP)) {
-				return $this->executeGuzzleHttp($url, $postData, $CurlMethod, $postAs);
+				return $this->executeWpHttp($url, $this->PostData, $CurlMethod, $postAs);
+			} else if (in_array($this->getDriver(), $guzDrivers)) {
+				return $this->executeGuzzleHttp($url, $this->PostData, $CurlMethod, $postAs);
 			} else {
 				return false;
 			}
@@ -3369,24 +3558,41 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 			$rawResponse = null;
 			$gBody       = null;
 
+			$myChosenGuzzleDriver = $this->getDriver();
 			/** @var $worker \GuzzleHttp\Client */
-			$worker = $this->Drivers[ TORNELIB_CURL_DRIVERS::DRIVER_GUZZLEHTTP ];
+			$worker = $this->Drivers[ $myChosenGuzzleDriver ];
+			$postOptions = array();
+
+			if ($postAs === CURL_POST_AS::POST_AS_JSON) {
+				if (is_string($postData)) {
+					$jsonPostData = @json_decode($postData);
+					if (is_object($jsonPostData)) {
+						$postData = $jsonPostData;
+					}
+				}
+				$postOptions['json'] = $postData;
+			} else {
+				if ( is_array( $postData ) ) {
+					$postOptions['form_params'] = $postData;
+				}
+			}
 
 			if ( $CurlMethod == CURL_METHODS::METHOD_GET ) {
-				$gRequest = $worker->get( $url, $postData );
+				$gRequest = $worker->request('GET', $url, $postOptions);
 			} else if ( $CurlMethod == CURL_METHODS::METHOD_POST ) {
-				$gRequest = $worker->post( $url, $postData );
+				$gRequest = $worker->request('POST', $url, $postOptions);
 			} else if ( $CurlMethod == CURL_METHODS::METHOD_PUT ) {
-				$worker->put( $url, $postData );
+				$gRequest = $worker->request('PUT', $url, $postOptions);
 			} else if ( $CurlMethod == CURL_METHODS::METHOD_DELETE ) {
-				$worker->delete( $url, $postData );
+				$gRequest = $worker->request('DELETE', $url, $postOptions);
 			} else if ( $CurlMethod == CURL_METHODS::METHOD_HEAD ) {
-				$worker->head( $url, $postData );
+				$gRequest = $worker->request('HEAD', $url, $postOptions);
 			}
 			$this->TemporaryExternalResponse = array( 'worker' => $worker, 'request' => $gRequest );
 			$gHeaders                        = $gRequest->getHeaders();
 			$gBody                           = $gRequest->getBody()->getContents();
-			$rawResponse                     .= "GUZZLE/" . $gRequest->getProtocolVersion() . " " . $gRequest->getStatusCode() . " " . $gRequest->getReasonPhrase() . "\r\n";
+			$rawResponse                     .= "HTTP/" . $gRequest->getProtocolVersion() . " " . $gRequest->getStatusCode() . " " . $gRequest->getReasonPhrase() . "\r\n";
+			$rawResponse                    .= "X-NetCurl-ClientDriver: " . $this->getDriver() . "\r\n";
 			if ( is_array( $gHeaders ) ) {
 				foreach ( $gHeaders as $hParm => $hValues ) {
 					$rawResponse .= $hParm . ": " . implode( "\r\n", $hValues ) . "\r\n";
@@ -3956,6 +4162,7 @@ if ( ! class_exists( 'TORNELIB_CURL_DRIVERS' ) && ! class_exists( 'TorneLIB\TORN
 		const DRIVER_INTERNAL = 1;
 		const DRIVER_WORDPRESS = 1000;
 		const DRIVER_GUZZLEHTTP = 1001;
+		const DRIVER_GUZZLEHTTP_STREAM = 1002;
 	}
 }
 if ( ! class_exists( 'TORNELIB_CURL_RESPONSETYPE' ) && ! class_exists( 'TorneLIB\TORNELIB_CURL_RESPONSETYPE' ) ) {
