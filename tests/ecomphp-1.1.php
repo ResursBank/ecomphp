@@ -501,6 +501,35 @@ class ResursBankTest extends TestCase
 		$this->assertTrue( count( $paymentMethods ) === $this->paymentMethodCount[ $this->environmentName ] );
 	}
 
+
+	//// INVOICE SEQUENCE TESTS MUST BE SET FIRST IN THIS TEST FLOW
+	public function testInvoiceSequenceReset() {
+		$this->rb->resetInvoiceNumber();
+		$currentInvoiceNumber = $this->rb->getNextInvoiceNumber();
+		$this->assertTrue($currentInvoiceNumber == 1);
+		// Restore invoice sequence to the latest correct so new tests can be initated without problems.
+		$this->rb->getNextInvoiceNumberByDebits(5);
+	}
+	function testInvoiceSequenceAndFinalize() {
+		$this->rb->resetInvoiceNumber();
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
+		try {
+			$successFinalize = $this->rb->paymentFinalize( $paymentId );
+			if ($successFinalize) {
+				$this->markTestIncomplete("Finalization was successful during the invoice sequence reset. You must re-run the test.");
+			}
+		} catch (\Exception $finalizeWithInitInvoiceException) {
+			$this->assertTrue($finalizeWithInitInvoiceException->getCode() == 29);
+		}
+		// Restore invoice sequence to the latest correct so new tests can be initated without problems.
+		$this->rb->getNextInvoiceNumberByDebits(5);
+	}
+	function testInvoiceSequenceFindByFind() {
+		$lastInvoiceNumber = $this->rb->getNextInvoiceNumberByDebits(5);
+		$this->assertTrue($lastInvoiceNumber > 0);
+	}
+
+
 	/**
 	 * getAddress, NATURAL
 	 */
@@ -1358,16 +1387,23 @@ class ResursBankTest extends TestCase
 	private function doMockSign( $URL, $govId, $fail = false ) {
 		$MockFormResponse   = $this->CURL->doGet( $URL );
 		$MockDomain         = $this->NETWORK->getUrlDomain( $MockFormResponse['URL'] );
-		$SignBody           = $this->CURL->getResponseBody( $this->CURL->doGet( $URL ) );
+		$MockDomainPath = null;
+		$mockDomainPathDir = null;
+		if (isset($MockDomain[2])) {
+			$MockDomainPath = explode( "/", $MockDomain[2] );
+			$mockDomainPathDir = isset($MockDomainPath[1]) && !empty($MockDomainPath[1]) ? $MockDomainPath[1] : "";
+		}
+
+		//$SignBody           = $this->CURL->getResponseBody( $this->CURL->doGet( $URL ) );
 		$MockForm           = $this->CURL->getResponseBody( $MockFormResponse );
 		$MockFormActionPath = preg_replace( "/(.*?)action=\"(.*?)\"(.*)/is", '$2', $MockForm );
 		$MockFormToken      = preg_replace( "/(.*?)resursToken\" value=\"(.*?)\"(.*)/is", '$2', $MockForm );
 		$mockFailUrl = preg_replace("/(.*?)\"\/mock\/failAuth(.*?)\"(.*)/is", '$2', $MockForm);
-		$prepareMockSuccess = $MockDomain[1] . "://" . $MockDomain[0] . $MockFormActionPath . "?resursToken=" . $MockFormToken . "&govId=" . $govId;
+		$prepareMockSuccess = $MockDomain[1] . "://" . $MockDomain[0] . "/" . $mockDomainPathDir . "/" . $MockFormActionPath . "?resursToken=" . $MockFormToken . "&govId=" . $govId;
 		$prepareMockFail = $MockDomain[1] . "://". $MockDomain[0] . "/mock/failAuth" . $mockFailUrl;
 		if (!$fail) {
 			$ValidateUrl = $this->NETWORK->getUrlDomain( $prepareMockSuccess, true );
-			if ( ! empty( $ValidateUrl[0] ) ) {
+			if ( isset($ValidateUrl[0]) && ! empty( $ValidateUrl[0] ) ) {
 				$mockSuccess = $this->CURL->getParsedResponse( $this->CURL->doGet( $prepareMockSuccess ) );
 				if ( isset( $mockSuccess->_GET->success ) ) {
 					return $mockSuccess->_GET;
@@ -2443,32 +2479,6 @@ class ResursBankTest extends TestCase
 		$this->assertTrue($this->rb->getOrderStatusByPayment($paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_AUTOMATIC_FRAUD_CONTROL, 'FROZEN') == RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING);
 	}
 
-	public function testInvoiceSequenceReset() {
-		$this->rb->resetInvoiceNumber();
-		$currentInvoiceNumber = $this->rb->getNextInvoiceNumber();
-		$this->assertTrue($currentInvoiceNumber == 1);
-		// Restore invoice sequence to the latest correct so new tests can be initated without problems.
-		$this->rb->getNextInvoiceNumberByDebits(5);
-	}
-	function testInvoiceSequenceAndFinalize() {
-		$this->rb->resetInvoiceNumber();
-		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
-		try {
-			$successFinalize = $this->rb->paymentFinalize( $paymentId );
-			if ($successFinalize) {
-				$this->markTestIncomplete("Finalization was successful during the invoice sequence reset. You must re-run the test.");
-			}
-		} catch (\Exception $finalizeWithInitInvoiceException) {
-			$this->assertTrue($finalizeWithInitInvoiceException->getCode() == 29);
-		}
-		// Restore invoice sequence to the latest correct so new tests can be initated without problems.
-		$this->rb->getNextInvoiceNumberByDebits(5);
-	}
-	function testInvoiceSequenceFindByFind() {
-		$lastInvoiceNumber = $this->rb->getNextInvoiceNumberByDebits(5);
-		$this->assertTrue($lastInvoiceNumber > 0);
-	}
-
 	function testUnAuthorized() {
 		$newRb = new ResursBank("fail", "fail");
 		try {
@@ -2477,7 +2487,6 @@ class ResursBankTest extends TestCase
 			//echo $e->getMessage();
 		}
 	}
-
 
 	public function testHostedThreeFlags() {
 		$this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW);
@@ -2499,6 +2508,7 @@ class ResursBankTest extends TestCase
 		$payloadResult = $this->rb->getPayload();
 		$this->assertTrue(isset($payloadResult['waitForFraudControl']) && isset($payloadResult['annulIfFrozen']) && isset($payloadResult['finalizeIfBooked']));
 	}
+
 	public function testSimplifiedThreeFlags() {
 		$this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW);
 		$this->rb->setBillingAddress(
@@ -2519,6 +2529,7 @@ class ResursBankTest extends TestCase
 		$payloadResult = $this->rb->getPayload();
 		$this->assertTrue(isset($payloadResult['paymentData']['waitForFraudControl']) && isset($payloadResult['paymentData']['annulIfFrozen']) && isset($payloadResult['paymentData']['finalizeIfBooked']));
 	}
+
 	public function testCheckoutFlood() {
 		$this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT);
 		$this->rb->setFlag('PREVENT_EXEC_FLOOD',true);
