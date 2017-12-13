@@ -2522,6 +2522,8 @@ class ResursBankTest extends TestCase
 	public function testCheckoutFlood() {
 		$this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT);
 		$this->rb->setFlag('PREVENT_EXEC_FLOOD',true);
+		$this->rb->setFlag('PREVENT_EXEC_FLOOD_EXCEPTIONS',true);
+		$this->rb->setFlag('PREVENT_EXEC_FLOOD_TIME',300);
 		$payments = array();
 		$exceptionCode = 0;
 		try {
