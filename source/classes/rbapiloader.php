@@ -228,7 +228,7 @@ class ResursBank {
 	/** @var string The version of this gateway */
 	private $version = "1.0.29";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20171211";
+	private $lastUpdate = "20171213";
 	/** @var string URL to git storage */
 	private $gitUrl = "https://bitbucket.org/resursbankplugins/resurs-ecomphp";
 	/** @var string This. */
@@ -362,6 +362,8 @@ class ResursBank {
 	private $current_environment_updated = false;
 	/** @var Store ID */
 	private $storeId;
+	/** @var $ecomSession */
+	private $ecomSession;
 
 	/** @var string How EcomPHP should identify with the web services */
 	private $myUserAgent = null;
@@ -764,6 +766,86 @@ class ResursBank {
 	}
 
 	/**
+	 * Session usage
+	 * @return bool
+	 * @since 1.0.29
+	 * @since 1.1.29
+	 * @since 1.2.2
+	 * @since 1.3.2
+	 */
+	private function sessionActivate() {
+		if ( ! headers_sent() ) {
+			if ( ! session_id() ) {
+				@session_start();
+				$this->ecomSession = session_id();
+				if ( ! empty( $this->ecomSession ) ) {
+					return true;
+				}
+			} else {
+				$this->ecomSession = session_id();
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Push variable into customer session
+	 * @param string $key
+	 * @param string $keyValue
+	 *
+	 * @return bool
+	 * @since 1.0.29
+	 * @since 1.1.29
+	 * @since 1.2.2
+	 * @since 1.3.2
+	 */
+	public function setSessionVar($key='',$keyValue='') {
+		$this->sessionActivate();
+		if (isset($_SESSION)) {
+			$_SESSION[$key] = $keyValue;
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Get current stored variable from customer session
+	 * @param string $key
+	 *
+	 * @return null
+	 * @since 1.0.29
+	 * @since 1.1.29
+	 * @since 1.2.2
+	 * @since 1.3.2
+	 */
+	public function getSessionVar($key='') {
+		$this->sessionActivate();
+		$returnVar = null;
+		if (isset($_SESSION) && isset($_SESSION[$key])) {
+			$returnVar = $_SESSION[$key];
+		}
+		return $returnVar;
+	}
+
+	/**
+	 * Remove current stored variable from customer session
+	 * @return bool
+	 * @since 1.0.29
+	 * @since 1.1.29
+	 * @since 1.2.2
+	 * @since 1.3.2
+	 */
+	public function deleteSessionVar($key='') {
+		$this->sessionActivate();
+		if (isset($_SESSION) && isset($_SESSION[$key])) {
+			unset($_SESSION[$key]);
+			return true;
+		}
+		return false;
+	}
+
+	/**
 	 * Check HTTPS-requirements, if they pass.
 	 *
 	 * Resurs Bank requires secure connection to the webservices, so your PHP-version must support SSL. Normally this is not a problem, but since there are server- and hosting providers that is actually having this disabled, the decision has been made to do this check.
@@ -797,6 +879,7 @@ class ResursBank {
 	 * @since 1.1.1
 	 */
 	private function InitializeServices() {
+		$this->sessionActivate();
 		// 1.0.4/1.1.4: No longer checking includes
 		$this->hasServicesInitialization = $this->initWsdl();
 		$this->getSslValidation();
@@ -4742,6 +4825,27 @@ class ResursBank {
 	 * @since 1.1.2
 	 */
 	private function createPaymentExecute( $payment_id_or_method = '', $payload = array() ) {
+		/**
+		 * @since 1.0.29
+		 * @since 1.1.29
+		 * @since 1.2.2
+		 * @since 1.3.2
+		 */
+		if ($this->isFlag('PREVENT_EXEC_FLOOD')) {
+			$maxTime = intval($this->getFlag('PREVENT_EXEC_FLOOD_TIME'));
+			if (!$maxTime) {
+				$maxTime = 5;
+			}
+			$lastPaymentExecute = intval($this->getSessionVar('lastPaymentExecute'));
+			$timeDiff = time() - $lastPaymentExecute;
+			if ($timeDiff <= $maxTime) {
+				if ($this->isFlag('PREVENT_EXEC_FLOOD_EXCEPTIONS')) {
+					throw new \Exception( "You are running createPayemnt too fast", \RESURS_EXCEPTIONS::CREATEPAYMENT_TOO_FAST );
+				}
+				return false;
+			}
+			$this->setSessionVar('lastPaymentExecute', time());
+		}
 		if ( trim( strtolower( $this->username ) ) == "exshop" ) {
 			throw new \Exception( "The use of exshop is no longer supported", \RESURS_EXCEPTIONS::EXSHOP_PROHIBITED );
 		}
@@ -6610,7 +6714,7 @@ class ResursBank {
 	 */
 	private function validateCardData($specificType = "") {
 		// Keeps compatibility with card data sets
-		if ( isset( $this->Payload['orderData']['totalAmount'] ) && $this->getPreferredPaymentService() == RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW ) {
+		if ( isset( $this->Payload['orderData']['totalAmount'] ) && $this->getPreferredPaymentFlowService() == RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW ) {
 			$cardInfo = isset( $this->Payload['card'] ) ? $this->Payload['card'] : array();
 			if ( ( isset( $cardInfo['cardNumber'] ) && empty( $cardInfo['cardNumber'] ) ) || ! isset( $cardInfo['cardNumber'] ) ) {
 				if ( ( isset( $cardInfo['amount'] ) && empty( $cardInfo['amount'] ) ) || ! isset( $cardInfo['amount'] ) ) {
@@ -6810,7 +6914,7 @@ class ResursBank {
 					if ( ! isset( $orderLinesByStatus[ $paymentDiffObject->type ] ) ) {
 						$orderLinesByStatus[ $paymentDiffObject->type ] = array();
 					}
-					// Second, make sure that the paymentdiffs are collected as one array per specType (AUTHORIZE,DEBIT,CREDIT,ANULL)
+					// Second, make sure that the paymentdiffs are collected as one array per specType (AUTHORIZE,DEBIT,CREDIT,ANNUL)
 					if ( is_array( $paymentDiffObject->paymentSpec->specLines ) ) {
 						// Note: array_merge won't work if the initial array is empty. Instead we'll append it to the above array.
 						// Also note that appending with += may fail when indexes matches each other on both sides - in that case
