@@ -3336,7 +3336,7 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 
 			if ( ! empty( $this->AuthData['Username'] ) && $this->AuthData['Type'] != CURL_AUTH_TYPES::AUTHTYPE_NONE ) {
 				$useAuth = CURLAUTH_ANY;
-				if ( CURL_AUTH_TYPES::AUTHTYPE_BASIC ) {
+				if (  $this->AuthData['Type'] == CURL_AUTH_TYPES::AUTHTYPE_BASIC ) {
 					$useAuth = CURLAUTH_BASIC;
 				}
 				$this->setCurlOptInternal( CURLOPT_HTTPAUTH, $useAuth );
@@ -3451,14 +3451,16 @@ if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_c
 					'url'       => $this->CurlURL,
 					'opt'       => $this->getCurlOptByKeys(),
 					'success'   => true,
-					'exception' => null
+					'exception' => null,
+					'previous'  => null
 				);
 			} catch ( \Exception $getSoapResponseException ) {
 				$this->debugData['soapdata']['url'][] = array(
 					'url'       => $this->CurlURL,
 					'opt'       => $this->getCurlOptByKeys(),
 					'success'   => false,
-					'exception' => $getSoapResponseException
+					'exception' => $getSoapResponseException,
+					'previous'  => $getSoapResponseException->getPrevious()
 				);
 				throw new \Exception( $this->ModuleName . " exception from soapClient: " . $getSoapResponseException->getMessage(), $getSoapResponseException->getCode() );
 			}
@@ -3843,6 +3845,8 @@ if ( ! class_exists( 'Tornevall_SimpleSoap' ) && ! class_exists( 'TorneLIB\Torne
 		private $SoapFaultCode = 0;
 		private $SoapTryOnce = true;
 
+		private $soapInitException = array('faultstring' => '', 'code' => 0);
+
 		/**
 		 * Tornevall_SimpleSoap constructor.
 		 *
@@ -3927,18 +3931,64 @@ if ( ! class_exists( 'Tornevall_SimpleSoap' ) && ! class_exists( 'TorneLIB\Torne
 			if ( gettype( $sslOpt['stream_context'] ) == "resource" ) {
 				$this->soapOptions['stream_context'] = $sslOpt['stream_context'];
 			}
+			$this->soapOptions['exceptions'] = true;
+			$this->soapOptions['trace'] = true;
+
+			$throwErrorMessage = null;
+			$throwErrorCode = null;
+			$throwBackCurrent  = null;
+			$throwPrevious = null;
+			$soapFaultOnInit = false;
+
+			$parentFlags = $this->PARENT->getFlags();
+
 			if ( $this->SoapTryOnce ) {
 				try {
 					$this->soapClient = @new \SoapClient( $this->soapUrl, $this->soapOptions );
-				} catch ( \Exception $soapException ) {
+				}
+				catch (\Exception $soapException) {
 					$soapCode = $soapException->getCode();
 					if ( ! $soapCode ) {
 						$soapCode = 500;
 					}
-					throw new \Exception( $this->ModuleName . " exception from soapClient: " . $soapException->getMessage(), $soapCode, $soapException );
+					$throwErrorMessage = $this->ModuleName . " exception from soapClient: " . $soapException->getMessage();
+					$throwErrorCode = $soapCode;
+					$throwBackCurrent = $soapException;
+					$throwPrevious = $soapException->getPrevious();
+					if (isset($parentFlags['SOAPWARNINGS']) && $parentFlags['SOAPWARNINGS'] === true) {
+						$soapFaultOnInit = true;
+					}
 				}
-				if ( ! is_object( $this->soapClient ) ) {
-					throw new \Exception( $this->ModuleName . " exception from SimpleSoap->getSoap(): Could not create SoapClient. Make sure that all settings and URLs are correctly configured.", 500 );
+
+				// If we get an error immediately on the first call, lets find out if there are any warnings we need to know about...
+				if ($soapFaultOnInit) {
+					set_error_handler( function ( $errNo, $errStr ) {
+						$throwErrorMessage = $errStr;
+						$throwErrorCode    = $errNo;
+						if ( empty( $this->soapInitException['faultstring'] ) ) {
+							$this->soapInitException['faultstring'] = $throwErrorMessage;
+						}
+						if ( empty( $this->soapInitException['code'] ) ) {
+							$this->soapInitException['code'] = $throwErrorCode;
+						}
+					}, E_WARNING );
+					try {
+						$this->soapClient = @new \SoapClient( $this->soapUrl, $this->soapOptions );
+					} catch ( \Exception $e ) {
+						if ($this->soapInitException['faultstring'] !== $e->getMessage()) {
+							$throwErrorMessage = $this->soapInitException['faultstring'] . "\n" . $e->getMessage();
+							$throwErrorCode = $this->soapInitException['code'];
+						}
+					}
+					restore_error_handler();
+				}
+
+				if ( ! is_object( $this->soapClient ) && is_null($throwErrorCode) ) {
+					$throwErrorMessage = $this->ModuleName . " exception from SimpleSoap->getSoap(): Could not create SoapClient. Make sure that all settings and URLs are correctly configured.";
+					$throwErrorCode = 500;
+				}
+				if (!is_null($throwErrorMessage) || !is_null($throwErrorCode)) {
+					throw new \Exception($throwErrorMessage, $throwErrorCode, $throwBackCurrent);
 				}
 			} else {
 				try {
@@ -3954,11 +4004,13 @@ if ( ! class_exists( 'Tornevall_SimpleSoap' ) && ! class_exists( 'TorneLIB\Torne
 							} else {
 								$this->soapUrl .= "?wsdl";
 							}
-							try {
+							$this->SoapTryOnce = true;
+							$this->getSoap();
+/*							try {
 								$this->soapClient = @new \SoapClient( $this->soapUrl, $this->soapOptions );
 							} catch ( \Exception $soapException ) {
 								throw new \Exception( $this->ModuleName . " exception from soapClient: " . $soapException->getMessage(), $soapException->getCode(), $soapException );
-							}
+							}*/
 						}
 					}
 				}
