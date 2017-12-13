@@ -1618,6 +1618,36 @@ class ResursBank {
 	}
 
 	/**
+	 * Returns all invoice numbers for a specific payment
+	 *
+	 * @param string $paymentIdOrPaymentObject
+	 *
+	 * @return array
+	 * @throws \Exception
+	 * @since 1.0.11
+	 * @since 1.1.11
+	 * @since 1.2.0
+	 */
+	public function getPaymentInvoices($paymentIdOrPaymentObject = '') {
+		$invoices = array();
+		if (is_string($paymentIdOrPaymentObject)) {
+			$paymentData = $this->getPayment( $paymentIdOrPaymentObject );
+		} else if (is_object($paymentIdOrPaymentObject)) {
+			$paymentData = $paymentIdOrPaymentObject;
+		} else {
+			return array();
+		}
+		if (!empty($paymentData) && isset($paymentData->paymentDiffs)) {
+			foreach ($paymentData->paymentDiffs as $paymentRow) {
+				if (isset($paymentRow->type) && isset($paymentRow->invoiceId)) {
+					$invoices[] = $paymentRow->invoiceId;
+				}
+			}
+		}
+		return $invoices;
+	}
+
+	/**
 	 * Invoice sequence number rescuer/scanner (This function replaces old sequence numbers if there is a higher value found in the last X payments)
 	 *
 	 * @param $scanDebitCount
@@ -1627,24 +1657,39 @@ class ResursBank {
 	 * @since 1.1.27
 	 */
 	public function getNextInvoiceNumberByDebits( $scanDebitCount = 10 ) {
-		$list               = $this->findPayments( array( 'statusSet' => 'IS_DEBITED' ), 1, $scanDebitCount, array(
+		$paymentScanList               = $this->findPayments( array( 'statusSet' => 'IS_DEBITED' ), 1, $scanDebitCount, array(
 			'ascending'   => false,
-			'sortColumns' => 'FINALIZED_TIME'
+			'sortColumns' => array('FINALIZED_TIME', 'MODIFIED_TIME', 'BOOKED_TIME')
 		) );
-		$lastHighestInvoice = 0;
-		foreach ( $list as $payments ) {
-			$id        = $payments->paymentId;
-			$invoices  = $this->getPaymentInvoices( $id );
-			foreach ($invoices as $multipleDebitCheck) {
-				if ( $multipleDebitCheck >= $lastHighestInvoice ) {
-					$lastHighestInvoice = $multipleDebitCheck;
-				}
-			}
-		}
+		$lastHighestInvoice = $this->getHighestValueFromPaymentList($paymentScanList, 0);
 		$properInvoiceNumber = intval( $lastHighestInvoice ) + 1;
 		$this->getNextInvoiceNumber( true, $properInvoiceNumber );
 
 		return $properInvoiceNumber;
+	}
+
+	/**
+	 * Get the highest invoice value from a list of payments
+	 * @param array $paymentList
+	 * @param int $lastHighestInvoice
+	 *
+	 * @return int|mixed
+	 * @throws \Exception
+	 */
+	private function getHighestValueFromPaymentList($paymentList = array(), $lastHighestInvoice = 0) {
+		if (is_array($paymentList)) {
+			foreach ( $paymentList as $payments ) {
+				$id       = $payments->paymentId;
+				$invoices = $this->getPaymentInvoices( $id );
+				foreach ( $invoices as $multipleDebitCheck ) {
+					if ( $multipleDebitCheck > $lastHighestInvoice ) {
+						$lastHighestInvoice = $multipleDebitCheck;
+					}
+				}
+			}
+		}
+		return $lastHighestInvoice;
+
 	}
 
 	/**
@@ -1689,7 +1734,7 @@ class ResursBank {
 	 */
 	public function sanitizePaymentMethods($paymentMethods = array()) {
 		$realPaymentMethods = array();
-		$paymentSevice = $this->getPreferredPaymentFlowService();
+		$paymentSevice = $this->getPreferredPaymentService();
 		if (is_array($paymentMethods) && count($paymentMethods)) {
 			foreach ( $paymentMethods as $paymentMethodIndex => $paymentMethodData ) {
 				$type      = $paymentMethodData->type;
@@ -4445,7 +4490,7 @@ class ResursBank {
 					if ( ! isset( $orderLinesByStatus[ $paymentDiffObject->type ] ) ) {
 						$orderLinesByStatus[ $paymentDiffObject->type ] = array();
 					}
-					// Second, make sure that the paymentdiffs are collected as one array per specType (AUTHORIZE,DEBIT,CREDIT,ANULL)
+					// Second, make sure that the paymentdiffs are collected as one array per specType (AUTHORIZE,DEBIT,CREDIT,ANNULL)
 					if ( is_array( $paymentDiffObject->paymentSpec->specLines ) ) {
 						// Note: array_merge won't work if the initial array is empty. Instead we'll append it to the above array.
 						// Also note that appending with += may fail when indexes matches each other on both sides - in that case
@@ -4963,36 +5008,6 @@ class ResursBank {
 		} else {
 			return false;
 		}
-	}
-
-	/**
-	 * Returns all invoice numbers for a specific payment
-	 *
-	 * @param string $paymentIdOrPaymentObject
-	 *
-	 * @return array
-	 * @throws \Exception
-	 * @since 1.0.11
-	 * @since 1.1.11
-	 * @since 1.2.0
-	 */
-	public function getPaymentInvoices($paymentIdOrPaymentObject = '') {
-		$invoices = array();
-		if (is_string($paymentIdOrPaymentObject)) {
-			$paymentData = $this->getPayment( $paymentIdOrPaymentObject );
-		} else if (is_object($paymentIdOrPaymentObject)) {
-			$paymentData = $paymentIdOrPaymentObject;
-		} else {
-			return array();
-		}
-		if (!empty($paymentData) && isset($paymentData->paymentDiffs)) {
-			foreach ($paymentData->paymentDiffs as $paymentRow) {
-				if (isset($paymentRow->type) && $paymentRow->type == "DEBIT" && isset($paymentRow->invoiceId)) {
-					$invoices[] = $paymentRow->invoiceId;
-				}
-			}
-		}
-		return $invoices;
 	}
 
 	/**
