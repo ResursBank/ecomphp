@@ -388,7 +388,7 @@ class ResursBank {
 	 * @since 1.3.2
 	 */
 	private function sessionActivate() {
-		if ( ! headers_sent() ) {
+		try {
 			if ( ! session_id() ) {
 				@session_start();
 				$this->ecomSession = session_id();
@@ -398,6 +398,8 @@ class ResursBank {
 			} else {
 				$this->ecomSession = session_id();
 			}
+		} catch (\Exception $sessionActivationException) {
+
 		}
 
 		return false;
