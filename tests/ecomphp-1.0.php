@@ -1382,16 +1382,23 @@ class ResursBankTest extends TestCase
 	private function doMockSign( $URL, $govId, $fail = false ) {
 		$MockFormResponse   = $this->CURL->doGet( $URL );
 		$MockDomain         = $this->NETWORK->getUrlDomain( $MockFormResponse['URL'] );
-		$SignBody           = $this->CURL->getResponseBody( $this->CURL->doGet( $URL ) );
+		$MockDomainPath = null;
+		$mockDomainPathDir = null;
+		if (isset($MockDomain[2])) {
+			$MockDomainPath = explode( "/", $MockDomain[2] );
+			$mockDomainPathDir = isset($MockDomainPath[1]) && !empty($MockDomainPath[1]) ? $MockDomainPath[1] : "";
+		}
+
+		//$SignBody           = $this->CURL->getResponseBody( $this->CURL->doGet( $URL ) );
 		$MockForm           = $this->CURL->getResponseBody( $MockFormResponse );
 		$MockFormActionPath = preg_replace( "/(.*?)action=\"(.*?)\"(.*)/is", '$2', $MockForm );
 		$MockFormToken      = preg_replace( "/(.*?)resursToken\" value=\"(.*?)\"(.*)/is", '$2', $MockForm );
 		$mockFailUrl = preg_replace("/(.*?)\"\/mock\/failAuth(.*?)\"(.*)/is", '$2', $MockForm);
-		$prepareMockSuccess = $MockDomain[1] . "://" . $MockDomain[0] . $MockFormActionPath . "?resursToken=" . $MockFormToken . "&govId=" . $govId;
+		$prepareMockSuccess = $MockDomain[1] . "://" . $MockDomain[0] . "/" . $mockDomainPathDir . "/" . $MockFormActionPath . "?resursToken=" . $MockFormToken . "&govId=" . $govId;
 		$prepareMockFail = $MockDomain[1] . "://". $MockDomain[0] . "/mock/failAuth" . $mockFailUrl;
 		if (!$fail) {
 			$ValidateUrl = $this->NETWORK->getUrlDomain( $prepareMockSuccess, true );
-			if ( ! empty( $ValidateUrl[0] ) ) {
+			if ( isset($ValidateUrl[0]) && ! empty( $ValidateUrl[0] ) ) {
 				$mockSuccess = $this->CURL->getParsedResponse( $this->CURL->doGet( $prepareMockSuccess ) );
 				if ( isset( $mockSuccess->_GET->success ) ) {
 					return $mockSuccess->_GET;
