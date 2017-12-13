@@ -5,7 +5,7 @@
  *
  * @package EcomPHPTest
  * @author Resurs Bank Ecommrece <ecommerce.support@resurs.se>
- * @version 0.13
+ * @version 0.14
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @license -
  *
@@ -261,8 +261,11 @@ class ResursBankTest extends TestCase
 	 * @param bool|false $bookSuccess Set to true if booking is supposed to success
 	 * @param bool|false $forceSigning Set to true if signing is forced
 	 * @param bool|true $signSuccess True=Successful signing, False=Failed signing
+	 * @param string $country
+	 * @param array $ownSpecline
 	 *
 	 * @return bool Returning true if booking went as you expected
+	 * @throws Exception
 	 */
 	private function doBookPayment( $setMethod = '', $bookSuccess = true, $forceSigning = false, $signSuccess = true, $country = 'SE', $ownSpecline = array() ) {
 		$paymentServiceSet = $this->rb->getPreferredPaymentFlowService();
@@ -846,8 +849,10 @@ class ResursBankTest extends TestCase
 	 * This test is incomplete.
 	 *
 	 * @param bool $returnTheFrame
+	 * @param bool $returnPaymentReference
 	 *
 	 * @return bool|null
+	 * @throws Exception
 	 */
 	private function getCheckoutFrame( $returnTheFrame = false, $returnPaymentReference = false ) {
 		$assumeThis = false;
@@ -1754,6 +1759,7 @@ class ResursBankTest extends TestCase
 	}
 
 	private function generateOrderByClientChoice( $orderLines = 8, $quantity = 1, $minAmount = 1000, $maxAmount = 2000, $govId = '198305147715' ) {
+		$Payment = null;
 		$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW );
 		$this->rb->setBillingByGetAddress( $govId );
 		$this->rb->setCustomer( $govId, "0808080808", "0707070707", "test@test.com", "NATURAL" );
@@ -2518,5 +2524,18 @@ class ResursBankTest extends TestCase
 
 		$payloadResult = $this->rb->getPayload();
 		$this->assertTrue(isset($payloadResult['paymentData']['waitForFraudControl']) && isset($payloadResult['paymentData']['annulIfFrozen']) && isset($payloadResult['paymentData']['finalizeIfBooked']));
+	}
+	public function testCheckoutFlood() {
+		$this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT);
+		$this->rb->setFlag('PREVENT_EXEC_FLOOD',true);
+		$payments = array();
+		$exceptionCode = 0;
+		try {
+			$payments[] = $this->getCheckoutFrame( true, true );
+			$payments[] = $this->getCheckoutFrame( true, true );
+		} catch (\Exception $e) {
+			$exceptionCode = $e->getCode();
+		}
+		$this->assertTrue($exceptionCode === RESURS_EXCEPTIONS::CREATEPAYMENT_TOO_FAST);
 	}
 }
