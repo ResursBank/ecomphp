@@ -7,7 +7,7 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.1
- * @version 1.1.28
+ * @version 1.1.30
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @license Apache License
@@ -227,9 +227,9 @@ class ResursBank {
 	////////// Private variables
 	///// Client Specific Settings
 	/** @var string The version of this gateway */
-	private $version = "1.1.28";
+	private $version = "1.1.30";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20171206";
+	private $lastUpdate = "20171214";
 	/** @var string URL to git storage */
 	private $gitUrl = "https://bitbucket.org/resursbankplugins/resurs-ecomphp";
 	/** @var string This. */
@@ -363,6 +363,8 @@ class ResursBank {
 	private $current_environment_updated = false;
 	/** @var Store ID */
 	private $storeId;
+	/** @var $ecomSession */
+	private $ecomSession;
 
 	/** @var string How EcomPHP should identify with the web services */
 	private $myUserAgent = null;
@@ -765,6 +767,88 @@ class ResursBank {
 	}
 
 	/**
+	 * Session usage
+	 * @return bool
+	 * @since 1.0.29
+	 * @since 1.1.29
+	 * @since 1.2.2
+	 * @since 1.3.2
+	 */
+	private function sessionActivate() {
+		try {
+			if ( ! session_id() ) {
+				@session_start();
+				$this->ecomSession = session_id();
+				if ( ! empty( $this->ecomSession ) ) {
+					return true;
+				}
+			} else {
+				$this->ecomSession = session_id();
+			}
+		} catch (\Exception $sessionActivationException) {
+
+		}
+
+		return false;
+	}
+
+	/**
+	 * Push variable into customer session
+	 * @param string $key
+	 * @param string $keyValue
+	 *
+	 * @return bool
+	 * @since 1.0.29
+	 * @since 1.1.29
+	 * @since 1.2.2
+	 * @since 1.3.2
+	 */
+	public function setSessionVar($key='',$keyValue='') {
+		$this->sessionActivate();
+		if (isset($_SESSION)) {
+			$_SESSION[$key] = $keyValue;
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Get current stored variable from customer session
+	 * @param string $key
+	 *
+	 * @return null
+	 * @since 1.0.29
+	 * @since 1.1.29
+	 * @since 1.2.2
+	 * @since 1.3.2
+	 */
+	public function getSessionVar($key='') {
+		$this->sessionActivate();
+		$returnVar = null;
+		if (isset($_SESSION) && isset($_SESSION[$key])) {
+			$returnVar = $_SESSION[$key];
+		}
+		return $returnVar;
+	}
+
+	/**
+	 * Remove current stored variable from customer session
+	 * @return bool
+	 * @since 1.0.29
+	 * @since 1.1.29
+	 * @since 1.2.2
+	 * @since 1.3.2
+	 */
+	public function deleteSessionVar($key='') {
+		$this->sessionActivate();
+		if (isset($_SESSION) && isset($_SESSION[$key])) {
+			unset($_SESSION[$key]);
+			return true;
+		}
+		return false;
+	}
+
+	/**
 	 * Check HTTPS-requirements, if they pass.
 	 *
 	 * Resurs Bank requires secure connection to the webservices, so your PHP-version must support SSL. Normally this is not a problem, but since there are server- and hosting providers that is actually having this disabled, the decision has been made to do this check.
@@ -798,6 +882,7 @@ class ResursBank {
 	 * @since 1.1.1
 	 */
 	private function InitializeServices() {
+		$this->sessionActivate();
 		// 1.0.4/1.1.4: No longer checking includes
 		$this->hasServicesInitialization = $this->initWsdl();
 		$this->getSslValidation();
@@ -2158,6 +2243,7 @@ class ResursBank {
 		$serviceNameUrl = $this->getServiceUrl( $serviceName );
 		$soapBody = null;
 		if (!empty($serviceNameUrl) && !is_null($this->CURL)) {
+			$this->CURL->setFlag("SOAPWARNINGS", true);
 			$Service = $this->CURL->doGet( $serviceNameUrl );
 			try {
 				$RequestService = $Service->$serviceName( $resursParameters );
@@ -2297,34 +2383,78 @@ class ResursBank {
 	}
 
 	/**
+	 * Returns all invoice numbers for a specific payment
+	 *
+	 * @param string $paymentIdOrPaymentObject
+	 *
+	 * @return array
+	 * @throws \Exception
+	 * @since 1.0.11
+	 * @since 1.1.11
+	 * @since 1.2.0
+	 */
+	public function getPaymentInvoices($paymentIdOrPaymentObject = '') {
+		$invoices = array();
+		if (is_string($paymentIdOrPaymentObject)) {
+			$paymentData = $this->getPayment( $paymentIdOrPaymentObject );
+		} else if (is_object($paymentIdOrPaymentObject)) {
+			$paymentData = $paymentIdOrPaymentObject;
+		} else {
+			return array();
+		}
+		if (!empty($paymentData) && isset($paymentData->paymentDiffs)) {
+			foreach ($paymentData->paymentDiffs as $paymentRow) {
+				if (isset($paymentRow->type) && isset($paymentRow->invoiceId)) {
+					$invoices[] = $paymentRow->invoiceId;
+				}
+			}
+		}
+		return $invoices;
+	}
+
+	/**
 	 * Invoice sequence number rescuer/scanner (This function replaces old sequence numbers if there is a higher value found in the last X payments)
 	 *
 	 * @param $scanDebitCount
-	 *
 	 * @return int
 	 * @throws \Exception
 	 * @since 1.0.27
 	 * @since 1.1.27
 	 */
 	public function getNextInvoiceNumberByDebits( $scanDebitCount = 10 ) {
-		$list               = $this->findPayments( array( 'statusSet' => 'IS_DEBITED' ), 1, $scanDebitCount, array(
+		$paymentScanList               = $this->findPayments( array( 'statusSet' => 'IS_DEBITED' ), 1, $scanDebitCount, array(
 			'ascending'   => false,
-			'sortColumns' => 'FINALIZED_TIME'
+			'sortColumns' => array('FINALIZED_TIME', 'MODIFIED_TIME', 'BOOKED_TIME')
 		) );
-		$lastHighestInvoice = 0;
-		foreach ( $list as $payments ) {
-			$id        = $payments->paymentId;
-			$invoices  = $this->getPaymentInvoices( $id );
-			foreach ($invoices as $multipleDebitCheck) {
-				if ( $multipleDebitCheck >= $lastHighestInvoice ) {
-					$lastHighestInvoice = $multipleDebitCheck;
-				}
-			}
-		}
+		$lastHighestInvoice = $this->getHighestValueFromPaymentList($paymentScanList, 0);
 		$properInvoiceNumber = intval( $lastHighestInvoice ) + 1;
 		$this->getNextInvoiceNumber( true, $properInvoiceNumber );
 
 		return $properInvoiceNumber;
+	}
+
+	/**
+	 * Get the highest invoice value from a list of payments
+	 * @param array $paymentList
+	 * @param int $lastHighestInvoice
+	 *
+	 * @return int|mixed
+	 * @throws \Exception
+	 */
+	private function getHighestValueFromPaymentList($paymentList = array(), $lastHighestInvoice = 0) {
+		if (is_array($paymentList)) {
+			foreach ( $paymentList as $payments ) {
+				$id       = $payments->paymentId;
+				$invoices = $this->getPaymentInvoices( $id );
+				foreach ( $invoices as $multipleDebitCheck ) {
+					if ( $multipleDebitCheck > $lastHighestInvoice ) {
+						$lastHighestInvoice = $multipleDebitCheck;
+					}
+				}
+			}
+		}
+		return $lastHighestInvoice;
+
 	}
 
 	/**
@@ -4743,6 +4873,27 @@ class ResursBank {
 	 * @since 1.1.2
 	 */
 	private function createPaymentExecute( $payment_id_or_method = '', $payload = array() ) {
+		/**
+		 * @since 1.0.29
+		 * @since 1.1.29
+		 * @since 1.2.2
+		 * @since 1.3.2
+		 */
+		if ($this->isFlag('PREVENT_EXEC_FLOOD')) {
+			$maxTime = intval($this->getFlag('PREVENT_EXEC_FLOOD_TIME'));
+			if (!$maxTime) {
+				$maxTime = 5;
+			}
+			$lastPaymentExecute = intval($this->getSessionVar('lastPaymentExecute'));
+			$timeDiff = time() - $lastPaymentExecute;
+			if ($timeDiff <= $maxTime) {
+				if ($this->isFlag('PREVENT_EXEC_FLOOD_EXCEPTIONS')) {
+					throw new \Exception( "You are running createPayemnt too fast", \RESURS_EXCEPTIONS::CREATEPAYMENT_TOO_FAST );
+				}
+				return false;
+			}
+			$this->setSessionVar('lastPaymentExecute', time());
+		}
 		if ( trim( strtolower( $this->username ) ) == "exshop" ) {
 			throw new \Exception( "The use of exshop is no longer supported", \RESURS_EXCEPTIONS::EXSHOP_PROHIBITED );
 		}
@@ -4935,14 +5086,29 @@ class ResursBank {
 			$this->renderPaymentSpec();
 		}
 		if ( $this->enforceService === RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW || $this->enforceService === RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW ) {
-			$paymentDataPayload ['paymentData'] = array(
-				'paymentMethodId'   => $payment_id_or_method,
-				'preferredId'       => $this->getPreferredPaymentId(),
-				'customerIpAddress' => $this->getCustomerIp()
-			);
+			if (!isset($paymentDataPayload ['paymentData'])) {
+				$paymentDataPayload ['paymentData'] = array();
+			}
+			$paymentDataPayload['paymentData']['paymentMethodId'] = $payment_id_or_method;
+			$paymentDataPayload['paymentData']['preferredId'] = $this->getPreferredPaymentId();
+			$paymentDataPayload['paymentData']['customerIpAddress'] = $this->getCustomerIp();
 			if ( $this->enforceService === RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW ) {
 				if ( ! isset( $this->Payload['storeId'] ) && ! empty( $this->storeId ) ) {
 					$this->Payload['storeId'] = $this->storeId;
+				}
+			} else {
+				// The simplified flag control must run to be backward compatible with older services
+				if (isset($this->Payload['paymentData']['waitForFraudControl'])) {
+					$this->Payload['waitForFraudControl'] = $this->Payload['paymentData']['waitForFraudControl'];
+					unset($this->Payload['paymentData']['waitForFraudControl']);
+				}
+				if (isset($this->Payload['paymentData']['annulIfFrozen'])) {
+					$this->Payload['annulIfFrozen'] = $this->Payload['paymentData']['annulIfFrozen'];
+					unset($this->Payload['paymentData']['annulIfFrozen']);
+				}
+				if (isset($this->Payload['paymentData']['finalizeIfBooked'])) {
+					$this->Payload['finalizeIfBooked'] = $this->Payload['paymentData']['finalizeIfBooked'];
+					unset($this->Payload['paymentData']['finalizeIfBooked']);
 				}
 			}
 			$this->handlePayload( $paymentDataPayload );
@@ -5005,6 +5171,97 @@ class ResursBank {
 			}
 		}
 	}
+
+	private function fixPaymentData() {
+		if (!isset($this->Payload['paymentData'])) {
+			$this->Payload['paymentData'] = array();
+		}
+	}
+
+	/**
+	 * Set flag annulIfFrozen
+	 * @param bool $setBoolean
+	 * @since 1.0.29
+	 * @since 1.1.29
+	 * @since 1.2.2
+	 * @since 1.3.2
+	 */
+	public function setAnnulIfFrozen($setBoolean = true) {
+		$this->fixPaymentData();
+		$this->Payload['paymentData']['annulIfFrozen'] = $setBoolean;
+	}
+
+	/**
+	 * Set flag annulIfFrozen
+	 * @return bool
+	 * @since 1.0.29
+	 * @since 1.1.29
+	 * @since 1.2.2
+	 * @since 1.3.2
+	 */
+	public function getAnnulIfFrozen() {
+		$this->fixPaymentData();
+		return isset($this->Payload['paymentData']['annulIfFrozen']) ? $this->Payload['paymentData']['annulIfFrozen'] : false;
+	}
+
+	/**
+	 * Set flag waitForFraudControl
+	 * @param bool $setBoolean
+	 *
+	 * @return bool
+	 * @since 1.0.29
+	 * @since 1.1.29
+	 * @since 1.2.2
+	 * @since 1.3.2
+	 */
+	public function setWaitForFraudControl($setBoolean = true) {
+		$this->fixPaymentData();
+		$this->Payload['paymentData']['waitForFraudControl'] = $setBoolean;
+		return isset($this->Payload['paymentData']['waitForFraudControl']) ? $this->Payload['paymentData']['waitForFraudControl'] : false;
+	}
+
+	/**
+	 * Get flag waitForFraudControl
+	 * @return bool
+	 * @since 1.0.29
+	 * @since 1.1.29
+	 * @since 1.2.2
+	 * @since 1.3.2
+	 */
+	public function getWaitForFraudControl() {
+		$this->fixPaymentData();
+		return isset($this->Payload['paymentData']['waitForFraudControl']) ? $this->Payload['paymentData']['waitForFraudControl'] : false;
+	}
+
+	/**
+	 * Set flag finalizeIfBooked
+	 * @param bool $setBoolean
+	 *
+	 * @return bool
+	 * @since 1.0.29
+	 * @since 1.1.29
+	 * @since 1.2.2
+	 * @since 1.3.2
+	 */
+	public function setFinalizeIfBooked($setBoolean = true) {
+		$this->fixPaymentData();
+		$this->Payload['paymentData']['finalizeIfBooked'] = $setBoolean;
+		return isset($this->Payload['paymentData']['finalizeIfBooked']) ? $this->Payload['paymentData']['finalizeIfBooked'] : false;
+	}
+
+	/**
+	 * Get flag finalizeIfBooked
+	 * @return bool
+	 * @since 1.0.29
+	 * @since 1.1.29
+	 * @since 1.2.2
+	 * @since 1.3.2
+	 */
+	public function getFinalizeIfBooked() {
+		$this->fixPaymentData();
+		return isset($this->Payload['paymentData']['finalizeIfBooked']) ? $this->Payload['paymentData']['finalizeIfBooked'] : false;
+	}
+
 
 	/**
 	 * Return correct data on https-detection
@@ -6505,7 +6762,7 @@ class ResursBank {
 	 */
 	private function validateCardData($specificType = "") {
 		// Keeps compatibility with card data sets
-		if ( isset( $this->Payload['orderData']['totalAmount'] ) && $this->getPreferredPaymentService() == RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW ) {
+		if ( isset( $this->Payload['orderData']['totalAmount'] ) && $this->getPreferredPaymentFlowService() == RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW ) {
 			$cardInfo = isset( $this->Payload['card'] ) ? $this->Payload['card'] : array();
 			if ( ( isset( $cardInfo['cardNumber'] ) && empty( $cardInfo['cardNumber'] ) ) || ! isset( $cardInfo['cardNumber'] ) ) {
 				if ( ( isset( $cardInfo['amount'] ) && empty( $cardInfo['amount'] ) ) || ! isset( $cardInfo['amount'] ) ) {
@@ -6705,7 +6962,7 @@ class ResursBank {
 					if ( ! isset( $orderLinesByStatus[ $paymentDiffObject->type ] ) ) {
 						$orderLinesByStatus[ $paymentDiffObject->type ] = array();
 					}
-					// Second, make sure that the paymentdiffs are collected as one array per specType (AUTHORIZE,DEBIT,CREDIT,ANULL)
+					// Second, make sure that the paymentdiffs are collected as one array per specType (AUTHORIZE,DEBIT,CREDIT,ANNUL)
 					if ( is_array( $paymentDiffObject->paymentSpec->specLines ) ) {
 						// Note: array_merge won't work if the initial array is empty. Instead we'll append it to the above array.
 						// Also note that appending with += may fail when indexes matches each other on both sides - in that case
@@ -7253,36 +7510,6 @@ class ResursBank {
 	}
 
 	/**
-	 * Returns all invoice numbers for a specific payment
-	 *
-	 * @param string $paymentIdOrPaymentObject
-	 *
-	 * @return array
-	 * @throws \Exception
-	 * @since 1.0.11
-	 * @since 1.1.11
-	 * @since 1.2.0
-	 */
-	public function getPaymentInvoices($paymentIdOrPaymentObject = '') {
-		$invoices = array();
-		if (is_string($paymentIdOrPaymentObject)) {
-			$paymentData = $this->getPayment( $paymentIdOrPaymentObject );
-		} else if (is_object($paymentIdOrPaymentObject)) {
-			$paymentData = $paymentIdOrPaymentObject;
-		} else {
-			return array();
-		}
-		if (!empty($paymentData) && isset($paymentData->paymentDiffs)) {
-			foreach ($paymentData->paymentDiffs as $paymentRow) {
-				if (isset($paymentRow->type) && $paymentRow->type == "DEBIT" && isset($paymentRow->invoiceId)) {
-					$invoices[] = $paymentRow->invoiceId;
-				}
-			}
-		}
-		return $invoices;
-	}
-
-	/**
 	 * Generic orderstatus content information that checks payment statuses instead of callback input and decides what happened to the payment
 	 *
 	 * @param array $paymentData
@@ -7354,11 +7581,12 @@ class ResursBank {
 				return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING;
 			case RESURS_CALLBACK_TYPES::CALLBACK_TYPE_BOOKED:
 				// Frozen set, but not true OR frozen not set at all - Go processing
-				if ( ( isset( $paymentData->frozen ) && ! $paymentData->frozen ) || ! isset( $paymentData->frozen ) ) {
-					return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PROCESSING;
-				} else {
+				if ( isset( $paymentData->frozen ) && $paymentData->frozen ) {
 					return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING;
 				}
+				// Running in synchronous mode (finalizeIfBooked) might disturb the normal way to handle the booked callback, so we'll continue checking
+				// the order by statuses if this order is not frozen
+				return $this->getOrderStatusByPaymentStatuses( $paymentData );
 				break;
 			case RESURS_CALLBACK_TYPES::CALLBACK_TYPE_FINALIZATION:
 				return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED;
