@@ -1631,6 +1631,10 @@ class ResursBank {
 	 * @param null $setmax
 	 *
 	 * @return string
+	 * @deprecated 1.0.30
+	 * @deprecated 1.1.30
+	 * @deprecated 1.2.30
+	 * @deprecated 1.3.4
 	 */
 	public function getSaltKey( $complexity = 1, $setmax = null ) {
 		$retp               = null;
@@ -1684,6 +1688,19 @@ class ResursBank {
 		$retp = implode( "", $chars );
 
 		return $retp;
+	}
+
+	/**
+	 * Get salt by crypto library
+	 * @param int $complexity
+	 * @param int $totalLength
+	 *
+	 * @return string
+	 * @since 1.3.4
+	 */
+	public function getSaltByCrypto($complexity = 3, $totalLength = 24) {
+		$this->T_CRYPTO = new TorneLIB_Crypto();
+		return $this->T_CRYPTO->mkpass($complexity, $totalLength);
 	}
 
 	/**
