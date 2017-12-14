@@ -5085,11 +5085,12 @@ class ResursBank {
 				return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING;
 			case RESURS_CALLBACK_TYPES::CALLBACK_TYPE_BOOKED:
 				// Frozen set, but not true OR frozen not set at all - Go processing
-				if ( ( isset( $paymentData->frozen ) && ! $paymentData->frozen ) || ! isset( $paymentData->frozen ) ) {
-					return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PROCESSING;
-				} else {
+				if ( isset( $paymentData->frozen ) && $paymentData->frozen ) {
 					return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING;
 				}
+				// Running in synchronous mode (finalizeIfBooked) might disturb the normal way to handle the booked callback, so we'll continue checking
+				// the order by statuses if this order is not frozen
+				return $this->getOrderStatusByPaymentStatuses( $paymentData );
 				break;
 			case RESURS_CALLBACK_TYPES::CALLBACK_TYPE_FINALIZATION:
 				return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED;
