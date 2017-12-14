@@ -2456,6 +2456,14 @@ class ResursBankTest extends TestCase
 		$this->rb->paymentFinalize( $paymentId );
 		$this->assertTrue($this->rb->getOrderStatusByPayment($paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_FINALIZATION) === RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED);
 	}
+	public function testBasicOrderStatusFinalizationEventSynchronous() {
+		$this->rb->setFinalizeIfBooked();
+		$this->rb->setAnnulIfFrozen();
+		$this->rb->setWaitForFraudControl();
+		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1, 1, 1000, 2000 );
+		//$this->rb->paymentFinalize( $paymentId );
+		$this->assertTrue($this->rb->getOrderStatusByPayment($paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_FINALIZATION) === RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED);
+	}
 	public function testBasicOrderStatusAnnulEvent() {
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1 );
 		$this->rb->paymentAnnul( $paymentId );
@@ -2566,7 +2574,9 @@ class ResursBankTest extends TestCase
 		try {
 			$isolatedRB->getPaymentMethods();
 		} catch (\Exception $failException) {
-			$this->assertContains("401 Unauthorized", $failException->getMessage());
+			$exceptionMessage = $failException->getMessage();
+			$authTest = (preg_match("/401 unauthorized/i", $exceptionMessage) ? true : false);
+			$this->assertTrue( $authTest );
 		}
 	}
 }
