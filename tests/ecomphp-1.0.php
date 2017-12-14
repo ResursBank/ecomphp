@@ -2573,4 +2573,11 @@ class ResursBankTest extends TestCase
 			$this->assertTrue( $authTest );
 		}
 	}
+
+	public function testGetSaltKeyDeprecated() {
+		$this->assertTrue(strlen($this->rb->getSaltKey()) > 0);
+	}
+	public function testGetSaltByCrypto() {
+		$this->assertTrue(strlen($this->rb->getSaltByCrypto(3, 128)) == 128);
+	}
 }
