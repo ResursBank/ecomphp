@@ -1,12 +1,11 @@
 <?php
 
-
 /**
  * Resursbank API Loader Tests
  *
  * @package EcomPHPTest
  * @author Resurs Bank Ecommrece <ecommerce.support@resurs.se>
- * @version 0.14
+ * @version 0.15
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @license -
  *
@@ -2483,6 +2482,10 @@ class ResursBankTest extends TestCase
 		}
 	}
 
+	/**
+	 * Test setting setFinalizeIfBooked, setAnnulIfFrozen and waitForFraudControl with internal methods (hostedFlow)
+	 * @throws Exception
+	 */
 	public function testHostedThreeFlags() {
 		$this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW);
 		$this->rb->setBillingAddress(
@@ -2504,6 +2507,10 @@ class ResursBankTest extends TestCase
 		$this->assertTrue(isset($payloadResult['waitForFraudControl']) && isset($payloadResult['annulIfFrozen']) && isset($payloadResult['finalizeIfBooked']));
 	}
 
+	/**
+	 * Test setting setFinalizeIfBooked, setAnnulIfFrozen and waitForFraudControl with internal methods (simplifiedFlow)
+	 * @throws Exception
+	 */
 	public function testSimplifiedThreeFlags() {
 		$this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW);
 		$this->rb->setBillingAddress(
@@ -2525,6 +2532,10 @@ class ResursBankTest extends TestCase
 		$this->assertTrue(isset($payloadResult['paymentData']['waitForFraudControl']) && isset($payloadResult['paymentData']['annulIfFrozen']) && isset($payloadResult['paymentData']['finalizeIfBooked']));
 	}
 
+	/**
+	 * Test prevention of flooding services
+	 * @throws Exception
+	 */
 	public function testCheckoutFlood() {
 		$this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT);
 		$this->rb->setFlag('PREVENT_EXEC_FLOOD',true);
@@ -2539,5 +2550,19 @@ class ResursBankTest extends TestCase
 			$exceptionCode = $e->getCode();
 		}
 		$this->assertTrue($exceptionCode === RESURS_EXCEPTIONS::CREATEPAYMENT_TOO_FAST);
+	}
+
+	/**
+	 * Test netcurl 6.0.15 SOAPWARNINGS flag
+	 */
+	public function testCredentialFailure() {
+		$isolatedRB = new ResursBank("fail", "fail");
+		try {
+			$isolatedRB->getPaymentMethods();
+		} catch (\Exception $failException) {
+			$exceptionMessage = $failException->getMessage();
+			$authTest = (preg_match("/401 unauthorized/i", $exceptionMessage) ? true : false);
+			$this->assertTrue( $authTest );
+		}
 	}
 }

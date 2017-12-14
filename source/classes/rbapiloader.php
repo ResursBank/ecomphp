@@ -7,7 +7,7 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.0
- * @version 1.0.29
+ * @version 1.0.30
  * @deprecated Maintenance version only
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
@@ -226,9 +226,9 @@ class ResursBank {
 	////////// Private variables
 	///// Client Specific Settings
 	/** @var string The version of this gateway */
-	private $version = "1.0.29";
+	private $version = "1.0.30";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20171213";
+	private $lastUpdate = "20171214";
 	/** @var string URL to git storage */
 	private $gitUrl = "https://bitbucket.org/resursbankplugins/resurs-ecomphp";
 	/** @var string This. */
@@ -2242,6 +2242,7 @@ class ResursBank {
 		$serviceNameUrl = $this->getServiceUrl( $serviceName );
 		$soapBody = null;
 		if (!empty($serviceNameUrl) && !is_null($this->CURL)) {
+			$this->CURL->setFlag("SOAPWARNINGS", true);
 			$Service = $this->CURL->doGet( $serviceNameUrl );
 			try {
 				$RequestService = $Service->$serviceName( $resursParameters );
