@@ -6,7 +6,7 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.3
- * @version 1.3.3
+ * @version 1.3.4
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @license Apache License
@@ -111,9 +111,9 @@ class ResursBank {
 	////////// Private variables
 	///// Client Specific Settings
 	/** @var string The version of this gateway */
-	private $version = "1.3.3";
+	private $version = "1.3.4";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20171214";
+	private $lastUpdate = "20171219";
 	/** @var string URL to git storage */
 	private $gitUrl = "https://bitbucket.org/resursbankplugins/resurs-ecomphp";
 	/** @var string This. */
@@ -1932,11 +1932,32 @@ class ResursBank {
 	 * @return array|mixed|null
 	 * @throws \Exception
 	 * @link https://test.resurs.com/docs/x/moEW getPayment() documentation
+	 * @since 1.0.31
+	 * @since 1.1.31
+	 * @since 1.2.4
+	 * @since 1.3.4
+	 */
+	public function getPaymentBySoap( $paymentId = '' ) {
+		return $this->postService( "getPayment", array( 'paymentId' => $paymentId ) );
+	}
+
+	/**
+	 * getPayment, rewritten to primarily use rest instead of SOAP, to get more soap independence
+	 * @param string $paymentId
+	 *
+	 * @return array
 	 * @since 1.0.1
 	 * @since 1.1.1
+	 * @since 1.0.31 Refactored from this version
+	 * @since 1.1.31 Refactored from this version
+	 * @since 1.2.4 Refactored from this version
+	 * @since 1.3.4 Refactored from this version
 	 */
 	public function getPayment( $paymentId = '' ) {
-		return $this->postService( "getPayment", array( 'paymentId' => $paymentId ) );
+		if ($this->isFlag('GET_PAYMENT_BY_SOAP')) {
+			return $this->getPaymentBySoap($paymentId);
+		}
+		return $this->CURL->getParsedResponse( $this->CURL->doGet( $this->getCheckoutUrl() . "/checkout/payments/" . $paymentId ) );
 	}
 
 	/**
