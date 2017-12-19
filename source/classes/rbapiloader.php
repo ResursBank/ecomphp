@@ -1926,7 +1926,7 @@ class ResursBank {
 	}
 
 	/**
-	 * Retrieves detailed information about the payment.
+	 * Retrieves detailed information about a payment.
 	 *
 	 * @param string $paymentId
 	 * @return array|mixed|null
@@ -1942,7 +1942,7 @@ class ResursBank {
 	}
 
 	/**
-	 * getPayment, rewritten to primarily use rest instead of SOAP, to get more soap independence
+	 * getPayment - Retrieves detailed information about a payment (rewritten to primarily use rest instead of SOAP, to get more soap independence)
 	 * @param string $paymentId
 	 *
 	 * @return array
