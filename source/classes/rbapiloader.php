@@ -3404,7 +3404,7 @@ class ResursBank {
 	public function addMetaDataHash($paymentId, $hashLevel = RESURS_METAHASH_TYPES::HASH_ORDERLINES) {
 		if (!$this->metaDataHashEnabled) {return;}
 
-		/** @var string $dataHash Output string*/
+		/** @var string $dataHash Output string */
 		$dataHash = null;
 		/** @var array $orderData */
 		$orderData = array();
@@ -3426,7 +3426,7 @@ class ResursBank {
 			$customerData = $payload['customer'];
 		}
 
-		// Sanitize the orderlines with the simplest content available
+		// Sanitize the orderlines with the simplest content available (The "minimalisticflow" gives us artNo, description, price, quantiy)
 		$orderData = $this->sanitizePaymentSpec($this->getOrderLines(), RESURS_FLOW_TYPES::FLOW_MINIMALISTIC);
 		if ($this->BIT->isBit(RESURS_METAHASH_TYPES::HASH_ORDERLINES, $hashLevel)) {
 			$hashes['orderLines'] = $orderData;
