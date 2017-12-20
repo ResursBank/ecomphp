@@ -3477,7 +3477,7 @@ class ResursBank {
 	}
 
 	public function getMetaDataVerify() {
-
+		// TODO: Coming soon
 	}
 
 	/**
