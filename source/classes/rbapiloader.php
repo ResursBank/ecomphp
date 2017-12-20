@@ -119,6 +119,15 @@ class ResursBank {
 	/** @var string Replacing $clientName on usage of setClientNAme */
 	private $realClientName = "EComPHP";
 
+	/** @var bool $metaDataHashEnabled When enabled, ECom uses Resurs metadata to add a sha1-encoded hash string, based on parts of the payload to secure the data transport */
+	private $metaDataHashEnabled = false;
+	/** @var bool $metaDataHashEncrypted When enabled, ECom will try to pack and encrypt metadata strings instead of hashing it */
+	private $metaDataHashEncrypted = false;
+	/** @var string $metaDataIv For encryption */
+	private $metaDataIv = null;
+	/** @var string $metaDataKey For encryption */
+	private $metaDataKey = null;
+
 	///// Package related
 	/** @var bool Internal "handshake" control that defines if the module has been initiated or not */
 	private $hasServicesInitialization = false;
@@ -1973,6 +1982,35 @@ class ResursBank {
 			return $this->getPaymentBySoap($paymentId);
 		}
 		return $this->CURL->getParsedResponse( $this->CURL->doGet( $this->getCheckoutUrl() . "/checkout/payments/" . $paymentId ) );
+	}
+
+	/**
+	 * @param string $paymentId
+	 *
+	 * @return array
+	 * @throws \Exception
+	 */
+	public function getMetaData( $paymentId = '') {
+		$metaDataResponse = array();
+		if (is_string($paymentId)) {
+			$payment = $this->getPayment( $paymentId );
+		} else if (is_object($paymentId)) {
+			$payment = $paymentId;
+		} else {
+			throw new \Exception("getMetaDataException: PaymentID is neither and id nor object", 500);
+		}
+		if (isset($payment) && isset($payment->metaData)) {
+			foreach ($payment->metaData as $metaIndexArray) {
+				if (isset($metaIndexArray->key) && !empty($metaIndexArray->key)) {
+					if (!isset($metaDataResponse[$metaIndexArray->key])) {
+						$metaDataResponse[ $metaIndexArray->key ] = $metaIndexArray->value;
+					} else {
+						$metaDataResponse[$metaIndexArray->key][] = $metaIndexArray->value;
+					}
+				}
+			}
+		}
+		return $metaDataResponse;
 	}
 
 	/**
