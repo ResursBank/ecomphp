@@ -2204,7 +2204,7 @@ class ResursBank {
 		} catch ( \Exception $e ) {
 			$customErrorMessage = $e->getMessage();
 		}
-		if ( ! isset( $checkPayment->id ) ) {
+		if ( ! isset( $checkPayment->id ) && ! empty( $customErrorMessage ) ) {
 			throw new \Exception( $customErrorMessage );
 		}
 		$metaDataArray    = array(
