@@ -3409,6 +3409,85 @@ class ResursBank {
 	}
 
 	/**
+	 * @param $paymentId
+	 * @param int $hashLevel
+	 */
+	public function addMetaDataHash($paymentId, $hashLevel = RESURS_METAHASH_TYPES::HASH_ORDERLINES) {
+		if (!$this->metaDataHashEnabled) {return;}
+
+		/** @var string $dataHash Output string*/
+		$dataHash = null;
+		/** @var array $orderData */
+		$orderData = array();
+		/** @var array $customerData */
+		$customerData = array();
+		/** @var array $hashes Data to hash or encrypt */
+		$hashes = array();
+
+		// Set up the kind of data that can be hashed
+		$this->BIT->setBitStructure(array(
+			'ORDERLINES' => RESURS_METAHASH_TYPES::HASH_ORDERLINES,
+			'CUSTOMER' => RESURS_METAHASH_TYPES::HASH_CUSTOMER
+		));
+
+		// Fetch the payload and pick up data that can be used in the hashing
+		$payload = $this->getPayload();
+		if (isset($payload['orderData'])) { unset($payload['orderData']); }
+		if (isset($payload['customer'])) {
+			$customerData = $payload['customer'];
+		}
+
+		// Sanitize the orderlines with the simplest content available
+		$orderData = $this->sanitizePaymentSpec($this->getOrderLines(), RESURS_FLOW_TYPES::FLOW_MINIMALISTIC);
+		if ($this->BIT->isBit(RESURS_METAHASH_TYPES::HASH_ORDERLINES, $hashLevel)) {
+			$hashes['orderLines'] = $orderData;
+		}
+		if ($this->BIT->isBit(RESURS_METAHASH_TYPES::HASH_CUSTOMER, $hashLevel)) {
+			$hashes['customer'] = $customerData;
+		}
+
+		if (!$this->metaDataHashEncrypted) {
+			$dataHash = sha1(json_encode($hashes));
+		} else {
+			$dataHash = $this->T_CRYPTO->aesEncrypt(json_encode($hashes), true);
+		}
+
+		if (!isset($this->Payload['metaData'])) { $this->Payload['metaData'] = array(); }
+		$this->Payload['metaData'][] = array(
+			'key' => 'ecomHash',
+			'value' => $dataHash
+		);
+	}
+
+	/**
+	 * @param bool $enable
+	 * @param bool $encryptEnable Requires RIJNDAEL/AES Encryption enabled
+	 * @param null $encryptIv
+	 * @param null $encryptKey
+	 * @throws \Exception
+	 */
+	public function setMetaDataHash($enable = true, $encryptEnable = false, $encryptIv = null, $encryptKey = null) {
+		$this->metaDataHashEnabled = $enable;
+		$this->metaDataHashEncrypted = $encryptEnable;
+		if ($encryptEnable) {
+			if (is_null($encryptIv) || is_null($encryptKey)) {
+				throw new \Exception("To encrypt your metadata, you'll need to set up encryption keys");
+			}
+			$this->metaDataIv = $encryptIv;
+			$this->metaDataKey = $encryptKey;
+			$this->T_CRYPTO->setAesIv($this->metaDataIv);
+			$this->T_CRYPTO->setAesKey($this->metaDataKey);
+		}
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function getMetaDataHash() {
+		return $this->metaDataHashEnabled;
+	}
+
+	/**
 	 * Get the payment session id from Resurs Checkout
 	 *
 	 * @return string
