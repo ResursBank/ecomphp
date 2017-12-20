@@ -3780,6 +3780,12 @@ class ResursBank {
 				'vatPct',
 				'totalVatAmount',
 				'totalAmount'
+			),
+			'minimalistic' => array(
+				'artNo',
+				'description',
+				'unitAmountWithoutVat',
+				'quantity'
 			)
 		);
 		if ( is_array( $specLines ) ) {
@@ -3794,6 +3800,8 @@ class ResursBank {
 				$mySpecRules = $specRules['hosted'];
 			} else if ( $myFlow == RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT ) {
 				$mySpecRules = $specRules['checkout'];
+			} else if ( $myFlow == RESURS_FLOW_TYPES::FLOW_MINIMALISTIC ) {
+				$mySpecRules = $specRules['minimalistic'];
 			}
 			foreach ( $specLines as $specIndex => $specArray ) {
 				foreach ( $specArray as $key => $value ) {
