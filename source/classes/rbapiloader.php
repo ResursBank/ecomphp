@@ -27,6 +27,7 @@ if (file_exists(__DIR__ . "/../../vendor/autoload.php")) {
 	require_once(__DIR__ . '/../../vendor/autoload.php');
 }
 use \TorneLIB\TorneLIB_Crypto;
+use \TorneLIB\TorneLIB_NetBits;
 use \TorneLIB\TorneLIB_Network;
 use \TorneLIB\Tornevall_cURL;
 use \TorneLIB\CURL_POST_AS;
@@ -113,13 +114,22 @@ class ResursBank {
 	/** @var string The version of this gateway */
 	private $version = "1.3.4";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20171214";
+	private $lastUpdate = "20171219";
 	/** @var string URL to git storage */
 	private $gitUrl = "https://bitbucket.org/resursbankplugins/resurs-ecomphp";
 	/** @var string This. */
 	private $clientName = "EComPHP";
 	/** @var string Replacing $clientName on usage of setClientNAme */
 	private $realClientName = "EComPHP";
+
+	/** @var bool $metaDataHashEnabled When enabled, ECom uses Resurs metadata to add a sha1-encoded hash string, based on parts of the payload to secure the data transport */
+	private $metaDataHashEnabled = false;
+	/** @var bool $metaDataHashEncrypted When enabled, ECom will try to pack and encrypt metadata strings instead of hashing it */
+	private $metaDataHashEncrypted = false;
+	/** @var string $metaDataIv For encryption */
+	private $metaDataIv = null;
+	/** @var string $metaDataKey For encryption */
+	private $metaDataKey = null;
 
 	///// Package related
 	/** @var bool Internal "handshake" control that defines if the module has been initiated or not */
@@ -1940,17 +1950,67 @@ class ResursBank {
 	}
 
 	/**
-	 * Retrieves detailed information about the payment.
+	 * Retrieves detailed information about a payment.
 	 *
 	 * @param string $paymentId
 	 * @return array|mixed|null
 	 * @throws \Exception
 	 * @link https://test.resurs.com/docs/x/moEW getPayment() documentation
+	 * @since 1.0.31
+	 * @since 1.1.31
+	 * @since 1.2.4
+	 * @since 1.3.4
+	 */
+	public function getPaymentBySoap( $paymentId = '' ) {
+		return $this->postService( "getPayment", array( 'paymentId' => $paymentId ) );
+	}
+
+	/**
+	 * getPayment - Retrieves detailed information about a payment (rewritten to primarily use rest instead of SOAP, to get more soap independence)
+	 * @param string $paymentId
+	 *
+	 * @return array
 	 * @since 1.0.1
 	 * @since 1.1.1
+	 * @since 1.0.31 Refactored from this version
+	 * @since 1.1.31 Refactored from this version
+	 * @since 1.2.4 Refactored from this version
+	 * @since 1.3.4 Refactored from this version
 	 */
 	public function getPayment( $paymentId = '' ) {
-		return $this->postService( "getPayment", array( 'paymentId' => $paymentId ) );
+		if ($this->isFlag('GET_PAYMENT_BY_SOAP')) {
+			return $this->getPaymentBySoap($paymentId);
+		}
+		return $this->CURL->getParsedResponse( $this->CURL->doGet( $this->getCheckoutUrl() . "/checkout/payments/" . $paymentId ) );
+	}
+
+	/**
+	 * @param string $paymentId
+	 *
+	 * @return array
+	 * @throws \Exception
+	 */
+	public function getMetaData( $paymentId = '') {
+		$metaDataResponse = array();
+		if (is_string($paymentId)) {
+			$payment = $this->getPayment( $paymentId );
+		} else if (is_object($paymentId)) {
+			$payment = $paymentId;
+		} else {
+			throw new \Exception("getMetaDataException: PaymentID is neither and id nor object", 500);
+		}
+		if (isset($payment) && isset($payment->metaData)) {
+			foreach ($payment->metaData as $metaIndexArray) {
+				if (isset($metaIndexArray->key) && !empty($metaIndexArray->key)) {
+					if (!isset($metaDataResponse[$metaIndexArray->key])) {
+						$metaDataResponse[ $metaIndexArray->key ] = $metaIndexArray->value;
+					} else {
+						$metaDataResponse[$metaIndexArray->key][] = $metaIndexArray->value;
+					}
+				}
+			}
+		}
+		return $metaDataResponse;
 	}
 
 	/**
@@ -2144,7 +2204,7 @@ class ResursBank {
 		} catch ( \Exception $e ) {
 			$customErrorMessage = $e->getMessage();
 		}
-		if ( ! isset( $checkPayment->id ) ) {
+		if ( ! isset( $checkPayment->id ) && ! empty( $customErrorMessage ) ) {
 			throw new \Exception( $customErrorMessage );
 		}
 		$metaDataArray    = array(
@@ -3278,6 +3338,9 @@ class ResursBank {
 		}
 		$error  = array();
 		$myFlow = $this->getPreferredPaymentFlowService();
+
+		$this->addMetaDataHash($payment_id_or_method);
+
 		// Using this function to validate that card data info is properly set up during the deprecation state in >= 1.0.2/1.1.1
 		if ( $myFlow == RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW ) {
 			$paymentMethodInfo = $this->getPaymentMethodSpecific( $payment_id_or_method );
@@ -3346,6 +3409,89 @@ class ResursBank {
 	 */
 	public function bookSignedPayment( $paymentId = '' ) {
 		return $this->postService( "bookSignedPayment", array( 'paymentId' => $paymentId ) );
+	}
+
+	/**
+	 * @param $paymentId
+	 * @param int $hashLevel
+	 */
+	public function addMetaDataHash($paymentId, $hashLevel = RESURS_METAHASH_TYPES::HASH_ORDERLINES) {
+		if (!$this->metaDataHashEnabled) {return;}
+
+		/** @var string $dataHash Output string */
+		$dataHash = null;
+		/** @var array $orderData */
+		$orderData = array();
+		/** @var array $customerData */
+		$customerData = array();
+		/** @var array $hashes Data to hash or encrypt */
+		$hashes = array();
+
+		// Set up the kind of data that can be hashed
+		$this->BIT->setBitStructure(array(
+			'ORDERLINES' => RESURS_METAHASH_TYPES::HASH_ORDERLINES,
+			'CUSTOMER' => RESURS_METAHASH_TYPES::HASH_CUSTOMER
+		));
+
+		// Fetch the payload and pick up data that can be used in the hashing
+		$payload = $this->getPayload();
+		if (isset($payload['orderData'])) { unset($payload['orderData']); }
+		if (isset($payload['customer'])) {
+			$customerData = $payload['customer'];
+		}
+
+		// Sanitize the orderlines with the simplest content available (The "minimalisticflow" gives us artNo, description, price, quantiy)
+		$orderData = $this->sanitizePaymentSpec($this->getOrderLines(), RESURS_FLOW_TYPES::FLOW_MINIMALISTIC);
+		if ($this->BIT->isBit(RESURS_METAHASH_TYPES::HASH_ORDERLINES, $hashLevel)) {
+			$hashes['orderLines'] = $orderData;
+		}
+		if ($this->BIT->isBit(RESURS_METAHASH_TYPES::HASH_CUSTOMER, $hashLevel)) {
+			$hashes['customer'] = $customerData;
+		}
+
+		if (!$this->metaDataHashEncrypted) {
+			$dataHash = sha1(json_encode($hashes));
+		} else {
+			$dataHash = $this->T_CRYPTO->aesEncrypt(json_encode($hashes), true);
+		}
+
+		if (!isset($this->Payload['metaData'])) { $this->Payload['metaData'] = array(); }
+		$this->Payload['metaData'][] = array(
+			'key' => 'ecomHash',
+			'value' => $dataHash
+		);
+	}
+
+	/**
+	 * @param bool $enable
+	 * @param bool $encryptEnable Requires RIJNDAEL/AES Encryption enabled
+	 * @param null $encryptIv
+	 * @param null $encryptKey
+	 * @throws \Exception
+	 */
+	public function setMetaDataHash($enable = true, $encryptEnable = false, $encryptIv = null, $encryptKey = null) {
+		$this->metaDataHashEnabled = $enable;
+		$this->metaDataHashEncrypted = $encryptEnable;
+		if ($encryptEnable) {
+			if (is_null($encryptIv) || is_null($encryptKey)) {
+				throw new \Exception("To encrypt your metadata, you'll need to set up encryption keys");
+			}
+			$this->metaDataIv = $encryptIv;
+			$this->metaDataKey = $encryptKey;
+			$this->T_CRYPTO->setAesIv($this->metaDataIv);
+			$this->T_CRYPTO->setAesKey($this->metaDataKey);
+		}
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function getMetaDataHash() {
+		return $this->metaDataHashEnabled;
+	}
+
+	public function getMetaDataVerify() {
+		// TODO: Coming soon
 	}
 
 	/**
@@ -3720,6 +3866,12 @@ class ResursBank {
 				'vatPct',
 				'totalVatAmount',
 				'totalAmount'
+			),
+			'minimalistic' => array(
+				'artNo',
+				'description',
+				'unitAmountWithoutVat',
+				'quantity'
 			)
 		);
 		if ( is_array( $specLines ) ) {
@@ -3734,6 +3886,8 @@ class ResursBank {
 				$mySpecRules = $specRules['hosted'];
 			} else if ( $myFlow == RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT ) {
 				$mySpecRules = $specRules['checkout'];
+			} else if ( $myFlow == RESURS_FLOW_TYPES::FLOW_MINIMALISTIC ) {
+				$mySpecRules = $specRules['minimalistic'];
 			}
 			foreach ( $specLines as $specIndex => $specArray ) {
 				foreach ( $specArray as $key => $value ) {
