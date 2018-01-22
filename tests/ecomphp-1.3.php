@@ -2592,7 +2592,6 @@ class ResursBankTest extends TestCase
 	public function testGetSaltByCrypto() {
 		$this->assertTrue(strlen($this->rb->getSaltByCrypto(3, 128)) == 128);
 	}
-
 	public function testWcMtRandEntropyKeyGen()  {
 		$this->assertTrue(strlen(uniqid( mt_rand(), true )) <= 35);
 	}
