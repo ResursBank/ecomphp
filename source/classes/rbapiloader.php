@@ -6,7 +6,7 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.2
- * @version 1.2.3
+ * @version 1.2.4
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @license Apache License
@@ -3343,7 +3343,7 @@ class ResursBank {
 		$error  = array();
 		$myFlow = $this->getPreferredPaymentFlowService();
 
-		$this->addMetaDataHash($payment_id_or_method);
+		//$this->addMetaDataHash($payment_id_or_method);
 
 		// Using this function to validate that card data info is properly set up during the deprecation state in >= 1.0.2/1.1.1
 		if ( $myFlow == RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW ) {
@@ -3418,6 +3418,8 @@ class ResursBank {
 	/**
 	 * @param $paymentId
 	 * @param int $hashLevel
+	 *
+	 * @throws \Exception
 	 */
 	public function addMetaDataHash($paymentId, $hashLevel = RESURS_METAHASH_TYPES::HASH_ORDERLINES) {
 		if (!$this->metaDataHashEnabled) {return;}
