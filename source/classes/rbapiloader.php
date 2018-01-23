@@ -7,7 +7,7 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.0
- * @version 1.0.30
+ * @version 1.0.31
  * @deprecated Maintenance version only
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
@@ -33,6 +33,7 @@ use Resursbank\RBEcomPHP\CURL_POST_AS;
 use Resursbank\RBEcomPHP\Tornevall_cURL;
 use Resursbank\RBEcomPHP\TorneLIB_Network;
 use Resursbank\RBEcomPHP\TorneLIB_Crypto;
+use Resursbank\RBEcomPHP\TorneLIB_NetBits;
 
 /**
  * Class ResursBank Primary class for EComPHP
@@ -1711,6 +1712,7 @@ class ResursBank {
 		return $this->T_CRYPTO->mkpass($complexity, $totalLength);
 	}
 
+
 	/**
 	 * Convert callback types to string names
 	 *
@@ -2721,18 +2723,68 @@ class ResursBank {
 	}
 
 	/**
-	 * Retrieves detailed information about the payment.
+	 * Retrieves detailed information about a payment.
 	 *
 	 * @param string $paymentId
 	 *
 	 * @return array|mixed|null
 	 * @throws \Exception
 	 * @link https://test.resurs.com/docs/x/moEW getPayment() documentation
+	 * @since 1.0.31
+	 * @since 1.1.31
+	 * @since 1.2.4
+	 * @since 1.3.4
+	 */
+	public function getPaymentBySoap( $paymentId = '' ) {
+		return $this->postService( "getPayment", array( 'paymentId' => $paymentId ) );
+	}
+
+	/**
+	 * getPayment - Retrieves detailed information about a payment (rewritten to primarily use rest instead of SOAP, to get more soap independence)
+	 * @param string $paymentId
+	 *
+	 * @return array
 	 * @since 1.0.1
 	 * @since 1.1.1
+	 * @since 1.0.31 Refactored from this version
+	 * @since 1.1.31 Refactored from this version
+	 * @since 1.2.4 Refactored from this version
+	 * @since 1.3.4 Refactored from this version
 	 */
 	public function getPayment( $paymentId = '' ) {
-		return $this->postService( "getPayment", array( 'paymentId' => $paymentId ) );
+		if ($this->isFlag('GET_PAYMENT_BY_SOAP')) {
+			return $this->getPaymentBySoap($paymentId);
+		}
+		return $this->CURL->getParsedResponse( $this->CURL->doGet( $this->getCheckoutUrl() . "/checkout/payments/" . $paymentId ) );
+	}
+
+	/**
+	 * @param string $paymentId
+	 *
+	 * @return array
+	 * @throws \Exception
+	 */
+	public function getMetaData( $paymentId = '') {
+		$metaDataResponse = array();
+		if (is_string($paymentId)) {
+			$payment = $this->getPayment( $paymentId );
+		} else if (is_object($paymentId)) {
+			$payment = $paymentId;
+		} else {
+			throw new \Exception("getMetaDataException: PaymentID is neither and id nor object", 500);
+		}
+		if (isset($payment) && isset($payment->metaData)) {
+			foreach ($payment->metaData as $metaIndexArray) {
+				if (isset($metaIndexArray->key) && !empty($metaIndexArray->key)) {
+					if (!isset($metaDataResponse[$metaIndexArray->key])) {
+						$metaDataResponse[ $metaIndexArray->key ] = $metaIndexArray->value;
+					} else {
+						$metaDataResponse[$metaIndexArray->key][] = $metaIndexArray->value;
+					}
+				}
+			}
+		}
+		return $metaDataResponse;
 	}
 
 	/**
@@ -2930,7 +2982,7 @@ class ResursBank {
 		} catch ( \Exception $e ) {
 			$customErrorMessage = $e->getMessage();
 		}
-		if ( ! isset( $checkPayment->id ) ) {
+		if ( ! isset( $checkPayment->id ) && ! empty( $customErrorMessage ) ) {
 			throw new \Exception( $customErrorMessage );
 		}
 		$metaDataArray    = array(
@@ -4930,6 +4982,9 @@ class ResursBank {
 		}
 		$error  = array();
 		$myFlow = $this->getPreferredPaymentFlowService();
+
+		//$this->addMetaDataHash($payment_id_or_method);
+
 		// Using this function to validate that card data info is properly set up during the deprecation state in >= 1.0.2/1.1.1
 		if ( $myFlow == RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW ) {
 			$paymentMethodInfo = $this->getPaymentMethodSpecific( $payment_id_or_method );
@@ -5457,6 +5512,12 @@ class ResursBank {
 				'vatPct',
 				'totalVatAmount',
 				'totalAmount'
+			),
+			'minimalistic' => array(
+				'artNo',
+				'description',
+				'unitAmountWithoutVat',
+				'quantity'
 			)
 		);
 		if ( is_array( $specLines ) ) {
@@ -5471,6 +5532,8 @@ class ResursBank {
 				$mySpecRules = $specRules['hosted'];
 			} else if ( $myFlow == RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT ) {
 				$mySpecRules = $specRules['checkout'];
+			} else if ( $myFlow == RESURS_FLOW_TYPES::FLOW_MINIMALISTIC ) {
+				$mySpecRules = $specRules['minimalistic'];
 			}
 			foreach ( $specLines as $specIndex => $specArray ) {
 				foreach ( $specArray as $key => $value ) {
