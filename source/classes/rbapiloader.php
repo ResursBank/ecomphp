@@ -227,9 +227,9 @@ class ResursBank {
 	////////// Private variables
 	///// Client Specific Settings
 	/** @var string The version of this gateway */
-	private $version = "1.1.30";
+	private $version = "1.1.31";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20171214";
+	private $lastUpdate = "20180123";
 	/** @var string URL to git storage */
 	private $gitUrl = "https://bitbucket.org/resursbankplugins/resurs-ecomphp";
 	/** @var string This. */
@@ -2356,7 +2356,13 @@ class ResursBank {
 
 		// Get the current from e-commerce
 		try {
-			$currentInvoiceNumber = $this->postService( "peekInvoiceSequence" )->nextInvoiceNumber;
+			$peekSequence = $this->postService( "peekInvoiceSequence" );
+			// Check if nextInvoiceNumber is missing
+			if (isset($peekSequence->nextInvoiceNumber)) {
+				$currentInvoiceNumber = $peekSequence->nextInvoiceNumber;
+			} else {
+				$firstInvoiceNumber = 1;
+			}
 		} catch ( \Exception $e ) {
 			if (is_null($firstInvoiceNumber) && $initInvoice) {
 				$firstInvoiceNumber = 1;
