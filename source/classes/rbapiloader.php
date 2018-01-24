@@ -926,6 +926,7 @@ class ResursBank {
 	 * @return string
 	 */
 	public function getSaltKey( $complexity = 1, $setmax = null ) {
+
 		$retp               = null;
 		$characterListArray = array(
 			'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
@@ -977,6 +978,19 @@ class ResursBank {
 		$retp = implode( "", $chars );
 
 		return $retp;
+	}
+
+	/**
+	 * Get salt by crypto library
+	 * @param int $complexity
+	 * @param int $totalLength
+	 *
+	 * @return string
+	 * @since 1.3.4
+	 */
+	public function getSaltByCrypto($complexity = 3, $totalLength = 24) {
+		$this->T_CRYPTO = new TorneLIB_Crypto();
+		return $this->T_CRYPTO->mkpass($complexity, $totalLength);
 	}
 
 	/**
@@ -1587,7 +1601,13 @@ class ResursBank {
 
 		// Get the current from e-commerce
 		try {
-			$currentInvoiceNumber = $this->postService( "peekInvoiceSequence" )->nextInvoiceNumber;
+			$peekSequence = $this->postService( "peekInvoiceSequence" );
+			// Check if nextInvoiceNumber is missing
+			if (isset($peekSequence->nextInvoiceNumber)) {
+				$currentInvoiceNumber = $peekSequence->nextInvoiceNumber;
+			} else {
+				$firstInvoiceNumber = 1;
+			}
 		} catch ( \Exception $e ) {
 			if (is_null($firstInvoiceNumber) && $initInvoice) {
 				$firstInvoiceNumber = 1;
@@ -1955,7 +1975,8 @@ class ResursBank {
 	 * getPayment - Retrieves detailed information about a payment (rewritten to primarily use rest instead of SOAP, to get more soap independence)
 	 * @param string $paymentId
 	 *
-	 * @return array
+	 * @return array|mixed|null
+	 * @throws \Exception
 	 * @since 1.0.1
 	 * @since 1.1.1
 	 * @since 1.0.31 Refactored from this version
