@@ -2580,4 +2580,12 @@ class ResursBankTest extends TestCase
 	public function testGetSaltByCrypto() {
 		$this->assertTrue(strlen($this->rb->getSaltByCrypto(3, 128)) == 128);
 	}
+	public function testWcMtRandEntropyKeyGen()  {
+		$this->assertTrue(strlen(uniqid( mt_rand(), true )) <= 35);
+	}
+	public function testLastPayload() {
+		$this->getPaymentIdFromOrderByClientChoice( 1, 1, 1000, 2000, '198101010000' );
+		$poppedPayload = $this->rb->getPayload(true);
+		$this->assertTrue(isset($poppedPayload['Payload']) && isset($poppedPayload['SpecLines']));
+	}
 }
