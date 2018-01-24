@@ -874,6 +874,9 @@ class ResursBankTest extends TestCase
 		$this->assertTrue( ( preg_match( "/amount=$amount/i", $customURL ) ? true : false ) );
 	}
 
+	/** @var string $framePaymentId */
+
+	private $framePaymentId;
 	/**
 	 * This test is incomplete.
 	 *
@@ -902,6 +905,7 @@ class ResursBankTest extends TestCase
 				$assumeThis = true;
 			}
 		}
+		$this->framePaymentId = $newReferenceId;
 		if ( $returnPaymentReference ) {
 			return $this->rb->getPreferredPaymentId();
 		}
@@ -910,6 +914,10 @@ class ResursBankTest extends TestCase
 		} else {
 			return $iFrameUrl;
 		}
+	}
+
+	private function getCheckoutFrameId() {
+
 	}
 
 	/**
@@ -2585,4 +2593,14 @@ class ResursBankTest extends TestCase
 			$this->assertTrue( $authTest );
 		}
 	}
+
+	public function testHashifyGradeOrderLines() {
+		$this->rb->setMetaDataHash(true, true, "iv", "key");
+		try {
+			$paymentId = $this->getPaymentIdFromOrderByClientChoice( 3, 1, 1000, 2000, '198305147715' );
+		} catch (\Exception $paymentException) {
+			echo "hashifyGradeOrderLinesException: " . $paymentException->getMessage() . "\n";
+		}
+	}
+
 }
