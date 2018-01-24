@@ -175,6 +175,14 @@ class ResursBank {
 	 */
 	private $Payload;
 	/**
+	 * @var array
+	 * @since 1.0.31
+	 * @since 1.1.31
+	 * @since 1.2.4
+	 * @since 1.3.4
+	 */
+	private $PayloadHistory = array();
+	/**
 	 * If there is a chosen payment method, the information about it (received from Resurs Ecommerce) will be stored here
 	 * @var array $PaymentMethod
 	 * @since 1.0.13
@@ -4245,23 +4253,30 @@ class ResursBank {
 	/**
 	 * Returns the final payload
 	 *
+	 * @param bool $history
+	 *
 	 * @return array
 	 * @throws \Exception
 	 * @since 1.0.2
 	 * @since 1.1.2
 	 * @since 1.2.0
 	 */
-	public function getPayload() {
-		$this->preparePayload();
-		// Making sure payloads are returned as they should look
-		if (isset($this->Payload)) {
-			if (!is_array($this->Payload)) {
+	public function getPayload( $history = false) {
+		if ( ! $history) {
+			$this->preparePayload();
+			// Making sure payloads are returned as they should look
+			if ( isset( $this->Payload ) ) {
+				if ( ! is_array( $this->Payload ) ) {
+					$this->Payload = array();
+				}
+			} else {
 				$this->Payload = array();
 			}
+
+			return $this->Payload;
 		} else {
-			$this->Payload = array();
+			return array_pop($this->PayloadHistory);
 		}
-		return $this->Payload;
 	}
 
 	/**
@@ -4963,6 +4978,10 @@ class ResursBank {
 	 * @since 1.1.22
 	 */
 	private function resetPayload() {
+		$this->PayloadHistory[] = array(
+			'Payload' => $this->Payload,
+			'SpecLines' => $this->SpecLines
+		);
 		$this->SpecLines = array();
 		$this->Payload = array();
 	}
