@@ -114,7 +114,7 @@ class ResursBank {
 	/** @var string The version of this gateway */
 	private $version = "1.3.4";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20180123";
+	private $lastUpdate = "20180125";
 	/** @var string URL to git storage */
 	private $gitUrl = "https://bitbucket.org/resursbankplugins/resurs-ecomphp";
 	/** @var string This. */
@@ -515,6 +515,7 @@ class ResursBank {
 		}
 		if ( class_exists( '\Resursbank\RBEcomPHP\Tornevall_cURL' ) || class_exists( '\TorneLIB\Tornevall_cURL' ) ) {
 			$this->CURL = new Tornevall_cURL();
+			$this->CURL->setChain(false);
 			$this->CURL->setStoreSessionExceptions( true );
 			$this->CURL->setAuthentication( $this->soapOptions['login'], $this->soapOptions['password'] );
 			$this->CURL->setUserAgent( $this->myUserAgent );
@@ -1309,7 +1310,7 @@ class ResursBank {
 			$renderCallbackUrl = $this->getServiceUrl( "registerEventCallback" );
 			// We are not using postService here, since we are dependent on the response code rather than the response itself
 			$renderedResponse = $this->CURL->doPost( $renderCallbackUrl )->registerEventCallback( $renderCallback );
-			$code             = $renderedResponse['code'];
+			$code             = $this->CURL->getResponseCode($renderedResponse);
 		}
 		if ( $code >= 200 && $code <= 250 ) {
 			if ( isset( $this->skipCallbackValidation ) && $this->skipCallbackValidation === false ) {
@@ -1344,14 +1345,16 @@ class ResursBank {
 				$serviceUrl        = $this->getCheckoutUrl() . "/callbacks";
 				$renderCallbackUrl = $serviceUrl . "/" . $callbackType;
 				$curlResponse      = $this->CURL->doDelete( $renderCallbackUrl );
-				if ( $curlResponse['code'] >= 200 && $curlResponse['code'] <= 250 ) {
+				$curlCode          = $this->CURL->getResponseCode( $curlResponse );
+				if ( $curlCode >= 200 && $curlCode <= 250 ) {
 					return true;
 				}
 			} else {
 				$this->InitializeServices();
 				// Not using postService here, since we're
 				$curlResponse = $this->CURL->doGet( $this->getServiceUrl( 'unregisterEventCallback' ) )->unregisterEventCallback( array( 'eventType' => $callbackType ) );
-				if ( $curlResponse['code'] >= 200 && $curlResponse['code'] <= 250 ) {
+				$curlCode     = $this->CURL->getResponseCode( $curlResponse );
+				if ( $curlCode >= 200 && $curlCode <= 250 ) {
 					return true;
 				}
 			}
@@ -2228,10 +2231,10 @@ class ResursBank {
 			'value'     => $metaDataValue
 		);
 		$metaDataResponse = $this->CURL->doGet( $this->getServiceUrl( "addMetaData" ) )->addMetaData( $metaDataArray );
-		if ( $metaDataResponse['code'] >= 200 ) {
+		$curlCode = $this->CURL->getResponseCode($metaDataResponse);
+		if ( $curlCode >= 200 && $curlCode <= 250 ) {
 			return true;
 		}
-
 		return false;
 	}
 
