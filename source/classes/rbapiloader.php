@@ -7458,6 +7458,10 @@ class ResursBank {
 	 * @since 1.1.22
 	 */
 	private function resetPayload() {
+		$this->PayloadHistory[] = array(
+			'Payload' => $this->Payload,
+			'SpecLines' => $this->SpecLines
+		);
 		$this->SpecLines = array();
 		$this->Payload = array();
 	}
