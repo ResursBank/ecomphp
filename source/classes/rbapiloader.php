@@ -7,7 +7,7 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.1
- * @version 1.1.31
+ * @version 1.1.32
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @license Apache License
@@ -228,7 +228,7 @@ class ResursBank {
 	////////// Private variables
 	///// Client Specific Settings
 	/** @var string The version of this gateway */
-	private $version = "1.1.31";
+	private $version = "1.1.32";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
 	private $lastUpdate = "20180125";
 	/** @var string URL to git storage */
@@ -2755,7 +2755,8 @@ class ResursBank {
 	 * getPayment - Retrieves detailed information about a payment (rewritten to primarily use rest instead of SOAP, to get more soap independence)
 	 * @param string $paymentId
 	 *
-	 * @return array
+	 * @return array|mixed|null
+	 * @throws \Exception
 	 * @since 1.0.1
 	 * @since 1.1.1
 	 * @since 1.0.31 Refactored from this version
@@ -2767,6 +2768,7 @@ class ResursBank {
 		if ($this->isFlag('GET_PAYMENT_BY_SOAP')) {
 			return $this->getPaymentBySoap($paymentId);
 		}
+		$this->InitializeServices();
 		return $this->CURL->getParsedResponse( $this->CURL->doGet( $this->getCheckoutUrl() . "/checkout/payments/" . $paymentId ) );
 	}
 
