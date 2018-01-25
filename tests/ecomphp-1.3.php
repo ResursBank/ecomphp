@@ -874,6 +874,9 @@ class ResursBankTest extends TestCase
 		$this->assertTrue( ( preg_match( "/amount=$amount/i", $customURL ) ? true : false ) );
 	}
 
+	/** @var string $framePaymentId */
+	//private $framePaymentId;
+
 	/**
 	 * This test is incomplete.
 	 *
@@ -902,6 +905,7 @@ class ResursBankTest extends TestCase
 				$assumeThis = true;
 			}
 		}
+		//$this->framePaymentId = $newReferenceId;
 		if ( $returnPaymentReference ) {
 			return $this->rb->getPreferredPaymentId();
 		}
@@ -911,6 +915,8 @@ class ResursBankTest extends TestCase
 			return $iFrameUrl;
 		}
 	}
+
+	//private function getCheckoutFrameId() {}
 
 	/**
 	 * Try to fetch the iframe (Resurs Checkout). When the iframe url has been received, check if there's content.
@@ -2586,6 +2592,15 @@ class ResursBankTest extends TestCase
 		}
 	}
 
+/*	public function testHashifyGradeOrderLines() {
+		$this->rb->setMetaDataHash(true, true, "iv", "key");
+		try {
+			$paymentId = $this->getPaymentIdFromOrderByClientChoice( 3, 1, 1000, 2000, '198305147715' );
+		} catch (\Exception $paymentException) {
+			echo "hashifyGradeOrderLinesException: " . $paymentException->getMessage() . "\n";
+		}
+	}*/
+
 	public function testGetSaltKeyDeprecated() {
 		$this->assertTrue(strlen($this->rb->getSaltKey()) > 0);
 	}
@@ -2594,5 +2609,10 @@ class ResursBankTest extends TestCase
 	}
 	public function testWcMtRandEntropyKeyGen()  {
 		$this->assertTrue(strlen(uniqid( mt_rand(), true )) <= 35);
+	}
+	public function testLastPayload() {
+		$this->getPaymentIdFromOrderByClientChoice( 1, 1, 1000, 2000, '198101010000' );
+		$poppedPayload = $this->rb->getPayload(true);
+		$this->assertTrue(isset($poppedPayload['Payload']) && isset($poppedPayload['SpecLines']));
 	}
 }
