@@ -7475,6 +7475,7 @@ class ResursBank {
 	 *
 	 * @param $paymentId
 	 * @param array $customPayloadItemList
+	 * @param bool $runOnce Only run this once, throw second time
 	 *
 	 * @return bool
 	 * @throws \Exception
@@ -7482,13 +7483,22 @@ class ResursBank {
 	 * @since 1.1.22
 	 * @since 1.2.0
 	 */
-	public function paymentFinalize( $paymentId = "", $customPayloadItemList = array() ) {
+	public function paymentFinalize( $paymentId = "", $customPayloadItemList = array(), $runOnce = false ) {
 		$afterShopObject = $this->getAfterShopObjectByPayload( $paymentId, $customPayloadItemList, RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_FINALIZE );
 		$this->aftershopPrepareMetaData( $paymentId );
-		$afterShopResponseCode = $this->postService( "finalizePayment", $afterShopObject, true );
-		if ( $afterShopResponseCode >= 200 && $afterShopResponseCode < 300 ) {
-			$this->resetPayload();
-			return true;
+		try {
+			$afterShopResponseCode = $this->postService( "finalizePayment", $afterShopObject, true );
+			if ( $afterShopResponseCode >= 200 && $afterShopResponseCode < 300 ) {
+				$this->resetPayload();
+
+				return true;
+			}
+		} catch (\Exception $finalizationException) {
+			if ($finalizationException->getCode() == 29 && !$this->isFlag('SKIP_AFTERSHOP_INVOICE_CONTROL') && !$runOnce) {
+				$this->getNextInvoiceNumberByDebits(5);
+				return $this->paymentFinalize($paymentId, $customPayloadItemList, true);
+			}
+			throw new \Exception($finalizationException->getMessage(), $finalizationException->getCode(), $finalizationException);
 		}
 		return false;
 	}
@@ -7500,6 +7510,7 @@ class ResursBank {
 	 *
 	 * @param $paymentId
 	 * @param array $customPayloadItemList
+	 * @param bool $runOnce Only run this once, throw second time
 	 *
 	 * @return bool
 	 * @throws \Exception
@@ -7507,14 +7518,24 @@ class ResursBank {
 	 * @since 1.1.22
 	 * @since 1.2.0
 	 */
-	public function paymentAnnul( $paymentId = "", $customPayloadItemList = array() ) {
+	public function paymentAnnul( $paymentId = "", $customPayloadItemList = array(), $runOnce = false ) {
 		$afterShopObject = $this->getAfterShopObjectByPayload( $paymentId, $customPayloadItemList, RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_ANNUL );
 		$this->aftershopPrepareMetaData( $paymentId );
-		$afterShopResponseCode = $this->postService( "annulPayment", $afterShopObject, true );
-		if ( $afterShopResponseCode >= 200 && $afterShopResponseCode < 300 ) {
-			$this->resetPayload();
-			return true;
+		try {
+			$afterShopResponseCode = $this->postService( "annulPayment", $afterShopObject, true );
+			if ( $afterShopResponseCode >= 200 && $afterShopResponseCode < 300 ) {
+				$this->resetPayload();
+
+				return true;
+			}
+		} catch (\Exception $annulException) {
+			if ($annulException->getCode() == 29 && !$this->isFlag('SKIP_AFTERSHOP_INVOICE_CONTROL') && !$runOnce) {
+				$this->getNextInvoiceNumberByDebits(5);
+				return $this->paymentFinalize($paymentId, $customPayloadItemList, true);
+			}
+			throw new \Exception($annulException->getMessage(), $annulException->getCode(), $annulException);
 		}
+
 		return false;
 	}
 
@@ -7525,6 +7546,7 @@ class ResursBank {
 	 *
 	 * @param $paymentId
 	 * @param array $customPayloadItemList
+	 * @param bool $runOnce Only run this once, throw second time
 	 *
 	 * @return bool
 	 * @throws \Exception
@@ -7532,13 +7554,22 @@ class ResursBank {
 	 * @since 1.1.22
 	 * @since 1.2.0
 	 */
-	public function paymentCredit( $paymentId = "", $customPayloadItemList = array() ) {
+	public function paymentCredit( $paymentId = "", $customPayloadItemList = array(), $runOnce = false ) {
 		$afterShopObject = $this->getAfterShopObjectByPayload( $paymentId, $customPayloadItemList, RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_CREDIT );
 		$this->aftershopPrepareMetaData( $paymentId );
-		$afterShopResponseCode = $this->postService( "creditPayment", $afterShopObject, true );
-		if ( $afterShopResponseCode >= 200 && $afterShopResponseCode < 300 ) {
-			$this->resetPayload();
-			return true;
+		try {
+			$afterShopResponseCode = $this->postService( "creditPayment", $afterShopObject, true );
+			if ( $afterShopResponseCode >= 200 && $afterShopResponseCode < 300 ) {
+				$this->resetPayload();
+
+				return true;
+			}
+		} catch (\Exception $creditException) {
+			if ($creditException->getCode() == 29 && !$this->isFlag('SKIP_AFTERSHOP_INVOICE_CONTROL') && !$runOnce) {
+				$this->getNextInvoiceNumberByDebits(5);
+				return $this->paymentFinalize($paymentId, $customPayloadItemList, true);
+			}
+			throw new \Exception($creditException->getMessage(), $creditException->getCode(), $creditException);
 		}
 		return false;
 	}
