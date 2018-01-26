@@ -4158,19 +4158,24 @@ class ResursBank {
 	/**
 	 * Configure signing data for the payload
 	 *
-	 * @param string $successUrl
-	 * @param string $failUrl
-	 * @param bool $forceSigning
+	 * @param string $successUrl Successful payment redirect url
+	 * @param string $failUrl Payment failures redirect url
+	 * @param bool $forceSigning Always require signing during payment
+	 * @param string $backUrl Backurl (optional, for hosted flow) if anything else than failUrl (backUrl is used when customers are clicking "back" rather than failing)
+	 *
 	 * @throws \Exception
 	 * @since 1.0.6
 	 * @since 1.1.6
 	 */
-	public function setSigning( $successUrl = '', $failUrl = '', $forceSigning = false ) {
+	public function setSigning( $successUrl = '', $failUrl = '', $forceSigning = false, $backUrl = null ) {
 		$SigningPayload['signing'] = array(
 			'successUrl'   => $successUrl,
 			'failUrl'      => $failUrl,
 			'forceSigning' => $forceSigning
 		);
+		if (!is_null($backUrl)) {
+			$SigningPayload['backUrl'] = $backUrl;
+		}
 		$this->handlePayload( $SigningPayload );
 	}
 
@@ -4179,6 +4184,7 @@ class ResursBank {
 	 *
 	 * @param string $successUrl
 	 * @param string $backUrl
+	 *
 	 * @throws \Exception
 	 */
 	public function setCheckoutUrls($successUrl = '', $backUrl = '') {
