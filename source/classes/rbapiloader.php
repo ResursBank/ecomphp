@@ -6,7 +6,7 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.3
- * @version 1.3.5
+ * @version 1.3.6
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @license Apache License
@@ -112,9 +112,9 @@ class ResursBank {
 	////////// Private variables
 	///// Client Specific Settings
 	/** @var string The version of this gateway */
-	private $version = "1.3.5";
+	private $version = "1.3.6";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20180125";
+	private $lastUpdate = "20180126";
 	/** @var string URL to git storage */
 	private $gitUrl = "https://bitbucket.org/resursbankplugins/resurs-ecomphp";
 	/** @var string This. */
@@ -5331,5 +5331,30 @@ class ResursBank {
 			default:
 				return "";
 		}
+	}
+
+	/**
+	 * Callback digest validator
+	 *
+	 * @param string $callbackPaymentId Requested payment id to check
+	 * @param string $saltKey Current salt key used for the digest
+	 * @param string $inboundDigest Digest reveived from Resurs Bank
+	 * @param null $callbackResult Optional for AUTOMATIC_FRAUD_CONTROL
+	 *
+	 * @return bool
+	 * @since 1.0.33
+	 * @since 1.1.33
+	 * @since 1.2.6
+	 * @since 1.3.6
+	 */
+	public function getValidatedCallbackDigest($callbackPaymentId = '', $saltKey = '', $inboundDigest = '', $callbackResult = null) {
+		$digestCompiled = $callbackPaymentId . (!is_null($callbackResult) ? $callbackResult : null) . $saltKey;
+		$digestMd5 = strtoupper(md5($digestCompiled));
+		$digestSha = strtoupper(sha1($digestCompiled));
+		$realInboundDigest = strtoupper($inboundDigest);
+		if ($realInboundDigest == $digestMd5 || $realInboundDigest == $digestSha) {
+			return true;
+		}
+		return false;
 	}
 }
