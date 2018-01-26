@@ -4996,6 +4996,7 @@ class ResursBank {
 	 *
 	 * @param $paymentId
 	 * @param array $customPayloadItemList
+	 * @param bool $runOnce Only run this once, throw second time
 	 *
 	 * @return bool
 	 * @throws \Exception
@@ -5003,13 +5004,22 @@ class ResursBank {
 	 * @since 1.1.22
 	 * @since 1.2.0
 	 */
-	public function paymentFinalize( $paymentId = "", $customPayloadItemList = array() ) {
+	public function paymentFinalize( $paymentId = "", $customPayloadItemList = array(), $runOnce = false ) {
 		$afterShopObject = $this->getAfterShopObjectByPayload( $paymentId, $customPayloadItemList, RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_FINALIZE );
 		$this->aftershopPrepareMetaData( $paymentId );
-		$afterShopResponseCode = $this->postService( "finalizePayment", $afterShopObject, true );
-		if ( $afterShopResponseCode >= 200 && $afterShopResponseCode < 300 ) {
-			$this->resetPayload();
-			return true;
+		try {
+			$afterShopResponseCode = $this->postService( "finalizePayment", $afterShopObject, true );
+			if ( $afterShopResponseCode >= 200 && $afterShopResponseCode < 300 ) {
+				$this->resetPayload();
+
+				return true;
+			}
+		} catch (\Exception $finalizationException) {
+			if ($finalizationException->getCode() == 29 && !$this->isFlag('SKIP_AFTERSHOP_INVOICE_CONTROL') && !$runOnce) {
+				$this->getNextInvoiceNumberByDebits(5);
+				return $this->paymentFinalize($paymentId, $customPayloadItemList, true);
+			}
+			throw new \Exception($finalizationException->getMessage(), $finalizationException->getCode(), $finalizationException);
 		}
 		return false;
 	}
@@ -5034,6 +5044,7 @@ class ResursBank {
 	 *
 	 * @param $paymentId
 	 * @param array $customPayloadItemList
+	 * @param bool $runOnce Only run this once, throw second time
 	 *
 	 * @return bool
 	 * @throws \Exception
@@ -5041,14 +5052,24 @@ class ResursBank {
 	 * @since 1.1.22
 	 * @since 1.2.0
 	 */
-	public function paymentAnnul( $paymentId = "", $customPayloadItemList = array() ) {
+	public function paymentAnnul( $paymentId = "", $customPayloadItemList = array(), $runOnce = false ) {
 		$afterShopObject = $this->getAfterShopObjectByPayload( $paymentId, $customPayloadItemList, RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_ANNUL );
 		$this->aftershopPrepareMetaData( $paymentId );
-		$afterShopResponseCode = $this->postService( "annulPayment", $afterShopObject, true );
-		if ( $afterShopResponseCode >= 200 && $afterShopResponseCode < 300 ) {
-			$this->resetPayload();
-			return true;
+		try {
+			$afterShopResponseCode = $this->postService( "annulPayment", $afterShopObject, true );
+			if ( $afterShopResponseCode >= 200 && $afterShopResponseCode < 300 ) {
+				$this->resetPayload();
+
+				return true;
+			}
+		} catch (\Exception $annulException) {
+			if ($annulException->getCode() == 29 && !$this->isFlag('SKIP_AFTERSHOP_INVOICE_CONTROL') && !$runOnce) {
+				$this->getNextInvoiceNumberByDebits(5);
+				return $this->paymentFinalize($paymentId, $customPayloadItemList, true);
+			}
+			throw new \Exception($annulException->getMessage(), $annulException->getCode(), $annulException);
 		}
+
 		return false;
 	}
 
@@ -5072,6 +5093,7 @@ class ResursBank {
 	 *
 	 * @param $paymentId
 	 * @param array $customPayloadItemList
+	 * @param bool $runOnce Only run this once, throw second time
 	 *
 	 * @return bool
 	 * @throws \Exception
@@ -5079,13 +5101,22 @@ class ResursBank {
 	 * @since 1.1.22
 	 * @since 1.2.0
 	 */
-	public function paymentCredit( $paymentId = "", $customPayloadItemList = array() ) {
+	public function paymentCredit( $paymentId = "", $customPayloadItemList = array(), $runOnce = false ) {
 		$afterShopObject = $this->getAfterShopObjectByPayload( $paymentId, $customPayloadItemList, RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_CREDIT );
 		$this->aftershopPrepareMetaData( $paymentId );
-		$afterShopResponseCode = $this->postService( "creditPayment", $afterShopObject, true );
-		if ( $afterShopResponseCode >= 200 && $afterShopResponseCode < 300 ) {
-			$this->resetPayload();
-			return true;
+		try {
+			$afterShopResponseCode = $this->postService( "creditPayment", $afterShopObject, true );
+			if ( $afterShopResponseCode >= 200 && $afterShopResponseCode < 300 ) {
+				$this->resetPayload();
+
+				return true;
+			}
+		} catch (\Exception $creditException) {
+			if ($creditException->getCode() == 29 && !$this->isFlag('SKIP_AFTERSHOP_INVOICE_CONTROL') && !$runOnce) {
+				$this->getNextInvoiceNumberByDebits(5);
+				return $this->paymentFinalize($paymentId, $customPayloadItemList, true);
+			}
+			throw new \Exception($creditException->getMessage(), $creditException->getCode(), $creditException);
 		}
 		return false;
 	}
@@ -5331,12 +5362,18 @@ class ResursBank {
 	}
 
 	/**
-	 * @param string $callbackPaymentId
-	 * @param string $saltKey
-	 * @param string $inboundDigest
-	 * @param null $callbackResult
+	 * Callback digest validator
+	 *
+	 * @param string $callbackPaymentId Requested payment id to check
+	 * @param string $saltKey Current salt key used for the digest
+	 * @param string $inboundDigest Digest reveived from Resurs Bank
+	 * @param null $callbackResult Optional for AUTOMATIC_FRAUD_CONTROL
 	 *
 	 * @return bool
+	 * @since 1.0.33
+	 * @since 1.1.33
+	 * @since 1.2.6
+	 * @since 1.3.6
 	 */
 	public function getValidatedCallbackDigest($callbackPaymentId = '', $saltKey = '', $inboundDigest = '', $callbackResult = null) {
 		$digestCompiled = $callbackPaymentId . (!is_null($callbackResult) ? $callbackResult : null) . $saltKey;
@@ -5346,30 +5383,6 @@ class ResursBank {
 		if ($realInboundDigest == $digestMd5 || $realInboundDigest == $digestSha) {
 			return true;
 		}
-		return false;
-	}
-
-	/**
-	 * @param string $callbackPaymentId
-	 * @param string $saltKey
-	 * @param string $inboundDigest
-	 * @param null $callbackResult
-	 *
-	 * @return bool
-	 * @since 1.0.33
-	 * @since 1.1.33
-	 * @since 1.2.6
-	 * @since 1.3.6
-	 */
-	public function getValidatedCallbackDigest( $callbackPaymentId = '', $saltKey = '', $inboundDigest = '', $callbackResult = null ) {
-		$digestCompiled    = $callbackPaymentId . ( ! is_null( $callbackResult ) ? $callbackResult : null ) . $saltKey;
-		$digestMd5         = strtoupper( md5( $digestCompiled ) );
-		$digestSha         = strtoupper( sha1( $digestCompiled ) );
-		$realInboundDigest = strtoupper( $inboundDigest );
-		if ( $realInboundDigest == $digestMd5 || $realInboundDigest == $digestSha ) {
-			return true;
-		}
-
 		return false;
 	}
 }
