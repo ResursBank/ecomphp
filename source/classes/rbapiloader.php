@@ -7867,10 +7867,12 @@ class ResursBank {
 	}
 
 	/**
-	 * @param string $callbackPaymentId
-	 * @param string $saltKey
-	 * @param string $inboundDigest
-	 * @param null $callbackResult
+	 * Callback digest validator
+	 *
+	 * @param string $callbackPaymentId Requested payment id to check
+	 * @param string $saltKey Current salt key used for the digest
+	 * @param string $inboundDigest Digest reveived from Resurs Bank
+	 * @param null $callbackResult Optional for AUTOMATIC_FRAUD_CONTROL
 	 *
 	 * @return bool
 	 * @since 1.0.33
@@ -7878,16 +7880,16 @@ class ResursBank {
 	 * @since 1.2.6
 	 * @since 1.3.6
 	 */
-	public function getValidatedCallbackDigest( $callbackPaymentId = '', $saltKey = '', $inboundDigest = '', $callbackResult = null ) {
-		$digestCompiled    = $callbackPaymentId . ( ! is_null( $callbackResult ) ? $callbackResult : null ) . $saltKey;
-		$digestMd5         = strtoupper( md5( $digestCompiled ) );
-		$digestSha         = strtoupper( sha1( $digestCompiled ) );
-		$realInboundDigest = strtoupper( $inboundDigest );
-		if ( $realInboundDigest == $digestMd5 || $realInboundDigest == $digestSha ) {
+	public function getValidatedCallbackDigest($callbackPaymentId = '', $saltKey = '', $inboundDigest = '', $callbackResult = null) {
+		$digestCompiled = $callbackPaymentId . (!is_null($callbackResult) ? $callbackResult : null) . $saltKey;
+		$digestMd5 = strtoupper(md5($digestCompiled));
+		$digestSha = strtoupper(sha1($digestCompiled));
+		$realInboundDigest = strtoupper($inboundDigest);
+		if ($realInboundDigest == $digestMd5 || $realInboundDigest == $digestSha) {
 			return true;
 		}
-
 		return false;
 	}
+
 
 }
