@@ -7,7 +7,7 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.1
- * @version 1.1.32
+ * @version 1.1.33
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @license Apache License
@@ -228,9 +228,9 @@ class ResursBank {
 	////////// Private variables
 	///// Client Specific Settings
 	/** @var string The version of this gateway */
-	private $version = "1.1.32";
+	private $version = "1.1.33";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20180125";
+	private $lastUpdate = "20180126";
 	/** @var string URL to git storage */
 	private $gitUrl = "https://bitbucket.org/resursbankplugins/resurs-ecomphp";
 	/** @var string This. */
@@ -5810,19 +5810,24 @@ class ResursBank {
 	/**
 	 * Configure signing data for the payload
 	 *
-	 * @param string $successUrl
-	 * @param string $failUrl
-	 * @param bool $forceSigning
+	 * @param string $successUrl Successful payment redirect url
+	 * @param string $failUrl Payment failures redirect url
+	 * @param bool $forceSigning Always require signing during payment
+	 * @param string $backUrl Backurl (optional, for hosted flow) if anything else than failUrl (backUrl is used when customers are clicking "back" rather than failing)
 	 *
+	 * @throws \Exception
 	 * @since 1.0.6
 	 * @since 1.1.6
 	 */
-	public function setSigning( $successUrl = '', $failUrl = '', $forceSigning = false ) {
+	public function setSigning( $successUrl = '', $failUrl = '', $forceSigning = false, $backUrl = null ) {
 		$SigningPayload['signing'] = array(
 			'successUrl'   => $successUrl,
 			'failUrl'      => $failUrl,
 			'forceSigning' => $forceSigning
 		);
+		if (!is_null($backUrl)) {
+			$SigningPayload['backUrl'] = $backUrl;
+		}
 		$this->handlePayload( $SigningPayload );
 	}
 
@@ -5831,6 +5836,8 @@ class ResursBank {
 	 *
 	 * @param string $successUrl
 	 * @param string $backUrl
+	 *
+	 * @throws \Exception
 	 */
 	public function setCheckoutUrls($successUrl = '', $backUrl = '') {
 		$this->setSigning($successUrl, $backUrl);
@@ -7475,6 +7482,7 @@ class ResursBank {
 	 *
 	 * @param $paymentId
 	 * @param array $customPayloadItemList
+	 * @param bool $runOnce Only run this once, throw second time
 	 *
 	 * @return bool
 	 * @throws \Exception
@@ -7482,13 +7490,22 @@ class ResursBank {
 	 * @since 1.1.22
 	 * @since 1.2.0
 	 */
-	public function paymentFinalize( $paymentId = "", $customPayloadItemList = array() ) {
+	public function paymentFinalize( $paymentId = "", $customPayloadItemList = array(), $runOnce = false ) {
 		$afterShopObject = $this->getAfterShopObjectByPayload( $paymentId, $customPayloadItemList, RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_FINALIZE );
 		$this->aftershopPrepareMetaData( $paymentId );
-		$afterShopResponseCode = $this->postService( "finalizePayment", $afterShopObject, true );
-		if ( $afterShopResponseCode >= 200 && $afterShopResponseCode < 300 ) {
-			$this->resetPayload();
-			return true;
+		try {
+			$afterShopResponseCode = $this->postService( "finalizePayment", $afterShopObject, true );
+			if ( $afterShopResponseCode >= 200 && $afterShopResponseCode < 300 ) {
+				$this->resetPayload();
+
+				return true;
+			}
+		} catch (\Exception $finalizationException) {
+			if ($finalizationException->getCode() == 29 && !$this->isFlag('SKIP_AFTERSHOP_INVOICE_CONTROL') && !$runOnce) {
+				$this->getNextInvoiceNumberByDebits(5);
+				return $this->paymentFinalize($paymentId, $customPayloadItemList, true);
+			}
+			throw new \Exception($finalizationException->getMessage(), $finalizationException->getCode(), $finalizationException);
 		}
 		return false;
 	}
@@ -7500,6 +7517,7 @@ class ResursBank {
 	 *
 	 * @param $paymentId
 	 * @param array $customPayloadItemList
+	 * @param bool $runOnce Only run this once, throw second time
 	 *
 	 * @return bool
 	 * @throws \Exception
@@ -7507,14 +7525,24 @@ class ResursBank {
 	 * @since 1.1.22
 	 * @since 1.2.0
 	 */
-	public function paymentAnnul( $paymentId = "", $customPayloadItemList = array() ) {
+	public function paymentAnnul( $paymentId = "", $customPayloadItemList = array(), $runOnce = false ) {
 		$afterShopObject = $this->getAfterShopObjectByPayload( $paymentId, $customPayloadItemList, RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_ANNUL );
 		$this->aftershopPrepareMetaData( $paymentId );
-		$afterShopResponseCode = $this->postService( "annulPayment", $afterShopObject, true );
-		if ( $afterShopResponseCode >= 200 && $afterShopResponseCode < 300 ) {
-			$this->resetPayload();
-			return true;
+		try {
+			$afterShopResponseCode = $this->postService( "annulPayment", $afterShopObject, true );
+			if ( $afterShopResponseCode >= 200 && $afterShopResponseCode < 300 ) {
+				$this->resetPayload();
+
+				return true;
+			}
+		} catch (\Exception $annulException) {
+			if ($annulException->getCode() == 29 && !$this->isFlag('SKIP_AFTERSHOP_INVOICE_CONTROL') && !$runOnce) {
+				$this->getNextInvoiceNumberByDebits(5);
+				return $this->paymentFinalize($paymentId, $customPayloadItemList, true);
+			}
+			throw new \Exception($annulException->getMessage(), $annulException->getCode(), $annulException);
 		}
+
 		return false;
 	}
 
@@ -7525,6 +7553,7 @@ class ResursBank {
 	 *
 	 * @param $paymentId
 	 * @param array $customPayloadItemList
+	 * @param bool $runOnce Only run this once, throw second time
 	 *
 	 * @return bool
 	 * @throws \Exception
@@ -7532,13 +7561,22 @@ class ResursBank {
 	 * @since 1.1.22
 	 * @since 1.2.0
 	 */
-	public function paymentCredit( $paymentId = "", $customPayloadItemList = array() ) {
+	public function paymentCredit( $paymentId = "", $customPayloadItemList = array(), $runOnce = false ) {
 		$afterShopObject = $this->getAfterShopObjectByPayload( $paymentId, $customPayloadItemList, RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_CREDIT );
 		$this->aftershopPrepareMetaData( $paymentId );
-		$afterShopResponseCode = $this->postService( "creditPayment", $afterShopObject, true );
-		if ( $afterShopResponseCode >= 200 && $afterShopResponseCode < 300 ) {
-			$this->resetPayload();
-			return true;
+		try {
+			$afterShopResponseCode = $this->postService( "creditPayment", $afterShopObject, true );
+			if ( $afterShopResponseCode >= 200 && $afterShopResponseCode < 300 ) {
+				$this->resetPayload();
+
+				return true;
+			}
+		} catch (\Exception $creditException) {
+			if ($creditException->getCode() == 29 && !$this->isFlag('SKIP_AFTERSHOP_INVOICE_CONTROL') && !$runOnce) {
+				$this->getNextInvoiceNumberByDebits(5);
+				return $this->paymentFinalize($paymentId, $customPayloadItemList, true);
+			}
+			throw new \Exception($creditException->getMessage(), $creditException->getCode(), $creditException);
 		}
 		return false;
 	}
@@ -7834,5 +7872,30 @@ class ResursBank {
 			default:
 				return "";
 		}
+	}
+
+	/**
+	 * Callback digest validator
+	 *
+	 * @param string $callbackPaymentId Requested payment id to check
+	 * @param string $saltKey Current salt key used for the digest
+	 * @param string $inboundDigest Digest reveived from Resurs Bank
+	 * @param null $callbackResult Optional for AUTOMATIC_FRAUD_CONTROL
+	 *
+	 * @return bool
+	 * @since 1.0.33
+	 * @since 1.1.33
+	 * @since 1.2.6
+	 * @since 1.3.6
+	 */
+	public function getValidatedCallbackDigest($callbackPaymentId = '', $saltKey = '', $inboundDigest = '', $callbackResult = null) {
+		$digestCompiled = $callbackPaymentId . (!is_null($callbackResult) ? $callbackResult : null) . $saltKey;
+		$digestMd5 = strtoupper(md5($digestCompiled));
+		$digestSha = strtoupper(sha1($digestCompiled));
+		$realInboundDigest = strtoupper($inboundDigest);
+		if ($realInboundDigest == $digestMd5 || $realInboundDigest == $digestSha) {
+			return true;
+		}
+		return false;
 	}
 }
