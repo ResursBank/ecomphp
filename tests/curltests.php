@@ -107,7 +107,7 @@ class ResursBank_cURLTest extends TestCase {
 		}
 	}
 
-	function testAuthByConstructor() {
+/*	function testAuthByConstructor() {
 		if (version_compare(PHP_VERSION, '5.4.0', '>=')) {
 			$constructorAuth = ( new Tornevall_cURL( "https://omnitest.resurs.com/checkout/payments/661", array(), CURL_METHODS::METHOD_GET, array(
 				'auth' => array(
@@ -127,7 +127,7 @@ class ResursBank_cURLTest extends TestCase {
 		$regularRequest->setAuthentication( "atest", "atest" );
 		$chainRequest = $regularRequest->doGet( "https://omnitest.resurs.com/checkout/payments/661" )->getParsedResponse();
 		$this->assertTrue( is_object( $chainRequest ) );
-	}
+	}*/
 
 	/*function testGuzzleStreamAuth() {
 		try {
