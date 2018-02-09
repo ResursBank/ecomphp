@@ -66,5 +66,3 @@ Deployment with composer usually only requires an installation. However, if you 
     composer install --prefer-dist
     find vendor/ -type d -name .git -exec rm -rf {} \; >/dev/null 2>&1
     find vendor/ -name .gitignore -exec rm {} \; >/dev/null 2>&1
-
-
