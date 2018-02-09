@@ -2,6 +2,7 @@
 /**
  * Resurs Bank Passthrough API - A pretty silent ShopFlowSimplifier for Resurs Bank.
  * Compatible with simplifiedFlow, hostedFlow and Resurs Checkout.
+ * Pipelines.
  *
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
@@ -247,7 +248,7 @@ class ResursBank {
 	 */
 	private $URLS;
 	/**
-	 * @var array An index of where to find each service if no stubs are found
+	 * @var array An index of where to find each service for webservices
 	 * @since 1.0.1
 	 * @since 1.1.1
 	 */
