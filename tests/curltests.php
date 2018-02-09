@@ -11,10 +11,10 @@ if ( file_exists( __DIR__ . "/../tornelib.php" ) ) {
 }
 
 use PHPUnit\Framework\TestCase;
-use \TorneLIB\Tornevall_cURL;
-
+use \Resursbank\RBEcomPHP\Tornevall_cURL;
 ini_set( 'memory_limit', - 1 );    // Free memory limit, some tests requires more memory (like ip-range handling)
 
+//// START HERE
 class ResursBank_cURLTest extends TestCase {
 
 	/**
