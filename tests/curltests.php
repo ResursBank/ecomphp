@@ -9,12 +9,17 @@ if ( file_exists( __DIR__ . "/../tornelib.php" ) ) {
 	// Work with TorneLIBv5
 	require_once( __DIR__ . '/../tornelib.php' );
 }
+if (file_exists(__DIR__ . '/../source/classes/autoload.php')) {
+	require_once( __DIR__ . '/../source/classes/autoload.php' );
+}
 
 use PHPUnit\Framework\TestCase;
-use \TorneLIB\Tornevall_cURL;
-
+use Resursbank\RBEcomPHP\Tornevall_cURL;
+use Resursbank\RBEcomPHP\CURL_POST_AS;
+use Resursbank\RBEcomPHP\CURL_AUTH_TYPES;
 ini_set( 'memory_limit', - 1 );    // Free memory limit, some tests requires more memory (like ip-range handling)
 
+//// START HERE
 class ResursBank_cURLTest extends TestCase {
 
 	/**
