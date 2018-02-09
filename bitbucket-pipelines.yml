@@ -16,4 +16,5 @@ pipelines:
           - docker-php-ext-enable soap
           - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
           - composer install
+          - composer require phpunit/phpunit
           - vendor/bin/phpunit
