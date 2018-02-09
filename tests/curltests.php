@@ -15,6 +15,7 @@ use \TorneLIB\Tornevall_cURL;
 
 ini_set( 'memory_limit', - 1 );    // Free memory limit, some tests requires more memory (like ip-range handling)
 
+//// START HERE
 class ResursBank_cURLTest extends TestCase {
 
 	/**
@@ -107,27 +108,27 @@ class ResursBank_cURLTest extends TestCase {
 		}
 	}
 
-/*	function testAuthByConstructor() {
-		if (version_compare(PHP_VERSION, '5.4.0', '>=')) {
-			$constructorAuth = ( new Tornevall_cURL( "https://omnitest.resurs.com/checkout/payments/661", array(), CURL_METHODS::METHOD_GET, array(
-				'auth' => array(
-					'username' => 'username',
-					'password' => 'password'
-				)
-			) ) )->getParsedResponse();
-			$this->assertTrue( is_object( $constructorAuth ) );
-			return;
+	/*	function testAuthByConstructor() {
+			if (version_compare(PHP_VERSION, '5.4.0', '>=')) {
+				$constructorAuth = ( new Tornevall_cURL( "https://omnitest.resurs.com/checkout/payments/661", array(), CURL_METHODS::METHOD_GET, array(
+					'auth' => array(
+						'username' => 'username',
+						'password' => 'password'
+					)
+				) ) )->getParsedResponse();
+				$this->assertTrue( is_object( $constructorAuth ) );
+				return;
+			}
+			// Fails in lower than PHP 5.4
+			$this->assertFalse(false);
 		}
-		// Fails in lower than PHP 5.4
-		$this->assertFalse(false);
-	}
 
-	function testAuthByNoConstructor() {
-		$regularRequest = new Tornevall_cURL();
-		$regularRequest->setAuthentication( "atest", "atest" );
-		$chainRequest = $regularRequest->doGet( "https://omnitest.resurs.com/checkout/payments/661" )->getParsedResponse();
-		$this->assertTrue( is_object( $chainRequest ) );
-	}*/
+		function testAuthByNoConstructor() {
+			$regularRequest = new Tornevall_cURL();
+			$regularRequest->setAuthentication( "atest", "atest" );
+			$chainRequest = $regularRequest->doGet( "https://omnitest.resurs.com/checkout/payments/661" )->getParsedResponse();
+			$this->assertTrue( is_object( $chainRequest ) );
+		}*/
 
 	/*function testGuzzleStreamAuth() {
 		try {
