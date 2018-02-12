@@ -9,11 +9,6 @@
     "card": "110",
     "card_new": "111"
   },
-  "availableMethodsNorway": {
-    "invoice_natural": "88",
-    "card": "89",
-    "card_new": "87"
-  },
   "callbackUrl": "https://test.resurs.com/signdummy/index.php?isCallback=1",
   "signUrl": "https://test.resurs.com/signdummy/index.php?isSigningUrl=1",
   "callbackUrlBackup": "http://signdummy.ecommerceweb.se/index.php?isCallback=1",
