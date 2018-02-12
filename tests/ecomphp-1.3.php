@@ -129,17 +129,17 @@ class ResursBankTest extends TestCase
 	/** @var ResursBank API Connector */
 	private $rb = null;
 	/** @var string Username to web services */
-	private $username = "";
+	private $username = "ecomphpPipelineTest";
 	/** @var string Password to web services */
-	private $password = "";
+	private $password = "4Em4r5ZQ98x3891D6C19L96TQ72HsisD";
 	/** @var string Used as callback urls */
 	private $callbackUrl = "";
 	/** @var string Where to redirect signings, when done */
 	private $signUrl = "";
 	/** @var string Default username for tests (SE) */
-	private $usernameSweden = "";
+	private $usernameSweden = "ecomphpPipelineTest";
 	/** @var string Default password for tests (SE) */
-	private $passwordSweden = "";
+	private $passwordSweden = "4Em4r5ZQ98x3891D6C19L96TQ72HsisD";
 	private $chosenCountry = "SE";
 	/** @var string Selected government id */
 	private $testGovId = "";
@@ -172,8 +172,8 @@ class ResursBankTest extends TestCase
 	private $allowObsoletePHP = false;
 
 	private function setupConfig() {
-		if ( file_exists( 'test.json' ) ) {
-			$config = json_decode( file_get_contents( "test.json" ) );
+		if ( file_exists( __DIR__ . '/test.json' ) ) {
+			$config = json_decode( file_get_contents( __DIR__ . '/test.json' ) );
 			if ( isset( $config->mock->username ) ) {
 				$this->username       = $config->mock->username;
 				$this->usernameSweden = $this->username;
