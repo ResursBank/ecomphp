@@ -5,7 +5,7 @@
  *
  * @package EcomPHPTest
  * @author Resurs Bank Ecommrece <ecommerce.support@resurs.se>
- * @version 0.16
+ * @version 0.18
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @license -
  *
@@ -117,17 +117,17 @@ class ResursBankTest extends TestCase
 	/** @var ResursBank API Connector */
 	private $rb = null;
 	/** @var string Username to web services */
-	private $username = "";
+	private $username = "ecomphpPipelineTest";
 	/** @var string Password to web services */
-	private $password = "";
+	private $password = "4Em4r5ZQ98x3891D6C19L96TQ72HsisD";
 	/** @var string Used as callback urls */
 	private $callbackUrl = "";
 	/** @var string Where to redirect signings, when done */
 	private $signUrl = "";
 	/** @var string Default username for tests (SE) */
-	private $usernameSweden = "";
+	private $usernameSweden = "ecomphpPipelineTest";
 	/** @var string Default password for tests (SE) */
-	private $passwordSweden = "";
+	private $passwordSweden = "4Em4r5ZQ98x3891D6C19L96TQ72HsisD";
 	private $chosenCountry = "SE";
 	/** @var string Selected government id */
 	private $testGovId = "";
@@ -160,8 +160,8 @@ class ResursBankTest extends TestCase
 	private $allowObsoletePHP = false;
 
 	private function setupConfig() {
-		if ( file_exists( 'test.json' ) ) {
-			$config = json_decode( file_get_contents( "test.json" ) );
+		if ( file_exists( __DIR__ . '/test.json' ) ) {
+			$config = json_decode( file_get_contents( __DIR__ . '/test.json' ) );
 			if ( isset( $config->mock->username ) ) {
 				$this->username       = $config->mock->username;
 				$this->usernameSweden = $this->username;
@@ -346,23 +346,31 @@ class ResursBankTest extends TestCase
 		if ( $bookStatus == "SIGNING" ) {
 			/* Pick up the signing url */
 			$signUrl         = $res->signingUrl;
-			$getSigningPage  = file_get_contents( $signUrl );
-			$NETWORK         = new TorneLIB_Network();
-			$signUrlHostInfo = $NETWORK->getUrlDomain( $signUrl );
-			$getUrlHost      = $signUrlHostInfo[1] . "://" . $signUrlHostInfo[0];
-			$hostUri         = explode( "/", isset( $signUrlHostInfo[2] ) ? $signUrlHostInfo[2] : null );
-			$uriPath         = "";
-			if ( is_array( $hostUri ) && count( $hostUri ) > 1 ) {
-				array_shift( $hostUri );
-				if ( count( $hostUri ) >= 2 ) {
-					array_pop( $hostUri );
-					$uriPath = implode( "/", $hostUri );
+			// Authentication is different to signing
+			if (preg_match("/authenticate/i", $signUrl)) {
+				$authenticate = $signUrl . "&govId=" . $useGovId;
+				$authenticate = preg_replace("/authenticate/i", 'doAuth', $authenticate);
+				$authenticateRequest = $this->CURL->doGet($authenticate);
+				$getSuccessContent = $this->CURL->getParsedResponse($authenticateRequest);
+			} else {
+				$getSigningPage  = file_get_contents( $signUrl );
+				$NETWORK         = new TorneLIB_Network();
+				$signUrlHostInfo = $NETWORK->getUrlDomain( $signUrl, true );
+				$getUrlHost      = $signUrlHostInfo[1] . "://" . $signUrlHostInfo[0];
+				$hostUri         = explode( "/", isset( $signUrlHostInfo[2] ) ? $signUrlHostInfo[2] : null );
+				$uriPath         = "";
+				if ( is_array( $hostUri ) && count( $hostUri ) > 1 ) {
+					array_shift( $hostUri );
+					if ( count( $hostUri ) >= 2 ) {
+						array_pop( $hostUri );
+						$uriPath = implode( "/", $hostUri );
+					}
 				}
+				$mockSuccessUrl = preg_replace( "/\/$/", '', $getUrlHost . "/" . $uriPath . "/" . preg_replace( '/(.*?)\<a href=\"(.*?)\">(.*?)\>Mock success(.*)/is', '$2', $getSigningPage ) );
+				// Split up in case of test requirements
+				$getPostCurlObject = $this->CURL->doPost( $mockSuccessUrl );
+				$getSuccessContent = $this->CURL->getParsedResponse( $getPostCurlObject );
 			}
-			$mockSuccessUrl = preg_replace( "/\/$/", '', $getUrlHost . "/" . $uriPath . "/" . preg_replace( '/(.*?)\<a href=\"(.*?)\">(.*?)\>Mock success(.*)/is', '$2', $getSigningPage ) );
-			// Split up in case of test requirements
-			$getPostCurlObject = $this->CURL->doPost( $mockSuccessUrl );
-			$getSuccessContent = $this->CURL->getParsedResponse( $getPostCurlObject );
 			if ( isset( $getSuccessContent->_GET->success ) ) {
 				if ( $getSuccessContent->_GET->success == "true" ) {
 					if ( $signSuccess ) {
@@ -1931,14 +1939,6 @@ class ResursBankTest extends TestCase
 		if ( isset( $payment->id ) ) {
 			$this->assertTrue( is_array( $this->rb->getPaymentSpecByStatus( $payment->id ) ) );
 		}
-	}
-
-	public function testRenderSpecBulk() {
-		if ( ! $this->isSpecialAccount() ) {
-			$this->markTestSkipped( "RenderSpecBulk skipped: Wrong credential account" );
-		}
-		$annulledPayment = $this->rb->getPaymentSpecCount( $this->paymentIdAuthAnnulled );
-		$this->assertTrue( $annulledPayment['AUTHORIZE'] > 0 && $annulledPayment['ANNUL'] > 0 && $annulledPayment['DEBIT'] == 0 && $annulledPayment['CREDIT'] == 0 );
 	}
 
 	function testFinalizeFullDeprecated() {
