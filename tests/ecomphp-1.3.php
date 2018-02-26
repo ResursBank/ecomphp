@@ -1268,8 +1268,7 @@ class ResursBankTest extends TestCase
 		$this->assertEquals( count( $cResponse ), $successFulCallbacks );
 	}
 
-	// External test not functioning (Bamboo-3rdparty)
-/*
+	// External test not functioning (Bamboo-3rdparty -- using this service requires patching from that server, as it is located in a special OpenVZ-isolation)
 	public function testValidateExternalUrlSuccess() {
 		$callbackArrayData = $this->renderCallbackData( true );
 		$this->rb->setValidateExternalCallbackUrl( $callbackArrayData[0][1] );
@@ -1279,7 +1278,6 @@ class ResursBankTest extends TestCase
 		}
 		$this->assertTrue( $Reachable === RESURS_CALLBACK_REACHABILITY::IS_FULLY_REACHABLE );
 	}
-*/
 
 	/**
 	 * Register new callback urls
