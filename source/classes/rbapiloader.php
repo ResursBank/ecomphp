@@ -7,7 +7,7 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.1
- * @version 1.1.34
+ * @version 1.1.35
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @license Apache License
@@ -228,9 +228,9 @@ class ResursBank {
 	////////// Private variables
 	///// Client Specific Settings
 	/** @var string The version of this gateway */
-	private $version = "1.1.34";
+	private $version = "1.1.35";
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20180130";
+	private $lastUpdate = "20180226";
 	/** @var string URL to git storage */
 	private $gitUrl = "https://bitbucket.org/resursbankplugins/resurs-ecomphp";
 	/** @var string This. */
@@ -434,7 +434,7 @@ class ResursBank {
 	 */
 	private $ServiceRequestMethods = array();
 	/** @var string Validating URLs are made through a third party API and is disabled by default (Used for checking reachability of an URL) */
-	private $externalApiAddress = "https://api.tornevall.net/2.0/";
+	private $externalApiAddress = "https://api.tornevall.net/3.0/";
 	/** @var array An array that defines an url to test and which response codes (OK-200, and errors when for example a digest fails) from the webserver that is expected */
 	private $validateExternalUrl = null;
 
@@ -3235,7 +3235,8 @@ class ResursBank {
 			$Expect           = $this->validateExternalUrl['http_accept'];
 			$UnExpect         = $this->validateExternalUrl['http_error'];
 			$useUrl           = $this->validateExternalUrl['url'];
-			$ExternalPostData = array( 'link' => $this->NETWORK->base64url_encode( $useUrl ), "returnEncoded"=>true );
+			$base64url = $this->base64url_encode( $useUrl );
+			$ExternalPostData = array( 'link' => $useUrl, "returnEncoded" => true );
 			try {
 				$this->CURL->doPost( $ExternalAPI, $ExternalPostData, CURL_POST_AS::POST_AS_JSON );
 				$WebResponse = $this->CURL->getParsedResponse();
@@ -3251,8 +3252,7 @@ class ResursBank {
 					throw new \Exception( "No response returned from API", 500 );
 				}
 			}
-			$base64url = $this->base64url_encode($useUrl);
-			if (isset($ParsedResponse->{$base64url}) && isset( $ParsedResponse->{$base64url}->exceptiondata->errorcode ) && ! empty( $ParsedResponse->{$base64url}->exceptiondata->errorcode ) ) {
+			if ( isset( $ParsedResponse->{$base64url} ) && isset( $ParsedResponse->{$base64url}->exceptiondata->errorcode ) && ! empty( $ParsedResponse->{$base64url}->exceptiondata->errorcode ) ) {
 				return RESURS_CALLBACK_REACHABILITY::IS_NOT_REACHABLE;
 			}
 			$UrlResult         = $ParsedResponse->{$base64url}->result;
@@ -3283,6 +3283,7 @@ class ResursBank {
 				return RESURS_CALLBACK_REACHABILITY::IS_NOT_REACHABLE;
 			}
 		}
+
 		return RESURS_CALLBACK_REACHABILITY::IS_REACHABLE_NOT_KNOWN;
 	}
 
