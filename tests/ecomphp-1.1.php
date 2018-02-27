@@ -116,6 +116,22 @@ class ResursBankTest extends TestCase
 		return false;
 	}
 
+	/**
+	 * Reset the connection to simulate a true scenario
+	 * @return bool
+	 */
+	private function resetConnection() {
+		$isEmpty = false;
+		$this->setUp();
+		try {
+			$this->rb->getPayload();
+		} catch ( \Exception $emptyPayloadException ) {
+			$isEmpty = true;
+		}
+
+		return $isEmpty;
+	}
+
 	////////// Private variables
 
 	/** @var string Defines what environment should be running */
@@ -1262,6 +1278,7 @@ class ResursBankTest extends TestCase
 		$this->assertEquals( count( $cResponse ), $successFulCallbacks );
 	}
 
+	// External test not functioning (Bamboo-3rdparty -- using this service requires patching from that server, as it is located in a special OpenVZ-isolation)
 	public function testValidateExternalUrlSuccess() {
 		$callbackArrayData = $this->renderCallbackData( true );
 		$this->rb->setValidateExternalCallbackUrl( $callbackArrayData[0][1] );
@@ -1917,6 +1934,7 @@ class ResursBankTest extends TestCase
 	 * Test for ECOMPHP-112
 	 */
 	function testAdditionalDualDebitWithDifferentAmount() {
+		$this->rb->getNextInvoiceNumberByDebits(); // Use this to make sure that regular tests are passing (some tests might reset the invoice numbers)
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
 		$this->rb->finalizePayment( $paymentId );
 		$this->rb->addOrderLine( "myAdditionalOrderLine", "One orderline added with additionalDebitOfPayment", 100, 25 );
@@ -1948,6 +1966,7 @@ class ResursBankTest extends TestCase
 	}
 
 	function testFinalizeFullDeprecated() {
+		$this->rb->getNextInvoiceNumberByDebits(); // Use this to make sure that regular tests are passing (some tests might reset the invoice numbers)
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
 		$this->assertTrue( $this->rb->finalizePayment( $paymentId ) );
 	}
@@ -1956,6 +1975,7 @@ class ResursBankTest extends TestCase
 	 * Test: Annull full payment (deprecated method)
 	 */
 	function testAnullFullPaymentDeprecated() {
+		$this->rb->getNextInvoiceNumberByDebits(); // Use this to make sure that regular tests are passing (some tests might reset the invoice numbers)
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
 		$this->rb->setLoggedInUser('myAdminUserName');
 		$this->assertTrue( $this->rb->annulPayment( $paymentId ) );
@@ -1965,6 +1985,7 @@ class ResursBankTest extends TestCase
 	 * Test: Finalize full payment (deprecated method)
 	 */
 	function testFinalizeFullPaymentDeprecatedWithSpecialInformation() {
+		$this->rb->getNextInvoiceNumberByDebits(); // Use this to make sure that regular tests are passing (some tests might reset the invoice numbers)
 		$this->rb->setCustomerId( "1337-boy" );
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
 		$this->assertTrue( $this->rb->finalizePayment( $paymentId ) );
@@ -1974,6 +1995,7 @@ class ResursBankTest extends TestCase
 	 * Test: Credit full payment (deprecated method)
 	 */
 	function testCreditFullPaymentDeprecated() {
+		$this->rb->getNextInvoiceNumberByDebits(); // Use this to make sure that regular tests are passing (some tests might reset the invoice numbers)
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
 		$this->rb->finalizePayment( $paymentId );
 		$this->assertTrue( $this->rb->creditPayment( $paymentId ) );
@@ -1983,6 +2005,7 @@ class ResursBankTest extends TestCase
 	 * Test: Cancel full payment (deprecated method)
 	 */
 	function testCancelFullPaymentDeprecated() {
+		$this->rb->getNextInvoiceNumberByDebits(); // Use this to make sure that regular tests are passing (some tests might reset the invoice numbers)
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
 		$this->rb->finalizePayment( $paymentId );
 		$cancelRes = $this->rb->cancelPayment( $paymentId );
@@ -1993,22 +2016,6 @@ class ResursBankTest extends TestCase
 		$paymentId         = $this->getPaymentIdFromOrderByClientChoice( 2 );
 		$sanitizedShopSpec = $this->rb->sanitizeAfterShopSpec( $paymentId, RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_FINALIZE );
 		$this->assertCount( 2, $sanitizedShopSpec );
-	}
-
-	/**
-	 * Reset the connection to simulate a true scenario
-	 * @return bool
-	 */
-	private function resetConnection() {
-		$isEmpty = false;
-		$this->setUp();
-		try {
-			$this->rb->getPayload();
-		} catch ( \Exception $emptyPayloadException ) {
-			$isEmpty = true;
-		}
-
-		return $isEmpty;
 	}
 
 	/**
@@ -2051,6 +2058,7 @@ class ResursBankTest extends TestCase
 	 * Expected result: The order is fully debited
 	 */
 	function testAftershopFullFinalization() {
+		$this->rb->getNextInvoiceNumberByDebits(); // Use this to make sure that regular tests are passing (some tests might reset the invoice numbers)
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 2 );
 		if ( $this->resetConnection() ) {
 			$this->rb->setAfterShopInvoiceExtRef( "Test Testsson" );
@@ -2065,6 +2073,7 @@ class ResursBankTest extends TestCase
 	 * Expected result: Two rows, one added row debited
 	 */
 	function testAftershopPartialAutomatedFinalization() {
+		$this->rb->getNextInvoiceNumberByDebits(); // Use this to make sure that regular tests are passing (some tests might reset the invoice numbers)
 		// Add one order line to the random one
 		$this->rb->addOrderLine( "myAdditionalPartialAutomatedOrderLine", "One orderline added with addOrderLine", 100, 25 );
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1 );
@@ -2084,6 +2093,7 @@ class ResursBankTest extends TestCase
 	 * Expected result: Two rows, the row with 4 in quantity has 2 debited
 	 */
 	function testAftershopPartialAutomatedQuantityFinalization() {
+		$this->rb->getNextInvoiceNumberByDebits(); // Use this to make sure that regular tests are passing (some tests might reset the invoice numbers)
 		// Add one order line to the random one, with 4 in quantity
 		$this->rb->addOrderLine( "myAdditionalAutomatedOrderLine", "One orderline added with addOrderLine", 100, 25, 'st', 'ORDER_LINE', 4 );
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1 );
@@ -2104,6 +2114,7 @@ class ResursBankTest extends TestCase
 	 * Expected result: Two rows, one row (the correct one) row debited
 	 */
 	function testAftershopPartialManualFinalization() {
+		$this->rb->getNextInvoiceNumberByDebits(); // Use this to make sure that regular tests are passing (some tests might reset the invoice numbers)
 		// Add one order line to the random one
 		$this->rb->addOrderLine( "myAdditionalManualOrderLine", "One orderline added with addOrderLine", 100, 25 );
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1 );
@@ -2127,6 +2138,7 @@ class ResursBankTest extends TestCase
 	 * Expected result: Two rows, one row (the correct one) row debited
 	 */
 	function testAftershopPartialMultipleManualFinalization() {
+		$this->rb->getNextInvoiceNumberByDebits(); // Use this to make sure that regular tests are passing (some tests might reset the invoice numbers)
 		// Add one order line to the random one
 		$this->rb->addOrderLine( "myAdditionalManualFirstOrderLine", "One orderline added with addOrderLine", 100, 25 );
 		$this->rb->addOrderLine( "myAdditionalManualSecondOrderLine", "One orderline added with addOrderLine", 100, 25 );
@@ -2160,6 +2172,7 @@ class ResursBankTest extends TestCase
 	 * Expected result: Three rows, mismatching row debited
 	 */
 	function testAftershopPartialManualFinalizationWithMismatchingKeys() {
+		$this->rb->getNextInvoiceNumberByDebits(); // Use this to make sure that regular tests are passing (some tests might reset the invoice numbers)
 		// Add one order line to the random one
 		$this->rb->addOrderLine( "myAdditionalManualOrderLine", "One orderline added with addOrderLine", 100, 25 );
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1 );
@@ -2180,6 +2193,7 @@ class ResursBankTest extends TestCase
 	}
 
 	function testAftershopFullFinalizationFailure() {
+		$this->rb->getNextInvoiceNumberByDebits(); // Use this to make sure that regular tests are passing (some tests might reset the invoice numbers)
 		define( 'TEST_OVERRIDE_AFTERSHOP_PAYLOAD', 'a:9:{s:9:"paymentId";s:19:"unExistentPaymentId";s:9:"orderDate";s:10:"2017-09-28";s:11:"invoiceDate";s:10:"2017-09-28";s:9:"invoiceId";i:1366;s:9:"createdBy";s:14:"EComPHP_010122";s:9:"specLines";a:2:{i:0;a:9:{s:2:"id";i:1;s:5:"artNo";s:8:"Art 1065";s:11:"description";s:16:"Beskrivning 3222";s:8:"quantity";s:7:"1.00000";s:11:"unitMeasure";s:2:"st";s:20:"unitAmountWithoutVat";s:10:"1309.00000";s:6:"vatPct";s:8:"25.00000";s:14:"totalVatAmount";s:19:"327.250000000000000";s:11:"totalAmount";s:20:"1636.250000000000000";}i:1;a:9:{s:2:"id";i:2;s:5:"artNo";s:8:"Art 2022";s:11:"description";s:16:"Beskrivning 4048";s:8:"quantity";s:7:"1.00000";s:11:"unitMeasure";s:2:"st";s:20:"unitAmountWithoutVat";s:10:"1292.00000";s:6:"vatPct";s:8:"25.00000";s:14:"totalVatAmount";s:19:"323.000000000000000";s:11:"totalAmount";s:20:"1615.000000000000000";}}s:11:"totalAmount";d:3251.25;s:14:"totalVatAmount";d:650.25;s:15:"partPaymentSpec";a:3:{s:9:"specLines";a:2:{i:0;a:9:{s:2:"id";i:1;s:5:"artNo";s:8:"Art 1065";s:11:"description";s:16:"Beskrivning 3222";s:8:"quantity";s:7:"1.00000";s:11:"unitMeasure";s:2:"st";s:20:"unitAmountWithoutVat";s:10:"1309.00000";s:6:"vatPct";s:8:"25.00000";s:14:"totalVatAmount";s:19:"327.250000000000000";s:11:"totalAmount";s:20:"1636.250000000000000";}i:1;a:9:{s:2:"id";i:2;s:5:"artNo";s:8:"Art 2022";s:11:"description";s:16:"Beskrivning 4048";s:8:"quantity";s:7:"1.00000";s:11:"unitMeasure";s:2:"st";s:20:"unitAmountWithoutVat";s:10:"1292.00000";s:6:"vatPct";s:8:"25.00000";s:14:"totalVatAmount";s:19:"323.000000000000000";s:11:"totalAmount";s:20:"1615.000000000000000";}}s:11:"totalAmount";d:3251.25;s:14:"totalVatAmount";d:650.25;}}' );
 		try {
 			$this->rb->paymentFinalizeTest();
@@ -2194,6 +2208,7 @@ class ResursBankTest extends TestCase
 	 * Expected result: The order is fully cancelled, independently on what happened to the order earlier
 	 */
 	function testAftershopFullCancellation() {
+		$this->rb->getNextInvoiceNumberByDebits(); // Use this to make sure that regular tests are passing (some tests might reset the invoice numbers)
 		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
 		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
 		$this->rb->addOrderLine( "authLine-1", "One orderline added with addOrderLine", 100, 25 );
@@ -2210,7 +2225,8 @@ class ResursBankTest extends TestCase
 		$this->assertTrue( $cancellationResult && $result['AUTHORIZE'] == 4 && $result['DEBIT'] == 2 && $result['CREDIT'] == 2 && $result['ANNUL'] == 2 );
 	}
 
-	function testAftershopCompensationExperiment() {
+	function testAftershopCreditBulk() {
+		$this->rb->getNextInvoiceNumberByDebits(); // Use this to make sure that regular tests are passing (some tests might reset the invoice numbers)
 		$this->rb->addOrderLine( "a", "One orderline added with addOrderLine", 100, 25 );
 		$this->rb->addOrderLine( "b", "One orderline added with addOrderLine", 100, 25 );
 		$this->rb->addOrderLine( "c", "One orderline added with addOrderLine", 100, 25 );
@@ -2218,8 +2234,12 @@ class ResursBankTest extends TestCase
 		$this->rb->paymentFinalize( $paymentId );
 		$this->rb->addOrderLine( "z", "One orderline added with addOrderLine", 300, 25 );
 		$this->rb->paymentCredit( $paymentId );
+		$result = $this->rb->getPaymentSpecCount( $paymentId );
+		$this->assertTrue( $result['AUTHORIZE'] == 3 && $result['DEBIT'] == 3 && $result['CREDIT'] == 1 && $result['ANNUL'] == 0 );
 	}
+
 	function testAftershopBuy10Annul20() {
+		$this->rb->getNextInvoiceNumberByDebits(); // Use this to make sure that regular tests are passing (some tests might reset the invoice numbers)
 		$this->rb->addOrderLine( "a", "One orderline added with addOrderLine", 100, 25, null, null, 10 );
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 0 );
 		$this->rb->addOrderLine( "a", "One orderline added with addOrderLine", 100, 25, null, null, 20 );
@@ -2230,6 +2250,7 @@ class ResursBankTest extends TestCase
 		}
 	}
 	function testAftershopBuy10Credit20() {
+		$this->rb->getNextInvoiceNumberByDebits(); // Use this to make sure that regular tests are passing (some tests might reset the invoice numbers)
 		$this->rb->addOrderLine( "a", "One orderline added with addOrderLine", 100, 25, null, null, 10 );
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 0 );
 		$this->rb->paymentFinalize( $paymentId );
@@ -2246,6 +2267,7 @@ class ResursBankTest extends TestCase
 	 * Expected result: The order is half debited, half credited and half annulled. The invalid article is sanitized as it does not belong to any of the specrows
 	 */
 	function testAftershopPartialCancellation() {
+		$this->rb->getNextInvoiceNumberByDebits(); // Use this to make sure that regular tests are passing (some tests might reset the invoice numbers)
 		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
 		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
 		$this->rb->addOrderLine( "authLine-1", "One orderline added with addOrderLine", 100, 25 );
@@ -2286,6 +2308,7 @@ class ResursBankTest extends TestCase
 	}
 
 	function testBitMaskSanitizer() {
+		$this->rb->getNextInvoiceNumberByDebits(); // Use this to make sure that regular tests are passing (some tests might reset the invoice numbers)
 		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
 		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
 		$this->rb->addOrderLine( "authLine-1", "One orderline added with addOrderLine", 100, 25 );
@@ -2318,6 +2341,7 @@ class ResursBankTest extends TestCase
 	 *      - Now annul the same rows that you've just credited (payment admin: adds an annulment on the same rows)
 	 */
 	function testAfterShopFaultyDebitAnnul() {
+		$this->rb->getNextInvoiceNumberByDebits(); // Use this to make sure that regular tests are passing (some tests might reset the invoice numbers)
 		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
 		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
 		$this->rb->addOrderLine( "authLine-1", "One orderline added with addOrderLine", 100, 25 );
@@ -2340,6 +2364,7 @@ class ResursBankTest extends TestCase
 	}
 
 	function testAfterShopFaultyDebitAnnulOldMerge() {
+		$this->rb->getNextInvoiceNumberByDebits(); // Use this to make sure that regular tests are passing (some tests might reset the invoice numbers)
 		$this->rb->setFlag("MERGEBYSTATUS_DEPRECATED_METHOD");
 		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
 		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
@@ -2373,6 +2398,7 @@ class ResursBankTest extends TestCase
 	 *      - Now credit the same rows that you've just credited (payment admin: adds an annulment on the same rows)
 	 */
 	function testAfterShopFaultyContraryDirection() {
+		$this->rb->getNextInvoiceNumberByDebits(); // Use this to make sure that regular tests are passing (some tests might reset the invoice numbers)
 		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
 		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
 		$this->rb->addOrderLine( "authLine-1", "One orderline added with addOrderLine", 100, 25 );
@@ -2455,6 +2481,7 @@ class ResursBankTest extends TestCase
 	}
 
 	public function testBasicOrderStatusFinalizationEvent() {
+		$this->rb->getNextInvoiceNumberByDebits(); // Use this to make sure that regular tests are passing (some tests might reset the invoice numbers)
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1, 1, 1000, 2000 );
 		$this->rb->paymentFinalize( $paymentId );
 		$this->assertTrue($this->rb->getOrderStatusByPayment($paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_FINALIZATION) === RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED);
@@ -2468,6 +2495,7 @@ class ResursBankTest extends TestCase
 		$this->assertTrue($this->rb->getOrderStatusByPayment($paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_FINALIZATION) === RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED);
 	}
 	public function testBasicOrderStatusAnnulEvent() {
+		$this->rb->getNextInvoiceNumberByDebits(); // Use this to make sure that regular tests are passing (some tests might reset the invoice numbers)
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1 );
 		$this->rb->paymentAnnul( $paymentId );
 		$this->assertTrue($this->rb->getOrderStatusByPayment($paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_ANNULMENT) === RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_ANNULLED);
@@ -2495,7 +2523,7 @@ class ResursBankTest extends TestCase
 		try {
 			print_R( $newRb->getPaymentMethods() );
 		} catch (\Exception $e) {
-			//echo $e->getMessage();
+			$this->assertTrue($e->getCode() == 401);
 		}
 	}
 
@@ -2550,26 +2578,6 @@ class ResursBankTest extends TestCase
 	}
 
 	/**
-	 * Test prevention of flooding services
-	 * @throws Exception
-	 */
-	/*public function testCheckoutFlood() {
-		$this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT);
-		$this->rb->setFlag('PREVENT_EXEC_FLOOD',true);
-		$this->rb->setFlag('PREVENT_EXEC_FLOOD_EXCEPTIONS',true);
-		$this->rb->setFlag('PREVENT_EXEC_FLOOD_TIME',300);
-		$payments = array();
-		$exceptionCode = 0;
-		try {
-			$payments[] = $this->getCheckoutFrame( true, true );
-			$payments[] = $this->getCheckoutFrame( true, true );
-		} catch (\Exception $e) {
-			$exceptionCode = $e->getCode();
-		}
-		$this->assertTrue($exceptionCode === RESURS_EXCEPTIONS::CREATEPAYMENT_TOO_FAST);
-	}*/
-
-	/**
 	 * Test netcurl 6.0.15 SOAPWARNINGS flag
 	 */
 	public function testCredentialFailure() {
@@ -2582,15 +2590,6 @@ class ResursBankTest extends TestCase
 			$this->assertTrue( $authTest );
 		}
 	}
-
-	/*	public function testHashifyGradeOrderLines() {
-			$this->rb->setMetaDataHash(true, true, "iv", "key");
-			try {
-				$paymentId = $this->getPaymentIdFromOrderByClientChoice( 3, 1, 1000, 2000, '198305147715' );
-			} catch (\Exception $paymentException) {
-				echo "hashifyGradeOrderLinesException: " . $paymentException->getMessage() . "\n";
-			}
-		}*/
 
 	public function testGetSaltKeyDeprecated() {
 		$this->assertTrue(strlen($this->rb->getSaltKey()) > 0);
