@@ -23,9 +23,8 @@ if ( ! defined( 'RB_API_PATH' ) ) {
 }
 require_once( RB_API_PATH . '/rbapiloader/ResursTypeClasses.php' );
 require_once( RB_API_PATH . '/rbapiloader/ResursException.php' );
-
-if ( file_exists( __DIR__ . "/../../vendor/autoload.php" ) ) {
-	require_once( __DIR__ . '/../../vendor/autoload.php' );
+if ( file_exists( RB_API_PATH . "/../../vendor/autoload.php" ) ) {
+	require_once( RB_API_PATH . '/../../vendor/autoload.php' );
 }
 
 use \TorneLIB\TorneLIB_Crypto;
@@ -33,6 +32,12 @@ use \TorneLIB\TorneLIB_NetBits;
 use \TorneLIB\TorneLIB_Network;
 use \TorneLIB\Tornevall_cURL;
 use \TorneLIB\CURL_POST_AS;
+
+/*
+ *  Global
+ */
+define('ECOMPHP_VERSION', '1.3.8');
+define('ECOMPHP_MODIFY_DATE', '20180309');
 
 /**
  * Class ResursBank Primary class for EComPHP
@@ -114,9 +119,9 @@ class ResursBank {
 	////////// Private variables
 	///// Client Specific Settings
 	/** @var string The version of this gateway */
-	private $version = "1.3.8";
+	private $version = ECOMPHP_VERSION;
 	/** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
-	private $lastUpdate = "20180226";
+	private $lastUpdate = ECOMPHP_MODIFY_DATE;
 	/** @var string URL to git storage */
 	private $gitUrl = "https://bitbucket.org/resursbankplugins/resurs-ecomphp";
 	/** @var string This. */
@@ -2522,7 +2527,7 @@ class ResursBank {
 			$Expect           = $this->validateExternalUrl['http_accept'];
 			$UnExpect         = $this->validateExternalUrl['http_error'];
 			$useUrl           = $this->validateExternalUrl['url'];
-			$base64url = $this->base64url_encode( $useUrl );
+			$base64url        = $this->base64url_encode( $useUrl );
 			$ExternalPostData = array( 'link' => $useUrl, "returnEncoded" => true );
 			try {
 				$this->CURL->doPost( $ExternalAPI, $ExternalPostData, CURL_POST_AS::POST_AS_JSON );
@@ -4294,7 +4299,7 @@ class ResursBank {
 			'failUrl'      => $failUrl,
 			'forceSigning' => $forceSigning
 		);
-		if (!is_null($backUrl)) {
+		if ( ! is_null( $backUrl ) ) {
 			$SigningPayload['backUrl'] = $backUrl;
 		}
 		$this->handlePayload( $SigningPayload );
@@ -4308,8 +4313,8 @@ class ResursBank {
 	 *
 	 * @throws \Exception
 	 */
-	public function setCheckoutUrls($successUrl = '', $backUrl = '') {
-		$this->setSigning($successUrl, $backUrl);
+	public function setCheckoutUrls( $successUrl = '', $backUrl = '' ) {
+		$this->setSigning( $successUrl, $backUrl );
 	}
 
 	//// PAYLOAD HANDLER!
