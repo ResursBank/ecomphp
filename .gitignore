@@ -10,3 +10,4 @@ composer.lock
 vendor
 source/classes/thirdparty/setnamespace.sh
 composer.phar
+tests/skiptests.json
