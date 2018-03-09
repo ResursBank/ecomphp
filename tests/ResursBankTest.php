@@ -43,7 +43,7 @@ if (file_exists("/etc/ecomphp.json")) {
 	}
 }
 
-class ResursBankTest extends \PHPUnit_Framework_TestCase {
+class ResursBankTest extends TestCase {
 
 	/**
 	 * @var ResursBank $API EComPHP
