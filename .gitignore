@@ -10,3 +10,4 @@ source/classes/thirdparty/setnamespace.sh
 source/classes/thirdparty/merger
 composer.lock
 vendor
+tests/skiptests.json
