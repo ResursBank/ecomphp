@@ -1932,6 +1932,8 @@ class ResursBankTest extends TestCase
 
 	/**
 	 * Test for ECOMPHP-113
+	 * @covers ResursBank
+	 * @covers Tornevall_cURL
 	 */
 	function testAdditionalDebitNewDoubleDuplicateCheck() {
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 2 );
