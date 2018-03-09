@@ -19,14 +19,13 @@ if (file_exists(__DIR__ . "/../vendor/autoload.php")) {
 }
 
 // Usages for v1.0
+use PHPUnit\Framework\TestCase;
 use Resursbank\RBEcomPHP\Tornevall_cURL;
 use Resursbank\RBEcomPHP\TorneLIB_Network;
 
 /*
  * Global test configuration section
  */
-
-use PHPUnit\Framework\TestCase;
 
 // Set up local user agent for identification with webservices
 if (!isset($_SERVER['HTTP_USER_AGENT'])) {
@@ -40,8 +39,7 @@ if (file_exists("/etc/ecomphp.json")) {
 	}
 }
 
-class ResursBankTest extends \PHPUnit_Framework_TestCase {
-
+class ResursBankTest extends TestCase {
 	/**
 	 * @var ResursBank $API EComPHP
 	 */
