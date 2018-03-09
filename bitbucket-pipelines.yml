@@ -18,4 +18,4 @@ pipelines:
           - composer install
           - composer require phpunit/phpunit
           - vendor/bin/phpunit tests/curltests.php
-          - vendor/bin/phpunit tests/ecomphp-1.1.php
+          - vendor/bin/phpunit tests/ResursBankTest.php
