@@ -59,13 +59,24 @@ class ResursBankTest extends TestCase {
 	/** @var string Password to web services */
 	private $password = "4Em4r5ZQ98x3891D6C19L96TQ72HsisD";
 
+	/** @var string Landing page for callbacks */
+	private $callbackUrl = "https://test.resurs.com/signdummy/index.php?isCallback=1";
+
+	/** @var string Landing page for signings */
+	private $signUrl = "https://test.resurs.com/signdummy/index.php?isSigningUrl=1";
+
 	function setUp() {
 		$this->API = new ResursBank();
 	}
 	function tearDown() {
 
 	}
-	function testApiCredentials() {
+
+	/**
+	 * Tests API credentials and getPaymentMethods. Expected result: Approved connection with a specific number of payment methods
+	 * @throws Exception
+	 */
+	function testApiPaymentMethodsWithCredentials() {
 		$this->API = new ResursBank($this->username, $this->password);
 		$this->assertTrue(count($this->API->getPaymentMethods()) > 0);
 	}
