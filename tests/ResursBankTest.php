@@ -22,8 +22,6 @@ if ( file_exists( __DIR__ . "/../vendor/autoload.php" ) ) {
 	require_once( '../source/classes/rbapiloader.php' );
 }
 
-require_once( __DIR__ . "/classes/ResursBankTestClass.php" );
-
 // Resurs Bank usages
 use PHPUnit\Framework\TestCase;
 use \Resursbank\RBEcomPHP\ResursBank;
@@ -40,6 +38,8 @@ use \TorneLIB\TorneLIB_Network;
 /*
  * Global test configuration section
  */
+
+require_once( __DIR__ . "/classes/ResursBankTestClass.php" );
 
 // Set up local user agent for identification with webservices
 if ( ! isset( $_SERVER['HTTP_USER_AGENT'] ) ) {
