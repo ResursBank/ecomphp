@@ -654,6 +654,21 @@ class ResursBank {
 	}
 
 	/**
+	 * Initialize networking functions
+	 *
+	 * @since 1.0.35
+	 * @since 1.1.35
+	 * @since 1.2.8
+	 * @since 1.3.8
+	 */
+	private function isNetWork() {
+		// When no initialization of this library has been done yet
+		if (is_null($this->NETWORK)) {
+			$this->NETWORK = new TorneLIB_Network();
+		}
+	}
+
+	/**
 	 * Returns true if your version of EComPHP is the current (based on git tags)
 	 *
 	 * @param null $testVersion
@@ -664,11 +679,25 @@ class ResursBank {
 	 * @since 1.2.0
 	 */
 	public function getIsCurrent( $testVersion = null ) {
+		$this->isNetWork();
 		if ( is_null( $testVersion ) ) {
 			return ! $this->NETWORK->getVersionTooOld( $this->getVersionNumber( false ), $this->gitUrl );
 		} else {
 			return ! $this->NETWORK->getVersionTooOld( $testVersion, $this->gitUrl );
 		}
+	}
+
+	/**
+	 * @return mixed
+	 * @throws \Exception
+	 * @since 1.0.35
+	 * @since 1.1.35
+	 * @since 1.2.8
+	 * @since 1.3.8
+	 */
+	public function getCurrentRelease() {
+		$tags = $this->getVersionsByGitTag();
+		return array_pop($tags);
 	}
 
 	/**
@@ -681,6 +710,7 @@ class ResursBank {
 	 * @since 1.2.0
 	 */
 	public function getVersionsByGitTag() {
+		$this->isNetWork();
 		return $this->NETWORK->getGitTagsByUrl( $this->gitUrl );
 	}
 
@@ -2517,6 +2547,7 @@ class ResursBank {
 	 * @since 1.1.3
 	 */
 	public function validateExternalAddress() {
+		$this->isNetWork();
 		if ( is_array( $this->validateExternalUrl ) && count( $this->validateExternalUrl ) ) {
 			$this->InitializeServices();
 			$ExternalAPI = $this->externalApiAddress . "urltest/isavailable/";
@@ -2587,6 +2618,8 @@ class ResursBank {
 	 * @since 1.1.3
 	 */
 	private function getCustomerIp() {
+		$this->isNetWork();
+
 		$primaryAddress = isset( $_SERVER['REMOTE_ADDR'] ) ? $_SERVER['REMOTE_ADDR'] : "127.0.0.1";
 		// Warning: This is untested and currently returns an array instead of a string, which may break ecommerce
 		if ( $this->preferCustomerProxy && ! empty( $this->NETWORK ) && count( $this->NETWORK->getProxyHeaders() ) ) {

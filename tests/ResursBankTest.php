@@ -142,7 +142,7 @@ class ResursBankTest extends TestCase {
 
 	/**
 	 * @test
-	 * @testdox Basic getAddressTest
+	 * @testdox Direct test - Basic getAddressTest
 	 */
 	function getAddress() {
 		$this->assertContains($this->flowHappyCustomerName, $this->TEST->ECOM->getAddress($this->flowHappyCustomer)->fullName);
@@ -150,7 +150,7 @@ class ResursBankTest extends TestCase {
 
 	/**
 	 * @test
-	 * @testdox Test adding orderlines via the library
+	 * @testdox Direct test - Test adding orderlines via the library and extract correct data
 	 */
 	function addOrderLine() {
 		$this->TEST->ECOM->addOrderLine("RDL-1337", "One simple orderline", 800, 25);
@@ -159,7 +159,7 @@ class ResursBankTest extends TestCase {
 	}
 
 	/**
-	 * @test
+	 * @test Direct test - Extract orderdata from library
 	 * @testdox
 	 * @throws Exception
 	 */
@@ -169,7 +169,14 @@ class ResursBankTest extends TestCase {
 		$this->assertTrue(($this->TEST->ECOM->getOrderData())['totalAmount'] == "1000");
 	}
 
-
+	/**
+	 * @test
+	 * @testdox Assert that the current version of ECom is not 1.0.0 and getCurrentRelease() says something
+	 */
+	function getCurrentReleaseTests() {
+		$currentReleaseShouldNotBeEmpty = $this->TEST->ECOM->getCurrentRelease();  // php 5.5
+		$this->assertFalse($this->TEST->ECOM->getIsCurrent("1.0.0") && !empty($currentReleaseShouldNotBeEmpty));
+	}
 
 	/**
 	 * @test
