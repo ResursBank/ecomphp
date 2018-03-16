@@ -11,3 +11,4 @@ source/classes/thirdparty/merger
 composer.lock
 vendor
 tests/skiptests.json
+tests/storage/shared.serialize
