@@ -1,6 +1,8 @@
 <?php
 
-use Resursbank\RBEcomPHP\ResursBank;
+// Note: Namespaces must be left out for EC-1.0
+
+namespace Resursbank\RBEcomPHP;
 
 /**
  * Class RESURS_TEST_BRIDGE Primary test class for setting up and simplify standard tests like order booking etc
@@ -16,16 +18,16 @@ class RESURS_TEST_BRIDGE {
 
 	function __construct( $userName = "ecomphpPipelineTest", $password = "4Em4r5ZQ98x3891D6C19L96TQ72HsisD" ) {
 		$this->shareFile = __DIR__ . "/../storage/shared.serialize";
-		$this->ECOM      = new ResursBank( $userName, $password, \Resursbank\RBEcomPHP\RESURS_ENVIRONMENTS::ENVIRONMENT_TEST );
+		$this->ECOM      = new ResursBank( $userName, $password, RESURS_ENVIRONMENTS::ENVIRONMENT_TEST );
 	}
 
 	/**
 	 * getCredentialControl(): Initiates ECom with proper credentials or failing credentials
-	 *
+
 	 * @param bool $successLogin
 	 *
 	 * @return mixed
-	 * @throws Exception
+	 * @throws \Exception
 	 */
 	public function getCredentialControl( $successLogin = true ) {
 		if ( ! $successLogin ) {

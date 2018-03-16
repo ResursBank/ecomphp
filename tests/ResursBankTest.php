@@ -16,6 +16,8 @@
  *
  */
 
+namespace Resursbank\RBEcomPHP;
+
 if ( file_exists( __DIR__ . "/../vendor/autoload.php" ) ) {
 	require_once( __DIR__ . '/../vendor/autoload.php' );
 } else {
@@ -35,10 +37,7 @@ use \Resursbank\RBEcomPHP\RESURS_AFTERSHOP_RENDER_TYPES;
 use \TorneLIB\Tornevall_cURL;
 use \TorneLIB\TorneLIB_Network;
 
-/*
- * Global test configuration section
- */
-
+// Global test configuration section starts here
 require_once( __DIR__ . "/classes/ResursBankTestClass.php" );
 
 // Set up local user agent for identification with webservices
@@ -90,7 +89,7 @@ class ResursBankTest extends TestCase {
 	 * @test
 	 * @testdox Tests API credentials and getPaymentMethods. Expected result: Approved connection with a specific number of payment methods
 	 *
-	 * @throws Exception
+	 * @throws \Exception
 	 */
 	function apiPaymentMethodsWithCredentials() {
 		$this->assertTrue( count( $this->TEST->getCredentialControl() ) > 0 );
@@ -98,8 +97,8 @@ class ResursBankTest extends TestCase {
 
 	/**
 	 * @test
-	 * @testdox EComPHP throws exceptions on credential failures
-	 * @throws Exception
+	 * @testdox EComPHP throws \Exceptions on credential failures
+	 * @throws \Exception
 	 */
 	function apiPaymentMethodsWithWrongCredentials() {
 		$this->expectException( "\Exception" );
@@ -161,7 +160,7 @@ class ResursBankTest extends TestCase {
 	/**
 	 * @test Direct test - Extract orderdata from library
 	 * @testdox
-	 * @throws Exception
+	 * @throws \Exception
 	 */
 	function getOrderData() {
 		$this->TEST->ECOM->setBillingByGetAddress($this->flowHappyCustomer);
