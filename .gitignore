@@ -11,3 +11,4 @@ composer.lock
 vendor
 composer.phar
 tests/skiptests.json
+tests/storage/shared.serialize
