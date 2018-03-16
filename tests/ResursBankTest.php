@@ -176,6 +176,6 @@ class ResursBankTest extends TestCase {
 	 * @testdox Clean up special test data from share file
 	 */
 	function finalTest() {
-		$this->TEST->unshare("thisKey");
+		$this->assertEmpty($this->TEST->unshare("thisKey"));
 	}
 }
