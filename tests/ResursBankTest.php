@@ -170,12 +170,14 @@ class ResursBankTest extends TestCase {
 
 	/**
 	 * @test
-	 * @testdox Assert that the current version of ECom is not 1.0.0 and getCurrentRelease() says something
+	 * @testdox Make sure the current version of ECom is not 1.0.0 and getCurrentRelease() says something
 	 */
 	function getCurrentReleaseTests() {
 		$currentReleaseShouldNotBeEmpty = $this->TEST->ECOM->getCurrentRelease();  // php 5.5
 		$this->assertFalse($this->TEST->ECOM->getIsCurrent("1.0.0") && !empty($currentReleaseShouldNotBeEmpty));
 	}
+
+
 
 	/**
 	 * @test

@@ -1159,11 +1159,11 @@ class ResursBankTest extends TestCase
 	 * Renders required data to pass to a callback registrator.
 	 *
 	 * @param bool $UseCurl Using the curl library, will render this data differently
-	 * @param bool $UseUrlRewrite Register urls "nicely" with url_rewrite-like parameters
+	 * @param bool $useUrlRewrite Register urls "nicely" with url_rewrite-like parameters
 	 *
 	 * @return array
 	 */
-	private function renderCallbackData( $UseCurl = false, $UseUrlRewrite = false ) {
+	private function renderCallbackData( $useUrlRewrite = false ) {
 		$returnCallbackArray = array();
 		$parameter           = array(
 			'ANNULMENT'               => array( 'paymentId' ),
@@ -1196,14 +1196,14 @@ class ResursBankTest extends TestCase
 			$renderArray = array();
 			if ( is_array( $parameterArray ) ) {
 				foreach ( $parameterArray as $parameterName ) {
-					if ( ! $UseUrlRewrite ) {
+					if ( ! $useUrlRewrite ) {
 						$renderArray[] = $parameterName . "={" . $parameterName . "}";
 					} else {
 						$renderArray[] = $parameterName . "/{" . $parameterName . "}";
 					}
 				}
 			}
-			if ( ! $UseUrlRewrite ) {
+			if ( ! $useUrlRewrite ) {
 				$callbackURL = $this->callbackUrl . "?event=" . $callbackType . "&digest={digest}&" . implode( "&", $renderArray ) . "&lastReg=" . strftime( "%y%m%d%H%M%S", time() );
 			} else {
 				$callbackURL = $this->callbackUrl . "/event/" . $callbackType . "/digest/{digest}/" . implode( "/", $renderArray ) . "/lastReg/" . strftime( "%y%m%d%H%M%S", time() );
@@ -1281,7 +1281,7 @@ class ResursBankTest extends TestCase
 	 * Register new callback urls via REST
 	 */
 	public function testSetRegisterCallbacksRestUrlRewrite() {
-		$callbackArrayData = $this->renderCallbackData( true, true );
+		$callbackArrayData = $this->renderCallbackData(true);
 		$cResponse         = array();
 		$globalDigest = $this->rb->setCallbackDigest( $this->mkpass() );
 		$this->rb->setRegisterCallbacksViaRest( true );
@@ -1302,7 +1302,7 @@ class ResursBankTest extends TestCase
 
 	// External test not functioning (Bamboo-3rdparty -- using this service requires patching from that server, as it is located in a special OpenVZ-isolation)
 	public function testValidateExternalUrlSuccess() {
-		$callbackArrayData = $this->renderCallbackData( true );
+		$callbackArrayData = $this->renderCallbackData();
 		$this->rb->setValidateExternalCallbackUrl( $callbackArrayData[0][1] );
 		$Reachable = $this->rb->validateExternalAddress();
 		if ( $Reachable !== RESURS_CALLBACK_REACHABILITY::IS_FULLY_REACHABLE ) {
@@ -1317,7 +1317,7 @@ class ResursBankTest extends TestCase
 	public function testSetRegisterCallbacksWithValidatedUrlViaRest() {
 		if ( ! $this->ignoreUrlExternalValidation ) {
 			$this->rb->setRegisterCallbacksViaRest( true );
-			$callbackArrayData = $this->renderCallbackData( true );
+			$callbackArrayData = $this->renderCallbackData();
 			$this->rb->setCallbackDigest( $this->mkpass() );
 			$cResponse = array();
 			foreach ( $callbackArrayData as $indexCB => $callbackInfo ) {

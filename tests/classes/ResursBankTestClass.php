@@ -1,7 +1,6 @@
 <?php
 
 // Note: Namespaces must be left out for EC-1.0
-
 namespace Resursbank\RBEcomPHP;
 
 /**
