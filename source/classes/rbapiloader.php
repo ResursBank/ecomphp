@@ -1786,14 +1786,18 @@ class ResursBank {
 			$currentInvoiceTest = $this->getNextInvoiceNumber();
 		} catch ( \Exception $e ) {
 		}
-		$paymentScanList     = $this->findPayments( array( 'statusSet' => 'IS_DEBITED' ), 1, $scanDebitCount, array(
-			'ascending'   => false,
-			'sortColumns' => array( 'FINALIZED_TIME', 'MODIFIED_TIME', 'BOOKED_TIME' )
-		) );
-		if (is_object($paymentScanList)) {
-			$paymentScanList = array($paymentScanList);
+		$paymentScanList = array();
+		$paymentScanTypes = array('IS_DEBITED', 'IS_CREDITED', 'IS_ANNULLED');
+
+		$lastHighestInvoice = 0;
+		foreach ( $paymentScanTypes as $paymentType ) {
+			$paymentScanList    = $this->findPayments( array( 'statusSet' => array( $paymentType ) ), 1, $scanDebitCount, array(
+				'ascending'   => false,
+				'sortColumns' => array( 'FINALIZED_TIME', 'MODIFIED_TIME', 'BOOKED_TIME' )
+			) );
+			$lastHighestInvoice = $this->getHighestValueFromPaymentList( $paymentScanList, $lastHighestInvoice );
 		}
-		$lastHighestInvoice  = $this->getHighestValueFromPaymentList( $paymentScanList, 0 );
+
 		$properInvoiceNumber = intval( $lastHighestInvoice ) + 1;
 		if ( intval( $currentInvoiceTest ) > 0 && $currentInvoiceTest > $properInvoiceNumber ) {
 			$properInvoiceNumber = $currentInvoiceTest;
@@ -1818,11 +1822,13 @@ class ResursBank {
 		}
 		if ( is_array( $paymentList ) ) {
 			foreach ( $paymentList as $payments ) {
-				$id       = $payments->paymentId;
-				$invoices = $this->getPaymentInvoices( $id );
-				foreach ( $invoices as $multipleDebitCheck ) {
-					if ( $multipleDebitCheck > $lastHighestInvoice ) {
-						$lastHighestInvoice = $multipleDebitCheck;
+				if (isset($payments->paymentId)) {
+					$id       = $payments->paymentId;
+					$invoices = $this->getPaymentInvoices( $id );
+					foreach ( $invoices as $multipleDebitCheck ) {
+						if ( $multipleDebitCheck > $lastHighestInvoice ) {
+							$lastHighestInvoice = $multipleDebitCheck;
+						}
 					}
 				}
 			}
