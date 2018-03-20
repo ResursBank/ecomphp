@@ -12,3 +12,4 @@ source/classes/thirdparty/setnamespace.sh
 composer.phar
 tests/skiptests.json
 tests/storage/shared.serialize
+source/classes/thirdparty/fixall
