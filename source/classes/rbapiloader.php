@@ -37,7 +37,7 @@ use \TorneLIB\CURL_POST_AS;
  *  Global
  */
 define('ECOMPHP_VERSION', '1.3.8');
-define('ECOMPHP_MODIFY_DATE', '20180309');
+define('ECOMPHP_MODIFY_DATE', '20180320');
 
 /**
  * Class ResursBank Primary class for EComPHP
