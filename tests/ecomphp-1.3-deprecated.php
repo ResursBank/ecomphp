@@ -313,7 +313,7 @@ class ResursBankTest extends TestCase
 		$bookStatus         = null;
 
 		if ( ! count( $this->availableMethods ) || empty( $this->username ) ) {
-			$this->markTestIncomplete();
+			$this->markTestSkipped('No payment methods are available');
 		}
 		if ( $this->zeroSpecLine ) {
 			if ( ! $this->zeroSpecLineZeroTax ) {
@@ -431,7 +431,7 @@ class ResursBankTest extends TestCase
 					}
 				}
 			} else {
-				$this->markTestIncomplete( "\$getSuccessContent does not contain any success-object." );
+				$this->markTestSkipped( "\$getSuccessContent does not contain any success-object." );
 
 				return false;
 			}
@@ -960,7 +960,7 @@ class ResursBankTest extends TestCase
 		try {
 			$getFrameUrl = $this->getCheckoutFrame( true );
 		} catch ( \Exception $e ) {
-			$this->markTestIncomplete( "getCheckoutFrameException: " . $e->getMessage() );
+			$this->markTestSkipped( "getCheckoutFrameException: " . $e->getMessage() );
 		}
 		//$SessionID = $this->rb->getPaymentSessionId();
 		$UrlDomain = $this->NETWORK->getUrlDomain( $getFrameUrl );
@@ -998,7 +998,7 @@ class ResursBankTest extends TestCase
 		try {
 			$iFrameUrl = $this->getCheckoutFrame( true );
 		} catch ( \Exception $e ) {
-			$this->markTestIncomplete( "Exception: " . $e->getCode() . ": " . $e->getMessage() );
+			$this->markTestSkipped( "Exception: " . $e->getCode() . ": " . $e->getMessage() );
 		}
 
 		$this->CURL->setAuthentication( $this->username, $this->password );
@@ -1015,7 +1015,7 @@ class ResursBankTest extends TestCase
 			try {
 				$Success = $this->rb->updatePaymentReference( $iframePaymentReference, $newReference );
 			} catch (\Exception $successException) {
-				$this->markTestIncomplete( "updatePaymentReferenceException: " . $successException->getCode() . ": " . $successException->getMessage() );
+				$this->markTestSkipped( "updatePaymentReferenceException: " . $successException->getCode() . ": " . $successException->getMessage() );
 			}
 			try {
 				// Currently, this test always gets a HTTP-200 from ecommerce, regardless of successful or failing updates.
@@ -1023,7 +1023,7 @@ class ResursBankTest extends TestCase
 				$this->assertTrue( $updateCart );
 				return;
 			} catch ( \Exception $e ) {
-				$this->markTestIncomplete( "updateCheckoutOrderLinesException: " . $e->getCode() . ": " . $e->getMessage() );
+				$this->markTestSkipped( "updateCheckoutOrderLinesException: " . $e->getCode() . ": " . $e->getMessage() );
 			}
 		}
 		$this->assertTrue( $Success === true );
@@ -1037,7 +1037,7 @@ class ResursBankTest extends TestCase
 		try {
 			$iFrameUrl = $this->getCheckoutFrame( true );
 		} catch ( \Exception $e ) {
-			$this->markTestIncomplete( "Exception: " . $e->getMessage() );
+			$this->markTestSkipped( "Exception: " . $e->getMessage() );
 		}
 		$this->CURL->setAuthentication( $this->username, $this->password );
 		$this->CURL->setLocalCookies( true );
@@ -1057,7 +1057,7 @@ class ResursBankTest extends TestCase
 				return;
 			}
 		}
-		$this->markTestIncomplete( __FUNCTION__ . " failed." );
+		$this->markTestSkipped( __FUNCTION__ . " failed." );
 	}
 
 	public function testUpdateWrongPaymentReference() {
@@ -1065,7 +1065,7 @@ class ResursBankTest extends TestCase
 		try {
 			$iFrameUrl = $this->getCheckoutFrame( true );
 		} catch ( \Exception $e ) {
-			$this->markTestIncomplete( "Exception: " . $e->getMessage() );
+			$this->markTestSkipped( "Exception: " . $e->getMessage() );
 		}
 		$this->CURL->setAuthentication( $this->username, $this->password );
 		$this->CURL->setLocalCookies( true );
@@ -1080,7 +1080,7 @@ class ResursBankTest extends TestCase
 				return;
 			}
 		}
-		$this->markTestIncomplete( __FUNCTION__ . " failed." );
+		$this->markTestSkipped( __FUNCTION__ . " failed." );
 	}
 
 
@@ -1120,7 +1120,7 @@ class ResursBankTest extends TestCase
 			$paymentId   = $paymentData->paymentId;
 			$this->assertTrue( $this->rb->addMetaData( $paymentId, "RandomKey" . rand( 1000, 1999 ), "RandomValue" . rand( 2000, 3000 ) ) );
 		} else {
-			$this->markTestIncomplete( "No valid payment found" );
+			$this->markTestSkipped( "No valid payment found" );
 		}
 	}
 
@@ -1306,7 +1306,7 @@ class ResursBankTest extends TestCase
 		$this->rb->setValidateExternalCallbackUrl( $callbackArrayData[0][1] );
 		$Reachable = $this->rb->validateExternalAddress();
 		if ( $Reachable !== RESURS_CALLBACK_REACHABILITY::IS_FULLY_REACHABLE ) {
-			$this->markTestIncomplete( "External address validation returned $Reachable instead of " . RESURS_CALLBACK_REACHABILITY::IS_FULLY_REACHABLE . ".\nPlease check your callback url (" . $callbackArrayData[0][1] . ") so that is properly configured and reachable." );
+			$this->markTestSkipped( "External address validation returned $Reachable instead of " . RESURS_CALLBACK_REACHABILITY::IS_FULLY_REACHABLE . ".\nPlease check your callback url (" . $callbackArrayData[0][1] . ") so that is properly configured and reachable." );
 		}
 		$this->assertTrue( $Reachable === RESURS_CALLBACK_REACHABILITY::IS_FULLY_REACHABLE );
 	}
@@ -1325,7 +1325,7 @@ class ResursBankTest extends TestCase
 					$this->rb->setValidateExternalCallbackUrl( $callbackInfo[1] . "&via=restValidated" );
 					$cResponse[ $callbackInfo[0] ] = $this->rb->setRegisterCallback( $callbackInfo[0], $callbackInfo[1] . "&via=restValidated", $callbackInfo[2] );
 				} catch ( \Exception $e ) {
-					$this->markTestIncomplete( "Exception thrown: URL Validation failed for " . ( isset( $callbackInfo[1] ) && ! empty( $callbackInfo[1] ) ? $callbackInfo[1] . "&via=restValidated" : "??" ) . " during the setRegisterCallback procss (" . $e->getMessage() . ")" );
+					$this->markTestSkipped( "Exception thrown: URL Validation failed for " . ( isset( $callbackInfo[1] ) && ! empty( $callbackInfo[1] ) ? $callbackInfo[1] . "&via=restValidated" : "??" ) . " during the setRegisterCallback procss (" . $e->getMessage() . ")" );
 				}
 			}
 			$successFulCallbacks = 0;
@@ -1523,7 +1523,7 @@ class ResursBankTest extends TestCase
 			}
 
 		} catch ( \Exception $e ) {
-			$this->markTestIncomplete( $e->getMessage() );
+			$this->markTestSkipped( $e->getMessage() );
 		}
 	}
 	function testCreatePaymentPayloadOwnPayLoadIpManipulation1() {
@@ -1559,7 +1559,7 @@ class ResursBankTest extends TestCase
 			}
 
 		} catch ( \Exception $e ) {
-			$this->markTestIncomplete( $e->getMessage() );
+			$this->markTestSkipped( $e->getMessage() );
 		}
 	}
 	function testCreatePaymentPayloadOwnPayLoadIpManipulation2() {
@@ -1595,7 +1595,7 @@ class ResursBankTest extends TestCase
 			}
 
 		} catch ( \Exception $e ) {
-			$this->markTestIncomplete( $e->getMessage() );
+			$this->markTestSkipped( $e->getMessage() );
 		}
 	}
 	function testCreatePaymentPayloadOwnPayLoadSpoofedIpFrozenWithFraudControl() {
@@ -1631,7 +1631,7 @@ class ResursBankTest extends TestCase
 			}
 
 		} catch ( \Exception $e ) {
-			$this->markTestIncomplete( $e->getMessage() );
+			$this->markTestSkipped( $e->getMessage() );
 		}
 	}
 
@@ -1661,7 +1661,7 @@ class ResursBankTest extends TestCase
 			}
 
 		} catch ( \Exception $e ) {
-			$this->markTestIncomplete( $e->getMessage() );
+			$this->markTestSkipped( $e->getMessage() );
 		}
 	}
 	function testCreatePaymentPayloadForcedSigningMultipleSimplified() {
@@ -1695,7 +1695,7 @@ class ResursBankTest extends TestCase
 			}
 
 		} catch ( \Exception $e ) {
-			$this->markTestIncomplete( $e->getMessage() );
+			$this->markTestSkipped( $e->getMessage() );
 		}
 	}
 	function testCreatePaymentPayloadForcedSigningReUseMockFailSimplified() {
@@ -1726,7 +1726,7 @@ class ResursBankTest extends TestCase
 			}
 
 		} catch ( \Exception $e ) {
-			$this->markTestIncomplete( $e->getMessage() );
+			$this->markTestSkipped( $e->getMessage() );
 		}
 	}
 	/*function testCreatePaymentPayloadForcedSigningReUseMockFailNewCardSimplified() {
@@ -1759,7 +1759,7 @@ class ResursBankTest extends TestCase
 			}
 
 		} catch ( \Exception $e ) {
-			$this->markTestIncomplete( $e->getMessage() );
+			$this->markTestSkipped( $e->getMessage() );
 		}
 	}*/
 
@@ -1786,12 +1786,12 @@ class ResursBankTest extends TestCase
 					return;
 				}
 			} catch ( \Exception $e ) {
-				$this->markTestIncomplete( $e->getMessage() );
+				$this->markTestSkipped( $e->getMessage() );
 			}
 		} catch ( \Exception $e ) {
-			$this->markTestIncomplete( "Outer exception thrown (" . $e->getMessage() . ")" );
+			$this->markTestSkipped( "Outer exception thrown (" . $e->getMessage() . ")" );
 		}
-		$this->markTestIncomplete( "CreatePayment via Delayed create failed - never passed through the payload generation." );
+		$this->markTestSkipped( "CreatePayment via Delayed create failed - never passed through the payload generation." );
 	}
 
 	/**
@@ -1818,12 +1818,12 @@ class ResursBankTest extends TestCase
 					return;
 				}
 			} catch ( \Exception $e ) {
-				$this->markTestIncomplete( $e->getMessage() );
+				$this->markTestSkipped( $e->getMessage() );
 			}
 		} catch ( \Exception $e ) {
-			$this->markTestIncomplete( "Outer exception thrown (" . $e->getMessage() . ")" );
+			$this->markTestSkipped( "Outer exception thrown (" . $e->getMessage() . ")" );
 		}
-		$this->markTestIncomplete( "CreatePayment via Delayed create failed - never passed through the payload generation." );
+		$this->markTestSkipped( "CreatePayment via Delayed create failed - never passed through the payload generation." );
 	}
 
 
@@ -2361,7 +2361,7 @@ class ResursBankTest extends TestCase
 		try {
 			$cancellationResult = $this->rb->paymentCancel( $paymentId, $newArray );
 		} catch ( \Exception $somethingWentWrongException ) {
-			$this->markTestIncomplete( $somethingWentWrongException->getMessage() );
+			$this->markTestSkipped( $somethingWentWrongException->getMessage() );
 		}
 		$result = $this->rb->getPaymentSpecCount( $paymentId );
 		$this->assertTrue( $cancellationResult && $result['AUTHORIZE'] == 4 && $result['DEBIT'] == 2 && $result['CREDIT'] == 1 && $result['ANNUL'] == 1 );
@@ -2514,7 +2514,7 @@ class ResursBankTest extends TestCase
 			// Assert diff
 			$this->assertTrue( count( $secondMethodList ) != count( $thirdMethodList ) );
 		} else {
-			$this->markTestIncomplete( "Current account does not have any PSP methods" );
+			$this->markTestSkipped( "Current account does not have any PSP methods" );
 		}
 	}
 
