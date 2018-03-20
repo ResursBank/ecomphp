@@ -32,7 +32,7 @@ if ( file_exists( RB_API_PATH . "/../../vendor/autoload.php" ) ) {
  *  Global
  */
 define('ECOMPHP_VERSION', '1.2.8');
-define('ECOMPHP_MODIFY_DATE', '20180309');
+define('ECOMPHP_MODIFY_DATE', '20180320');
 
 /**
  * Class ResursBank Primary class for EComPHP
