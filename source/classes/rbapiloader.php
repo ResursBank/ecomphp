@@ -180,7 +180,7 @@ class ResursBank {
 	 * @since 1.0.1
 	 * @since 1.1.1
 	 */
-	private $Payload;
+	private $Payload = array();
 	/**
 	 * @var array
 	 * @since 1.0.31
@@ -1790,6 +1790,9 @@ class ResursBank {
 			'ascending'   => false,
 			'sortColumns' => array( 'FINALIZED_TIME', 'MODIFIED_TIME', 'BOOKED_TIME' )
 		) );
+		if (is_object($paymentScanList)) {
+			$paymentScanList = array($paymentScanList);
+		}
 		$lastHighestInvoice  = $this->getHighestValueFromPaymentList( $paymentScanList, 0 );
 		$properInvoiceNumber = intval( $lastHighestInvoice ) + 1;
 		if ( intval( $currentInvoiceTest ) > 0 && $currentInvoiceTest > $properInvoiceNumber ) {
@@ -1810,6 +1813,9 @@ class ResursBank {
 	 * @throws \Exception
 	 */
 	private function getHighestValueFromPaymentList( $paymentList = array(), $lastHighestInvoice = 0 ) {
+		if (is_object($paymentList)) {
+			$paymentList = array($paymentList);
+		}
 		if ( is_array( $paymentList ) ) {
 			foreach ( $paymentList as $payments ) {
 				$id       = $payments->paymentId;
@@ -2622,7 +2628,7 @@ class ResursBank {
 
 		$primaryAddress = isset( $_SERVER['REMOTE_ADDR'] ) ? $_SERVER['REMOTE_ADDR'] : "127.0.0.1";
 		// Warning: This is untested and currently returns an array instead of a string, which may break ecommerce
-		if ( $this->preferCustomerProxy && ! empty( $this->NETWORK ) && count( $this->NETWORK->getProxyHeaders() ) ) {
+		if ( $this->preferCustomerProxy && ! empty( $this->NETWORK ) && is_array( $this->NETWORK->getProxyHeaders() ) && count( $this->NETWORK->getProxyHeaders() ) ) {
 			$primaryAddress = $this->NETWORK->getProxyHeaders();
 		}
 
@@ -3124,7 +3130,7 @@ class ResursBank {
 				/*
 				 * This should probably not happen and the developers should probably also stick to objects as above.
 				 */
-				if ( count( $paymentMethodName ) ) {
+				if ( is_array( $paymentMethodName ) && count( $paymentMethodName ) ) {
 					if ( isset( $templateRules[ strtoupper( $customerType ) ] ) && isset( $templateRules[ strtoupper( $customerType ) ]['fields'][ strtoupper( $paymentMethodName['specificType'] ) ] ) ) {
 						$returnedRuleArray = $templateRules[ strtoupper( $customerType ) ]['fields'][ strtoupper( $paymentMethodName['specificType'] ) ];
 					}
@@ -4827,7 +4833,7 @@ class ResursBank {
 		$countObject         = $this->getPaymentSpecByStatus( $paymentIdOrPaymentObject );
 		$returnedCountObject = array();
 		foreach ( $countObject as $status => $theArray ) {
-			$returnedCountObject[ $status ] = count( $theArray );
+			$returnedCountObject[ $status ] = is_array($theArray) ? count( $theArray ) : 0;
 		}
 
 		return $returnedCountObject;
@@ -5101,8 +5107,9 @@ class ResursBank {
 			'paymentId' => $paymentId
 		);
 		if ( ! is_array( $customPayloadItemList ) ) {
+			// Make sure this is correct
 			$customPayloadItemList = array();
-		} // Make sure this is correct
+		}
 
 		$storedPayment       = $this->getPayment( $paymentId );
 		$paymentMethod       = $storedPayment->paymentMethodId;
@@ -5361,7 +5368,7 @@ class ResursBank {
 			// Render and check if this is customized
 			$currentOrderLines = $this->getOrderLines();
 
-			if ( count( $currentOrderLines ) ) {
+			if ( is_array( $currentOrderLines ) && count( $currentOrderLines ) ) {
 				// If it is customized, we need to render the cancellation differently to specify what's what.
 
 				// Validation object - Contains everything that CAN be credited
@@ -5375,17 +5382,17 @@ class ResursBank {
 				// Clean up selected rows from the credit element and keep those rows than still can be annulled and matches the orderRow-request
 				$newAnnulObject = $this->objectsIntoArray( $this->removeFromArray( $validatedAnnulmentObject, $currentOrderLines, true ) );
 
-				if ( count( $newCreditObject ) ) {
+				if ( is_array( $newCreditObject ) && count( $newCreditObject ) ) {
 					$this->paymentCredit( $paymentId, $newCreditObject );
 				}
-				if ( count( $newAnnulObject ) ) {
+				if ( is_array( $newAnnulObject ) && count( $newAnnulObject ) ) {
 					$this->paymentAnnul( $paymentId, $newAnnulObject );
 				}
 			} else {
-				if ( count( $creditObject ) ) {
+				if ( is_array( $creditObject ) && count( $creditObject ) ) {
 					$this->paymentCredit( $paymentId, $creditObject );
 				}
-				if ( count( $annulObject ) ) {
+				if ( is_array( $annulObject ) && count( $annulObject ) ) {
 					$this->paymentAnnul( $paymentId, $annulObject );
 				}
 			}

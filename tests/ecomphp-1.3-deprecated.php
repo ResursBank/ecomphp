@@ -1999,55 +1999,6 @@ class ResursBankTest extends TestCase
 		$this->assertTrue( $this->rb->finalizePayment( $paymentId ) );
 	}
 
-	/**
-	 * Test: Annull full payment (deprecated method)
-	 */
-	function testAnullFullPaymentDeprecated() {
-		if ( $this->isSkip( 'aftershop' ) ) {
-			$this->markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
-		}
-		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
-		$this->rb->setLoggedInUser('myAdminUserName');
-		$this->assertTrue( $this->rb->annulPayment( $paymentId ) );
-	}
-
-	/**
-	 * Test: Finalize full payment (deprecated method)
-	 */
-	function testFinalizeFullPaymentDeprecatedWithSpecialInformation() {
-		if ( $this->isSkip( 'aftershop' ) ) {
-			$this->markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
-		}
-		$this->rb->setCustomerId( "1337-boy" );
-		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
-		$this->assertTrue( $this->rb->finalizePayment( $paymentId ) );
-	}
-
-	/**
-	 * Test: Credit full payment (deprecated method)
-	 */
-	function testCreditFullPaymentDeprecated() {
-		if ( $this->isSkip( 'aftershop' ) ) {
-			$this->markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
-		}
-		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
-		$this->rb->finalizePayment( $paymentId );
-		$this->assertTrue( $this->rb->creditPayment( $paymentId ) );
-	}
-
-	/**
-	 * Test: Cancel full payment (deprecated method)
-	 */
-	function testCancelFullPaymentDeprecated() {
-		if ( $this->isSkip( 'aftershop' ) ) {
-			$this->markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
-		}
-		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
-		$this->rb->finalizePayment( $paymentId );
-		$cancelRes = $this->rb->cancelPayment( $paymentId );
-		$this->assertTrue( $cancelRes );
-	}
-
 	function testAfterShopSanitizer() {
 		$paymentId         = $this->getPaymentIdFromOrderByClientChoice( 2 );
 		$sanitizedShopSpec = $this->rb->sanitizeAfterShopSpec( $paymentId, RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_FINALIZE );
