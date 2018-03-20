@@ -19,9 +19,7 @@ As this module uses [curl](https://curl.haxx.se) and [SoapClient](http://php.net
 
 # PHP 7.2
 
-Does the library work with PHP 7.2?
-
-- Tests are verified to [run with 7.2 RC5](https://resursbankplugins.atlassian.net/browse/ECOMPHP-180) so far
+Tests are verified with the deprecated suite up to PHP 7.2.3 as of 20 march 2018,
 
 
 ## What this library do and do not
