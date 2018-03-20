@@ -38,7 +38,7 @@ use Resursbank\RBEcomPHP\TorneLIB_NetBits;
  *  Global
  */
 define('ECOMPHP_VERSION', '1.0.35');
-define('ECOMPHP_MODIFY_DATE', '20180309');
+define('ECOMPHP_MODIFY_DATE', '20180320');
 
 /**
  * Class ResursBank Primary class for EComPHP
