@@ -9,8 +9,8 @@
  * @branch 1.0
  * @version 1.0.35
  * @deprecated Maintenance version only - Use composer based package v1.3 or higher if possible
- * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
- * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
+ * @link https://test.resurs.com/docs/x/BACt Migration from 1.0/1.1 to 1.3 documentation
+ * @link https://test.resurs.com/docs/x/TYNM Get started with EComPHP
  * @license Apache License
  */
 
