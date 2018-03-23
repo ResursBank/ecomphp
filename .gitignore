@@ -9,3 +9,6 @@ source/classes/thirdparty
 source/classes/thirdparty/network.php
 source/classes/thirdparty/crypto.php
 Makefile
+tests/skiptests.json
+tests/storage/shared.serialize
+tests/test.json
