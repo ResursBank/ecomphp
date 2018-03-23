@@ -1,7 +1,6 @@
 .idea
 .DS_Store
 .svn
-/tests/test.json
 docs
 source/Makefile
 source/testwsdl.sh
@@ -11,3 +10,5 @@ source/classes/thirdparty/setnamespace.sh
 composer.lock
 vendor
 composer.phar
+tests/skiptests.json
+tests/storage/shared.serialize
