@@ -8,6 +8,7 @@
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.1
  * @version 1.1.35
+ * @deprecated Maintenance version only - Use composer based package v1.3 or higher if possible
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @license Apache License
@@ -1255,9 +1256,9 @@ class ResursBank {
 	 */
 	public function setUserAgent( $MyUserAgent = '' ) {
 		if ( ! empty( $MyUserAgent ) ) {
-			$this->myUserAgent = $MyUserAgent . " +" . $this->getVersionFull();
+			$this->myUserAgent = $MyUserAgent . " +" . $this->getVersionFull() . (defined('PHP_VERSION') ? "/PHP-" . PHP_VERSION : "");
 		} else {
-			$this->myUserAgent = $this->getVersionFull();
+			$this->myUserAgent = $this->getVersionFull() . (defined('PHP_VERSION') ? "/PHP-" . PHP_VERSION : "");
 		}
 		if ( $this->customerUserAgentPush && isset( $_SERVER['HTTP_USER_AGENT'] ) ) {
 			$this->myUserAgent .= " +CLI-" . $this->T_CRYPTO->base64_compress( $_SERVER['HTTP_USER_AGENT'] );
@@ -3313,6 +3314,7 @@ class ResursBank {
 	 * @since 1.1.3
 	 */
 	public function validateExternalAddress() {
+		$this->isNetWork();
 		if ( is_array( $this->validateExternalUrl ) && count( $this->validateExternalUrl ) ) {
 			$this->InitializeServices();
 			$ExternalAPI = $this->externalApiAddress . "urltest/isavailable/";
@@ -3383,6 +3385,7 @@ class ResursBank {
 	 * @since 1.1.3
 	 */
 	private function getCustomerIp() {
+		$this->isNetWork();
 		$primaryAddress = isset( $_SERVER['REMOTE_ADDR'] ) ? $_SERVER['REMOTE_ADDR'] : "127.0.0.1";
 		// Warning: This is untested and currently returns an array instead of a string, which may break ecommerce
 		if ( $this->preferCustomerProxy && ! empty( $this->NETWORK ) && is_array( $this->NETWORK->getProxyHeaders() ) && count( $this->NETWORK->getProxyHeaders() ) ) {
