@@ -1433,7 +1433,7 @@ class ResursBankTest extends TestCase
 	}
 
 	private function doMockSign( $URL, $govId, $fail = false ) {
-		$MockFormResponse   = $this->CURL->doGet( $URL );
+		$mockFormResponse   = $this->CURL->doGet( $URL );
 		$MockDomain         = $this->NETWORK->getUrlDomain( $this->CURL->getResponseUrl() );
 		$MockDomainPath = null;
 		$mockDomainPathDir = null;
@@ -1442,8 +1442,16 @@ class ResursBankTest extends TestCase
 			$mockDomainPathDir = isset($MockDomainPath[1]) && !empty($MockDomainPath[1]) ? $MockDomainPath[1] : "";
 		}
 
+		$MockForm           = $this->CURL->getResponseBody( $mockFormResponse );
+		if (method_exists($this->CURL, "getParsedDomById")) {
+			$this->CURL->setParseHtml(true);
+			$mockFormDom = $this->CURL->getParsedDomById();
+			if (isset($mockFormDom['mockForm']['innerhtml']) && !empty($mockFormDom['mockForm']['innerhtml'])) {
+				$MockForm = $mockFormDom['mockForm']['innerhtml'];
+			}
+			$this->CURL->setParseHtml(false);
+		}
 		//$SignBody           = $this->CURL->getResponseBody( $this->CURL->doGet( $URL ) );
-		$MockForm           = $this->CURL->getResponseBody( $MockFormResponse );
 		$MockFormActionPath = preg_replace( "/(.*?)action=\"(.*?)\"(.*)/is", '$2', $MockForm );
 		$MockFormToken      = preg_replace( "/(.*?)resursToken\" value=\"(.*?)\"(.*)/is", '$2', $MockForm );
 		$mockFailUrl = preg_replace("/(.*?)\"\/mock\/failAuth(.*?)\"(.*)/is", '$2', $MockForm);
