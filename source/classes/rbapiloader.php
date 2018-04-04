@@ -132,16 +132,32 @@ class ResursBank {
 	 */
 	private $wsdlServices = array();
 
-	/** @var null Object configurationService */
+	/**
+	 * @var \stdClass $configurationService
+	 * @deprecated Calls to this service class are no longer in use
+	 */
 	public $configurationService = null;
-	/** @var null Object developerWebService */
+	/**
+	 * @var \stdClass $developerWebService
+	 * @deprecated Calls to this service class are no longer in use
+	 */
 	public $developerWebService = null;
-	/** @var null Object simplifiedShopFlowService (this is what is primary used by this gateway) */
+	/**
+	 * @var \stdClass $simplifiedShopFlowService
+	 * @deprecated Calls to this service are no longer in use
+	 */
 	public $simplifiedShopFlowService = null;
+	/**
+	 * @var \stdClass $afterShopFlowService
+	 * @deprecated Calls to this service class are no longer in use
+	 */
 	public $afterShopFlowService = null;
-	/** @var null Object shopFlowService (Deprecated) */
+	/**
+	 * @var \stdClass $shopFlowService
+	 * @deprecated Calls to this service class are no longer in use
+	 */
 	public $shopFlowService = null;
-	/** @var null What the service has returned (debug) */
+	/** @var \stdClass What the service has returned (debug) */
 	public $serviceReturn;
 
 	///// Shop related
@@ -2026,7 +2042,6 @@ class ResursBank {
 	 * @since 1.1.1
 	 */
 	public function setRegisterCallback( $callbackType = RESURS_CALLBACK_TYPES::CALLBACK_TYPE_NOT_SET, $callbackUriTemplate = "", $digestData = array(), $basicAuthUserName = null, $basicAuthPassword = null ) {
-		$returnSuccess = false;
 		$this->InitializeServices();
 		if ( is_array( $this->validateExternalUrl ) && count( $this->validateExternalUrl ) ) {
 			$isValidAddress = $this->validateExternalAddress();
@@ -2085,7 +2100,7 @@ class ResursBank {
 				unset( $renderCallback['eventType'] );
 			}
 			$renderedResponse = $this->CURL->doPost( $renderCallbackUrl, $renderCallback, CURL_POST_AS::POST_AS_JSON );
-			$code             = $this->CURL->getResponseCode();
+			$code             = $this->CURL->getResponseCode($renderedResponse);
 		} else {
 			$renderCallbackUrl = $this->getServiceUrl( "registerEventCallback" );
 			// We are not using postService here, since we are dependent on the response code rather than the response itself
@@ -2541,7 +2556,6 @@ class ResursBank {
 			$currentInvoiceTest = $this->getNextInvoiceNumber();
 		} catch ( \Exception $e ) {
 		}
-		$paymentScanList = array();
 		$paymentScanTypes = array('IS_DEBITED', 'IS_CREDITED', 'IS_ANNULLED');
 
 		$lastHighestInvoice = 0;
@@ -5149,7 +5163,6 @@ class ResursBank {
 			$hostedUrl      = $this->getHostedUrl();
 			$hostedResponse = $this->CURL->doPost( $hostedUrl, $this->Payload, CURL_POST_AS::POST_AS_JSON );
 			$parsedResponse = $this->CURL->getParsedResponse( $hostedResponse );
-			$responseCode   = $this->CURL->getResponseCode( $hostedResponse );
 			// Do not trust response codes!
 			if ( isset( $parsedResponse->location ) ) {
 				$this->resetPayload();
@@ -5196,8 +5209,6 @@ class ResursBank {
 
 		/** @var string $dataHash Output string */
 		$dataHash = null;
-		/** @var array $orderData */
-		$orderData = array();
 		/** @var array $customerData */
 		$customerData = array();
 		/** @var array $hashes Data to hash or encrypt */
@@ -6673,7 +6684,6 @@ class ResursBank {
 	 * @since 1.2.0
 	 */
 	public function updateCheckoutOrderLines( $paymentId = '', $orderLines = array() ) {
-		$outputOrderLines = array();
 		if ( empty( $paymentId ) ) {
 			throw new \Exception( "Payment id not set" );
 		}
