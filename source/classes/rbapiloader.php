@@ -2118,7 +2118,7 @@ class ResursBank {
 			return true;
 		}
 
-		return false;
+		throw new \Exception("Could not register callback", $code);
 	}
 
 	/**
