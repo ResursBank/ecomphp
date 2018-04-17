@@ -4990,8 +4990,10 @@ class ResursBank {
 				);
 			}
 			foreach ( $this->SpecLines as $specIndex => $specRow ) {
-				if ( is_array( $specRow ) && ! isset( $specRow['unitMeasure'] ) ) {
-					$this->SpecLines[ $specIndex ]['unitMeasure'] = $this->defaultUnitMeasure;
+				if ( is_array( $specRow ) ) {
+					if ( ! isset( $specRow['unitMeasure'] ) || ( isset( $specRow['unitMeasure'] ) && empty( $specRow['unitMeasure'] ) ) ) {
+						$this->SpecLines[ $specIndex ]['unitMeasure'] = $this->defaultUnitMeasure;
+					}
 				}
 				if ( $myFlow === RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW ) {
 					$this->SpecLines[ $specIndex ]['id'] = ( $specIndex ) + 1;
@@ -5692,14 +5694,20 @@ class ResursBank {
 			} else if ( $myFlow == RESURS_FLOW_TYPES::FLOW_MINIMALISTIC ) {
 				$mySpecRules = $specRules['minimalistic'];
 			}
+			$hasMeasure = false;
 			foreach ( $specLines as $specIndex => $specArray ) {
 				foreach ( $specArray as $key => $value ) {
 					if ( strtolower( $key ) == "unitmeasure" && empty( $value ) ) {
+						$hasMeasure = true;
 						$specArray[ $key ] = $this->defaultUnitMeasure;
 					}
 					if ( ! in_array( strtolower( $key ), array_map( "strtolower", $mySpecRules ) ) ) {
 						unset( $specArray[ $key ] );
 					}
+				}
+				// Add unit measure if missing
+				if ( ! $hasMeasure && $myFlow != RESURS_FLOW_TYPES::FLOW_MINIMALISTIC ) {
+					$specArray['unitMeasure'] = $this->defaultUnitMeasure;
 				}
 				$specLines[ $specIndex ] = $specArray;
 			}
