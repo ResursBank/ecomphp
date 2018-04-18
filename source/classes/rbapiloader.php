@@ -2669,6 +2669,38 @@ class ResursBank {
 	}
 
 	/**
+	 * Get list of payment methods (payment method objects), that support annuity factors
+	 *
+	 * @param bool $namesOnly
+	 *
+	 * @return array
+	 * @throws \Exception
+	 * @since 1.0.36
+	 * @since 1.1.36
+	 * @since 1.3.9
+	 * @since 2.0.0
+	 */
+	public function getPaymentMethodsByAnnuity($namesOnly = false) {
+		$allMethods = $this->getPaymentMethods();
+		$annuitySupported = array('REVOLVING_CREDIT');
+		$annuityMethods = array();
+		foreach ($allMethods as $methodIndex => $methodObject) {
+			$t = isset($methodObject->type) ? $methodObject->type : null;
+			$s = isset($methodObject->specificType) ? $methodObject->specificType : null;
+			if (in_array($t, $annuitySupported) || in_array($s, $annuitySupported)) {
+				if (!$namesOnly) {
+					$annuityMethods[] = $methodObject;
+				} else {
+					if (isset($methodObject->id)) {
+						$annuityMethods[] = $methodObject->id;
+					}
+				}
+			}
+		}
+		return $annuityMethods;
+	}
+
+	/**
 	 * Sanitize payment methods locally: make sure, amongst others that also cached payment methods is handled correctly on request, when for example PAYMENT_PROVIDER needs to be cleaned up
 	 *
 	 * @param array $paymentMethods

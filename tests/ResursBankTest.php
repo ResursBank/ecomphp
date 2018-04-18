@@ -89,16 +89,16 @@ class ResursBankTest extends TestCase {
 	 * @test
 	 * @testdox Tests API credentials and getPaymentMethods. Expected result: Approved connection with a specific number of payment methods
 	 *
-	 * @throws Exception
+	 * @throws \Exception
 	 */
 	function apiPaymentMethodsWithCredentials() {
-		$this->assertTrue( count( $this->TEST->getCredentialControl() ) > 0 );
+		static::assertTrue( count( $this->TEST->getCredentialControl() ) > 0 );
 	}
 
 	/**
 	 * @test
-	 * @testdox EComPHP throws exceptions on credential failures
-	 * @throws Exception
+	 * @testdox EComPHP throws \Exceptions on credential failures
+	 * @throws \Exception
 	 */
 	function apiPaymentMethodsWithWrongCredentials() {
 		$this->expectException( "\Exception" );
@@ -112,7 +112,7 @@ class ResursBankTest extends TestCase {
 	function shareDataOut() {
 		$this->TEST->share( "outShare", 1 );
 		$keys = $this->TEST->share( "thisKey", "thatValue" );
-		$this->assertTrue( count( $keys ) > 0 ? true : false );
+		static::assertTrue( count( $keys ) > 0 ? true : false );
 	}
 
 	/**
@@ -121,7 +121,7 @@ class ResursBankTest extends TestCase {
 	 */
 	function shareDataIn() {
 		$keys = $this->TEST->share( "thisKey" );
-		$this->assertTrue( count( $keys ) > 0 ? true : false );
+		static::assertTrue( count( $keys ) > 0 ? true : false );
 	}
 
 	/**
@@ -132,10 +132,10 @@ class ResursBankTest extends TestCase {
 		if ( $this->TEST->share( "outShare" ) ) {
 			$this->TEST->unshare( "outShare" );
 			$keys = $this->TEST->share();
-			$this->assertTrue( is_array( $keys ) );
+			static::assertTrue( is_array( $keys ) );
 
 		} else {
-			$this->markTestSkipped( "Test has been started without shareDataOut" );
+			static::markTestSkipped( "Test has been started without shareDataOut" );
 		}
 	}
 
@@ -144,7 +144,7 @@ class ResursBankTest extends TestCase {
 	 * @testdox Direct test - Basic getAddressTest
 	 */
 	function getAddress() {
-		$this->assertContains($this->flowHappyCustomerName, $this->TEST->ECOM->getAddress($this->flowHappyCustomer)->fullName);
+		static::assertContains( $this->flowHappyCustomerName, $this->TEST->ECOM->getAddress( $this->flowHappyCustomer )->fullName );
 	}
 
 	/**
@@ -152,29 +152,38 @@ class ResursBankTest extends TestCase {
 	 * @testdox Direct test - Test adding orderlines via the library and extract correct data
 	 */
 	function addOrderLine() {
-		$this->TEST->ECOM->addOrderLine("RDL-1337", "One simple orderline", 800, 25);
+		$this->TEST->ECOM->addOrderLine( "RDL-1337", "One simple orderline", 800, 25 );
 		$orderLines = $this->TEST->ECOM->getOrderLines();
-		$this->assertTrue(count($orderLines) > 0 && $orderLines[0]['artNo'] == "RDL-1337");
+		static::assertTrue( count( $orderLines ) > 0 && $orderLines[0]['artNo'] == "RDL-1337" );
 	}
 
 	/**
 	 * @test Direct test - Extract orderdata from library
 	 * @testdox
-	 * @throws Exception
+	 * @throws \Exception
 	 */
 	function getOrderData() {
-		$this->TEST->ECOM->setBillingByGetAddress($this->flowHappyCustomer);
-		$this->TEST->ECOM->addOrderLine("RDL-1337", "One simple orderline", 800, 25);
-		$this->assertTrue(($this->TEST->ECOM->getOrderData())['totalAmount'] == "1000");
+		$this->TEST->ECOM->setBillingByGetAddress( $this->flowHappyCustomer );
+		$this->TEST->ECOM->addOrderLine( "RDL-1337", "One simple orderline", 800, 25 );
+		static::assertTrue( ( $this->TEST->ECOM->getOrderData() )['totalAmount'] == "1000" );
 	}
 
 	/**
 	 * @test
-	 * @testdox Assert that the current version of ECom is not 1.0.0 and getCurrentRelease() says something
+	 * @testdox Make sure the current version of ECom is not 1.0.0 and getCurrentRelease() says something
 	 */
 	function getCurrentReleaseTests() {
 		$currentReleaseShouldNotBeEmpty = $this->TEST->ECOM->getCurrentRelease();  // php 5.5
-		$this->assertFalse($this->TEST->ECOM->getIsCurrent("1.0.0") && !empty($currentReleaseShouldNotBeEmpty));
+		static::assertFalse( $this->TEST->ECOM->getIsCurrent( "1.0.0" ) && ! empty( $currentReleaseShouldNotBeEmpty ) );
+	}
+
+	/**
+	 * @test
+	 */
+	function getAnnuityMethods() {
+		$annuityObjectList = $this->TEST->ECOM->getPaymentMethodsByAnnuity();
+		$annuityIdList = $this->TEST->ECOM->getPaymentMethodsByAnnuity(true);
+		static::assertTrue(count($annuityIdList) >= 1 && count($annuityObjectList) >= 1);
 	}
 
 	/**
@@ -182,6 +191,6 @@ class ResursBankTest extends TestCase {
 	 * @testdox Clean up special test data from share file
 	 */
 	function finalTest() {
-		$this->assertEmpty($this->TEST->unshare("thisKey"));
+		static::assertEmpty( $this->TEST->unshare( "thisKey" ) );
 	}
 }
