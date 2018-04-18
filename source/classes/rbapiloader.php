@@ -214,12 +214,14 @@ class ResursBank {
 	private $env_omni_test = "https://omnitest.resurs.com";
 	/** @var string Default URL to omnicheckout production */
 	private $env_omni_prod = "https://checkout.resurs.com";
+	/** @var string Default URL to omnicheckout test */
+	private $env_omni_pos_test = "https://postest.resurs.com";
+	/** @var string Default URL to omnicheckout production */
+	private $env_omni_pos_prod = "https://poscheckout.resurs.com";
 	/** @var string Country of choice */
 	private $envCountry;
-	/** @var string The current chosen URL for omnicheckout after initiation */
-	private $env_omni_current = "";
-	/** @var string The current chosen URL for hosted flow after initiation */
-	private $env_hosted_current = "";
+	/** @var bool Defined if the environment will point at Resurs Checkout POS */
+	private $env_omni_pos = false;
 	/** @var string ShopUrl to use with the checkout */
 	private $checkoutShopUrl = "";
 	/** @var bool Set to true via setValidateCheckoutShopUrl() if you require validation of a proper shopUrl */
@@ -606,6 +608,32 @@ class ResursBank {
 		} else {
 			throw new \Exception( "Can't return handle. The module is in wrong state (non-debug mode)", 403 );
 		}
+	}
+
+	/**
+	 * Make EComPHP go through the POS endpoint rather than the standard Checkout endpoint
+	 *
+	 * @param bool $activatePos
+	 * @since 1.0.36
+	 * @since 1.1.36
+	 * @since 1.3.9
+	 * @since 2.0.0
+	 */
+	public function setPos($activatePos = true) {
+		$this->env_omni_pos = $activatePos;
+	}
+
+	/**
+	 * Returns true if Resurs Checkout is pointing at the POS endpoint
+	 *
+	 * @return bool
+	 * @since 1.0.36
+	 * @since 1.1.36
+	 * @since 1.3.9
+	 * @since 2.0.0
+	 */
+	public function getPos() {
+		return $this->env_omni_pos;
 	}
 
 	/**
@@ -4339,8 +4367,14 @@ class ResursBank {
 		 */
 		if ( $getCurrentIfSet && $this->current_environment_updated ) {
 			if ( $this->current_environment == RESURS_ENVIRONMENTS::ENVIRONMENT_PRODUCTION ) {
+				if ($this->getPos()) {
+					return $this->env_omni_pos_prod;
+				}
 				return $this->env_omni_prod;
 			} else {
+				if ($this->getPos()) {
+					return $this->env_omni_pos_test;
+				}
 				return $this->env_omni_test;
 			}
 		}
