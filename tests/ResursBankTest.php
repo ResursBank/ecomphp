@@ -144,7 +144,7 @@ class ResursBankTest extends TestCase {
 	 * @testdox Direct test - Basic getAddressTest
 	 */
 	function getAddress() {
-		$this->assertContains($this->flowHappyCustomerName, $this->TEST->ECOM->getAddress($this->flowHappyCustomer)->fullName);
+		$this->assertContains( $this->flowHappyCustomerName, $this->TEST->ECOM->getAddress( $this->flowHappyCustomer )->fullName );
 	}
 
 	/**
@@ -152,9 +152,9 @@ class ResursBankTest extends TestCase {
 	 * @testdox Direct test - Test adding orderlines via the library and extract correct data
 	 */
 	function addOrderLine() {
-		$this->TEST->ECOM->addOrderLine("RDL-1337", "One simple orderline", 800, 25);
+		$this->TEST->ECOM->addOrderLine( "RDL-1337", "One simple orderline", 800, 25 );
 		$orderLines = $this->TEST->ECOM->getOrderLines();
-		$this->assertTrue(count($orderLines) > 0 && $orderLines[0]['artNo'] == "RDL-1337");
+		$this->assertTrue( count( $orderLines ) > 0 && $orderLines[0]['artNo'] == "RDL-1337" );
 	}
 
 	/**
@@ -163,9 +163,9 @@ class ResursBankTest extends TestCase {
 	 * @throws \Exception
 	 */
 	function getOrderData() {
-		$this->TEST->ECOM->setBillingByGetAddress($this->flowHappyCustomer);
-		$this->TEST->ECOM->addOrderLine("RDL-1337", "One simple orderline", 800, 25);
-		$this->assertTrue(($this->TEST->ECOM->getOrderData())['totalAmount'] == "1000");
+		$this->TEST->ECOM->setBillingByGetAddress( $this->flowHappyCustomer );
+		$this->TEST->ECOM->addOrderLine( "RDL-1337", "One simple orderline", 800, 25 );
+		$this->assertTrue( ( $this->TEST->ECOM->getOrderData() )['totalAmount'] == "1000" );
 	}
 
 	/**
@@ -174,16 +174,23 @@ class ResursBankTest extends TestCase {
 	 */
 	function getCurrentReleaseTests() {
 		$currentReleaseShouldNotBeEmpty = $this->TEST->ECOM->getCurrentRelease();  // php 5.5
-		$this->assertFalse($this->TEST->ECOM->getIsCurrent("1.0.0") && !empty($currentReleaseShouldNotBeEmpty));
+		$this->assertFalse( $this->TEST->ECOM->getIsCurrent( "1.0.0" ) && ! empty( $currentReleaseShouldNotBeEmpty ) );
 	}
 
-
+	/**
+	 * @test
+	 */
+	function getAnnuityMethods() {
+		$annuityObjectList = $this->TEST->ECOM->getPaymentMethodsByAnnuity();
+		$annuityIdList = $this->TEST->ECOM->getPaymentMethodsByAnnuity(true);
+		static::assertTrue(count($annuityIdList) >= 1 && count($annuityObjectList) >= 1);
+	}
 
 	/**
 	 * @test
 	 * @testdox Clean up special test data from share file
 	 */
 	function finalTest() {
-		$this->assertEmpty($this->TEST->unshare("thisKey"));
+		$this->assertEmpty( $this->TEST->unshare( "thisKey" ) );
 	}
 }
