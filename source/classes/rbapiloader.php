@@ -2333,6 +2333,33 @@ class ResursBank {
 	}
 
 	/**
+	 * @param bool $setSoapChainBoolean
+	 *
+	 * @throws \Exception
+	 * @since 1.0.36
+	 * @since 1.1.36
+	 * @since 1.3.9
+	 * @since 2.0.0
+	 */
+	public function setSoapChain($setSoapChainBoolean = true) {
+		$this->InitializeServices();
+		$this->CURL->setFlag('SOAPCHAIN', $setSoapChainBoolean);
+	}
+
+	/**
+	 * @return mixed|null
+	 * @throws \Exception
+	 * @since 1.0.36
+	 * @since 1.1.36
+	 * @since 1.3.9
+	 * @since 2.0.0
+	 */
+	public function getSoapChain() {
+		$this->InitializeServices();
+		return $this->CURL->getFlag('SOAPCHAIN');
+	}
+
+	/**
 	 * Configure EComPHP to use a specific flow
 	 *
 	 * @param int $flowType
