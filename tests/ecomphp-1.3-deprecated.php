@@ -77,7 +77,7 @@ class ResursBankTest extends TestCase
 		$this->setupConfig();
 
 		$this->CURL    = new Tornevall_cURL();
-		//$this->CURL->setFlag("SOAPCHAIN", true);
+		$this->CURL->setFlag("SOAPCHAIN", true);
 		$this->CURL->setChain(false);   // Unchain the module for backward
 
 		$this->NETWORK = new TorneLIB_Network();
@@ -102,6 +102,7 @@ class ResursBankTest extends TestCase
 			//$this->rb = new ResursBank( $overrideUsername, $overridePassword );
 			throw new \Exception("User- and pass overriders are deprecated", 500);
 		}
+		$this->rb->setSoapChain();
 		$this->rb->setPushCustomerUserAgent(true);
 		$this->rb->setUserAgent("EComPHP/TestSuite");
 		$this->rb->setDebug();

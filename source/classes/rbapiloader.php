@@ -39,7 +39,7 @@ if ( ! defined( 'ECOMPHP_VERSION' ) ) {
 	define( 'ECOMPHP_VERSION', '1.3.9' );
 }
 if ( ! defined( 'ECOMPHP_MODIFY_DATE' ) ) {
-	define( 'ECOMPHP_MODIFY_DATE', '20180403' );
+	define( 'ECOMPHP_MODIFY_DATE', '20180418' );
 }
 
 /**
@@ -214,12 +214,14 @@ class ResursBank {
 	private $env_omni_test = "https://omnitest.resurs.com";
 	/** @var string Default URL to omnicheckout production */
 	private $env_omni_prod = "https://checkout.resurs.com";
+	/** @var string Default URL to omnicheckout test */
+	private $env_omni_pos_test = "https://postest.resurs.com";
+	/** @var string Default URL to omnicheckout production */
+	private $env_omni_pos_prod = "https://poscheckout.resurs.com";
 	/** @var string Country of choice */
 	private $envCountry;
-	/** @var string The current chosen URL for omnicheckout after initiation */
-	private $env_omni_current = "";
-	/** @var string The current chosen URL for hosted flow after initiation */
-	private $env_hosted_current = "";
+	/** @var bool Defined if the environment will point at Resurs Checkout POS */
+	private $env_omni_pos = false;
 	/** @var string ShopUrl to use with the checkout */
 	private $checkoutShopUrl = "";
 	/** @var bool Set to true via setValidateCheckoutShopUrl() if you require validation of a proper shopUrl */
@@ -606,6 +608,32 @@ class ResursBank {
 		} else {
 			throw new \Exception( "Can't return handle. The module is in wrong state (non-debug mode)", 403 );
 		}
+	}
+
+	/**
+	 * Make EComPHP go through the POS endpoint rather than the standard Checkout endpoint
+	 *
+	 * @param bool $activatePos
+	 * @since 1.0.36
+	 * @since 1.1.36
+	 * @since 1.3.9
+	 * @since 2.0.0
+	 */
+	public function setPos($activatePos = true) {
+		$this->env_omni_pos = $activatePos;
+	}
+
+	/**
+	 * Returns true if Resurs Checkout is pointing at the POS endpoint
+	 *
+	 * @return bool
+	 * @since 1.0.36
+	 * @since 1.1.36
+	 * @since 1.3.9
+	 * @since 2.0.0
+	 */
+	public function getPos() {
+		return $this->env_omni_pos;
 	}
 
 	/**
@@ -1527,6 +1555,33 @@ class ResursBank {
 	}
 
 	/**
+	 * @param bool $setSoapChainBoolean
+	 *
+	 * @throws \Exception
+	 * @since 1.0.36
+	 * @since 1.1.36
+	 * @since 1.3.9
+	 * @since 2.0.0
+	 */
+	public function setSoapChain($setSoapChainBoolean = true) {
+		$this->InitializeServices();
+		$this->CURL->setFlag('SOAPCHAIN', $setSoapChainBoolean);
+	}
+
+	/**
+	 * @return mixed|null
+	 * @throws \Exception
+	 * @since 1.0.36
+	 * @since 1.1.36
+	 * @since 1.3.9
+	 * @since 2.0.0
+	 */
+	public function getSoapChain() {
+		$this->InitializeServices();
+		return $this->CURL->getFlag('SOAPCHAIN');
+	}
+
+	/**
 	 * Configure EComPHP to use a specific flow
 	 *
 	 * @param int $flowType
@@ -1860,6 +1915,38 @@ class ResursBank {
 		$realPaymentMethods = $this->sanitizePaymentMethods( $paymentMethods );
 
 		return $realPaymentMethods;
+	}
+
+	/**
+	 * Get list of payment methods (payment method objects), that support annuity factors
+	 *
+	 * @param bool $namesOnly
+	 *
+	 * @return array
+	 * @throws \Exception
+	 * @since 1.0.36
+	 * @since 1.1.36
+	 * @since 1.3.9
+	 * @since 2.0.0
+	 */
+	public function getPaymentMethodsByAnnuity($namesOnly = false) {
+		$allMethods = $this->getPaymentMethods();
+		$annuitySupported = array('REVOLVING_CREDIT');
+		$annuityMethods = array();
+		foreach ($allMethods as $methodIndex => $methodObject) {
+			$t = isset($methodObject->type) ? $methodObject->type : null;
+			$s = isset($methodObject->specificType) ? $methodObject->specificType : null;
+			if (in_array($t, $annuitySupported) || in_array($s, $annuitySupported)) {
+				if (!$namesOnly) {
+					$annuityMethods[] = $methodObject;
+				} else {
+					if (isset($methodObject->id)) {
+						$annuityMethods[] = $methodObject->id;
+					}
+				}
+			}
+		}
+		return $annuityMethods;
 	}
 
 	/**
@@ -4339,8 +4426,14 @@ class ResursBank {
 		 */
 		if ( $getCurrentIfSet && $this->current_environment_updated ) {
 			if ( $this->current_environment == RESURS_ENVIRONMENTS::ENVIRONMENT_PRODUCTION ) {
+				if ($this->getPos()) {
+					return $this->env_omni_pos_prod;
+				}
 				return $this->env_omni_prod;
 			} else {
+				if ($this->getPos()) {
+					return $this->env_omni_pos_test;
+				}
 				return $this->env_omni_test;
 			}
 		}
