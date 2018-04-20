@@ -528,9 +528,11 @@ class ResursBank {
 		if ( class_exists( '\Resursbank\RBEcomPHP\Tornevall_cURL' ) || class_exists( '\TorneLIB\Tornevall_cURL' ) ) {
 			$this->CURL = new Tornevall_cURL();
 			$this->CURL->setChain( false );
+			$this->CURL->setFlag('SOAPCHAIN', true);
 			$this->CURL->setStoreSessionExceptions( true );
 			$this->CURL->setAuthentication( $this->soapOptions['login'], $this->soapOptions['password'] );
 			$this->CURL->setUserAgent( $this->myUserAgent );
+			//$this->CURL->setThrowableHttpCodes();
 			$this->NETWORK = new TorneLIB_Network();
 			$this->BIT     = $this->NETWORK->BIT;
 		}
@@ -772,7 +774,7 @@ class ResursBank {
 	 * Set internal flag parameter
 	 *
 	 * @param string $flagKey
-	 * @param string $flagValue
+	 * @param string $flagValue Will be boolean==true if empty
 	 *
 	 * @return bool If successful
 	 * @throws \Exception
@@ -780,7 +782,11 @@ class ResursBank {
 	 * @since 1.1.23
 	 * @since 1.2.0
 	 */
-	public function setFlag( $flagKey = '', $flagValue = '' ) {
+	public function setFlag( $flagKey = '', $flagValue = null ) {
+		if ( is_null( $flagValue ) ) {
+			$flagValue = true;
+		}
+
 		if ( ! empty( $flagKey ) ) {
 			$this->internalFlags[ $flagKey ] = $flagValue;
 
@@ -844,7 +850,7 @@ class ResursBank {
 	 */
 	public function isFlag( $flagKey = '' ) {
 		if ( $this->hasFlag( $flagKey ) ) {
-			return ( $this->getFlag( $flagKey ) === 1 || $this->getFlag( $flagKey ) === true ? true : false );
+			return ( $this->getFlag( $flagKey ) == 1 || $this->getFlag( $flagKey ) == true ? true : false );
 		}
 
 		return false;
@@ -2177,6 +2183,7 @@ class ResursBank {
 	 * getPayment - Retrieves detailed information about a payment (rewritten to primarily use rest instead of SOAP, to get more soap independence)
 	 *
 	 * @param string $paymentId
+	 * @param bool $useSoap
 	 *
 	 * @return array|mixed|null
 	 * @throws \Exception
@@ -2187,13 +2194,22 @@ class ResursBank {
 	 * @since 1.2.4 Refactored from this version
 	 * @since 1.3.4 Refactored from this version
 	 */
-	public function getPayment( $paymentId = '' ) {
-		if ( $this->isFlag( 'GET_PAYMENT_BY_SOAP' ) ) {
+	public function getPayment( $paymentId = '', $useSoap = false ) {
+		$this->InitializeServices();
+		if ( $this->isFlag( 'GET_PAYMENT_BY_SOAP' ) || $useSoap ) {
 			return $this->getPaymentBySoap( $paymentId );
 		}
-		$this->InitializeServices();
 
-		return $this->CURL->getParsedResponse( $this->CURL->doGet( $this->getCheckoutUrl() . "/checkout/payments/" . $paymentId ) );
+		try {
+			return $this->CURL->getParsedResponse( $this->CURL->doGet( $this->getCheckoutUrl() . "/checkout/payments/" . $paymentId ) );
+		} catch (\Exception $e) {
+			// Get internal exceptions before http responses
+			$exceptionTestBody = @json_decode($this->CURL->getResponseBody());
+			if (isset($exceptionTestBody->errorCode) && isset($exceptionTestBody->description)) {
+				throw new \Exception($exceptionTestBody->errorMessage, $exceptionTestBody->errorCode, $e);
+			}
+			throw new \Exception($e->getMessage(), $e->getCode(), $e);
+		}
 	}
 
 	/**
@@ -4421,9 +4437,7 @@ class ResursBank {
 	 * @since 1.1.1
 	 */
 	public function getCheckoutUrl( $EnvironmentRequest = RESURS_ENVIRONMENTS::ENVIRONMENT_TEST, $getCurrentIfSet = true ) {
-		/*
-		 * If current_environment is set, override incoming variable
-		 */
+		// If current_environment is set, override incoming variable
 		if ( $getCurrentIfSet && $this->current_environment_updated ) {
 			if ( $this->current_environment == RESURS_ENVIRONMENTS::ENVIRONMENT_PRODUCTION ) {
 				if ($this->getPos()) {
