@@ -682,10 +682,26 @@ class ResursBankTest extends TestCase
 		if ( is_array( $paymentList ) && count( $paymentList ) ) {
 			$existingPayment = array_pop( $paymentList );
 			$existingPayment->paymentId;
-			$payment = $this->rb->getPayment( $existingPayment->paymentId );
+			$payment = $this->rb->getPayment( $existingPayment->paymentId);
 			static::assertTrue( $payment->id == $existingPayment->paymentId );
 		} else {
 			static::markTestSkipped( "No payments available to run with getPayment()" );
+		}
+	}
+
+	public function testGetPaymentFail() {
+		try {
+			$this->rb->getPayment( "FAIL_HERE");
+		} catch (\Exception $e) {
+			static::assertTrue($e->getCode() == 3 || $e->getCode() == 8 || $e->getCode() == 404);
+		}
+	}
+	public function testGetPaymentFailBySoap() {
+		try {
+			$this->rb->setFlag('GET_PAYMENT_BY_SOAP');
+			$payment = $this->rb->getPayment( "FAIL_HERE");
+		} catch (\Exception $e) {
+			static::assertTrue($e->getCode() === 8);
 		}
 	}
 
