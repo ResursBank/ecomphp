@@ -21,7 +21,7 @@ class RESURS_TEST_BRIDGE {
 
 	/**
 	 * getCredentialControl(): Initiates ECom with proper credentials or failing credentials
-
+	 *
 	 * @param bool $successLogin
 	 *
 	 * @return mixed
@@ -54,6 +54,8 @@ class RESURS_TEST_BRIDGE {
 			if ( ! isset( $shareData[ $key ] ) ) {
 				if ( ! is_null( $value ) ) {
 					$shareData[ $key ] = array( $value );
+				} else {
+					return null;
 				}
 			} else {
 				if ( ! is_null( $value ) ) {
@@ -66,8 +68,8 @@ class RESURS_TEST_BRIDGE {
 					return $shareData[ $key ];
 				}
 			}
-			file_put_contents( $this->shareFile, serialize( $shareData ) );
 		}
+		file_put_contents( $this->shareFile, serialize( $shareData ) );
 
 		return $shareData;
 	}
@@ -89,11 +91,4 @@ class RESURS_TEST_BRIDGE {
 		$this->ECOM->setPreferredPaymentFlowService( $flow );
 	}
 
-
-	/**
-	 * getBookPayment(): Books a payment with defaults and random products if nothing has been given via set up
-	 */
-	public function getCreatePayment() {
-		$this->ECOM->getPayload();
-	}
 }
