@@ -32,14 +32,12 @@ use \TorneLIB\TorneLIB_Network;
 use \TorneLIB\Tornevall_cURL;
 use \TorneLIB\CURL_POST_AS;
 
-/*
- *  Global
- */
+// Globals starts here
 if ( ! defined( 'ECOMPHP_VERSION' ) ) {
 	define( 'ECOMPHP_VERSION', '1.3.9' );
 }
 if ( ! defined( 'ECOMPHP_MODIFY_DATE' ) ) {
-	define( 'ECOMPHP_MODIFY_DATE', '20180418' );
+	define( 'ECOMPHP_MODIFY_DATE', '20180423' );
 }
 
 /**
