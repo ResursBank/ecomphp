@@ -2446,8 +2446,17 @@ class ResursBank {
 					if ( isset( $objectDetails->errorTypeId ) && intval( $objectDetails->errorTypeId ) > 0 ) {
 						$exceptionCode = $objectDetails->errorTypeId;
 					}
-					if ( isset( $previousException->detail->userErrorMessage ) ) {
-						$exceptionMessage = $objectDetails->userErrorMessage;
+					if ( isset( $objectDetails->userErrorMessage ) ) {
+						$errorTypeDescription = isset( $objectDetails->errorTypeDescription ) ? "[" . $objectDetails->errorTypeDescription . "] " : "";
+						$exceptionMessage     = $errorTypeDescription . $objectDetails->userErrorMessage;
+						$fixableByYou         = isset( $objectDetails->fixableByYou ) ? $objectDetails->fixableByYou : null;
+						if ( $fixableByYou == "false" ) {
+							$fixableByYou = " (Not fixable by you)";
+						} else {
+							$fixableByYou = " (Fixable by you)";
+						}
+						$exceptionMessage .= $fixableByYou;
+
 					}
 				}
 				if ( empty( $exceptionCode ) || $exceptionCode == "0" ) {
@@ -5887,7 +5896,16 @@ class ResursBank {
 			// Giving internal country data more influence on this method
 			$this->setCountryByCountryCode( $targetCountry );
 		}
-		if ( $this->enforceService === RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW ) {
+		if ( is_null( $this->enforceService ) ) {
+			/**
+			 * EComPHP might get a bit confused here, if no preferred flow is set. Normally, we don't have to know this,
+			 * but in this case (since EComPHP actually points at the simplified flow by default) we need to tell it
+			 * what to use, so correct payload will be used, during automation of the billing.
+			 * @link https://resursbankplugins.atlassian.net/browse/ECOMPHP-238
+			 */
+			$this->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW );
+		}
+		if ( $this->enforceService === RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW) {
 			$ReturnAddress['country'] = $country;
 		} else {
 			$ReturnAddress['countryCode'] = $country;
