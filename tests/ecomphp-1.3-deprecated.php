@@ -1557,6 +1557,7 @@ class ResursBankTest extends TestCase
 			try {
 				// Using myPayLoad will lead tgo FROZEN
 				$Payment = $this->rb->createPayment( $this->availableMethods['invoice_natural'] );
+
 				static::assertTrue( $Payment->bookPaymentStatus == "BOOKED" );
 			} catch ( \Exception $e ) {
 				echo __FUNCTION__ . ": " . $e->getMessage() . "\n";
