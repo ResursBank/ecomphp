@@ -528,6 +528,7 @@ class ResursBank {
 		if ( class_exists( '\Resursbank\RBEcomPHP\Tornevall_cURL' ) || class_exists( '\TorneLIB\Tornevall_cURL' ) ) {
 			$this->CURL = new Tornevall_cURL();
 			$this->CURL->setChain( false );
+			$this->CURL->setFlag('SOAPCHAIN', true);
 			$this->CURL->setStoreSessionExceptions( true );
 			$this->CURL->setAuthentication( $this->soapOptions['login'], $this->soapOptions['password'] );
 			$this->CURL->setUserAgent( $this->myUserAgent );
