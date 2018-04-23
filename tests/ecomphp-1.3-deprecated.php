@@ -1111,6 +1111,19 @@ class ResursBankTest extends TestCase
 	}
 
 	/**
+	 * Get all callbacks by a rest call (objects) - broken
+	 */
+	public function testGetCallbackListByRestWithWrongCredentials() {
+		$ownCall = new ResursBank("fail", "fail");
+		try {
+			$ownCall->getCallBacksByRest();
+		} catch (\Exception $e) {
+			static::assertStringStartsWith("401", $e->getCode());
+		}
+
+	}
+
+	/**
 	 * Get all callbacks by a rest call (key-indexed array)
 	 */
 	public function testGetCallbackListAsArrayByRest() {
