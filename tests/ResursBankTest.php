@@ -16,28 +16,28 @@
  *
  */
 
-if (file_exists(__DIR__ . "/../vendor/autoload.php")) {
-	require_once(__DIR__ . '/../vendor/autoload.php');
+namespace Resursbank\RBEcomPHP;
+
+if ( file_exists( __DIR__ . "/../vendor/autoload.php" ) ) {
+	require_once( __DIR__ . '/../vendor/autoload.php' );
 } else {
-	require_once('../source/classes/rbapiloader.php');
+	require_once( '../source/classes/rbapiloader.php' );
 }
 
-// Usages for v1.1
+// Resurs Bank usages
 use PHPUnit\Framework\TestCase;
 use \Resursbank\RBEcomPHP\ResursBank;
-use \Resursbank\RBEcomPHP\RESURS_TEST_BRIDGE;
 use \Resursbank\RBEcomPHP\RESURS_CALLBACK_TYPES;
 use \Resursbank\RBEcomPHP\RESURS_PAYMENT_STATUS_RETURNCODES;
 use \Resursbank\RBEcomPHP\RESURS_FLOW_TYPES;
 use \Resursbank\RBEcomPHP\RESURS_CALLBACK_REACHABILITY;
 use \Resursbank\RBEcomPHP\RESURS_AFTERSHOP_RENDER_TYPES;
-use \Resursbank\RBEcomPHP\Tornevall_cURL;
-use \Resursbank\RBEcomPHP\TorneLIB_Network;
 
-/*
- * Global test configuration section
- */
+// curl wrapper, extended network handling functions etc
+use \TorneLIB\Tornevall_cURL;
+use \TorneLIB\TorneLIB_Network;
 
+// Global test configuration section starts here
 require_once( __DIR__ . "/classes/ResursBankTestClass.php" );
 
 // Set up local user agent for identification with webservices
@@ -85,20 +85,42 @@ class ResursBankTest extends TestCase {
 
 	}
 
-	/**
-	 * @test
-	 * @testdox Tests API credentials and getPaymentMethods. Expected result: Approved connection with a specific number of payment methods
-	 *
-	 * @throws Exception
-	 */
-	function apiPaymentMethodsWithCredentials() {
-		$this->assertTrue( count( $this->TEST->getCredentialControl() ) > 0 );
+	private function getHappyCustomerData() {
+		$lastHappyCustomer = $this->TEST->share( 'happyCustomer' );
+		if ( empty( $lastHappyCustomer ) ) {
+			$this->getAddress( true );
+			$lastHappyCustomer = $this->TEST->share( 'happyCustomer' );
+		}
+		if ( isset( $lastHappyCustomer[0] ) ) {
+			return $lastHappyCustomer[0];
+		}
+	}
+
+	private function getPaymentMethodsData() {
+		$paymentMethods = $this->TEST->share( 'paymentMethods' );
+		if ( empty( $paymentMethods ) ) {
+			$this->getPaymentMethods();
+			$paymentMethods = $this->TEST->share( 'paymentMethods' );
+		}
+		if ( isset( $paymentMethods[0] ) ) {
+			return $paymentMethods[0];
+		}
 	}
 
 	/**
 	 * @test
-	 * @testdox EComPHP throws exceptions on credential failures
-	 * @throws Exception
+	 * @testdox Tests API credentials and getPaymentMethods. Expected result: Approved connection with a specific number of payment methods
+	 *
+	 * @throws \Exception
+	 */
+	function apiPaymentMethodsWithCredentials() {
+		static::assertTrue( count( $this->TEST->getCredentialControl() ) > 0 );
+	}
+
+	/**
+	 * @test
+	 * @testdox EComPHP throws \Exceptions on credential failures
+	 * @throws \Exception
 	 */
 	function apiPaymentMethodsWithWrongCredentials() {
 		$this->expectException( "\Exception" );
@@ -112,7 +134,7 @@ class ResursBankTest extends TestCase {
 	function shareDataOut() {
 		$this->TEST->share( "outShare", 1 );
 		$keys = $this->TEST->share( "thisKey", "thatValue" );
-		$this->assertTrue( count( $keys ) > 0 ? true : false );
+		static::assertTrue( count( $keys ) > 0 ? true : false );
 	}
 
 	/**
@@ -121,7 +143,7 @@ class ResursBankTest extends TestCase {
 	 */
 	function shareDataIn() {
 		$keys = $this->TEST->share( "thisKey" );
-		$this->assertTrue( count( $keys ) > 0 ? true : false );
+		static::assertTrue( count( $keys ) > 0 ? true : false );
 	}
 
 	/**
@@ -132,19 +154,74 @@ class ResursBankTest extends TestCase {
 		if ( $this->TEST->share( "outShare" ) ) {
 			$this->TEST->unshare( "outShare" );
 			$keys = $this->TEST->share();
-			$this->assertTrue( is_array( $keys ) );
+			static::assertTrue( is_array( $keys ) );
 
 		} else {
-			$this->markTestSkipped( "Test has been started without shareDataOut" );
+			static::markTestSkipped( "Test has been started without shareDataOut" );
 		}
 	}
 
 	/**
 	 * @test
-	 * @testdox Direct test - Basic getAddressTest
+	 * @testdox Direct test - Basic getAddressTest with caching
 	 */
-	function getAddress() {
-		$this->assertContains($this->flowHappyCustomerName, $this->TEST->ECOM->getAddress($this->flowHappyCustomer)->fullName);
+	function getAddress( $noAssert = false ) {
+		$happyCustomer = $this->TEST->ECOM->getAddress( $this->flowHappyCustomer );
+		$this->TEST->share( 'happyCustomer', $happyCustomer, false );
+		if ( ! $noAssert ) {
+			static::assertContains( $this->flowHappyCustomerName, $happyCustomer->fullName );
+		}
+
+		return $happyCustomer;
+	}
+
+	/**
+	 * @test
+	 * @testdox Test if getPaymentMethods work and in the same time cache it for future use
+	 */
+	function getPaymentMethods( $noAssert = false ) {
+		$this->TEST->ECOM->setSimplifiedPsp( true );
+		$paymentMethods = $this->TEST->ECOM->getPaymentMethods();
+		foreach ( $paymentMethods as $method ) {
+			$this->TEST->share( 'METHOD_' . $method->specificType, $method, false );
+		}
+		$this->TEST->share( 'paymentMethods', $paymentMethods, false );
+		if ( ! $noAssert ) {
+			static::assertGreaterThan( 1, $paymentMethods );
+		}
+	}
+
+	/**
+	 * Get a method that suites our needs of type, with the help from getPaymentMethods
+	 * @param string $specificType
+	 *
+	 * @return mixed
+	 */
+	function getMethod( $specificType = 'INVOICE' ) {
+		$specificMethod = $this->TEST->share( 'METHOD_' . $specificType );
+		if ( empty( $specificMethod ) ) {
+			$this->getPaymentMethods( false );
+			$specificMethod = $this->TEST->share( 'METHOD_' . $specificType );
+		}
+
+		if (isset($specificMethod[0])) {
+			return $specificMethod[0];
+		}
+		return $specificMethod;
+	}
+
+	/**
+	 * Get the payment method ID from the internal getMethod()
+	 *
+	 * @param string $specificType
+	 *
+	 * @return mixed
+	 */
+	function getMethodId($specificType = 'INVOICE') {
+		$specificMethod = $this->getMethod($specificType);
+		if (isset($specificMethod->id)) {
+			return $specificMethod->id;
+		}
 	}
 
 	/**
@@ -152,36 +229,63 @@ class ResursBankTest extends TestCase {
 	 * @testdox Direct test - Test adding orderlines via the library and extract correct data
 	 */
 	function addOrderLine() {
-		$this->TEST->ECOM->addOrderLine("RDL-1337", "One simple orderline", 800, 25);
+		$this->TEST->ECOM->addOrderLine( "Product-1337", "One simple orderline", 800, 25 );
 		$orderLines = $this->TEST->ECOM->getOrderLines();
-		$this->assertTrue(count($orderLines) > 0 && $orderLines[0]['artNo'] == "RDL-1337");
+		static::assertTrue( count( $orderLines ) > 0 && $orderLines[0]['artNo'] == "Product-1337" );
+	}
+
+	/**
+	 * @test
+	 */
+	function generateSimpleSimplifiedInvoiceOrder($noAssert = false) {
+		$customerData = $this->getHappyCustomerData();
+		//$this->TEST->ECOM->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW );
+		$this->TEST->ECOM->addOrderLine( "Product-1337", "One simple orderline", 800, 25 );
+		$this->TEST->ECOM->setBillingByGetAddress( $customerData );
+		$this->TEST->ECOM->setCustomer( "198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL" );
+		$this->TEST->ECOM->setSigning( $this->signUrl . '&success=true', $this->signUrl . '&success=false', false );
+		$response = $this->TEST->ECOM->createPayment($this->getMethodId());
+		if (!$noAssert) {
+			static::assertContains('BOOKED', $response->bookPaymentStatus);
+		}
+		return $response;
 	}
 
 	/**
 	 * @test Direct test - Extract orderdata from library
 	 * @testdox
-	 * @throws Exception
+	 * @throws \Exception
 	 */
 	function getOrderData() {
-		$this->TEST->ECOM->setBillingByGetAddress($this->flowHappyCustomer);
-		$this->TEST->ECOM->addOrderLine("RDL-1337", "One simple orderline", 800, 25);
-		$this->assertTrue(($this->TEST->ECOM->getOrderData())['totalAmount'] == "1000");
+		$this->TEST->ECOM->setBillingByGetAddress( $this->flowHappyCustomer );
+		$this->TEST->ECOM->addOrderLine( "RDL-1337", "One simple orderline", 800, 25 );
+		static::assertTrue( ( $this->TEST->ECOM->getOrderData() )['totalAmount'] == "1000" );
 	}
 
 	/**
 	 * @test
-	 * @testdox Assert that the current version of ECom is not 1.0.0 and getCurrentRelease() says something
+	 * @testdox Make sure the current version of ECom is not 1.0.0 and getCurrentRelease() says something
 	 */
 	function getCurrentReleaseTests() {
 		$currentReleaseShouldNotBeEmpty = $this->TEST->ECOM->getCurrentRelease();  // php 5.5
-		$this->assertFalse($this->TEST->ECOM->getIsCurrent("1.0.0") && !empty($currentReleaseShouldNotBeEmpty));
+		static::assertFalse( $this->TEST->ECOM->getIsCurrent( "1.0.0" ) && ! empty( $currentReleaseShouldNotBeEmpty ) );
 	}
+
+	/**
+	 * @test
+	 */
+	function getAnnuityMethods() {
+		$annuityObjectList = $this->TEST->ECOM->getPaymentMethodsByAnnuity();
+		$annuityIdList     = $this->TEST->ECOM->getPaymentMethodsByAnnuity( true );
+		static::assertTrue( count( $annuityIdList ) >= 1 && count( $annuityObjectList ) >= 1 );
+	}
+
 
 	/**
 	 * @test
 	 * @testdox Clean up special test data from share file
 	 */
 	function finalTest() {
-		$this->assertEmpty($this->TEST->unshare("thisKey"));
+		static::assertEmpty( $this->TEST->unshare( "thisKey" ) );
 	}
 }

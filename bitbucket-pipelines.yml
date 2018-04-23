@@ -3,6 +3,7 @@
 # -----
 # You can specify a custom docker image from Docker Hub as your build environment.
 # image: php:7.1.1
+#          - vendor/bin/phpunit tests/curltests.php
 image: php:7.1.1
 
 pipelines:
@@ -17,5 +18,4 @@ pipelines:
           - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
           - composer install
           - composer require phpunit/phpunit
-          - vendor/bin/phpunit tests/curltests.php
           - vendor/bin/phpunit tests/ResursBankTest.php
