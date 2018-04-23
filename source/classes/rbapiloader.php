@@ -40,7 +40,7 @@ use Resursbank\RBEcomPHP\TorneLIB_NetBits;
  *  Global
  */
 define('ECOMPHP_VERSION', '1.1.36');
-define('ECOMPHP_MODIFY_DATE', '20180418');
+define('ECOMPHP_MODIFY_DATE', '20180423');
 
 /**
  * Class ResursBank Primary class for EComPHP
@@ -1972,6 +1972,10 @@ class ResursBank {
 
 	/**
 	 * Retreive a full list of, by merchant, registered callbacks
+	 *
+	 * The callback list will return only existing eventTypes, so if no event types exists, the returned array or object will be empty.
+	 * Developer note: Changing this behaviour so all event types is always returned even if they don't exist (meaning ecomphp fills in what's missing) might
+	 * break plugins that is already in production.
 	 *
 	 * @param bool $ReturnAsArray
 	 *
