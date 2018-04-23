@@ -12,3 +12,4 @@ Makefile
 tests/skiptests.json
 tests/storage/shared.serialize
 tests/test.json
+source/classes/cookies
