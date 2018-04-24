@@ -34,6 +34,10 @@ use \Resursbank\RBEcomPHP\RESURS_CALLBACK_REACHABILITY;
 use \Resursbank\RBEcomPHP\RESURS_AFTERSHOP_RENDER_TYPES;
 
 // curl wrapper, extended network handling functions etc
+use TorneLIB\MODULE_CURL;
+use TorneLIB\MODULE_IO;
+use TorneLIB\NETCURL_PARSER;
+use TorneLIB\TorneLIB_IO;
 use \TorneLIB\Tornevall_cURL;
 use \TorneLIB\TorneLIB_Network;
 
@@ -78,6 +82,7 @@ class resursBankTest extends TestCase {
 
 	function setUp() {
 		$this->API  = new ResursBank();
+		$this->API->setDebug(true);
 		$this->TEST = new RESURS_TEST_BRIDGE();
 	}
 
@@ -181,6 +186,25 @@ class resursBankTest extends TestCase {
 		}
 
 		return $happyCustomer;
+	}
+	/**
+	 * @test
+	 * @testdox getCurlHandle (using getAddress)
+	 */
+	function getAddressCurlHandle() {
+		if (!class_exists('\SimpleXMLElement')) {
+			static::markTestSkipped("SimpleXMLElement missing");
+		}
+
+		$this->TEST->ECOM->getAddress( $this->flowHappyCustomer );
+		$lastCurlHandle = $this->TEST->ECOM->getCurlHandle();
+
+		// The XML parser in the IO MODULE should give the same response as the direct curl handle
+		$selfParser = new TorneLIB_IO();
+		$byIo = $selfParser->getFromXml($lastCurlHandle->getBody(), true);
+		$byHandle = $lastCurlHandle->getParsed();
+
+		static::assertTrue($byIo->fullName == $this->flowHappyCustomerName && $byHandle->fullName == $this->flowHappyCustomerName);
 	}
 
 	/**

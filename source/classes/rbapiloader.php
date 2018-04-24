@@ -37,7 +37,7 @@ if ( ! defined( 'ECOMPHP_VERSION' ) ) {
 	define( 'ECOMPHP_VERSION', '1.3.9' );
 }
 if ( ! defined( 'ECOMPHP_MODIFY_DATE' ) ) {
-	define( 'ECOMPHP_MODIFY_DATE', '20180423' );
+	define( 'ECOMPHP_MODIFY_DATE', '20180424' );
 }
 
 /**
@@ -140,6 +140,7 @@ class ResursBank {
 	 * @since 1.1.1
 	 */
 	private $CURL;
+	private $CURL_HANDLE_COLLECTOR = array();
 	/**
 	 * Info and statistics from the CURL-client
 	 * @var array
@@ -380,15 +381,19 @@ class ResursBank {
 	 * @param string $login
 	 * @param string $password
 	 * @param int $targetEnvironment
-	 *
-	 * @throws \Exception
+	 * @param null $debug Activate debugging immediately on initialization
 	 */
-	function __construct( $login = '', $password = '', $targetEnvironment = RESURS_ENVIRONMENTS::ENVIRONMENT_NOT_SET ) {
+	function __construct( $login = '', $password = '', $targetEnvironment = RESURS_ENVIRONMENTS::ENVIRONMENT_NOT_SET, $debug = null ) {
 		if ( isset( $_SERVER['HTTP_HOST'] ) ) {
 			$theHost = $_SERVER['HTTP_HOST'];
 		} else {
 			$theHost = "nohost.localhost";
 		}
+
+		if (!is_null($debug) && is_bool($debug)) {
+			$this->debug = $debug;
+		}
+
 		$this->checkoutShopUrl           = $this->hasHttps( true ) . "://" . $theHost;
 		$this->soapOptions['cache_wsdl'] = ( defined( 'WSDL_CACHE_BOTH' ) ? WSDL_CACHE_BOTH : true );
 		$this->soapOptions['ssl_method'] = ( defined( 'SOAP_SSL_METHOD_TLS' ) ? SOAP_SSL_METHOD_TLS : false );
@@ -509,12 +514,21 @@ class ResursBank {
 	 * code structures, everything needs to be done from here. For now. In future version, this is probably deprecated too, as it is an
 	 * obsolete way of getting things done as Resurs Bank has more than one way to pick things up in the API suite.
 	 *
+	 * @param bool $reInitializeCurl
 	 * @return bool
 	 * @throws \Exception
 	 * @since 1.0.1
 	 * @since 1.1.1
 	 */
-	private function InitializeServices() {
+	private function InitializeServices($reInitializeCurl = true) {
+
+		if ( is_null( $this->CURL ) ) {
+			$reInitializeCurl = true;
+		}
+		if ( ! $reInitializeCurl ) {
+			return;
+		}
+
 		$this->sessionActivate();
 		$this->hasServicesInitialization = true;
 		$this->testWrappers();
@@ -526,7 +540,7 @@ class ResursBank {
 		if ( class_exists( '\Resursbank\RBEcomPHP\Tornevall_cURL' ) || class_exists( '\TorneLIB\Tornevall_cURL' ) ) {
 			$this->CURL = new Tornevall_cURL();
 			$this->CURL->setChain( false );
-			$this->CURL->setFlag('SOAPCHAIN', true);
+			$this->CURL->setFlag('SOAPCHAIN', false);
 			$this->CURL->setStoreSessionExceptions( true );
 			$this->CURL->setAuthentication( $this->soapOptions['login'], $this->soapOptions['password'] );
 			$this->CURL->setUserAgent( $this->myUserAgent );
@@ -555,7 +569,7 @@ class ResursBank {
 	 * @since 1.2.0
 	 */
 	public function setDebug( $debugModeState = false ) {
-		$this->InitializeServices();
+		$this->InitializeServices(false);
 		$this->debug = $debugModeState;
 	}
 
@@ -575,15 +589,22 @@ class ResursBank {
 	/**
 	 * Return the CURL communication handle to the client, when in debug mode (Read only)
 	 *
+	 * @param bool $bulk
 	 * @return Tornevall_cURL
 	 * @throws \Exception
 	 * @since 1.0.22
 	 * @since 1.1.22
 	 * @since 1.2.0
 	 */
-	public function getCurlHandle() {
-		$this->InitializeServices();
+	public function getCurlHandle($bulk = false) {
+		$this->InitializeServices(false);
 		if ( $this->debug ) {
+			if ($bulk) {
+				if (count($this->CURL_HANDLE_COLLECTOR)) {
+					return array_pop($this->CURL_HANDLE_COLLECTOR);
+				}
+				return $this->CURL_HANDLE_COLLECTOR;
+			}
 			return $this->CURL;
 		} else {
 			throw new \Exception( "Can't return handle. The module is in wrong state (non-debug mode)", 403 );
@@ -1699,6 +1720,8 @@ class ResursBank {
 				$this->curlStats['calls'] ++;
 				$this->curlStats['internals'] = $this->CURL->getDebugData();
 			}
+			$this->CURL_HANDLE_COLLECTOR[] = $Service;
+
 			if ( ! $getResponseCode ) {
 				return $ParsedResponse;
 			} else {
