@@ -33,7 +33,7 @@ if (file_exists("/etc/ecomphp.json")) {
 }
 
 /**
- * Class ResursBankTest: Primary test client
+ * Class resursBankTest: Primary test client
  */
 class ResursBankTest extends TestCase
 {
@@ -1099,6 +1099,19 @@ class ResursBankTest extends TestCase
 	}
 
 	/**
+	 * Get all callbacks by a rest call (objects) - broken
+	 */
+	public function testGetCallbackListByRestWithWrongCredentials() {
+		$ownCall = new ResursBank("fail", "fail");
+		try {
+			$ownCall->getCallBacksByRest();
+		} catch (\Exception $e) {
+			static::assertStringStartsWith("401", $e->getCode());
+		}
+
+	}
+
+	/**
 	 * Get all callbacks by a rest call (key-indexed array)
 	 */
 	public function testGetCallbackListAsArrayByRest() {
@@ -1532,6 +1545,7 @@ class ResursBankTest extends TestCase
 			try {
 				// Using myPayLoad will lead tgo FROZEN
 				$Payment = $this->rb->createPayment( $this->availableMethods['invoice_natural'] );
+
 				static::assertTrue( $Payment->bookPaymentStatus == "BOOKED" );
 			} catch ( \Exception $e ) {
 				echo __FUNCTION__ . ": " . $e->getMessage() . "\n";

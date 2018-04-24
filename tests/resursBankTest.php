@@ -42,7 +42,7 @@ if ( file_exists( "/etc/ecomphp.json" ) ) {
 	}
 }
 
-class ResursBankTest extends TestCase {
+class resursBankTest extends TestCase {
 
 	/**
 	 * @var ResursBank $API EComPHP
@@ -73,6 +73,36 @@ class ResursBankTest extends TestCase {
 
 	function tearDown() {
 
+	}
+
+	private function getHappyCustomerData() {
+		$lastHappyCustomer = $this->TEST->share( 'happyCustomer' );
+		if ( empty( $lastHappyCustomer ) ) {
+			$this->getAddress( true );
+			$lastHappyCustomer = $this->TEST->share( 'happyCustomer' );
+		}
+		if ( isset( $lastHappyCustomer[0] ) ) {
+			return $lastHappyCustomer[0];
+		}
+	}
+
+	private function getPaymentMethodsData() {
+		$paymentMethods = $this->TEST->share( 'paymentMethods' );
+		if ( empty( $paymentMethods ) ) {
+			$this->getPaymentMethods();
+			$paymentMethods = $this->TEST->share( 'paymentMethods' );
+		}
+		if ( isset( $paymentMethods[0] ) ) {
+			return $paymentMethods[0];
+		}
+	}
+
+	/**
+	 * @test
+	 */
+	function clearStorage() {
+		@unlink( __DIR__ . "/storage/shared.serialize" );
+		static::assertTrue( ! file_exists( __DIR__ . '/storage/shared.serialize' ) );
 	}
 
 	/**
@@ -131,10 +161,67 @@ class ResursBankTest extends TestCase {
 
 	/**
 	 * @test
-	 * @testdox Direct test - Basic getAddressTest
+	 * @testdox Direct test - Basic getAddressTest with caching
 	 */
-	function getAddress() {
-		static::assertContains( $this->flowHappyCustomerName, $this->TEST->ECOM->getAddress( $this->flowHappyCustomer )->fullName );
+	function getAddress( $noAssert = false ) {
+		$happyCustomer = $this->TEST->ECOM->getAddress( $this->flowHappyCustomer );
+		$this->TEST->share( 'happyCustomer', $happyCustomer, false );
+		if ( ! $noAssert ) {
+			static::assertContains( $this->flowHappyCustomerName, $happyCustomer->fullName );
+		}
+
+		return $happyCustomer;
+	}
+
+	/**
+	 * @test
+	 * @testdox Test if getPaymentMethods work and in the same time cache it for future use
+	 */
+	function getPaymentMethods( $noAssert = false ) {
+		$this->TEST->ECOM->setSimplifiedPsp( true );
+		$paymentMethods = $this->TEST->ECOM->getPaymentMethods();
+		foreach ( $paymentMethods as $method ) {
+			$this->TEST->share( 'METHOD_' . $method->specificType, $method, false );
+		}
+		$this->TEST->share( 'paymentMethods', $paymentMethods, false );
+		if ( ! $noAssert ) {
+			static::assertGreaterThan( 1, $paymentMethods );
+		}
+	}
+
+	/**
+	 * Get a method that suites our needs of type, with the help from getPaymentMethods
+	 *
+	 * @param string $specificType
+	 *
+	 * @return mixed
+	 */
+	function getMethod( $specificType = 'INVOICE' ) {
+		$specificMethod = $this->TEST->share( 'METHOD_' . $specificType );
+		if ( empty( $specificMethod ) ) {
+			$this->getPaymentMethods( false );
+			$specificMethod = $this->TEST->share( 'METHOD_' . $specificType );
+		}
+
+		if ( isset( $specificMethod[0] ) ) {
+			return $specificMethod[0];
+		}
+
+		return $specificMethod;
+	}
+
+	/**
+	 * Get the payment method ID from the internal getMethod()
+	 *
+	 * @param string $specificType
+	 *
+	 * @return mixed
+	 */
+	function getMethodId( $specificType = 'INVOICE' ) {
+		$specificMethod = $this->getMethod( $specificType );
+		if ( isset( $specificMethod->id ) ) {
+			return $specificMethod->id;
+		}
 	}
 
 	/**
@@ -142,9 +229,27 @@ class ResursBankTest extends TestCase {
 	 * @testdox Direct test - Test adding orderlines via the library and extract correct data
 	 */
 	function addOrderLine() {
-		$this->TEST->ECOM->addOrderLine( "RDL-1337", "One simple orderline", 800, 25 );
+		$this->TEST->ECOM->addOrderLine( "Product-1337", "One simple orderline", 800, 25 );
 		$orderLines = $this->TEST->ECOM->getOrderLines();
-		static::assertTrue( count( $orderLines ) > 0 && $orderLines[0]['artNo'] == "RDL-1337" );
+		static::assertTrue( count( $orderLines ) > 0 && $orderLines[0]['artNo'] == "Product-1337" );
+	}
+
+	/**
+	 * @test
+	 */
+	function generateSimpleSimplifiedInvoiceOrder( $noAssert = false ) {
+		$customerData = $this->getHappyCustomerData();
+		//$this->TEST->ECOM->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW );
+		$this->TEST->ECOM->addOrderLine( "Product-1337", "One simple orderline", 800, 25 );
+		$this->TEST->ECOM->setBillingByGetAddress( $customerData );
+		$this->TEST->ECOM->setCustomer( "198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL" );
+		$this->TEST->ECOM->setSigning( $this->signUrl . '&success=true', $this->signUrl . '&success=false', false );
+		$response = $this->TEST->ECOM->createPayment( $this->getMethodId() );
+		if ( ! $noAssert ) {
+			static::assertContains( 'BOOKED', $response->bookPaymentStatus );
+		}
+
+		return $response;
 	}
 
 	/**
@@ -172,9 +277,10 @@ class ResursBankTest extends TestCase {
 	 */
 	function getAnnuityMethods() {
 		$annuityObjectList = $this->TEST->ECOM->getPaymentMethodsByAnnuity();
-		$annuityIdList = $this->TEST->ECOM->getPaymentMethodsByAnnuity(true);
-		static::assertTrue(count($annuityIdList) >= 1 && count($annuityObjectList) >= 1);
+		$annuityIdList     = $this->TEST->ECOM->getPaymentMethodsByAnnuity( true );
+		static::assertTrue( count( $annuityIdList ) >= 1 && count( $annuityObjectList ) >= 1 );
 	}
+
 
 	/**
 	 * @test

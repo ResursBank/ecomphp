@@ -1345,7 +1345,6 @@ class ResursBank {
 		}
 		throw new \Exception( "Flags can not be empty", 500 );
 	}
-
 	/**
 	 * Get internal flag
 	 *
@@ -5886,7 +5885,16 @@ class ResursBank {
 			// Giving internal country data more influence on this method
 			$this->setCountryByCountryCode( $targetCountry );
 		}
-		if ( $this->enforceService === RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW ) {
+		if ( is_null( $this->enforceService ) ) {
+			/**
+			 * EComPHP might get a bit confused here, if no preferred flow is set. Normally, we don't have to know this,
+			 * but in this case (since EComPHP actually points at the simplified flow by default) we need to tell it
+			 * what to use, so correct payload will be used, during automation of the billing.
+			 * @link https://resursbankplugins.atlassian.net/browse/ECOMPHP-238
+			 */
+			$this->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW );
+		}
+		if ( $this->enforceService === RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW) {
 			$ReturnAddress['country'] = $country;
 		} else {
 			$ReturnAddress['countryCode'] = $country;
