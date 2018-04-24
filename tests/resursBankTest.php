@@ -52,7 +52,7 @@ if ( file_exists( "/etc/ecomphp.json" ) ) {
 	}
 }
 
-class ResursBankTest extends TestCase {
+class resursBankTest extends TestCase {
 
 	/**
 	 * @var ResursBank $API EComPHP
@@ -105,6 +105,14 @@ class ResursBankTest extends TestCase {
 		if ( isset( $paymentMethods[0] ) ) {
 			return $paymentMethods[0];
 		}
+	}
+
+	/**
+	 * @test
+	 */
+	function clearStorage() {
+		@unlink( __DIR__ . "/storage/shared.serialize" );
+		static::assertTrue( ! file_exists( __DIR__ . '/storage/shared.serialize' ) );
 	}
 
 	/**
@@ -193,6 +201,7 @@ class ResursBankTest extends TestCase {
 
 	/**
 	 * Get a method that suites our needs of type, with the help from getPaymentMethods
+	 *
 	 * @param string $specificType
 	 *
 	 * @return mixed
@@ -204,9 +213,10 @@ class ResursBankTest extends TestCase {
 			$specificMethod = $this->TEST->share( 'METHOD_' . $specificType );
 		}
 
-		if (isset($specificMethod[0])) {
+		if ( isset( $specificMethod[0] ) ) {
 			return $specificMethod[0];
 		}
+
 		return $specificMethod;
 	}
 
@@ -217,9 +227,9 @@ class ResursBankTest extends TestCase {
 	 *
 	 * @return mixed
 	 */
-	function getMethodId($specificType = 'INVOICE') {
-		$specificMethod = $this->getMethod($specificType);
-		if (isset($specificMethod->id)) {
+	function getMethodId( $specificType = 'INVOICE' ) {
+		$specificMethod = $this->getMethod( $specificType );
+		if ( isset( $specificMethod->id ) ) {
 			return $specificMethod->id;
 		}
 	}
@@ -237,17 +247,18 @@ class ResursBankTest extends TestCase {
 	/**
 	 * @test
 	 */
-	function generateSimpleSimplifiedInvoiceOrder($noAssert = false) {
+	function generateSimpleSimplifiedInvoiceOrder( $noAssert = false ) {
 		$customerData = $this->getHappyCustomerData();
 		//$this->TEST->ECOM->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW );
 		$this->TEST->ECOM->addOrderLine( "Product-1337", "One simple orderline", 800, 25 );
 		$this->TEST->ECOM->setBillingByGetAddress( $customerData );
 		$this->TEST->ECOM->setCustomer( "198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL" );
 		$this->TEST->ECOM->setSigning( $this->signUrl . '&success=true', $this->signUrl . '&success=false', false );
-		$response = $this->TEST->ECOM->createPayment($this->getMethodId());
-		if (!$noAssert) {
-			static::assertContains('BOOKED', $response->bookPaymentStatus);
+		$response = $this->TEST->ECOM->createPayment( $this->getMethodId() );
+		if ( ! $noAssert ) {
+			static::assertContains( 'BOOKED', $response->bookPaymentStatus );
 		}
+
 		return $response;
 	}
 
