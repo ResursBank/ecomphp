@@ -16,16 +16,16 @@ use \TorneLIB\Tornevall_cURL;
 ini_set( 'memory_limit', - 1 );    // Free memory limit, some tests requires more memory (like ip-range handling)
 
 //// START HERE
-class ResursBank_cURLTest extends TestCase {
+class curlTest extends TestCase {
 	/**
-	 * @var MODULE_CURL $CURL
+	 * @var Tornevall_cURL $CURL
 	 */
 	private $CURL;
 	private $username = "ecomphpPipelineTest";
 	private $password = "4Em4r5ZQ98x3891D6C19L96TQ72HsisD";
 
 	function setUp() {
-		$this->CURL = new MODULE_CURL();
+		$this->CURL = new Tornevall_cURL();
 	}
 
 	/**
@@ -84,7 +84,7 @@ class ResursBank_cURLTest extends TestCase {
 		$this->CURL->setSoapTryOnce( false );
 		$this->CURL->setAuthentication( "fail", "fail" );
 		try {
-			$wsdl = $this->CURL->doGet( 'https://test.resurs.com/ecommerce-test/ws/V4/SimplifiedShopFlowService', NETCURL_POST_DATATYPES::DATATYPE_SOAP );
+			$wsdl = $this->CURL->doGet( 'https://test.resurs.com/ecommerce-test/ws/V4/SimplifiedShopFlowService', CURL_POST_AS::POST_AS_SOAP );
 			$wsdl->getPaymentMethods();
 		} catch ( \Exception $e ) {
 			$errorMessage = $e->getMessage();
@@ -123,7 +123,7 @@ class ResursBank_cURLTest extends TestCase {
 	function soapAuthErrorNoInitialSoapFaultsNoWsdl() {
 		$this->CURL->setAuthentication( "fail", "fail" );
 		try {
-			$this->CURL->doGet( 'https://test.resurs.com/ecommerce-test/ws/V4/SimplifiedShopFlowService', NETCURL_POST_DATATYPES::DATATYPE_SOAP );
+			$this->CURL->doGet( 'https://test.resurs.com/ecommerce-test/ws/V4/SimplifiedShopFlowService', CURL_POST_AS::POST_AS_SOAP );
 		} catch ( \Exception $e ) {
 			// As of 6.0.16, this is the default behaviour even when SOAPWARNINGS are not active by setFlag
 			$errorMessage = $e->getMessage();
