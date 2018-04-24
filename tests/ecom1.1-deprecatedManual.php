@@ -39,7 +39,7 @@ if (file_exists("/etc/ecomphp.json")) {
 }
 
 /**
- * Class ResursBankTest: Primary test client
+ * Class resursBankTest: Primary test client
  */
 class ResursBankTest extends TestCase
 {
