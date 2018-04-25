@@ -8,8 +8,8 @@
 pipelines:
   default:
     - step:
-        name: EComPHP 1.3 with PHP 7.1.10
-        image: php:7.1.10
+        name: EComPHP 1.3 with PHP 7.1.11
+        image: php:7.1.11
         caches:
           - composer
         script:
@@ -21,8 +21,8 @@ pipelines:
           - composer require phpunit/phpunit
           - vendor/bin/phpunit --configuration ./phpunit.xml
     - step:
-        name: EComPHP 1.3 with PHP 7.2.3
-        image: php:7.2.3
+        name: EComPHP 1.3 with PHP 7.2.2
+        image: php:7.2.2
         caches:
           - composer
         script:
