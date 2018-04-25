@@ -22,19 +22,20 @@ use \Resursbank\RBEcomPHP\RESURS_CALLBACK_REACHABILITY;
 use \Resursbank\RBEcomPHP\RESURS_AFTERSHOP_RENDER_TYPES;
 use \Resursbank\RBEcomPHP\Tornevall_cURL;
 use \Resursbank\RBEcomPHP\TorneLIB_Network;
+use \Resursbank\RBEcomPHP\RESURS_ENVIRONMENTS;
 
 ///// ADD ALWAYS SECTION
 
 // Automatically set to test the pushCustomerUserAgent
-if (!isset($_SERVER['HTTP_USER_AGENT'])) {
+if ( ! isset( $_SERVER['HTTP_USER_AGENT'] ) ) {
 	$_SERVER['HTTP_USER_AGENT'] = "EComPHP/Test-InternalClient";
 }
-ini_set('memory_limit', -1);
+ini_set( 'memory_limit', - 1 );
 
-if (file_exists("/etc/ecomphp.json")) {
-	$ecomExt = @json_decode(@file_get_contents("/etc/ecomphp.json"));
-	if (isset($ecomExt->skip)) {
-		define('SKIP_TEST', $ecomExt->skip);
+if ( file_exists( "/etc/ecomphp.json" ) ) {
+	$ecomExt = @json_decode( @file_get_contents( "/etc/ecomphp.json" ) );
+	if ( isset( $ecomExt->skip ) ) {
+		define( 'SKIP_TEST', $ecomExt->skip );
 	}
 }
 
@@ -2024,8 +2025,8 @@ class ResursBankTest extends TestCase {
 			static::assertEquals( 2, $quantity );
 		} catch ( \Exception $e ) {
 			if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
-				if (!defined('SKIP_TEST')) {
-					define('SKIP_TEST', array('skip'=>'aftershop'));
+				if ( ! defined( 'SKIP_TEST' ) ) {
+					define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
 				}
 				static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
 			} else {
@@ -2057,8 +2058,8 @@ class ResursBankTest extends TestCase {
 			static::assertTrue( $this->rb->finalizePayment( $paymentId ) );
 		} catch ( \Exception $e ) {
 			if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
-				if (!defined('SKIP_TEST')) {
-					define('SKIP_TEST', array('skip'=>'aftershop'));
+				if ( ! defined( 'SKIP_TEST' ) ) {
+					define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
 				}
 				static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
 			} else {
@@ -2125,8 +2126,8 @@ class ResursBankTest extends TestCase {
 				static::assertTrue( ( $finalizeResult == 200 && $testOrder['AUTHORIZE'] == 2 && $testOrder['DEBIT'] == 2 ) );
 			} catch ( \Exception $e ) {
 				if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
-					if (!defined('SKIP_TEST')) {
-						define('SKIP_TEST', array('skip'=>'aftershop'));
+					if ( ! defined( 'SKIP_TEST' ) ) {
+						define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
 					}
 					static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
 				} else {
@@ -2159,8 +2160,8 @@ class ResursBankTest extends TestCase {
 				static::assertTrue( ( $finalizeResult == 200 && $testOrder['AUTHORIZE'] == 2 && $testOrder['DEBIT'] == 1 ) );
 			} catch ( \Exception $e ) {
 				if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
-					if (!defined('SKIP_TEST')) {
-						define('SKIP_TEST', array('skip'=>'aftershop'));
+					if ( ! defined( 'SKIP_TEST' ) ) {
+						define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
 					}
 					static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
 				} else {
@@ -2194,8 +2195,8 @@ class ResursBankTest extends TestCase {
 				static::assertTrue( ( $finalizeResult == 200 && $countOrder['AUTHORIZE'] == 2 && $countOrder['DEBIT'] == 1 && (int) $testOrder['DEBIT']['0']->quantity == 2 ) );
 			} catch ( \Exception $e ) {
 				if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
-					if (!defined('SKIP_TEST')) {
-						define('SKIP_TEST', array('skip'=>'aftershop'));
+					if ( ! defined( 'SKIP_TEST' ) ) {
+						define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
 					}
 					static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
 				} else {
@@ -2232,8 +2233,8 @@ class ResursBankTest extends TestCase {
 				static::assertTrue( ( $finalizeResult == 200 && $testOrder['AUTHORIZE'] == 2 && $testOrder['DEBIT'] == 1 ) );
 			} catch ( \Exception $e ) {
 				if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
-					if (!defined('SKIP_TEST')) {
-						define('SKIP_TEST', array('skip'=>'aftershop'));
+					if ( ! defined( 'SKIP_TEST' ) ) {
+						define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
 					}
 					static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
 				} else {
@@ -2280,8 +2281,8 @@ class ResursBankTest extends TestCase {
 				static::assertTrue( ( $finalizeResult == 200 && $testOrder['AUTHORIZE'] == 3 && $testOrder['DEBIT'] == 2 ) );
 			} catch ( \Exception $e ) {
 				if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
-					if (!defined('SKIP_TEST')) {
-						define('SKIP_TEST', array('skip'=>'aftershop'));
+					if ( ! defined( 'SKIP_TEST' ) ) {
+						define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
 					}
 					static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
 				} else {
@@ -2319,8 +2320,8 @@ class ResursBankTest extends TestCase {
 				static::assertTrue( ( $finalizeResult == 200 && $countOrder['AUTHORIZE'] == 2 && $countOrder['DEBIT'] == 1 && (int) $testOrder['DEBIT']['0']->quantity == 2 ) );
 			} catch ( \Exception $e ) {
 				if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
-					if (!defined('SKIP_TEST')) {
-						define('SKIP_TEST', array('skip'=>'aftershop'));
+					if ( ! defined( 'SKIP_TEST' ) ) {
+						define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
 					}
 					static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
 				} else {
@@ -2369,8 +2370,8 @@ class ResursBankTest extends TestCase {
 			static::assertTrue( $cancellationResult && $result['AUTHORIZE'] == 4 && $result['DEBIT'] == 2 && $result['CREDIT'] == 2 && $result['ANNUL'] == 2 );
 		} catch ( \Exception $e ) {
 			if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
-				if (!defined('SKIP_TEST')) {
-					define('SKIP_TEST', array('skip'=>'aftershop'));
+				if ( ! defined( 'SKIP_TEST' ) ) {
+					define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
 				}
 				static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
 			} else {
@@ -2396,8 +2397,8 @@ class ResursBankTest extends TestCase {
 			static::assertTrue( $result['AUTHORIZE'] == 3 && $result['DEBIT'] == 3 && $result['CREDIT'] == 1 && $result['ANNUL'] == 0 );
 		} catch ( \Exception $e ) {
 			if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
-				if (!defined('SKIP_TEST')) {
-					define('SKIP_TEST', array('skip'=>'aftershop'));
+				if ( ! defined( 'SKIP_TEST' ) ) {
+					define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
 				}
 				static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
 			} else {
@@ -2433,8 +2434,8 @@ class ResursBankTest extends TestCase {
 				$this->rb->paymentCredit( $paymentId );
 			} catch ( \Exception $negativeException ) {
 				if ( $negativeException->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
-					if (!defined('SKIP_TEST')) {
-						define('SKIP_TEST', array('skip'=>'aftershop'));
+					if ( ! defined( 'SKIP_TEST' ) ) {
+						define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
 					}
 					static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
 				}
@@ -2442,8 +2443,8 @@ class ResursBankTest extends TestCase {
 			}
 		} catch ( \Exception $e ) {
 			if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
-				if (!defined('SKIP_TEST')) {
-					define('SKIP_TEST', array('skip'=>'aftershop'));
+				if ( ! defined( 'SKIP_TEST' ) ) {
+					define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
 				}
 				static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
 			} else {
@@ -2521,8 +2522,8 @@ class ResursBankTest extends TestCase {
 			$this->rb->paymentAnnul( $paymentId );
 		} catch ( \Exception $e ) {
 			if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
-				if (!defined('SKIP_TEST')) {
-					define('SKIP_TEST', array('skip'=>'aftershop'));
+				if ( ! defined( 'SKIP_TEST' ) ) {
+					define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
 				}
 				static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
 			} else {
@@ -2573,8 +2574,8 @@ class ResursBankTest extends TestCase {
 			static::assertTrue( $paymentSpecCount['AUTHORIZE'] == 4 && $paymentSpecCount['DEBIT'] == 2 && $paymentSpecCount['CREDIT'] == 2 && $paymentSpecCount['ANNUL'] == 2 );
 		} catch ( \Exception $e ) {
 			if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
-				if (!defined('SKIP_TEST')) {
-					define('SKIP_TEST', array('skip'=>'aftershop'));
+				if ( ! defined( 'SKIP_TEST' ) ) {
+					define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
 				}
 				static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
 			} else {
@@ -2610,8 +2611,8 @@ class ResursBankTest extends TestCase {
 			static::assertTrue( $paymentSpecCount['AUTHORIZE'] == 4 && $paymentSpecCount['DEBIT'] == 2 && $paymentSpecCount['CREDIT'] == 2 && $paymentSpecCount['ANNUL'] == 2 );
 		} catch ( \Exception $e ) {
 			if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
-				if (!defined('SKIP_TEST')) {
-					define('SKIP_TEST', array('skip'=>'aftershop'));
+				if ( ! defined( 'SKIP_TEST' ) ) {
+					define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
 				}
 				static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
 			} else {
@@ -2657,8 +2658,8 @@ class ResursBankTest extends TestCase {
 			static::assertTrue( $paymentSpecCount['AUTHORIZE'] == 4 && $paymentSpecCount['DEBIT'] == 2 && $paymentSpecCount['CREDIT'] == 2 && $paymentSpecCount['ANNUL'] == 2 );
 		} catch ( \Exception $e ) {
 			if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
-				if (!defined('SKIP_TEST')) {
-					define('SKIP_TEST', array('skip'=>'aftershop'));
+				if ( ! defined( 'SKIP_TEST' ) ) {
+					define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
 				}
 				static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
 			} else {
@@ -2724,7 +2725,7 @@ class ResursBankTest extends TestCase {
 	}
 
 	public function testOldEnvironmentClass() {
-		static::assertTrue( ResursEnvironments::ENVIRONMENT_TEST === 1 );
+		static::assertTrue( RESURS_ENVIRONMENTS::ENVIRONMENT_TEST === 1 );
 	}
 
 	public function testBasicOrderStatusFinalizationEvent() {
@@ -2737,8 +2738,8 @@ class ResursBankTest extends TestCase {
 			static::assertTrue( $this->rb->getOrderStatusByPayment( $paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_FINALIZATION ) === RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED );
 		} catch ( \Exception $e ) {
 			if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
-				if (!defined('SKIP_TEST')) {
-					define('SKIP_TEST', array('skip'=>'aftershop'));
+				if ( ! defined( 'SKIP_TEST' ) ) {
+					define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
 				}
 				static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
 			} else {
@@ -2766,8 +2767,8 @@ class ResursBankTest extends TestCase {
 			static::assertTrue( $this->rb->getOrderStatusByPayment( $paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_ANNULMENT ) === RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_ANNULLED );
 		} catch ( \Exception $e ) {
 			if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
-				if (!defined('SKIP_TEST')) {
-					define('SKIP_TEST', array('skip'=>'aftershop'));
+				if ( ! defined( 'SKIP_TEST' ) ) {
+					define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
 				}
 				static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
 			} else {
