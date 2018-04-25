@@ -8,12 +8,14 @@
 pipelines:
   default:
     - step:
-        name: EComPHP 1.3 with PHP 5.3.29
-        image: php:5.3.29
+        name: EComPHP 1.3 with PHP 5.3
+        image: php:5.3-fpm
         caches:
           - composer
         script:
           - apt-get update && apt-get install -y unzip php-soap libxml2-dev git curl openssl
+          - docker-php-ext-install soap
+          - docker-php-ext-configure soap
           - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
           - composer install
           - composer require phpunit/phpunit
