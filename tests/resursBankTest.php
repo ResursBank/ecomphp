@@ -26,6 +26,7 @@ if (file_exists(__DIR__ . "/../vendor/autoload.php")) {
 use PHPUnit\Framework\TestCase;
 use Resursbank\RBEcomPHP\Tornevall_cURL;
 use Resursbank\RBEcomPHP\TorneLIB_Network;
+use Resursbank\RBEcomPHP\TorneLIB_IO;
 
 // Global test configuration section starts here
 require_once( __DIR__ . "/classes/ResursBankTestClass.php" );
@@ -68,6 +69,7 @@ class resursBankTest extends TestCase {
 
 	function setUp() {
 		$this->API  = new ResursBank();
+		$this->API->setDebug(true);
 		$this->TEST = new RESURS_TEST_BRIDGE();
 	}
 
@@ -171,6 +173,25 @@ class resursBankTest extends TestCase {
 		}
 
 		return $happyCustomer;
+	}
+	/**
+	 * @test
+	 * @testdox getCurlHandle (using getAddress)
+	 */
+	function getAddressCurlHandle() {
+		if (!class_exists('\SimpleXMLElement')) {
+			static::markTestSkipped("SimpleXMLElement missing");
+		}
+
+		$this->TEST->ECOM->getAddress( $this->flowHappyCustomer );
+		$lastCurlHandle = $this->TEST->ECOM->getCurlHandle();
+
+		// The XML parser in the IO MODULE should give the same response as the direct curl handle
+		$selfParser = new TorneLIB_IO();
+		$byIo = $selfParser->getFromXml($lastCurlHandle->getBody(), true);
+		$byHandle = $lastCurlHandle->getParsed();
+
+		static::assertTrue($byIo->fullName == $this->flowHappyCustomerName && $byHandle->fullName == $this->flowHappyCustomerName);
 	}
 
 	/**
