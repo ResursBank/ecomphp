@@ -203,7 +203,7 @@ class resursBankTest extends TestCase {
 		// The XML parser in the IO MODULE should give the same response as the direct curl handle
 		$selfParser = new TorneLIB_IO();
 		$byIo = $selfParser->getFromXml($lastCurlHandle->getResponseBody(), true);
-		$byHandle = $lastCurlHandle->getParsed();
+		$byHandle = $lastCurlHandle->getParsedResponse();
 
 		static::assertTrue($byIo->fullName == $this->flowHappyCustomerName && $byHandle->fullName == $this->flowHappyCustomerName);
 	}
