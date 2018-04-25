@@ -13,7 +13,7 @@ pipelines:
         caches:
           - composer
         script:
-          - apt-get update && apt-get install -y unzip php-soap libxml2-dev git curl
+          - apt-get update && apt-get install -y unzip php-soap libxml2-dev git curl openssl
           - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
           - composer install
           - composer require phpunit/phpunit
