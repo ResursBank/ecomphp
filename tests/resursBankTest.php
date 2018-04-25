@@ -197,11 +197,12 @@ class resursBankTest extends TestCase {
 		}
 
 		$this->TEST->ECOM->getAddress( $this->flowHappyCustomer );
+		/** @var Tornevall_cURL $lastCurlHandle */
 		$lastCurlHandle = $this->TEST->ECOM->getCurlHandle();
 
 		// The XML parser in the IO MODULE should give the same response as the direct curl handle
 		$selfParser = new TorneLIB_IO();
-		$byIo = $selfParser->getFromXml($lastCurlHandle->getBody(), true);
+		$byIo = $selfParser->getFromXml($lastCurlHandle->getResponseBody(), true);
 		$byHandle = $lastCurlHandle->getParsed();
 
 		static::assertTrue($byIo->fullName == $this->flowHappyCustomerName && $byHandle->fullName == $this->flowHappyCustomerName);
