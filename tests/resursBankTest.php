@@ -312,7 +312,8 @@ class resursBankTest extends TestCase {
 	function getOrderData() {
 		$this->TEST->ECOM->setBillingByGetAddress( $this->flowHappyCustomer );
 		$this->TEST->ECOM->addOrderLine( "RDL-1337", "One simple orderline", 800, 25 );
-		static::assertTrue( ( $this->TEST->ECOM->getOrderData() )['totalAmount'] == "1000" );
+		$orderData = $this->TEST->ECOM->getOrderData();
+		static::assertTrue( $orderData['totalAmount'] == "1000" );
 	}
 
 	/**
