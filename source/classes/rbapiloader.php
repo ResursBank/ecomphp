@@ -37,12 +37,13 @@ if ( ! defined( 'ECOMPHP_VERSION' ) ) {
 	define( 'ECOMPHP_VERSION', '1.3.9' );
 }
 if ( ! defined( 'ECOMPHP_MODIFY_DATE' ) ) {
-	define( 'ECOMPHP_MODIFY_DATE', '20180424' );
+	define( 'ECOMPHP_MODIFY_DATE', '20180425' );
 }
 
 /**
- * Class ResursBank Primary class for EComPHP
+ * Class ResursBank
  * Works with dynamic data arrays. By default, the API-gateway will connect to Resurs Bank test environment, so to use production mode this must be configured at runtime.
+ * @package Resursbank\RBEcomPHP
  */
 class ResursBank {
 	////////// Constants
