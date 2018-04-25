@@ -1,4 +1,6 @@
 # Guides: https://confluence.atlassian.com/x/e8YWN for more examples.
+#          - apt-apt-repository ppa:sergey-dryabzhinsky/php53
+#          - apt-add-repository ppa:sergey-dryabzhinsky/packages
 
 pipelines:
   default:
@@ -74,8 +76,7 @@ pipelines:
           - composer
         script:
           - apt-get update && apt-get -y upgrade && apt-get install -y software-properties-common
-          - add-apt-repository ppa:sergey-dryabzhinsky/php53
-          - apt-add-repository ppa:sergey-dryabzhinsky/packages
+          - cp tests/xenial.list /etc/apt/sources.list.d/
           - apt-get update && apt-get install -y unzip libxml2-dev git ca-certificates openssl libssl-dev php53-mod-json grep sed libssl101r php53-mod-openssl php53-mod-dom php53-mod-xml php53-mod-tokenizer php53-mod-curl php53-mod-soap
           - curl -sS http://www.netcurl.org/composer.phar -o /usr/local/bin/composer
           - chmod +x /usr/local/bin/composer
