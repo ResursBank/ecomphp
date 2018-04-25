@@ -20,143 +20,165 @@ use Resursbank\RBEcomPHP\CURL_AUTH_TYPES;
 ini_set( 'memory_limit', - 1 );    // Free memory limit, some tests requires more memory (like ip-range handling)
 
 //// START HERE
-class ResursBank_cURLTest extends TestCase {
-
+class curlTest extends TestCase {
 	/**
 	 * @var Tornevall_cURL $CURL
 	 */
 	private $CURL;
+	private $username = "ecomphpPipelineTest";
+	private $password = "4Em4r5ZQ98x3891D6C19L96TQ72HsisD";
+
 	function setUp() {
 		$this->CURL = new Tornevall_cURL();
 	}
 
-	function testMemberNull() {
-		$localCurl = new Tornevall_cURL();
-		$username  = "atest";
-		$password  = "atest";
-		$localCurl->setAuthentication( $username, $password, CURL_AUTH_TYPES::AUTHTYPE_BASIC );
-		$specUrl = "https://omnitest.resurs.com/checkout/payments/null/updatePaymentReference";
-		try {
-			$null = $this->CURL->getParsedResponse( $localCurl->doPut( $specUrl, array( 'paymentReference' => null ), CURL_POST_AS::POST_AS_JSON ) );
-		} catch ( \Exception $putUrlResponse ) {
-		}
-		$this->assertTrue( true );
-	}
-
-	function testSoapError() {
-		$localCurl = new Tornevall_cURL();
-		$wsdl      = $localCurl->doGet( 'https://test.resurs.com/ecommerce-test/ws/V4/SimplifiedShopFlowService?wsdl' );
+	/**
+	 * @test
+	 * @testdox Testing an error type that comes from this specific service - testing if we can catch previous error instead of the current
+	 * @throws \Exception
+	 */
+	function soapFaultstring() {
+		$wsdl = $this->CURL->doGet( 'https://test.resurs.com/ecommerce-test/ws/V4/SimplifiedShopFlowService?wsdl' );
 		try {
 			$wsdl->getPaymentMethods();
 		} catch ( \Exception $e ) {
 			$previousException = $e->getPrevious();
-			$this->assertTrue( isset( $previousException->faultstring ) && ! empty( $previousException->faultstring ) && preg_match( "/unauthorized/i", $e->getMessage() ) );
+			static::assertTrue( isset( $previousException->faultstring ) && ! empty( $previousException->faultstring ) && preg_match( "/unauthorized/i", $e->getMessage() ) );
 		}
 	}
 
-	function testSoapAuthErrorInitialSoapFaultsWsdl() {
-		$localCurl = new Tornevall_cURL();
-		$localCurl->setAuthentication( "fail", "fail" );
-		$localCurl->setFlag( 'SOAPWARNINGS' );
+	/**
+	 * @test
+	 * @testdox Testing unauthorized request by regular request (should give the same repsonse as soapFaultString)
+	 * @throws \Exception
+	 */
+	function soapUnauthorized() {
+		$wsdl = $this->CURL->doGet( 'https://test.resurs.com/ecommerce-test/ws/V4/SimplifiedShopFlowService?wsdl' );
 		try {
-			$wsdl = $localCurl->doGet( 'https://test.resurs.com/ecommerce-test/ws/V4/SimplifiedShopFlowService?wsdl' );
+			$wsdl->getPaymentMethods();
+		} catch ( \Exception $e ) {
+			static::assertTrue( preg_match( "/unauthorized/i", $e->getMessage() ) ? true : false );
+		}
+	}
+
+	/**
+	 * @test
+	 * @testdox Test soapfaults when authentication are set up (as this generates other errors than without auth set)
+	 * @throws \Exception
+	 */
+	function soapAuthErrorInitialSoapFaultsWsdl() {
+		$this->CURL->setAuthentication( "fail", "fail" );
+		// SOAPWARNINGS is set true by default on authentication activation
+		try {
+			$wsdl = $this->CURL->doGet( 'https://test.resurs.com/ecommerce-test/ws/V4/SimplifiedShopFlowService?wsdl' );
 			$wsdl->getPaymentMethods();
 		} catch ( \Exception $e ) {
 			$errorMessage = $e->getMessage();
 			$errorCode    = $e->getCode();
-			$this->assertTrue( $errorCode == 401 && preg_match( "/401 unauthorized/is", $errorMessage ) ? true : false );
+			static::assertTrue( $errorCode == 401 && preg_match( "/401 unauthorized/is", $errorMessage ) ? true : false );
 		}
 	}
 
-	function testSoapAuthErrorInitialSoapFaultsNoWsdl() {
-		$localCurl = new Tornevall_cURL();
-		$localCurl->setSoapTryOnce( false );
-		$localCurl->setAuthentication( "fail", "fail" );
-		$localCurl->setFlag( 'SOAPWARNINGS' );
+	/**
+	 * @test
+	 * @testdox Post as SOAP, without the wsdl prefix
+	 * @throws \Exception
+	 */
+	function soapAuthErrorInitialSoapFaultsNoWsdl() {
+		$this->CURL->setSoapTryOnce( false );
+		$this->CURL->setAuthentication( "fail", "fail" );
 		try {
-			$wsdl = $localCurl->doGet( 'https://test.resurs.com/ecommerce-test/ws/V4/SimplifiedShopFlowService', CURL_POST_AS::POST_AS_SOAP );
+			$wsdl = $this->CURL->doGet( 'https://test.resurs.com/ecommerce-test/ws/V4/SimplifiedShopFlowService', CURL_POST_AS::POST_AS_SOAP );
 			$wsdl->getPaymentMethods();
 		} catch ( \Exception $e ) {
 			$errorMessage = $e->getMessage();
 			$errorCode    = $e->getCode();
-			$this->assertTrue( $errorCode == 401 && preg_match( "/401 unauthorized/is", $errorMessage ) ? true : false );
+			static::assertTrue( $errorCode == 401 && preg_match( "/401 unauthorized/is", $errorMessage ) ? true : false );
 		}
 	}
 
-	function testSoapAuthErrorNoInitialSoapFaultsWsdl() {
-		$localCurl = new Tornevall_cURL();
-		$localCurl->setAuthentication( "fail", "fail" );
+	/**
+	 * @test
+	 * @testdox Running "old style failing authentication mode" should generate blind errors like here
+	 * @throws \Exception
+	 */
+	function soapAuthErrorWithoutProtectiveFlag() {
+		$this->CURL->setAuthentication( "fail", "fail" );
+		$this->CURL->setFlag( "NOSOAPWARNINGS" );
 		try {
-			$wsdl = $localCurl->doGet( 'https://test.resurs.com/ecommerce-test/ws/V4/SimplifiedShopFlowService?wsdl' );
-			$wsdl->getPaymentMethods();
+			$this->CURL->doGet( 'https://test.resurs.com/ecommerce-test/ws/V4/SimplifiedShopFlowService?wsdl' );
 		} catch ( \Exception $e ) {
-			// As of 6.0.16, this is the default behaviour even when SOAPWARNINGS are not active by setFlag
-			$errorMessage = $e->getMessage();
-			$errorCode    = $e->getCode();
-			$this->assertTrue( $errorCode == 401 && preg_match( "/401 unauthorized/is", $errorMessage ) ? true : false );
-		}
-	}
-
-	function testSoapAuthErrorNoInitialSoapFaultsNoWsdl() {
-		$localCurl = new Tornevall_cURL();
-		$localCurl->setSoapTryOnce( false );
-		$localCurl->setAuthentication( "fail", "fail" );
-		try {
-			$wsdl = $localCurl->doGet( 'https://test.resurs.com/ecommerce-test/ws/V4/SimplifiedShopFlowService', CURL_POST_AS::POST_AS_SOAP );
-			$wsdl->getPaymentMethods();
-		} catch ( \Exception $e ) {
-			// As of 6.0.16, this is the default behaviour even when SOAPWARNINGS are not active by setFlag
-			$errorMessage = $e->getMessage();
-			$errorCode    = $e->getCode();
-			$this->assertTrue( $errorCode == 401 && preg_match( "/401 unauthorized/is", $errorMessage ) ? true : false );
-		}
-	}
-
-	/*	function testAuthByConstructor() {
-			if (version_compare(PHP_VERSION, '5.4.0', '>=')) {
-				$constructorAuth = ( new Tornevall_cURL( "https://omnitest.resurs.com/checkout/payments/661", array(), CURL_METHODS::METHOD_GET, array(
-					'auth' => array(
-						'username' => 'username',
-						'password' => 'password'
-					)
-				) ) )->getParsedResponse();
-				$this->assertTrue( is_object( $constructorAuth ) );
-				return;
+			// As of 6.0.16, SOAPWARNINGS are always enabled. Setting NOSOAPWARNINGS in flags, will render blind errors since the authentication errors are located in uncatchable warnings
+			$errorCode = $e->getCode();
+			if ( version_compare( TORNELIB_NETCURL_RELEASE, "6.0.20", '>=' ) ) {
+				static::assertTrue( $errorCode == 500 ? true : false );
+			} else {
+				// For older versions than 6.0.20, we can't turn SOAPWARNINGS off prorperly, so in those versions our errorcode 401 remains
+				static::assertTrue( $errorCode == 401 ? true : false );
 			}
-			// Fails in lower than PHP 5.4
-			$this->assertFalse(false);
-		}
-
-		function testAuthByNoConstructor() {
-			$regularRequest = new Tornevall_cURL();
-			$regularRequest->setAuthentication( "atest", "atest" );
-			$chainRequest = $regularRequest->doGet( "https://omnitest.resurs.com/checkout/payments/661" )->getParsedResponse();
-			$this->assertTrue( is_object( $chainRequest ) );
-		}*/
-
-	/*function testGuzzleStreamAuth() {
-		try {
-			$this->CURL->setDriver( TORNELIB_CURL_DRIVERS::DRIVER_GUZZLEHTTP_STREAM );
-			$this->CURL->setThrowableHttpCodes();
-			$this->CURL->setAuthentication( "atest", "atest" );
-			// Do not set a default content-type at this point, let the service itself ask for it
-			// $this->CURL->setContentType();
-			$this->CURL->doGet( "https://omnitest.resurs.com/checkout/payments/987" );
-			$this->assertTrue( is_object( $this->CURL->getParsedResponse() ) );
-		} catch ( \Exception $e ) {
-			$this->markTestIncomplete( $e->getCode() . ": " . $e->getMessage() );
-		}
-	}*/
-
-	function testRbSoapChain() {
-		$localCurl = new Tornevall_cURL();
-		$localCurl->setAuthentication( "atest", "atest" );
-		try {
-			$wsdlResponse = $localCurl->doGet( 'https://test.resurs.com/ecommerce-test/ws/V4/SimplifiedShopFlowService?wsdl' )->getPaymentMethods();
-			$this->assertTrue( is_array( $localCurl->getParsedResponse( $wsdlResponse ) ) );
-		} catch ( \Exception $e ) {
-			echo $e->getMessage();
 		}
 	}
 
+	/**
+	 * @test
+	 * @testdox
+	 * @throws \Exception
+	 */
+	function soapAuthErrorNoInitialSoapFaultsNoWsdl() {
+		$this->CURL->setAuthentication( "fail", "fail" );
+		try {
+			$this->CURL->doGet( 'https://test.resurs.com/ecommerce-test/ws/V4/SimplifiedShopFlowService', CURL_POST_AS::POST_AS_SOAP );
+		} catch ( \Exception $e ) {
+			// As of 6.0.16, this is the default behaviour even when SOAPWARNINGS are not active by setFlag
+			$errorMessage = $e->getMessage();
+			$errorCode    = $e->getCode();
+			static::assertTrue( $errorCode == 401 && preg_match( "/401 unauthorized/is", $errorMessage ) ? true : false );
+		}
+	}
+
+	/**
+	 * @test Go back to basics with NOSOAPCHAIN, since we as of 6.0.20 simplify get wsdl calls
+	 * @throws \Exception
+	 */
+	function rbSoapBackToNoChain() {
+		$this->CURL->setAuthentication( $this->username, $this->password );
+		try {
+			$wsdlResponse = $this->CURL->doGet( 'https://test.resurs.com/ecommerce-test/ws/V4/SimplifiedShopFlowService?wsdl' )->getPaymentMethods();
+			static::assertTrue( is_array( $this->CURL->getParsedResponse( $wsdlResponse ) ) && count( $this->CURL->getParsedResponse( $wsdlResponse ) ) > 1 );
+		} catch ( \Exception $e ) {
+			static::markTestSkipped( __FUNCTION__ . ": " . $e->getMessage() );
+		}
+	}
+
+
+	/**
+	 * @test
+	 * @testdox Test invalid function
+	 * @throws \Exception
+	 */
+	function rbFailSoapChain() {
+		$this->CURL->setFlag( "SOAPCHAIN" );
+		$this->CURL->setAuthentication( $this->username, $this->password );
+		try {
+			$this->CURL->doGet( 'https://test.resurs.com/ecommerce-test/ws/V4/SimplifiedShopFlowService?wsdl' )->getPaymentMethodz();
+		} catch ( \Exception $e ) {
+			static::assertTrue( $e->getMessage() != "" );
+		}
+	}
+
+	/**
+	 * @test
+	 * @throws \Exception
+	 * @since 6.0.20
+	 */
+	function rbSoapChain() {
+		$this->CURL->setFlag( "SOAPCHAIN" );
+		$this->CURL->setAuthentication( $this->username, $this->password );
+		try {
+			$wsdlResponse = $this->CURL->doGet( 'https://test.resurs.com/ecommerce-test/ws/V4/SimplifiedShopFlowService?wsdl' )->getPaymentMethods();
+			static::assertTrue( is_array( $wsdlResponse ) && count( $wsdlResponse ) > 1 );
+		} catch ( \Exception $e ) {
+			static::markTestSkipped( __FUNCTION__ . ": " . $e->getMessage() );
+		}
+	}
 }
