@@ -137,8 +137,11 @@ class resursBankTest extends TestCase {
 	 * @throws \Exception
 	 */
 	function apiPaymentMethodsWithWrongCredentials() {
-		$this->expectException( "\Exception" );
-		$this->TEST->getCredentialControl( false );
+		try {
+			$this->TEST->getCredentialControl( false );
+		} catch ( \Exception $e ) {
+			static::assertTrue( ( $e->getCode() == 401 ) );
+		}
 	}
 
 	/**
