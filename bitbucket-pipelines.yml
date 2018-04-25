@@ -8,21 +8,8 @@
 pipelines:
   default:
     - step:
-        name: EComPHP 1.3 with PHP 7.1.16
-        image: php:7.1.16
-        caches:
-          - composer
-        script:
-          - apt-get update && apt-get install -y unzip php-soap libxml2-dev git
-          - docker-php-ext-install soap
-          - docker-php-ext-enable soap
-          - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-          - composer install
-          - composer require phpunit/phpunit
-          - vendor/bin/phpunit --configuration ./phpunit.xml
-    - step:
-        name: EComPHP 1.3 with PHP 7.2.4
-        image: php:7.2.4
+        name: EComPHP 1.3 with PHP 7.1.1
+        image: php:7.1.1
         caches:
           - composer
         script:
