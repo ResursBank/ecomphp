@@ -33,6 +33,7 @@ use \Resursbank\RBEcomPHP\RESURS_CALLBACK_REACHABILITY;
 use \Resursbank\RBEcomPHP\RESURS_AFTERSHOP_RENDER_TYPES;
 use \Resursbank\RBEcomPHP\Tornevall_cURL;
 use \Resursbank\RBEcomPHP\TorneLIB_Network;
+use Resursbank\RBEcomPHP\TorneLIB_IO;
 
 /*
  * Global test configuration section
@@ -77,7 +78,8 @@ class resursBankTest extends TestCase {
 	private $signUrl = "https://test.resurs.com/signdummy/index.php?isSigningUrl=1";
 
 	function setUp() {
-		$this->API  = new ResursBank();
+		$this->API = new ResursBank();
+		$this->API->setDebug( true );
 		$this->TEST = new RESURS_TEST_BRIDGE();
 	}
 
@@ -181,6 +183,42 @@ class resursBankTest extends TestCase {
 		}
 
 		return $happyCustomer;
+	}
+
+	/**
+	 * @test
+	 * @testdox getCurlHandle (using getAddress)
+	 */
+	function getAddressCurlHandle() {
+		if ( ! class_exists( '\SimpleXMLElement' ) ) {
+			static::markTestSkipped( "SimpleXMLElement missing" );
+		}
+
+		$this->TEST->ECOM->getAddress( $this->flowHappyCustomer );
+		/** @var Tornevall_cURL $lastCurlHandle */
+
+		if ( defined( 'TORNELIB_NETCURL_RELEASE' ) && version_compare( TORNELIB_NETCURL_RELEASE, '6.0.20', '<' ) ) {
+			// In versions prior to 6.0.20, you need to first extract the SOAP body from simpleSoap itself (via getLibResponse).
+			$lastCurlHandle = $this->TEST->ECOM->getCurlHandle(true);
+			/** @var Tornevall_SimpleSoap $lastCurlHandle */
+			$soapLibResponse = $lastCurlHandle->getLibResponse();
+			$selfParser = new TorneLIB_IO();
+			$byIo = $selfParser->getFromXml($soapLibResponse['body'], true);
+			static::assertTrue( ($byIo->fullName == $this->flowHappyCustomerName ? true : false) && ($soapLibResponse['parsed']->fullName == $this->flowHappyCustomerName ? true:false) );
+
+			return;
+		}
+
+		// The XML parser in the IO MODULE should give the same response as the direct curl handle
+		// From NetCURL 6.0.20 and the IO library, this could be extracted directly from the curl handle
+		$selfParser = new TorneLIB_IO();
+		// Get the curl handle without bulk request
+		$lastCurlHandle = $this->TEST->ECOM->getCurlHandle();
+
+		$byIo = $selfParser->getFromXml($lastCurlHandle->getResponseBody(), true);
+		$byHandle = $lastCurlHandle->getParsedResponse();
+
+		static::assertTrue( $byIo->fullName == $this->flowHappyCustomerName && $byHandle->fullName == $this->flowHappyCustomerName );
 	}
 
 	/**

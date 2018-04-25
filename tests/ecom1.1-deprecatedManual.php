@@ -2724,7 +2724,7 @@ class ResursBankTest extends TestCase {
 	}
 
 	public function testOldEnvironmentClass() {
-		static::assertTrue( \Resursbank\RBEcomPHP\ResursEnvironments::ENVIRONMENT_TEST === 1 );
+		static::assertTrue( ResursEnvironments::ENVIRONMENT_TEST === 1 );
 	}
 
 	public function testBasicOrderStatusFinalizationEvent() {
