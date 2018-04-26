@@ -18,7 +18,7 @@ class RESURS_TEST_BRIDGE {
 
 	function __construct( $userName = "ecomphpPipelineTest", $password = "4Em4r5ZQ98x3891D6C19L96TQ72HsisD" ) {
 		$this->shareFile = __DIR__ . "/../storage/shared.serialize";
-		$this->ECOM      = new ResursBank( $userName, $password, RESURS_ENVIRONMENTS::ENVIRONMENT_TEST );
+		$this->ECOM      = new ResursBank( $userName, $password, RESURS_ENVIRONMENTS::ENVIRONMENT_TEST, true );
 	}
 
 	/**

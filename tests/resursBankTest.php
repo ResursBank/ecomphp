@@ -33,6 +33,7 @@ use \Resursbank\RBEcomPHP\RESURS_CALLBACK_REACHABILITY;
 use \Resursbank\RBEcomPHP\RESURS_AFTERSHOP_RENDER_TYPES;
 use \Resursbank\RBEcomPHP\Tornevall_cURL;
 use \Resursbank\RBEcomPHP\TorneLIB_Network;
+use Resursbank\RBEcomPHP\TorneLIB_IO;
 
 /*
  * Global test configuration section
@@ -52,7 +53,7 @@ if ( file_exists( "/etc/ecomphp.json" ) ) {
 	}
 }
 
-class ResursBankTest extends TestCase {
+class resursBankTest extends TestCase {
 
 	/**
 	 * @var ResursBank $API EComPHP
@@ -77,7 +78,8 @@ class ResursBankTest extends TestCase {
 	private $signUrl = "https://test.resurs.com/signdummy/index.php?isSigningUrl=1";
 
 	function setUp() {
-		$this->API  = new ResursBank();
+		$this->API = new ResursBank();
+		$this->API->setDebug( true );
 		$this->TEST = new RESURS_TEST_BRIDGE();
 	}
 
@@ -105,6 +107,14 @@ class ResursBankTest extends TestCase {
 		if ( isset( $paymentMethods[0] ) ) {
 			return $paymentMethods[0];
 		}
+	}
+
+	/**
+	 * @test
+	 */
+	function clearStorage() {
+		@unlink( __DIR__ . "/storage/shared.serialize" );
+		static::assertTrue( ! file_exists( __DIR__ . '/storage/shared.serialize' ) );
 	}
 
 	/**
@@ -177,6 +187,42 @@ class ResursBankTest extends TestCase {
 
 	/**
 	 * @test
+	 * @testdox getCurlHandle (using getAddress)
+	 */
+	function getAddressCurlHandle() {
+		if ( ! class_exists( '\SimpleXMLElement' ) ) {
+			static::markTestSkipped( "SimpleXMLElement missing" );
+		}
+
+		$this->TEST->ECOM->getAddress( $this->flowHappyCustomer );
+		/** @var Tornevall_cURL $lastCurlHandle */
+
+		if ( defined( 'TORNELIB_NETCURL_RELEASE' ) && version_compare( TORNELIB_NETCURL_RELEASE, '6.0.20', '<' ) ) {
+			// In versions prior to 6.0.20, you need to first extract the SOAP body from simpleSoap itself (via getLibResponse).
+			$lastCurlHandle = $this->TEST->ECOM->getCurlHandle(true);
+			/** @var Tornevall_SimpleSoap $lastCurlHandle */
+			$soapLibResponse = $lastCurlHandle->getLibResponse();
+			$selfParser = new TorneLIB_IO();
+			$byIo = $selfParser->getFromXml($soapLibResponse['body'], true);
+			static::assertTrue( ($byIo->fullName == $this->flowHappyCustomerName ? true : false) && ($soapLibResponse['parsed']->fullName == $this->flowHappyCustomerName ? true:false) );
+
+			return;
+		}
+
+		// The XML parser in the IO MODULE should give the same response as the direct curl handle
+		// From NetCURL 6.0.20 and the IO library, this could be extracted directly from the curl handle
+		$selfParser = new TorneLIB_IO();
+		// Get the curl handle without bulk request
+		$lastCurlHandle = $this->TEST->ECOM->getCurlHandle();
+
+		$byIo = $selfParser->getFromXml($lastCurlHandle->getResponseBody(), true);
+		$byHandle = $lastCurlHandle->getParsedResponse();
+
+		static::assertTrue( $byIo->fullName == $this->flowHappyCustomerName && $byHandle->fullName == $this->flowHappyCustomerName );
+	}
+
+	/**
+	 * @test
 	 * @testdox Test if getPaymentMethods work and in the same time cache it for future use
 	 */
 	function getPaymentMethods( $noAssert = false ) {
@@ -193,6 +239,7 @@ class ResursBankTest extends TestCase {
 
 	/**
 	 * Get a method that suites our needs of type, with the help from getPaymentMethods
+	 *
 	 * @param string $specificType
 	 *
 	 * @return mixed
@@ -204,9 +251,10 @@ class ResursBankTest extends TestCase {
 			$specificMethod = $this->TEST->share( 'METHOD_' . $specificType );
 		}
 
-		if (isset($specificMethod[0])) {
+		if ( isset( $specificMethod[0] ) ) {
 			return $specificMethod[0];
 		}
+
 		return $specificMethod;
 	}
 
@@ -217,9 +265,9 @@ class ResursBankTest extends TestCase {
 	 *
 	 * @return mixed
 	 */
-	function getMethodId($specificType = 'INVOICE') {
-		$specificMethod = $this->getMethod($specificType);
-		if (isset($specificMethod->id)) {
+	function getMethodId( $specificType = 'INVOICE' ) {
+		$specificMethod = $this->getMethod( $specificType );
+		if ( isset( $specificMethod->id ) ) {
 			return $specificMethod->id;
 		}
 	}
@@ -237,17 +285,18 @@ class ResursBankTest extends TestCase {
 	/**
 	 * @test
 	 */
-	function generateSimpleSimplifiedInvoiceOrder($noAssert = false) {
+	function generateSimpleSimplifiedInvoiceOrder( $noAssert = false ) {
 		$customerData = $this->getHappyCustomerData();
 		//$this->TEST->ECOM->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW );
 		$this->TEST->ECOM->addOrderLine( "Product-1337", "One simple orderline", 800, 25 );
 		$this->TEST->ECOM->setBillingByGetAddress( $customerData );
 		$this->TEST->ECOM->setCustomer( "198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL" );
 		$this->TEST->ECOM->setSigning( $this->signUrl . '&success=true', $this->signUrl . '&success=false', false );
-		$response = $this->TEST->ECOM->createPayment($this->getMethodId());
-		if (!$noAssert) {
-			static::assertContains('BOOKED', $response->bookPaymentStatus);
+		$response = $this->TEST->ECOM->createPayment( $this->getMethodId() );
+		if ( ! $noAssert ) {
+			static::assertContains( 'BOOKED', $response->bookPaymentStatus );
 		}
+
 		return $response;
 	}
 
