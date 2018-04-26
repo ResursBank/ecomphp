@@ -2005,7 +2005,7 @@ if ( ! class_exists( 'MODULE_NETWORK' ) && ! class_exists( 'TorneLIB\MODULE_NETW
 	 * @link https://phpdoc.tornevall.net/TorneLIBv5/class-TorneLIB.TorneLIB_Network.html PHPDoc/Staging - TorneLIB_Network
 	 * @link https://docs.tornevall.net/x/KQCy TorneLIB (PHP) Landing documentation
 	 * @link https://bitbucket.tornevall.net/projects/LIB/repos/tornelib-php/browse Sources of TorneLIB
-	 *
+	 * 
 	 * @package TorneLIB
 	 */
 	class MODULE_NETWORK {
@@ -2263,7 +2263,8 @@ if ( ! class_exists( 'MODULE_NETWORK' ) && ! class_exists( 'TorneLIB\MODULE_NETW
 				}
 				if ( count( $urls ) ) {
 					foreach ( $urls as $url ) {
-						if ( ! empty( trim( $url ) ) ) {
+						$trimUrl = trim( $url );
+						if ( ! empty( $trimUrl ) ) {
 							$prependUrl    = $protocol . $url;
 							if (!$preventDuplicates) {
 								$returnArray[] = $prependUrl;
@@ -4397,7 +4398,9 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'TorneLIB\MODULE_CURL' )
 		 * @deprecated 6.0.20
 		 */
 		public function TestCerts() {
-			return ( ! empty( $this->SSL->getSslCertificateBundle() ) ? true : false );
+			$certificateBundleData = $this->SSL->getSslCertificateBundle();
+
+			return ( ! empty( $certificateBundleData ) ? true : false );
 		}
 
 		/**
@@ -4555,7 +4558,6 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'TorneLIB\MODULE_CURL' )
 		 * @throws \Exception
 		 */
 		public function netcurl_split_raw( $rawInput = null, $internalRaw = false ) {
-
 			$rawDataTest = $this->getRaw();
 			if ( $internalRaw && is_null( $rawInput ) && ! empty( $rawDataTest ) ) {
 				$this->netcurl_split_raw( $rawDataTest );
@@ -4610,8 +4612,12 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'TorneLIB\MODULE_CURL' )
 						}
 						/** @var MODULE_CURL $newRequest */
 						$newRequest = $this->doRepeat();
+						// Make sure getRaw exists (this might fail from PHP 5.3)
+						if ( method_exists( $newRequest, 'getRaw' ) ) {
+							$rawRequest = $newRequest->getRaw();
 
-						return $this->netcurl_split_raw( $newRequest->getRaw() );
+							return $this->netcurl_split_raw( $rawRequest );
+						}
 					}
 				}
 			}
@@ -4624,8 +4630,10 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'TorneLIB\MODULE_CURL' )
 			$returnResponse['ip']  = isset( $this->CURL_IP_ADDRESS ) ? $this->CURL_IP_ADDRESS : null;  // Will only be filled if there is custom address set.
 
 			$this->throwCodeException( trim( $httpMessage ), $code );
-			$contentType               = isset( $headerInfo['Content-Type'] ) ? $headerInfo['Content-Type'] : null;
-			$parsedContent             = ( new NETCURL_PARSER( $arrayedResponse['body'], $contentType ) )->getParsedResponse();
+			$contentType = isset( $headerInfo['Content-Type'] ) ? $headerInfo['Content-Type'] : null;
+			// php 5.3 compliant
+			$NCP                       = new NETCURL_PARSER( $arrayedResponse['body'], $contentType );
+			$parsedContent             = $NCP->getParsedResponse();
 			$arrayedResponse['parsed'] = $parsedContent;
 			$arrayedResponse['ip']     = $this->CURL_IP_ADDRESS;
 
@@ -5593,6 +5601,31 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'TorneLIB\MODULE_CURL' )
 			}
 		}
 
+		private function sslVerificationAdjustment( $errorCode, $errorMessage ) {
+			// Special case: SSL failures (CURLE_SSL_CACERT = 60)
+			if ( $this->SSL->getStrictFallback() ) {
+				if ( $errorCode == CURLE_SSL_CACERT ) {
+					if ( $this->CURL_RETRY_TYPES['sslunverified'] >= 2 ) {
+						throw new \Exception( NETCURL_CURL_CLIENTNAME . " exception in " . __FUNCTION__ . ": The maximum tries of curl_exec() for " . $this->CURL_STORED_URL . ", during a try to make a SSL connection to work, has been reached without any successful response. This normally happens when allowSslUnverified is activated in the library and " . $this->CURL_RETRY_TYPES['resolve'] . " tries to fix the problem has been made, but failed.\nCurl error message follows: " . $errorMessage, $errorCode );
+					} else {
+						$this->NETCURL_ERROR_CONTAINER[] = array( 'code' => $errorCode, 'message' => $errorMessage );
+						$this->setSslVerify( false, false );
+						$this->unsafeSslCall = true;
+						$this->CURL_RETRY_TYPES['sslunverified'] ++;
+						$this->NETCURL_ERRORHANDLER_RERUN = true;
+					}
+				}
+				if ( false === strpos( $errorMessage, '14090086' ) && false === strpos( $errorMessage, '1407E086' ) ) {
+					$this->NETCURL_ERROR_CONTAINER[] = array( 'code' => $errorCode, 'message' => $errorMessage );
+					$this->setSslVerify( false, false );
+					$this->unsafeSslCall = true;
+					$this->CURL_RETRY_TYPES['sslunverified'] ++;
+					$this->NETCURL_ERRORHANDLER_RERUN = true;
+				}
+
+			}
+		}
+
 		/**
 		 * Handle curl-errors
 		 *
@@ -5609,18 +5642,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'TorneLIB\MODULE_CURL' )
 
 			if ( ! is_null( $errorCode ) || ! is_null( $errorMessage ) ) {
 				$this->NETCURL_ERRORHANDLER_HAS_ERRORS = true;
-				// Special case: SSL failures (CURLE_SSL_CACERT = 60)
-				if ( $errorCode == CURLE_SSL_CACERT && $this->SSL->getStrictFallback() ) {
-					if ( $this->CURL_RETRY_TYPES['sslunverified'] >= 2 ) {
-						throw new \Exception( NETCURL_CURL_CLIENTNAME . " exception in " . __FUNCTION__ . ": The maximum tries of curl_exec() for " . $this->CURL_STORED_URL . ", during a try to make a SSL connection to work, has been reached without any successful response. This normally happens when allowSslUnverified is activated in the library and " . $this->CURL_RETRY_TYPES['resolve'] . " tries to fix the problem has been made, but failed.\nCurl error message follows: " . $errorMessage, $errorCode );
-					} else {
-						$this->NETCURL_ERROR_CONTAINER[] = array( 'code' => $errorCode, 'message' => $errorMessage );
-						$this->setSslVerify( false, false );
-						$this->unsafeSslCall = true;
-						$this->CURL_RETRY_TYPES['sslunverified'] ++;
-						$this->NETCURL_ERRORHANDLER_RERUN = true;
-					}
-				}
+				$this->sslVerificationAdjustment( $errorCode, $errorMessage );
 
 				// Special case: Resolver failures
 				if ( $this->CURL_RESOLVER_FORCED && $this->CURL_RETRY_TYPES['resolve'] >= 2 ) {
@@ -5822,6 +5844,9 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'TorneLIB\MODULE_CURL' )
 					'previous'  => null
 				);
 			} catch ( \Exception $getSoapResponseException ) {
+
+				$this->sslVerificationAdjustment( $getSoapResponseException->getCode(), $getSoapResponseException->getMessage() );
+
 				$this->DEBUG_DATA['soapdata']['url'][] = array(
 					'url'       => $this->CURL_STORED_URL,
 					'opt'       => $this->getCurlOptByKeys(),
@@ -5829,7 +5854,12 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'TorneLIB\MODULE_CURL' )
 					'exception' => $getSoapResponseException,
 					'previous'  => $getSoapResponseException->getPrevious()
 				);
-				throw new \Exception( NETCURL_CURL_CLIENTNAME . " exception from soapClient: " . $getSoapResponseException->getMessage(), $getSoapResponseException->getCode() );
+
+				if ( $this->NETCURL_ERRORHANDLER_RERUN ) {
+					return $this->executeHttpSoap( $url, $postData, $CurlMethod );
+				}
+
+				throw new \Exception( NETCURL_CURL_CLIENTNAME . " exception from soapClient: [" . $getSoapResponseException->getCode() . "] " . $getSoapResponseException->getMessage(), $getSoapResponseException->getCode() );
 			}
 
 			return $getSoapResponse;
@@ -6376,6 +6406,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'TorneLIB\MODULE_CURL' )
 		}
 	}
 }
+
 if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'TorneLIB\MODULE_SOAP' ) ) {
 
 	if ( ! defined( 'NETCURL_SIMPLESOAP_RELEASE' ) ) {
@@ -6507,7 +6538,8 @@ if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'TorneLIB\MODULE_SOAP' )
 		public function getSoap() {
 			$this->soapClient = null;
 			$sslOpt           = $this->getSslOpt();
-			$optionsStream    = $this->sslGetOptionsStream();
+			//$optionsStream    = $this->sslGetOptionsStream();
+			$optionsStream    = $this->PARENT->sslGetOptionsStream();
 
 			if ( is_array( $optionsStream ) && count( $optionsStream ) ) {
 				foreach ( $optionsStream as $optionKey => $optionValue ) {
@@ -6666,7 +6698,11 @@ if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'TorneLIB\MODULE_SOAP' )
 				$this->libResponse              = $returnResponse;
 				$this->soapFaultExceptionObject = $e;
 				if ( $this->canThrowSoapFaults ) {
-					throw new \Exception( NETCURL_CURL_CLIENTNAME . " exception from soapClient: " . $e->getMessage(), $e->getCode(), $e );
+					$exceptionCode = $e->getCode();
+					if (!$exceptionCode && $this->getCode() > 0) {
+						$exceptionCode = $this->getCode();
+					}
+					throw new \Exception( NETCURL_CURL_CLIENTNAME . " exception from soapClient: " . $e->getMessage(), $exceptionCode, $e );
 				}
 				$this->SoapFaultString = $e->getMessage();
 				$this->SoapFaultCode   = $e->getCode();
