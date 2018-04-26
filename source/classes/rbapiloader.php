@@ -38,7 +38,7 @@ use Resursbank\RBEcomPHP\TorneLIB_NetBits;
  *  Global
  */
 define('ECOMPHP_VERSION', '1.0.36');
-define('ECOMPHP_MODIFY_DATE', '20180423');
+define('ECOMPHP_MODIFY_DATE', '20180425');
 
 /**
  * Class ResursBank Primary class for EComPHP
@@ -785,10 +785,10 @@ class ResursBank {
 	 * @param string $login
 	 * @param string $password
 	 * @param int $targetEnvironment
-	 *
+	 * @param null $debug Activate debugging immediately on initialization
 	 * @throws \Exception
 	 */
-	function __construct( $login = '', $password = '', $targetEnvironment = RESURS_ENVIRONMENTS::ENVIRONMENT_NOT_SET ) {
+	function __construct( $login = '', $password = '', $targetEnvironment = RESURS_ENVIRONMENTS::ENVIRONMENT_NOT_SET, $debug = null ) {
 		if ( defined( 'RB_API_PATH' ) ) {
 			$this->classPath = RB_API_PATH;
 		}
@@ -797,6 +797,11 @@ class ResursBank {
 		} else {
 			$theHost = "nohost.localhost";
 		}
+
+		if (!is_null($debug) && is_bool($debug)) {
+			$this->debug = $debug;
+		}
+
 		$this->checkoutShopUrl           = $this->hasHttps( true ) . "://" . $theHost;
 		$this->soapOptions['cache_wsdl'] = ( defined( 'WSDL_CACHE_BOTH' ) ? WSDL_CACHE_BOTH : true );
 		$this->soapOptions['ssl_method'] = ( defined( 'SOAP_SSL_METHOD_TLS' ) ? SOAP_SSL_METHOD_TLS : false );
@@ -912,11 +917,13 @@ class ResursBank {
 	/**
 	 * Wsdl initialization
 	 *
+	 * @param bool $reInitializeCurl
+	 * @throws \Exception
 	 * @deprecated 1.0.1 Unless you don't need this, do run through InitializeServices instead.
 	 * @deprecated 1.1.1 Unless you don't need this, do run through InitializeServices instead.
 	 */
-	public function InitializeWsdl() {
-		$this->InitializeServices();
+	public function InitializeWsdl($reInitializeCurl = true) {
+		$this->InitializeServices($reInitializeCurl);
 	}
 
 	/**
@@ -925,15 +932,16 @@ class ResursBank {
 	 * code structures, everything needs to be done from here. For now. In future version, this is probably deprecated too, as it is an
 	 * obsolete way of getting things done as Resurs Bank has more than one way to pick things up in the API suite.
 	 *
+	 * @param bool $reInitializeCurl
 	 * @return bool
 	 * @throws \Exception
 	 * @since 1.0.1
 	 * @since 1.1.1
 	 */
-	private function InitializeServices() {
+	private function InitializeServices($reInitializeCurl = true) {
 		$this->sessionActivate();
 		// 1.0.4/1.1.4: No longer checking includes
-		$this->hasServicesInitialization = $this->initWsdl();
+		$this->hasServicesInitialization = $this->initWsdl($reInitializeCurl);
 		$this->getSslValidation();
 
 		return $this->hasServicesInitialization;
@@ -948,7 +956,7 @@ class ResursBank {
 	 * @since 1.2.0
 	 */
 	public function setDebug( $debugModeState = false ) {
-		$this->InitializeServices();
+		$this->InitializeServices(false);
 		$this->debug = $debugModeState;
 	}
 
@@ -968,15 +976,22 @@ class ResursBank {
 	/**
 	 * Return the CURL communication handle to the client, when in debug mode (Read only)
 	 *
+	 * @param bool $bulk
 	 * @return Tornevall_cURL
 	 * @throws \Exception
 	 * @since 1.0.22
 	 * @since 1.1.22
 	 * @since 1.2.0
 	 */
-	public function getCurlHandle() {
-		$this->InitializeServices();
+	public function getCurlHandle($bulk = false) {
+		$this->InitializeServices(false);
 		if ( $this->debug ) {
+			if ($bulk) {
+				if (count($this->CURL_HANDLE_COLLECTOR)) {
+					return array_pop($this->CURL_HANDLE_COLLECTOR);
+				}
+				return $this->CURL_HANDLE_COLLECTOR;
+			}
 			return $this->CURL;
 		} else {
 			throw new \Exception( "Can't return handle. The module is in wrong state (non-debug mode)", 403 );
@@ -1137,7 +1152,7 @@ class ResursBank {
 	 * @deprecated 1.0.4
 	 * @deprecated 1.1.4
 	 */
-	private function initWsdl() {
+	private function initWsdl($reInitializeCurl = true) {
 		$this->testWrappers();
 		// Make sure that the correct webservice is loading first (if necessary). The topmost service has the highest priority and will not be
 		// overwritten once loaded. For example, if ShopFlowService is loaded before the SimplifiedShopFlowService, you won't be able to use
@@ -1266,11 +1281,18 @@ class ResursBank {
 		}
 
 		if ( class_exists( '\Resursbank\RBEcomPHP\Tornevall_cURL' ) ) {
-			$this->CURL = new \Resursbank\RBEcomPHP\Tornevall_cURL();
-			$this->CURL->setChain( false );
-			$this->CURL->setStoreSessionExceptions( true );
-			$this->CURL->setAuthentication( $this->soapOptions['login'], $this->soapOptions['password'] );
-			$this->CURL->setUserAgent( $this->myUserAgent );
+
+			if ( is_null( $this->CURL ) ) {
+				$reInitializeCurl = true;
+			}
+			if ( $reInitializeCurl ) {
+				$this->CURL = new \Resursbank\RBEcomPHP\Tornevall_cURL();
+				$this->CURL->setChain( false );
+				$this->CURL->setFlag('SOAPCHAIN', false);
+				$this->CURL->setStoreSessionExceptions( true );
+				$this->CURL->setAuthentication( $this->soapOptions['login'], $this->soapOptions['password'] );
+				$this->CURL->setUserAgent( $this->myUserAgent );
+			}
 			$this->NETWORK = new \Resursbank\RBEcomPHP\TorneLIB_Network();
 			$this->BIT     = $this->NETWORK->BIT;
 		}
@@ -1345,7 +1367,6 @@ class ResursBank {
 		}
 		throw new \Exception( "Flags can not be empty", 500 );
 	}
-
 	/**
 	 * Get internal flag
 	 *

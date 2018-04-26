@@ -26,6 +26,7 @@ if (file_exists(__DIR__ . "/../vendor/autoload.php")) {
 use PHPUnit\Framework\TestCase;
 use Resursbank\RBEcomPHP\Tornevall_cURL;
 use Resursbank\RBEcomPHP\TorneLIB_Network;
+use Resursbank\RBEcomPHP\TorneLIB_IO;
 
 // Global test configuration section starts here
 require_once( __DIR__ . "/classes/ResursBankTestClass.php" );
@@ -42,7 +43,7 @@ if ( file_exists( "/etc/ecomphp.json" ) ) {
 	}
 }
 
-class ResursBankTest extends TestCase {
+class resursBankTest extends TestCase {
 
 	/**
 	 * @var ResursBank $API EComPHP
@@ -68,6 +69,7 @@ class ResursBankTest extends TestCase {
 
 	function setUp() {
 		$this->API  = new ResursBank();
+		$this->API->setDebug(true);
 		$this->TEST = new RESURS_TEST_BRIDGE();
 	}
 
@@ -95,6 +97,14 @@ class ResursBankTest extends TestCase {
 		if ( isset( $paymentMethods[0] ) ) {
 			return $paymentMethods[0];
 		}
+	}
+
+	/**
+	 * @test
+	 */
+	function clearStorage() {
+		@unlink( __DIR__ . "/storage/shared.serialize" );
+		static::assertTrue( ! file_exists( __DIR__ . '/storage/shared.serialize' ) );
 	}
 
 	/**
@@ -164,6 +174,25 @@ class ResursBankTest extends TestCase {
 
 		return $happyCustomer;
 	}
+	/**
+	 * @test
+	 * @testdox getCurlHandle (using getAddress)
+	 */
+	function getAddressCurlHandle() {
+		if (!class_exists('\SimpleXMLElement')) {
+			static::markTestSkipped("SimpleXMLElement missing");
+		}
+
+		$this->TEST->ECOM->getAddress( $this->flowHappyCustomer );
+		$lastCurlHandle = $this->TEST->ECOM->getCurlHandle();
+
+		// The XML parser in the IO MODULE should give the same response as the direct curl handle
+		$selfParser = new TorneLIB_IO();
+		$byIo = $selfParser->getFromXml($lastCurlHandle->getBody(), true);
+		$byHandle = $lastCurlHandle->getParsed();
+
+		static::assertTrue($byIo->fullName == $this->flowHappyCustomerName && $byHandle->fullName == $this->flowHappyCustomerName);
+	}
 
 	/**
 	 * @test
@@ -183,6 +212,7 @@ class ResursBankTest extends TestCase {
 
 	/**
 	 * Get a method that suites our needs of type, with the help from getPaymentMethods
+	 *
 	 * @param string $specificType
 	 *
 	 * @return mixed
@@ -194,9 +224,10 @@ class ResursBankTest extends TestCase {
 			$specificMethod = $this->TEST->share( 'METHOD_' . $specificType );
 		}
 
-		if (isset($specificMethod[0])) {
+		if ( isset( $specificMethod[0] ) ) {
 			return $specificMethod[0];
 		}
+
 		return $specificMethod;
 	}
 
@@ -207,9 +238,9 @@ class ResursBankTest extends TestCase {
 	 *
 	 * @return mixed
 	 */
-	function getMethodId($specificType = 'INVOICE') {
-		$specificMethod = $this->getMethod($specificType);
-		if (isset($specificMethod->id)) {
+	function getMethodId( $specificType = 'INVOICE' ) {
+		$specificMethod = $this->getMethod( $specificType );
+		if ( isset( $specificMethod->id ) ) {
 			return $specificMethod->id;
 		}
 	}
@@ -227,17 +258,18 @@ class ResursBankTest extends TestCase {
 	/**
 	 * @test
 	 */
-	function generateSimpleSimplifiedInvoiceOrder($noAssert = false) {
+	function generateSimpleSimplifiedInvoiceOrder( $noAssert = false ) {
 		$customerData = $this->getHappyCustomerData();
 		//$this->TEST->ECOM->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW );
 		$this->TEST->ECOM->addOrderLine( "Product-1337", "One simple orderline", 800, 25 );
 		$this->TEST->ECOM->setBillingByGetAddress( $customerData );
 		$this->TEST->ECOM->setCustomer( "198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL" );
 		$this->TEST->ECOM->setSigning( $this->signUrl . '&success=true', $this->signUrl . '&success=false', false );
-		$response = $this->TEST->ECOM->createPayment($this->getMethodId());
-		if (!$noAssert) {
-			static::assertContains('BOOKED', $response->bookPaymentStatus);
+		$response = $this->TEST->ECOM->createPayment( $this->getMethodId() );
+		if ( ! $noAssert ) {
+			static::assertContains( 'BOOKED', $response->bookPaymentStatus );
 		}
+
 		return $response;
 	}
 
