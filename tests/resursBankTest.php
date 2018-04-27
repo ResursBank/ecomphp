@@ -68,8 +68,8 @@ class resursBankTest extends TestCase {
 	private $signUrl = "https://test.resurs.com/signdummy/index.php?isSigningUrl=1";
 
 	function setUp() {
-		$this->API  = new ResursBank();
-		$this->API->setDebug(true);
+		$this->API = new ResursBank();
+		$this->API->setDebug( true );
 		$this->TEST = new RESURS_TEST_BRIDGE();
 	}
 
@@ -123,8 +123,11 @@ class resursBankTest extends TestCase {
 	 * @throws \Exception
 	 */
 	function apiPaymentMethodsWithWrongCredentials() {
-		$this->expectException( "\Exception" );
-		$this->TEST->getCredentialControl( false );
+		try {
+			$this->TEST->getCredentialControl( false );
+		} catch ( \Exception $e ) {
+			static::assertTrue( ( $e->getCode() == 401 ) );
+		}
 	}
 
 	/**
@@ -174,24 +177,41 @@ class resursBankTest extends TestCase {
 
 		return $happyCustomer;
 	}
+
 	/**
 	 * @test
 	 * @testdox getCurlHandle (using getAddress)
 	 */
 	function getAddressCurlHandle() {
-		if (!class_exists('\SimpleXMLElement')) {
-			static::markTestSkipped("SimpleXMLElement missing");
+		if ( ! class_exists( '\SimpleXMLElement' ) ) {
+			static::markTestSkipped( "SimpleXMLElement missing" );
 		}
 
 		$this->TEST->ECOM->getAddress( $this->flowHappyCustomer );
-		$lastCurlHandle = $this->TEST->ECOM->getCurlHandle();
+		/** @var Tornevall_cURL $lastCurlHandle */
+
+		if ( defined( 'TORNELIB_NETCURL_RELEASE' ) && version_compare( TORNELIB_NETCURL_RELEASE, '6.0.20', '<' ) ) {
+			// In versions prior to 6.0.20, you need to first extract the SOAP body from simpleSoap itself (via getLibResponse).
+			$lastCurlHandle = $this->TEST->ECOM->getCurlHandle( true );
+			/** @var Tornevall_SimpleSoap $lastCurlHandle */
+			$soapLibResponse = $lastCurlHandle->getLibResponse();
+			$selfParser      = new TorneLIB_IO();
+			$byIo            = $selfParser->getFromXml( $soapLibResponse['body'], true );
+			static::assertTrue( ( $byIo->fullName == $this->flowHappyCustomerName ? true : false ) && ( $soapLibResponse['parsed']->fullName == $this->flowHappyCustomerName ? true : false ) );
+
+			return;
+		}
 
 		// The XML parser in the IO MODULE should give the same response as the direct curl handle
+		// From NetCURL 6.0.20 and the IO library, this could be extracted directly from the curl handle
 		$selfParser = new TorneLIB_IO();
-		$byIo = $selfParser->getFromXml($lastCurlHandle->getBody(), true);
-		$byHandle = $lastCurlHandle->getParsed();
+		// Get the curl handle without bulk request
+		$lastCurlHandle = $this->TEST->ECOM->getCurlHandle();
 
-		static::assertTrue($byIo->fullName == $this->flowHappyCustomerName && $byHandle->fullName == $this->flowHappyCustomerName);
+		$byIo     = $selfParser->getFromXml( $lastCurlHandle->getResponseBody(), true );
+		$byHandle = $lastCurlHandle->getParsedResponse();
+
+		static::assertTrue( $byIo->fullName == $this->flowHappyCustomerName && $byHandle->fullName == $this->flowHappyCustomerName );
 	}
 
 	/**
@@ -281,7 +301,8 @@ class resursBankTest extends TestCase {
 	function getOrderData() {
 		$this->TEST->ECOM->setBillingByGetAddress( $this->flowHappyCustomer );
 		$this->TEST->ECOM->addOrderLine( "RDL-1337", "One simple orderline", 800, 25 );
-		static::assertTrue( ( $this->TEST->ECOM->getOrderData() )['totalAmount'] == "1000" );
+		$orderData = $this->TEST->ECOM->getOrderData();
+		static::assertTrue( $orderData['totalAmount'] == "1000" );
 	}
 
 	/**
@@ -302,6 +323,19 @@ class resursBankTest extends TestCase {
 		static::assertTrue( count( $annuityIdList ) >= 1 && count( $annuityObjectList ) >= 1 );
 	}
 
+	/**
+	 * @test
+	 */
+	function findPaymentsXmlBody() {
+		$paymentScanList = $this->TEST->ECOM->findPayments( array( 'statusSet' => array( 'IS_DEBITED' ) ), 1, 10, array(
+			'ascending'   => false,
+			'sortColumns' => array( 'FINALIZED_TIME', 'MODIFIED_TIME', 'BOOKED_TIME' )
+		) );
+
+		$handle      = $this->TEST->ECOM->getCurlHandle();
+		$requestBody = $handle->getRequestBody();
+		static::assertTrue( strlen( $requestBody ) > 100 && count( $paymentScanList ) );
+	}
 
 	/**
 	 * @test
