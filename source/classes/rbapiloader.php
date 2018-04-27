@@ -2497,8 +2497,17 @@ class ResursBank {
 					if ( isset( $objectDetails->errorTypeId ) && intval( $objectDetails->errorTypeId ) > 0 ) {
 						$exceptionCode = $objectDetails->errorTypeId;
 					}
-					if ( isset( $previousException->detail->userErrorMessage ) ) {
-						$exceptionMessage = $objectDetails->userErrorMessage;
+					if ( isset( $objectDetails->userErrorMessage ) ) {
+						$errorTypeDescription = isset( $objectDetails->errorTypeDescription ) ? "[" . $objectDetails->errorTypeDescription . "] " : "";
+						$exceptionMessage     = $errorTypeDescription . $objectDetails->userErrorMessage;
+						$fixableByYou         = isset( $objectDetails->fixableByYou ) ? $objectDetails->fixableByYou : null;
+						if ( $fixableByYou == "false" ) {
+							$fixableByYou = " (Not fixable by you)";
+						} else {
+							$fixableByYou = " (Fixable by you)";
+						}
+						$exceptionMessage .= $fixableByYou;
+
 					}
 				}
 				if ( empty( $exceptionCode ) || $exceptionCode == "0" ) {
