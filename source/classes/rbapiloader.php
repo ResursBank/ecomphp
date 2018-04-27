@@ -596,6 +596,18 @@ class ResursBank {
 	}
 
 	/**
+	 * Get curl mode version without the debugging requirement
+	 * @param bool $fullRelease
+	 *
+	 * @return string
+	 */
+	public function getCurlVersion($fullRelease = false) {
+		if (is_null($this->CURL)) {
+			return $this->CURL->getVersion($fullRelease);
+		}
+	}
+
+	/**
 	 * Return the CURL communication handle to the client, when in debug mode (Read only)
 	 *
 	 * @param bool $bulk
