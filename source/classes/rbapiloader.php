@@ -42,11 +42,12 @@ use Resursbank\RBEcomPHP\MODULE_IO;
  *  Global
  */
 define('ECOMPHP_VERSION', '1.1.36');
-define('ECOMPHP_MODIFY_DATE', '20180425');
+define('ECOMPHP_MODIFY_DATE', '20180427');
 
 /**
- * Class ResursBank Primary class for EComPHP
+ * Class ResursBank
  * Works with dynamic data arrays. By default, the API-gateway will connect to Resurs Bank test environment, so to use production mode this must be configured at runtime.
+ * @package Resursbank\RBEcomPHP
  */
 class ResursBank {
 	////////// Constants
@@ -978,6 +979,18 @@ class ResursBank {
 	}
 
 	/**
+	 * Get curl mode version without the debugging requirement
+	 * @param bool $fullRelease
+	 *
+	 * @return string
+	 */
+	public function getCurlVersion( $fullRelease = false ) {
+		if ( ! is_null( $this->CURL ) ) {
+			return $this->CURL->getVersion( $fullRelease );
+		}
+	}
+
+	/**
 	 * Return the CURL communication handle to the client, when in debug mode (Read only)
 	 *
 	 * @param bool $bulk
@@ -1286,12 +1299,20 @@ class ResursBank {
 
 		if ( class_exists( '\Resursbank\RBEcomPHP\Tornevall_cURL' ) ) {
 
+			$inheritExtendedSoapWarnings = false;
 			if ( is_null( $this->CURL ) ) {
 				$reInitializeCurl = true;
+			} else {
+				if ($this->CURL->hasFlag('SOAPWARNINGS_EXTEND')) {
+					$inheritExtendedSoapWarnings = $this->CURL->getFlag('SOAPWARNINGS_EXTEND');
+				}
 			}
 			if ( $reInitializeCurl ) {
 				$this->CURL = new \Resursbank\RBEcomPHP\Tornevall_cURL();
 				$this->CURL->setChain( false );
+				if ($inheritExtendedSoapWarnings) {
+					$this->CURL->setFlag('SOAPWARNINGS_EXTEND', true);
+				}
 				$this->CURL->setFlag('SOAPCHAIN', false);
 				$this->CURL->setStoreSessionExceptions( true );
 				$this->CURL->setAuthentication( $this->soapOptions['login'], $this->soapOptions['password'] );
@@ -1360,17 +1381,23 @@ class ResursBank {
 	 * @since 1.2.0
 	 */
 	public function setFlag( $flagKey = '', $flagValue = null ) {
+		if ( is_null( $this->CURL ) ) {
+			$this->InitializeServices();
+		}
 		if ( is_null( $flagValue ) ) {
 			$flagValue = true;
 		}
 
 		if ( ! empty( $flagKey ) ) {
+			// CURL passthroug
+			$this->CURL->setFlag( $flagKey, $flagValue );
 			$this->internalFlags[ $flagKey ] = $flagValue;
 
 			return true;
 		}
 		throw new \Exception( "Flags can not be empty", 500 );
 	}
+
 	/**
 	 * Get internal flag
 	 *
@@ -2181,7 +2208,7 @@ class ResursBank {
 			return true;
 		}
 
-		throw new \Exception("Could not register callback", $code);
+		throw new \Exception("setRegisterCallbackException ($code): Could not register callback event " . $renderCallback['eventType'] . ' (service: '.$registerBy.')', $code);
 	}
 
 	/**
