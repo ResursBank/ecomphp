@@ -802,11 +802,16 @@ class ResursBank {
 	 * @since 1.2.0
 	 */
 	public function setFlag( $flagKey = '', $flagValue = null ) {
+		if ( is_null( $this->CURL ) ) {
+			$this->InitializeServices();
+		}
 		if ( is_null( $flagValue ) ) {
 			$flagValue = true;
 		}
 
 		if ( ! empty( $flagKey ) ) {
+			// CURL bypass
+			$this->CURL->setFlag( $flagKey, $flagValue );
 			$this->internalFlags[ $flagKey ] = $flagValue;
 
 			return true;
@@ -1445,7 +1450,7 @@ class ResursBank {
 			return true;
 		}
 
-		throw new \Exception("Could not register callback", $code);
+		throw new \Exception("setRegisterCallbackException ($code): Could not register callback event " . $renderCallback['eventType'] . ' (service: '.$registerBy.')', $code);
 	}
 
 	/**
