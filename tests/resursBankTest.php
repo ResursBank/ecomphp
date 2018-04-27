@@ -337,6 +337,19 @@ class resursBankTest extends TestCase {
 		static::assertTrue( count( $annuityIdList ) >= 1 && count( $annuityObjectList ) >= 1 );
 	}
 
+	/**
+	 * @test
+	 */
+	function findPaymentsXmlBody() {
+		$paymentScanList = $this->TEST->ECOM->findPayments( array( 'statusSet' => array( 'IS_DEBITED' ) ), 1, 10, array(
+			'ascending'   => false,
+			'sortColumns' => array( 'FINALIZED_TIME', 'MODIFIED_TIME', 'BOOKED_TIME' )
+		) );
+
+		$handle      = $this->TEST->ECOM->getCurlHandle();
+		$requestBody = $handle->getRequestBody();
+		static::assertTrue( strlen( $requestBody ) > 100 && count( $paymentScanList ) );
+	}
 
 	/**
 	 * @test
