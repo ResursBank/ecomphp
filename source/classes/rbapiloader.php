@@ -601,9 +601,9 @@ class ResursBank {
 	 *
 	 * @return string
 	 */
-	public function getCurlVersion($fullRelease = false) {
-		if (is_null($this->CURL)) {
-			return $this->CURL->getVersion($fullRelease);
+	public function getCurlVersion( $fullRelease = false ) {
+		if ( ! is_null( $this->CURL ) ) {
+			return $this->CURL->getVersion( $fullRelease );
 		}
 	}
 
