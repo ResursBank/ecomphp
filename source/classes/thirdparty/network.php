@@ -41,10 +41,12 @@ if ( defined( 'NETCURL_REQUIRE' ) ) {
 	}
 	define( 'NETCURL_ALLOW_AUTOLOAD', version_compare( NETCURL_RELEASE, NETCURL_REQUIRE, NETCURL_REQUIRE_OPERATOR ) ? true : false );
 } else {
-	define( 'NETCURL_ALLOW_AUTOLOAD', true );
+	if ( ! defined( 'NETCURL_ALLOW_AUTOLOAD' ) ) {
+		define( 'NETCURL_ALLOW_AUTOLOAD', true );
+	}
 }
 
-if ( file_exists( __DIR__ . '/../vendor/autoload.php' ) && defined( 'NETCURL_ALLOW_AUTOLOAD' ) && NETCURL_ALLOW_AUTOLOAD === true ) {
+if ( file_exists( __DIR__ . '/../vendor/autoload.php' ) && ( defined( 'NETCURL_ALLOW_AUTOLOAD' ) && NETCURL_ALLOW_AUTOLOAD === true ) ) {
 	require_once( __DIR__ . '/../vendor/autoload.php' );
 }
 
@@ -75,7 +77,7 @@ interface NETCURL_DRIVERS_INTERFACE {
 	public function executeNetcurlRequest( $url = '', $postData = array(), $postMethod = NETCURL_POST_METHODS::METHOD_GET, $postDataType = NETCURL_POST_DATATYPES::DATATYPE_NOT_SET );
 
 }
-if ( ! class_exists( 'NETCURL_DRIVER_GUZZLEHTTP' ) && ! class_exists( 'TorneLIB\NETCURL_DRIVER_GUZZLEHTTPINTERFACE' ) ) {
+if ( ! class_exists( 'NETCURL_DRIVER_GUZZLEHTTP' ) && ! class_exists( 'Resursbank\RBEcomPHP\NETCURL_DRIVER_GUZZLEHTTPINTERFACE' ) ) {
 	/**
 	 * Class NETCURL_DRIVER_GUZZLEHTTP Network communications driver detection
 	 *
@@ -309,7 +311,7 @@ if ( ! class_exists( 'NETCURL_DRIVER_GUZZLEHTTP' ) && ! class_exists( 'TorneLIB\
 
 	}
 }
-if ( ! class_exists( 'NETCURL_DRIVER_WORDPRESS' ) && ! class_exists( 'TorneLIB\NETCURL_DRIVER_WORDPRESS' ) ) {
+if ( ! class_exists( 'NETCURL_DRIVER_WORDPRESS' ) && ! class_exists( 'Resursbank\RBEcomPHP\NETCURL_DRIVER_WORDPRESS' ) ) {
 	/**
 	 * Class NETCURL_DRIVERS Network communications driver detection
 	 *
@@ -469,7 +471,7 @@ if ( ! class_exists( 'NETCURL_DRIVER_WORDPRESS' ) && ! class_exists( 'TorneLIB\N
 		}
 	}
 }
-if ( ! class_exists( 'NETCURL_PARSER' ) && ! class_exists( 'TorneLIB\NETCURL_PARSER' ) ) {
+if ( ! class_exists( 'NETCURL_PARSER' ) && ! class_exists( 'Resursbank\RBEcomPHP\NETCURL_PARSER' ) ) {
 	/**
 	 * Class NETCURL_PARSER Network communications driver detection
 	 *
@@ -745,7 +747,7 @@ if ( ! class_exists( 'NETCURL_PARSER' ) && ! class_exists( 'TorneLIB\NETCURL_PAR
 
 	}
 }
-if ( ! class_exists( 'NETCURL_DRIVER_CONTROLLER' ) && ! class_exists( 'TorneLIB\NETCURL_DRIVER_CONTROLLER' ) ) {
+if ( ! class_exists( 'NETCURL_DRIVER_CONTROLLER' ) && ! class_exists( 'Resursbank\RBEcomPHP\NETCURL_DRIVER_CONTROLLER' ) ) {
 	/**
 	 * Class NETCURL_DRIVERS Network communications driver detection
 	 *
@@ -1107,7 +1109,7 @@ if ( ! class_exists( 'NETCURL_DRIVER_CONTROLLER' ) && ! class_exists( 'TorneLIB\
 
 	}
 }
-if ( ! class_exists( 'MODULE_SSL' ) && ! class_exists( 'TorneLIB\MODULE_SSL' ) ) {
+if ( ! class_exists( 'MODULE_SSL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MODULE_SSL' ) ) {
 
 	if ( ! defined( 'NETCURL_SSL_RELEASE' ) ) {
 		define( 'NETCURL_SSL_RELEASE', '6.0.0' );
@@ -1453,7 +1455,7 @@ if ( ! defined( 'NETCURL_NETBITS_MODIFY' ) ) {
 }
 
 // Check if there is a packagist release already loaded, since this network standalone release is deprecated as of 20180320.
-if ( ! class_exists( 'MODULE_NETBITS' ) && ! class_exists( 'TorneLIB\MODULE_NETBITS' ) ) {
+if ( ! class_exists( 'MODULE_NETBITS' ) && ! class_exists( 'Resursbank\RBEcomPHP\MODULE_NETBITS' ) ) {
 	/**
 	 * Class TorneLIB_NetBits Netbits Library for calculations with bitmasks
 	 *
@@ -1623,7 +1625,7 @@ if ( ! class_exists( 'MODULE_NETBITS' ) && ! class_exists( 'TorneLIB\MODULE_NETB
 	}
 }
 
-if ( ! class_exists( 'TorneLIB_NetBits' ) && ! class_exists( 'TorneLIB\TorneLIB_NetBits' ) ) {
+if ( ! class_exists( 'TorneLIB_NetBits' ) && ! class_exists( 'Resursbank\RBEcomPHP\TorneLIB_NetBits' ) ) {
 	/**
 	 * Class TorneLIB_NetBits
 	 * @package TorneLIB
@@ -1636,7 +1638,7 @@ if ( ! class_exists( 'TorneLIB_NetBits' ) && ! class_exists( 'TorneLIB\TorneLIB_
 	}
 }
 
-if ( ! class_exists( 'TorneLIB_NETCURL_EXCEPTIONS' ) && ! class_exists( 'TorneLIB\TorneLIB_NETCURL_EXCEPTIONS' ) ) {
+if ( ! class_exists( 'TorneLIB_NETCURL_EXCEPTIONS' ) && ! class_exists( 'Resursbank\RBEcomPHP\TorneLIB_NETCURL_EXCEPTIONS' ) ) {
 	/**
 	 * Class NETCURL_EXCEPTIONS
 	 * @package TorneLIB
@@ -1689,7 +1691,7 @@ if ( ! class_exists( 'TorneLIB_NETCURL_EXCEPTIONS' ) && ! class_exists( 'TorneLI
 	}
 }
 
-if ( ! class_exists( 'TorneLIB_NETCURL_EXCEPTIONS' ) && ! class_exists( 'TorneLIB\TorneLIB_NETCURL_EXCEPTIONS' ) ) {
+if ( ! class_exists( 'TorneLIB_NETCURL_EXCEPTIONS' ) && ! class_exists( 'Resursbank\RBEcomPHP\TorneLIB_NETCURL_EXCEPTIONS' ) ) {
 	/**
 	 * Class TORNELIB_NETCURL_EXCEPTIONS
 	 * @package TorneLIB
@@ -1698,7 +1700,7 @@ if ( ! class_exists( 'TorneLIB_NETCURL_EXCEPTIONS' ) && ! class_exists( 'TorneLI
 	abstract class TORNELIB_NETCURL_EXCEPTIONS extends NETCURL_EXCEPTIONS {
 	}
 }
-if ( ! class_exists( 'NETCURL_AUTH_TYPES' ) && ! class_exists( 'TorneLIB\NETCURL_AUTH_TYPES' ) ) {
+if ( ! class_exists( 'NETCURL_AUTH_TYPES' ) && ! class_exists( 'Resursbank\RBEcomPHP\NETCURL_AUTH_TYPES' ) ) {
 	/**
 	 * Class CURL_AUTH_TYPES Available authentication types for use with password protected sites
 	 *
@@ -1712,7 +1714,7 @@ if ( ! class_exists( 'NETCURL_AUTH_TYPES' ) && ! class_exists( 'TorneLIB\NETCURL
 		const AUTHTYPE_BASIC = 1;
 	}
 }
-if ( ! class_exists( 'CURL_AUTH_TYPES' ) && ! class_exists( 'TorneLIB\CURL_AUTH_TYPES' ) ) {
+if ( ! class_exists( 'CURL_AUTH_TYPES' ) && ! class_exists( 'Resursbank\RBEcomPHP\CURL_AUTH_TYPES' ) ) {
 	/**
 	 * @package TorneLIB
 	 * @deprecated Use NETCURL_AUTH_TYPES
@@ -1720,7 +1722,7 @@ if ( ! class_exists( 'CURL_AUTH_TYPES' ) && ! class_exists( 'TorneLIB\CURL_AUTH_
 	abstract class CURL_AUTH_TYPES extends NETCURL_AUTH_TYPES {
 	}
 }
-if ( ! class_exists( 'NETCURL_HTTP_OBJECT' ) && ! class_exists( 'TorneLIB\NETCURL_HTTP_OBJECT' ) ) {
+if ( ! class_exists( 'NETCURL_HTTP_OBJECT' ) && ! class_exists( 'Resursbank\RBEcomPHP\NETCURL_HTTP_OBJECT' ) ) {
 	/**
 	 * Class NETCURL_CURLOBJECT
 	 * @package TorneLIB
@@ -1770,7 +1772,7 @@ if ( ! class_exists( 'NETCURL_HTTP_OBJECT' ) && ! class_exists( 'TorneLIB\NETCUR
 
 	}
 }
-if ( ! class_exists( 'TORNELIB_CURLOBJECT' ) && ! class_exists( 'TorneLIB\TORNELIB_CURLOBJECT' ) ) {
+if ( ! class_exists( 'TORNELIB_CURLOBJECT' ) && ! class_exists( 'Resursbank\RBEcomPHP\TORNELIB_CURLOBJECT' ) ) {
 	/**
 	 * Class TORNELIB_CURLOBJECT
 	 * @package TorneLIB
@@ -1785,7 +1787,7 @@ if ( ! class_exists( 'TORNELIB_CURLOBJECT' ) && ! class_exists( 'TorneLIB\TORNEL
 		public $ip;
 	}
 }
-if ( ! class_exists( 'NETCURL_POST_DATATYPES' ) && ! class_exists( 'TorneLIB\NETCURL_POST_DATATYPES' ) ) {
+if ( ! class_exists( 'NETCURL_POST_DATATYPES' ) && ! class_exists( 'Resursbank\RBEcomPHP\NETCURL_POST_DATATYPES' ) ) {
 	/**
 	 * Class NETCURL_POST_DATATYPES Prepared formatting for POST-content in this library (Also available from for example PUT)
 	 *
@@ -1801,7 +1803,7 @@ if ( ! class_exists( 'NETCURL_POST_DATATYPES' ) && ! class_exists( 'TorneLIB\NET
 		const DATATYPE_SOAP_XML = 4;
 	}
 }
-if ( ! class_exists( 'CURL_POST_AS' ) && ! class_exists( 'TorneLIB\CURL_POST_AS' ) ) {
+if ( ! class_exists( 'CURL_POST_AS' ) && ! class_exists( 'Resursbank\RBEcomPHP\CURL_POST_AS' ) ) {
 	/**
 	 * @package TorneLIB
 	 * @deprecated Use NETCURL_POST_DATATYPES
@@ -1822,7 +1824,7 @@ if ( ! class_exists( 'CURL_POST_AS' ) && ! class_exists( 'TorneLIB\CURL_POST_AS'
 		const POST_AS_SOAP = 2;
 	}
 }
-if ( ! class_exists( 'NETCURL_NETWORK_DRIVERS' ) && ! class_exists( 'TorneLIB\NETCURL_NETWORK_DRIVERS' ) ) {
+if ( ! class_exists( 'NETCURL_NETWORK_DRIVERS' ) && ! class_exists( 'Resursbank\RBEcomPHP\NETCURL_NETWORK_DRIVERS' ) ) {
 	/**
 	 * Class NETCURL_NETWORK_DRIVERS Supported network Addons
 	 * @package TorneLIB
@@ -1846,7 +1848,7 @@ if ( ! class_exists( 'NETCURL_NETWORK_DRIVERS' ) && ! class_exists( 'TorneLIB\NE
 
 	}
 }
-if ( ! class_exists( 'TORNELIB_CURL_DRIVERS' ) && ! class_exists( 'TorneLIB\TORNELIB_CURL_DRIVERS' ) ) {
+if ( ! class_exists( 'TORNELIB_CURL_DRIVERS' ) && ! class_exists( 'Resursbank\RBEcomPHP\TORNELIB_CURL_DRIVERS' ) ) {
 	/**
 	 * Class TORNELIB_CURL_DRIVERS
 	 * @package TorneLIB
@@ -1856,7 +1858,7 @@ if ( ! class_exists( 'TORNELIB_CURL_DRIVERS' ) && ! class_exists( 'TorneLIB\TORN
 	abstract class TORNELIB_CURL_DRIVERS extends NETCURL_NETWORK_DRIVERS {
 	}
 }
-if ( ! class_exists( 'NETCURL_ENVIRONMENT' ) && ! class_exists( 'TorneLIB\NETCURL_ENVIRONMENT' ) ) {
+if ( ! class_exists( 'NETCURL_ENVIRONMENT' ) && ! class_exists( 'Resursbank\RBEcomPHP\NETCURL_ENVIRONMENT' ) ) {
 	/**
 	 * Class NETCURL_ENVIRONMENT Unittest helping class
 	 *
@@ -1870,7 +1872,7 @@ if ( ! class_exists( 'NETCURL_ENVIRONMENT' ) && ! class_exists( 'TorneLIB\NETCUR
 	}
 }
 
-if ( ! class_exists( 'TORNELIB_CURL_ENVIRONMENT' ) && ! class_exists( 'TorneLIB\TORNELIB_CURL_ENVIRONMENT' ) ) {
+if ( ! class_exists( 'TORNELIB_CURL_ENVIRONMENT' ) && ! class_exists( 'Resursbank\RBEcomPHP\TORNELIB_CURL_ENVIRONMENT' ) ) {
 	/**
 	 * Class TORNELIB_CURL_ENVIRONMENT
 	 * @package TorneLIB
@@ -1881,7 +1883,7 @@ if ( ! class_exists( 'TORNELIB_CURL_ENVIRONMENT' ) && ! class_exists( 'TorneLIB\
 	abstract class TORNELIB_CURL_ENVIRONMENT extends NETCURL_ENVIRONMENT {
 	}
 }
-if ( ! class_exists( 'NETCURL_IP_PROTOCOLS' ) && ! class_exists( 'TorneLIB\NETCURL_IP_PROTOCOLS' ) ) {
+if ( ! class_exists( 'NETCURL_IP_PROTOCOLS' ) && ! class_exists( 'Resursbank\RBEcomPHP\NETCURL_IP_PROTOCOLS' ) ) {
 	/**
 	 * Class NETCURL_IP_PROTOCOLS IP Address Types class
 	 * @package TorneLIB
@@ -1894,7 +1896,7 @@ if ( ! class_exists( 'NETCURL_IP_PROTOCOLS' ) && ! class_exists( 'TorneLIB\NETCU
 	}
 
 }
-if ( ! class_exists( 'TorneLIB_Network_IP' ) && ! class_exists( 'TorneLIB\TorneLIB_Network_IP' ) ) {
+if ( ! class_exists( 'TorneLIB_Network_IP' ) && ! class_exists( 'Resursbank\RBEcomPHP\TorneLIB_Network_IP' ) ) {
 	/**
 	 * Class TorneLIB_Network_IP
 	 * @package TorneLIB
@@ -1908,7 +1910,7 @@ if ( ! class_exists( 'TorneLIB_Network_IP' ) && ! class_exists( 'TorneLIB\TorneL
 	}
 }
 
-if ( ! class_exists( 'TorneLIB_Network_IP_Protocols' ) && ! class_exists( 'TorneLIB\TorneLIB_Network_IP_Protocols' ) ) {
+if ( ! class_exists( 'TorneLIB_Network_IP_Protocols' ) && ! class_exists( 'Resursbank\RBEcomPHP\TorneLIB_Network_IP_Protocols' ) ) {
 	/**
 	 * Class TorneLIB_Network_IP_Protocols
 	 * @package TorneLIB
@@ -1918,7 +1920,7 @@ if ( ! class_exists( 'TorneLIB_Network_IP_Protocols' ) && ! class_exists( 'Torne
 	abstract class TorneLIB_Network_IP_Protocols extends TorneLIB_Network_IP {
 	}
 }
-if ( ! class_exists( 'NETCURL_POST_METHODS' ) && ! class_exists( 'TorneLIB\NETCURL_POST_METHODS' ) ) {
+if ( ! class_exists( 'NETCURL_POST_METHODS' ) && ! class_exists( 'Resursbank\RBEcomPHP\NETCURL_POST_METHODS' ) ) {
 	/**
 	 * Class NETCURL_POST_METHODS List of methods available in this library
 	 *
@@ -1935,7 +1937,7 @@ if ( ! class_exists( 'NETCURL_POST_METHODS' ) && ! class_exists( 'TorneLIB\NETCU
 	}
 }
 
-if ( ! class_exists( 'CURL_METHODS' ) && ! class_exists( 'TorneLIB\CURL_METHODS' ) ) {
+if ( ! class_exists( 'CURL_METHODS' ) && ! class_exists( 'Resursbank\RBEcomPHP\CURL_METHODS' ) ) {
 	/**
 	 * @package TorneLIB
 	 * @deprecated Use NETCURL_POST_METHODS
@@ -1944,7 +1946,7 @@ if ( ! class_exists( 'CURL_METHODS' ) && ! class_exists( 'TorneLIB\CURL_METHODS'
 	abstract class CURL_METHODS extends NETCURL_POST_METHODS {
 	}
 }
-if ( ! class_exists( 'NETCURL_RESOLVER' ) && ! class_exists( 'TorneLIB\NETCURL_RESOLVER' ) ) {
+if ( ! class_exists( 'NETCURL_RESOLVER' ) && ! class_exists( 'Resursbank\RBEcomPHP\NETCURL_RESOLVER' ) ) {
 	/**
 	 * Class NETCURL_RESOLVER Class definitions on how to resolve things on lookups
 	 *
@@ -1958,7 +1960,7 @@ if ( ! class_exists( 'NETCURL_RESOLVER' ) && ! class_exists( 'TorneLIB\NETCURL_R
 	}
 }
 
-if ( ! class_exists( 'CURL_RESOLVER' ) && ! class_exists( 'TorneLIB\CURL_RESOLVER' ) ) {
+if ( ! class_exists( 'CURL_RESOLVER' ) && ! class_exists( 'Resursbank\RBEcomPHP\CURL_RESOLVER' ) ) {
 	/**
 	 * @package TorneLIB
 	 * @deprecated Use NETCURL_RESOLVER
@@ -1967,7 +1969,7 @@ if ( ! class_exists( 'CURL_RESOLVER' ) && ! class_exists( 'TorneLIB\CURL_RESOLVE
 	abstract class CURL_RESOLVER extends NETCURL_RESOLVER {
 	}
 }
-if ( ! class_exists( 'NETCURL_RESPONSETYPE' ) && ! class_exists( 'TorneLIB\NETCURL_RESPONSETYPE' ) ) {
+if ( ! class_exists( 'NETCURL_RESPONSETYPE' ) && ! class_exists( 'Resursbank\RBEcomPHP\NETCURL_RESPONSETYPE' ) ) {
 	/**
 	 * Class NETCURL_RESPONSETYPE Assoc or object?
 	 * @package TorneLIB
@@ -1978,7 +1980,7 @@ if ( ! class_exists( 'NETCURL_RESPONSETYPE' ) && ! class_exists( 'TorneLIB\NETCU
 		const RESPONSETYPE_OBJECT = 1;
 	}
 
-	if ( ! class_exists( 'TORNELIB_CURL_RESPONSETYPE' ) && ! class_exists( 'TorneLIB\TORNELIB_CURL_RESPONSETYPE' ) ) {
+	if ( ! class_exists( 'TORNELIB_CURL_RESPONSETYPE' ) && ! class_exists( 'Resursbank\RBEcomPHP\TORNELIB_CURL_RESPONSETYPE' ) ) {
 
 		/**
 		 * Class TORNELIB_CURL_RESPONSETYPE
@@ -1990,7 +1992,7 @@ if ( ! class_exists( 'NETCURL_RESPONSETYPE' ) && ! class_exists( 'TorneLIB\NETCU
 		}
 	}
 }
-if ( ! class_exists( 'MODULE_NETWORK' ) && ! class_exists( 'TorneLIB\MODULE_NETWORK' ) ) {
+if ( ! class_exists( 'MODULE_NETWORK' ) && ! class_exists( 'Resursbank\RBEcomPHP\MODULE_NETWORK' ) ) {
 	if (!defined('NETCURL_NETWORK_RELEASE')) {
 		define( 'NETCURL_NETWORK_RELEASE', '6.0.6' );
 	}
@@ -2634,7 +2636,7 @@ if ( ! class_exists( 'MODULE_NETWORK' ) && ! class_exists( 'TorneLIB\MODULE_NETW
 	}
 }
 
-if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_Network' ) ) {
+if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'Resursbank\RBEcomPHP\TorneLIB_Network' ) ) {
 	/**
 	 * Class MODULE_CURL
 	 * @package TorneLIB
@@ -2645,7 +2647,7 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'TorneLIB\TorneLIB_
 		}
 	}
 }
-if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'TorneLIB\MODULE_CURL' ) ) {
+if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MODULE_CURL' ) ) {
 
 	if ( ! defined( 'NETCURL_CURL_RELEASE' ) ) {
 		define( 'NETCURL_CURL_RELEASE', '6.0.19' );
@@ -2731,6 +2733,8 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'TorneLIB\MODULE_CURL' )
 		protected $NETCURL_RESPONSE_CONTAINER_HTTPMESSAGE;
 		protected $NETCURL_RESPONSE_CONTAINER_HEADER;
 		protected $NETCURL_RESPONSE_RAW;
+		protected $NETCURL_REQUEST_HEADERS;
+		protected $NETCURL_REQUEST_BODY;
 
 		private $userAgents = array(
 			'Mozilla' => 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; .NET CLR 1.0.3705; .NET CLR 1.1.4322; Media Center PC 4.0;)'
@@ -4630,20 +4634,29 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'TorneLIB\MODULE_CURL' )
 			$returnResponse['ip']  = isset( $this->CURL_IP_ADDRESS ) ? $this->CURL_IP_ADDRESS : null;  // Will only be filled if there is custom address set.
 
 			$this->throwCodeException( trim( $httpMessage ), $code );
-			$contentType = isset( $headerInfo['Content-Type'] ) ? $headerInfo['Content-Type'] : null;
-			// php 5.3 compliant
-			$NCP                       = new NETCURL_PARSER( $arrayedResponse['body'], $contentType );
-			$parsedContent             = $NCP->getParsedResponse();
-			$arrayedResponse['parsed'] = $parsedContent;
-			$arrayedResponse['ip']     = $this->CURL_IP_ADDRESS;
+			$contentType           = isset( $headerInfo['Content-Type'] ) ? $headerInfo['Content-Type'] : null;
+			$arrayedResponse['ip'] = $this->CURL_IP_ADDRESS;
 
+			// Store data that can be stored before tryiing to handle the parsed parts
 			$this->NETCURL_RESPONSE_RAW                   = $rawInput;
 			$this->NETCURL_RESPONSE_CONTAINER             = $arrayedResponse;
-			$this->NETCURL_RESPONSE_CONTAINER_PARSED      = $parsedContent;
 			$this->NETCURL_RESPONSE_CONTAINER_CODE        = trim( $code );
 			$this->NETCURL_RESPONSE_CONTAINER_HTTPMESSAGE = trim( $httpMessage );
 			$this->NETCURL_RESPONSE_CONTAINER_BODY        = $body;
 			$this->NETCURL_RESPONSE_CONTAINER_HEADER      = $header;
+
+			if ( $this->isFlag( 'IS_SOAP' ) && ! $this->isFlag( 'ALLOW_PARSE_SOAP' ) ) {
+				$arrayedResponse['parsed'] = null;
+
+				return $arrayedResponse;
+			}
+
+			// php 5.3 compliant
+			$NCP                                     = new NETCURL_PARSER( $arrayedResponse['body'], $contentType );
+			$parsedContent                           = $NCP->getParsedResponse();
+			$arrayedResponse['parsed']               = $parsedContent;
+			$this->NETCURL_RESPONSE_CONTAINER_PARSED = $parsedContent;
+
 
 			if ( $this->NETCURL_RETURN_RESPONSE_TYPE == NETCURL_RESPONSETYPE::RESPONSETYPE_OBJECT ) {
 				return new NETCURL_HTTP_OBJECT( $arrayedResponse['header'], $arrayedResponse['body'], $arrayedResponse['code'], $arrayedResponse['parsed'], $this->CURL_STORED_URL, $this->CURL_IP_ADDRESS );
@@ -4838,6 +4851,22 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'TorneLIB\MODULE_CURL' )
 		}
 
 		/**
+		 * @return mixed
+		 * @since 6.0.20
+		 */
+		public function getRequestHeaders() {
+			return $this->NETCURL_REQUEST_CONTAINER;
+		}
+
+		/**
+		 * @return mixed
+		 * @since 6.0.20
+		 */
+		public function getRequestBody() {
+			return $this->NETCURL_REQUEST_BODY;
+		}
+
+		/**
 		 * @param null $ResponseContent
 		 *
 		 * @return null|string
@@ -4869,19 +4898,24 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'TorneLIB\MODULE_CURL' )
 		 * @since 6.0.20
 		 */
 		public function getValue( $keyName = null, $responseContent = null ) {
+			$testInternalParsed = $this->getParsed();
+			if (is_null($responseContent) && !empty($testInternalParsed)) {
+				$responseContent = $testInternalParsed;
+			}
+
 			if ( is_string( $keyName ) ) {
-				$ParsedValue = $this->getParsedResponse( $responseContent );
+				$ParsedValue = $this->getParsed($responseContent);
 				if ( is_array( $ParsedValue ) && isset( $ParsedValue[ $keyName ] ) ) {
 					return $ParsedValue[ $keyName ];
 				}
 				if ( is_object( $ParsedValue ) && isset( $ParsedValue->$keyName ) ) {
-					return $ParsedValue->$keyName;
+					return $ParsedValue->{$keyName};
 				}
 			} else {
 				if ( is_null( $responseContent ) && ! empty( $this->NETCURL_RESPONSE_CONTAINER ) ) {
 					$responseContent = $this->NETCURL_RESPONSE_CONTAINER;
 				}
-				$Parsed       = $this->getParsedResponse( $responseContent );
+				$Parsed       = $this->getParsed($responseContent);
 				$hasRecursion = false;
 				if ( is_array( $keyName ) ) {
 					$TheKeys  = array_reverse( $keyName );
@@ -4894,7 +4928,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'TorneLIB\MODULE_CURL' )
 								$hasRecursion = true;
 							}
 						} else if ( is_object( $Parsed ) ) {
-							if ( isset( $Parsed->$CurrentKey ) ) {
+							if ( isset( $Parsed->{$CurrentKey} ) ) {
 								$hasRecursion = true;
 							}
 						} else {
@@ -4905,7 +4939,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'TorneLIB\MODULE_CURL' )
 							break;
 						}
 						if ( $hasRecursion ) {
-							$Parsed = $this->getParsedValue( $CurrentKey, array( 'parsed' => $Parsed ) );
+							$Parsed = $this->getValue( $CurrentKey, array( 'parsed' => $Parsed ) );
 							// Break if this was the last one
 							if ( ! count( $TheKeys ) ) {
 								break;
@@ -5820,11 +5854,19 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'TorneLIB\MODULE_CURL' )
 		 */
 		private function executeHttpSoap( $url = '', $postData = array(), $CurlMethod = NETCURL_POST_METHODS::METHOD_GET ) {
 			$Soap = new MODULE_SOAP( $this->CURL_STORED_URL, $this );
+
+			// Proper inherits
+			foreach ($this->getFlags() as $flagKey => $flagValue) {
+				$this->setFlag($flagKey, $flagValue);
+				$Soap->setFlag($flagKey, $flagValue);
+			}
+
 			$this->setFlag( 'WAS_SOAP_CHAIN', $this->getIsChained() );
 			$Soap->setFlag( 'WAS_SOAP_CHAIN', $this->getIsChained() );
 			$this->setChain( false );
 			$Soap->setFlag( 'IS_SOAP' );
 			$this->setFlag( 'IS_SOAP' );
+
 			/** @since 6.0.20 */
 			$Soap->setChain( false );
 			if ( $this->hasFlag( 'SOAPCHAIN' ) ) {
@@ -6392,7 +6434,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'TorneLIB\MODULE_CURL' )
 
 	}
 
-	if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'TorneLIB\Tornevall_cURL' ) ) {
+	if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\Tornevall_cURL' ) ) {
 		/**
 		 * Class MODULE_CURL
 		 * @package TorneLIB
@@ -6407,7 +6449,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'TorneLIB\MODULE_CURL' )
 	}
 }
 
-if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'TorneLIB\MODULE_SOAP' ) ) {
+if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'Tornevall_WP_DNSBL\MODULE_SOAP' ) ) {
 
 	if ( ! defined( 'NETCURL_SIMPLESOAP_RELEASE' ) ) {
 		define( 'NETCURL_SIMPLESOAP_RELEASE', '6.0.6' );
@@ -6539,7 +6581,7 @@ if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'TorneLIB\MODULE_SOAP' )
 			$this->soapClient = null;
 			$sslOpt           = $this->getSslOpt();
 			//$optionsStream    = $this->sslGetOptionsStream();
-			$optionsStream    = $this->PARENT->sslGetOptionsStream();
+			$optionsStream = $this->PARENT->sslGetOptionsStream();
 
 			if ( is_array( $optionsStream ) && count( $optionsStream ) ) {
 				foreach ( $optionsStream as $optionKey => $optionValue ) {
@@ -6563,6 +6605,9 @@ if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'TorneLIB\MODULE_SOAP' )
 			$soapFaultOnInit = false;
 
 			$parentFlags = $this->PARENT->getFlags();
+			foreach ( $parentFlags as $flagKey => $flagValue ) {
+				$this->setFlag( $flagKey, $flagValue );
+			}
 
 			if ( $this->SoapTryOnce ) {
 				try {
@@ -6607,7 +6652,10 @@ if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'TorneLIB\MODULE_SOAP' )
 									if ( isset( $httpSplitError[1] ) && intval( $httpSplitError[1] ) > 0 ) {
 										$throwErrorCode = $httpSplitError[1];
 										if ( isset( $httpSplitError[2] ) && is_string( $httpSplitError[2] ) && ! empty( $httpSplitError[2] ) ) {
-											$throwErrorMessage = "HTTP-Request-Exception: " . $httpSplitError[1] . " " . trim( $httpSplitError[2] ) . "\n" . $throwErrorMessage;
+											if ( ! isset( $parentFlags['SOAPWARNINGS_EXTEND'] ) ) {
+												unset( $throwErrorMessage );
+											}
+											$throwErrorMessage = "HTTP-Request exception (" . $throwErrorCode . "): " . $httpSplitError[1] . " " . trim( $httpSplitError[2] ) . "\n" . $throwErrorMessage;
 										}
 									}
 								}
@@ -6699,7 +6747,7 @@ if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'TorneLIB\MODULE_SOAP' )
 				$this->soapFaultExceptionObject = $e;
 				if ( $this->canThrowSoapFaults ) {
 					$exceptionCode = $e->getCode();
-					if (!$exceptionCode && $this->getCode() > 0) {
+					if ( ! $exceptionCode && $this->getCode() > 0 ) {
 						$exceptionCode = $this->getCode();
 					}
 					throw new \Exception( NETCURL_CURL_CLIENTNAME . " exception from soapClient: " . $e->getMessage(), $exceptionCode, $e );
@@ -6734,6 +6782,8 @@ if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'TorneLIB\MODULE_SOAP' )
 			$this->NETCURL_RESPONSE_CONTAINER_BODY   = $this->getBody();
 			$this->NETCURL_RESPONSE_CONTAINER_HEADER = $this->getHeader();
 			$this->NETCURL_RESPONSE_CONTAINER        = $returnResponse;
+			$this->NETCURL_REQUEST_HEADERS           = $this->soapRequestHeaders;
+			$this->NETCURL_REQUEST_BODY              = $this->soapRequest;
 
 			if ( ! is_null( $this->PARENT ) ) {
 				$this->PARENT->NETCURL_RESPONSE_RAW              = $this->NETCURL_RESPONSE_RAW;
@@ -6742,6 +6792,8 @@ if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'TorneLIB\MODULE_SOAP' )
 				$this->PARENT->NETCURL_RESPONSE_CONTAINER_BODY   = $this->NETCURL_RESPONSE_CONTAINER_BODY;
 				$this->PARENT->NETCURL_RESPONSE_CONTAINER_HEADER = $this->NETCURL_RESPONSE_CONTAINER_HTTPMESSAGE;
 				$this->PARENT->NETCURL_RESPONSE_CONTAINER        = $this->NETCURL_RESPONSE_CONTAINER;
+				$this->PARENT->NETCURL_REQUEST_HEADERS           = $this->soapRequestHeaders;
+				$this->PARENT->NETCURL_REQUEST_BODY              = $this->soapRequest;
 			}
 
 			// HTTPMESSAGE is not applicable for this section
@@ -6795,7 +6847,7 @@ if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'TorneLIB\MODULE_SOAP' )
 		}
 	}
 
-	if ( ! class_exists( 'Tornevall_SimpleSoap' ) && ! class_exists( 'TorneLIB\Tornevall_SimpleSoap' ) ) {
+	if ( ! class_exists( 'Tornevall_SimpleSoap' ) && ! class_exists( 'Tornevall_WP_DNSBL\Tornevall_SimpleSoap' ) ) {
 		/**
 		 * Class MODULE_CURL
 		 * @package TorneLIB
@@ -6808,10 +6860,10 @@ if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'TorneLIB\MODULE_SOAP' )
 	}
 }
 if ( ! defined( 'TORNELIB_IO_RELEASE' ) ) {
-	define( 'TORNELIB_IO_RELEASE', '6.0.8' );
+	define( 'TORNELIB_IO_RELEASE', '6.0.9' );
 }
 if ( ! defined( 'TORNELIB_IO_MODIFY' ) ) {
-	define( 'TORNELIB_IO_MODIFY', '20180424' );
+	define( 'TORNELIB_IO_MODIFY', '20180426' );
 }
 if ( ! defined( 'TORNELIB_IO_CLIENTNAME' ) ) {
 	define( 'TORNELIB_IO_CLIENTNAME', 'MODULE_IO' );
@@ -6823,10 +6875,12 @@ if ( defined( 'TORNELIB_IO_REQUIRE' ) ) {
 	}
 	define( 'TORNELIB_IO_ALLOW_AUTOLOAD', version_compare( TORNELIB_IO_RELEASE, TORNELIB_IO_REQUIRE, TORNELIB_IO_REQUIRE_OPERATOR ) ? true : false );
 } else {
-	define( 'TORNELIB_IO_ALLOW_AUTOLOAD', true );
+	if ( ! defined( 'TORNELIB_IO_ALLOW_AUTOLOAD' ) ) {
+		define( 'TORNELIB_IO_ALLOW_AUTOLOAD', true );
+	}
 }
 
-if ( ! class_exists( 'MODULE_IO' ) && ! class_exists( 'TorneLIB\MODULE_IO' ) && defined( 'TORNELIB_IO_ALLOW_AUTOLOAD' ) && TORNELIB_IO_ALLOW_AUTOLOAD === true ) {
+if ( ! class_exists( 'MODULE_IO' ) && ! class_exists( 'Resursbank\RBEcomPHP\MODULE_IO' ) && defined( 'TORNELIB_IO_ALLOW_AUTOLOAD' ) && TORNELIB_IO_ALLOW_AUTOLOAD === true ) {
 
 	/**
 	 * Class MODULE_IO
@@ -6848,6 +6902,8 @@ if ( ! class_exists( 'MODULE_IO' ) && ! class_exists( 'TorneLIB\MODULE_IO' ) && 
 		/** @var bool $SOAP_ATTRIBUTES_ENABLED */
 		private $SOAP_ATTRIBUTES_ENABLED = false;
 
+		/** @var int $XML_TRANSLATE_ENTITY_RERUN */
+		private $XML_TRANSLATE_ENTITY_RERUN = 0;
 
 		public function __construct() {
 		}
@@ -7306,8 +7362,30 @@ if ( ! class_exists( 'MODULE_IO' ) && ! class_exists( 'TorneLIB\MODULE_IO' ) && 
 		 * @since 6.0.5
 		 */
 		public function getFromXml( $dataIn = '', $normalize = false ) {
+			$dataIn = trim( $dataIn );
+
+			if ( preg_match( "/&\b(.*?)+;(.*)/is", $dataIn ) ) {
+				$dataEntity = trim( html_entity_decode( $dataIn ) );
+				if ( preg_match( "/^\</", $dataEntity ) ) {
+
+					return $this->getFromXml( $dataEntity, $normalize );
+				}
+
+				if ( $this->XML_TRANSLATE_ENTITY_RERUN >= 0 ) {
+					// Fail on too many loops
+					$this->XML_TRANSLATE_ENTITY_RERUN ++;
+					if ( $this->XML_TRANSLATE_ENTITY_RERUN >= 2 ) {
+						return null;
+					}
+
+					return $this->getFromXml( $dataEntity, $normalize );
+				}
+
+				return null;
+			}
+
 			if ( $this->getXmlUnSerializer() && $this->getHasXmlSerializer() ) {
-				if ( is_string( $dataIn ) ) {
+				if ( is_string( $dataIn ) && preg_match( "/\<(.*?)\>/s", $dataIn ) ) {
 					require_once( 'XML/Unserializer.php' );
 					$xmlSerializer = new \XML_Unserializer();
 					$xmlSerializer->unserialize( $dataIn );
@@ -7320,7 +7398,7 @@ if ( ! class_exists( 'MODULE_IO' ) && ! class_exists( 'TorneLIB\MODULE_IO' ) && 
 				}
 			} else {
 				if ( class_exists( 'SimpleXMLElement' ) ) {
-					if ( is_string( $dataIn ) ) {
+					if ( is_string( $dataIn ) && preg_match( "/\<(.*?)\>/s", $dataIn ) ) {
 						if ( $this->ENFORCE_CDATA ) {
 							$simpleXML = new \SimpleXMLElement( $dataIn, LIBXML_NOCDATA );
 						} else {
@@ -7424,7 +7502,7 @@ if ( ! class_exists( 'MODULE_IO' ) && ! class_exists( 'TorneLIB\MODULE_IO' ) && 
 	}
 }
 
-if ( ! class_exists( 'TorneLIB_IO' ) && ! class_exists( 'TorneLIB\TorneLIB_IO' ) ) {
+if ( ! class_exists( 'TorneLIB_IO' ) && ! class_exists( 'Resursbank\RBEcomPHP\TorneLIB_IO' ) ) {
 	class TorneLIB_IO extends MODULE_IO {
 	}
 }
