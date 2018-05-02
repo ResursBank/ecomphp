@@ -1171,7 +1171,11 @@ if ( ! class_exists( 'MODULE_SSL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MOD
 			// Common ssl checkers (if they fail, there is a sslDriverError to recall
 
 			$sslDriverError = array();
-			if ( ! in_array( 'https', @stream_get_wrappers() ) ) {
+			$streamWrappers = @stream_get_wrappers();
+			if ( ! is_array( $streamWrappers ) ) {
+				$streamWrappers = array();
+			}
+			if ( ! in_array( 'https', array_map( "strtolower", $streamWrappers ) ) ) {
 				$sslDriverError[] = "SSL Failure: HTTPS wrapper can not be found";
 			}
 			if ( ! extension_loaded( 'openssl' ) ) {
@@ -5901,7 +5905,11 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 					return $this->executeHttpSoap( $url, $postData, $CurlMethod );
 				}
 
-				throw new \Exception( NETCURL_CURL_CLIENTNAME . " exception from soapClient: [" . $getSoapResponseException->getCode() . "] " . $getSoapResponseException->getMessage(), $getSoapResponseException->getCode() );
+				switch ( $getSoapResponseException->getCode() ) {
+					default:
+						throw new \Exception( NETCURL_CURL_CLIENTNAME . " exception from SoapClient: [" . $getSoapResponseException->getCode() . "] " . $getSoapResponseException->getMessage(), $getSoapResponseException->getCode() );
+				}
+
 			}
 
 			return $getSoapResponse;
@@ -6449,7 +6457,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 	}
 }
 
-if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'Tornevall_WP_DNSBL\MODULE_SOAP' ) ) {
+if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'Resursbank\RBEcomPHP\MODULE_SOAP' ) ) {
 
 	if ( ! defined( 'NETCURL_SIMPLESOAP_RELEASE' ) ) {
 		define( 'NETCURL_SIMPLESOAP_RELEASE', '6.0.6' );
@@ -6617,7 +6625,7 @@ if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'Tornevall_WP_DNSBL\MODU
 					if ( ! $soapCode ) {
 						$soapCode = 500;
 					}
-					$throwErrorMessage = NETCURL_CURL_CLIENTNAME . " exception from soapClient: " . $soapException->getMessage();
+					$throwErrorMessage = NETCURL_CURL_CLIENTNAME . " (internal/simplesoap) exception from SoapClient: " . $soapException->getMessage();
 					$throwErrorCode    = $soapCode;
 					$throwBackCurrent  = $soapException;
 					//$throwPrevious     = $soapException->getPrevious();
@@ -6648,7 +6656,7 @@ if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'Tornevall_WP_DNSBL\MODU
 								preg_match_all( "/! (http\/\d+\.\d+ \d+ (.*?))\n/is", $throwErrorMessage, $outInfo );
 								if ( isset( $outInfo[1] ) && isset( $outInfo[1][0] ) && preg_match( "/^HTTP\//", $outInfo[1][0] ) ) {
 									$httpError      = $outInfo[1][0];
-									$httpSplitError = explode( " ", $httpError );
+									$httpSplitError = explode( " ", $httpError, 3 );
 									if ( isset( $httpSplitError[1] ) && intval( $httpSplitError[1] ) > 0 ) {
 										$throwErrorCode = $httpSplitError[1];
 										if ( isset( $httpSplitError[2] ) && is_string( $httpSplitError[2] ) && ! empty( $httpSplitError[2] ) ) {
@@ -6847,7 +6855,7 @@ if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'Tornevall_WP_DNSBL\MODU
 		}
 	}
 
-	if ( ! class_exists( 'Tornevall_SimpleSoap' ) && ! class_exists( 'Tornevall_WP_DNSBL\Tornevall_SimpleSoap' ) ) {
+	if ( ! class_exists( 'Tornevall_SimpleSoap' ) && ! class_exists( 'Resursbank\RBEcomPHP\Tornevall_SimpleSoap' ) ) {
 		/**
 		 * Class MODULE_CURL
 		 * @package TorneLIB
