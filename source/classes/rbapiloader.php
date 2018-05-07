@@ -5691,7 +5691,7 @@ class ResursBank {
 			}
 		}
 
-		$eventReturns = $this->event( 'ecom_add_payload', $this->Payload );
+		$eventReturns = $this->event( 'update_payload', $this->Payload );
 		if ( ! is_null( $eventReturns ) ) {
 			$this->Payload = $eventReturns;
 		}
