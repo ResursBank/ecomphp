@@ -378,7 +378,7 @@ class resursBankTest extends TestCase {
 
 			return;
 		}
-		ecom_event_register('ecom_add_payload', 'ecom_inject_payload');
+		ecom_event_register('update_payload', 'ecom_inject_payload');
 		$customerData = $this->getHappyCustomerData();
 		$errorCode = 0;
 		$this->TEST->ECOM->addOrderLine( "Product-1337", "One simple orderline", 800, 25 );
