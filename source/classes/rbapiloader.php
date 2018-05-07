@@ -7,7 +7,7 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.0
- * @version 1.0.35
+ * @version 1.0.36
  * @deprecated Maintenance version only - Use composer based package v1.3 or higher if possible
  * @link https://test.resurs.com/docs/x/BACt Migration from 1.0/1.1 to 1.3 documentation
  * @link https://test.resurs.com/docs/x/TYNM Get started with EComPHP
@@ -24,8 +24,11 @@ require_once( RB_API_PATH . '/thirdparty/network.php' );
 require_once( RB_API_PATH . '/thirdparty/crypto.php' );
 require_once( RB_API_PATH . '/rbapiloader/ResursTypeClasses.php' );
 require_once( RB_API_PATH . '/rbapiloader/ResursException.php' );
-if ( file_exists( RB_API_PATH . "/../../vendor/autoload.php" ) ) {
+if ( file_exists( RB_API_PATH . '/../../vendor/autoload.php' ) ) {
 	require_once( RB_API_PATH . '/../../vendor/autoload.php' );
+}
+if ( file_exists( RB_API_PATH . '/ecomhooks.php' ) ) {
+	require_once( RB_API_PATH . '/ecomhooks.php' );
 }
 
 use Resursbank\RBEcomPHP\CURL_POST_AS;
@@ -38,7 +41,7 @@ use Resursbank\RBEcomPHP\TorneLIB_NetBits;
  *  Global
  */
 define('ECOMPHP_VERSION', '1.0.36');
-define('ECOMPHP_MODIFY_DATE', '20180425');
+define('ECOMPHP_MODIFY_DATE', '20180507');
 
 /**
  * Class ResursBank Primary class for EComPHP
@@ -840,6 +843,25 @@ class ResursBank {
 	}
 
 	/**
+	 * @param $eventName
+	 *
+	 * @return mixed|null
+	 * @since 1.0.36
+	 * @since 1.1.36
+	 * @since 1.3.9
+	 */
+	private function event($eventName) {
+		$args = func_get_args();
+		$value = null;
+
+		if (function_exists('ecom_event_run')) {
+			$value = ecom_event_run($eventName, $args);
+		}
+
+		return $value;
+	}
+
+	/**
 	 * Push variable into customer session
 	 *
 	 * @param string $key
@@ -909,7 +931,12 @@ class ResursBank {
 	 * @throws \Exception
 	 */
 	private function testWrappers() {
-		if ( ! in_array( 'https', @stream_get_wrappers() ) ) {
+		// suddenly, in some system, this data returns null without any reason
+		$streamWrappers = @stream_get_wrappers();
+		if ( ! is_array( $streamWrappers ) ) {
+			$streamWrappers = array();
+		}
+		if ( ! in_array( 'https', array_map( "strtolower", $streamWrappers ) ) ) {
 			throw new \Exception( __FUNCTION__ . ": HTTPS wrapper can not be found", \RESURS_EXCEPTIONS::SSL_WRAPPER_MISSING );
 		}
 	}
@@ -5505,6 +5532,11 @@ class ResursBank {
 		$this->InitializeServices();
 		$this->handlePayload( $payload );
 
+		$updateStoreIdEvent = $this->event( 'update_store_id', 'test1', 'test2' );
+		if ( ! is_null( $updateStoreIdEvent ) ) {
+			$this->setStoreId( $updateStoreIdEvent );
+		}
+
 		if ( empty( $this->defaultUnitMeasure ) ) {
 			$this->setDefaultUnitMeasure();
 		}
@@ -5548,6 +5580,7 @@ class ResursBank {
 			$paymentDataPayload['paymentData']['paymentMethodId']   = $payment_id_or_method;
 			$paymentDataPayload['paymentData']['preferredId']       = $this->getPreferredPaymentId();
 			$paymentDataPayload['paymentData']['customerIpAddress'] = $this->getCustomerIp();
+
 			if ( $this->enforceService === RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW ) {
 				if ( ! isset( $this->Payload['storeId'] ) && ! empty( $this->storeId ) ) {
 					$this->Payload['storeId'] = $this->storeId;
@@ -5567,7 +5600,7 @@ class ResursBank {
 					unset( $this->Payload['paymentData']['finalizeIfBooked'] );
 				}
 			}
-			$this->handlePayload( $paymentDataPayload );
+			$this->handlePayload( $paymentDataPayload, true );
 		}
 		if ( ( $this->enforceService == RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT || $this->enforceService == RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW ) ) {
 			// Convert signing to checkouturls if exists (not receommended as failurl might not always be the backurl)
@@ -5625,6 +5658,11 @@ class ResursBank {
 			if ( isset( $this->PaymentMethod->specificType ) ) {
 				$this->validateCardData( $this->PaymentMethod->specificType );
 			}
+		}
+
+		$eventReturns = $this->event( 'ecom_add_payload', $this->Payload );
+		if ( ! is_null( $eventReturns ) ) {
+			$this->Payload = $eventReturns;
 		}
 	}
 
@@ -6148,23 +6186,24 @@ class ResursBank {
 	 * Compile user defined payload with payload that may have been pre-set by other calls
 	 *
 	 * @param array $userDefinedPayload
-	 *
+	 * @param bool $replacePayload Allow replacements of old payload data
 	 * @throws \Exception
-	 *
 	 * @since 1.0.2
 	 * @since 1.1.2
 	 */
-	private function handlePayload( $userDefinedPayload = array() ) {
+	private function handlePayload( $userDefinedPayload = array(), $replacePayload = false ) {
 		$myFlow = $this->getPreferredPaymentFlowService();
 		if ( is_array( $userDefinedPayload ) && count( $userDefinedPayload ) ) {
 			foreach ( $userDefinedPayload as $payloadKey => $payloadContent ) {
-				if ( ! isset( $this->Payload[ $payloadKey ] ) ) {
+				if ( ! isset( $this->Payload[ $payloadKey ] ) && ! $replacePayload ) {
 					$this->Payload[ $payloadKey ] = $payloadContent;
 				} else {
 					// If the payloadkey already exists, there might be something that wants to share information.
 					// In this case, append more data to the children
 					foreach ( $userDefinedPayload[ $payloadKey ] as $subKey => $subValue ) {
 						if ( ! isset( $this->Payload[ $payloadKey ][ $subKey ] ) ) {
+							$this->Payload[ $payloadKey ][ $subKey ] = $subValue;
+						} else if ($replacePayload) {
 							$this->Payload[ $payloadKey ][ $subKey ] = $subValue;
 						}
 					}
