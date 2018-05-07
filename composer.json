@@ -17,6 +17,7 @@
   ],
   "autoload": {
     "files": [
+      "source/classes/ecomhooks.php",
       "source/classes/rbapiloader.php"
     ],
     "psr-4": {
