@@ -3713,7 +3713,7 @@ class ResursBank {
 		$this->InitializeServices();
 		$this->handlePayload( $payload );
 
-		$updateStoreIdEvent = $this->event( 'update_store_id', 'test1', 'test2' );
+		$updateStoreIdEvent = $this->event( 'update_store_id');
 		if ( ! is_null( $updateStoreIdEvent ) ) {
 			$this->setStoreId( $updateStoreIdEvent );
 		}
