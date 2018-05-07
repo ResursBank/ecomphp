@@ -855,7 +855,7 @@ class ResursBank {
 		}
 
 		if ( ! empty( $flagKey ) ) {
-			// CURL bypass
+			// CURL passthrough
 			$this->CURL->setFlag( $flagKey, $flagValue );
 			$this->internalFlags[ $flagKey ] = $flagValue;
 
