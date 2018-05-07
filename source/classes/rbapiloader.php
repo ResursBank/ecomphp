@@ -16,9 +16,7 @@
 
 namespace Resursbank\RBEcomPHP;
 
-/**
- * Location of RBEcomPHP class files.
- */
+// Location of RBEcomPHP class files (if they are loaded from somewhere else than default)
 if ( ! defined( 'RB_API_PATH' ) ) {
 	define( 'RB_API_PATH', __DIR__ );
 }
@@ -41,11 +39,13 @@ use Resursbank\RBEcomPHP\TorneLIB_NetBits;
 use Resursbank\RBEcomPHP\TorneLIB_IO;
 use Resursbank\RBEcomPHP\MODULE_IO;
 
-/*
- *  Global
- */
-define('ECOMPHP_VERSION', '1.1.36');
-define('ECOMPHP_MODIFY_DATE', '20180507');
+// Globals starts here
+if ( ! defined( 'ECOMPHP_VERSION' ) ) {
+	define( 'ECOMPHP_VERSION', '1.1.36' );
+}
+if ( ! defined( 'ECOMPHP_MODIFY_DATE' ) ) {
+	define( 'ECOMPHP_MODIFY_DATE', '20180507' );
+}
 
 /**
  * Class ResursBank
