@@ -37,7 +37,7 @@ if ( ! defined( 'ECOMPHP_VERSION' ) ) {
 	define( 'ECOMPHP_VERSION', '1.3.9' );
 }
 if ( ! defined( 'ECOMPHP_MODIFY_DATE' ) ) {
-	define( 'ECOMPHP_MODIFY_DATE', '20180425' );
+	define( 'ECOMPHP_MODIFY_DATE', '20180507' );
 }
 
 /**
@@ -409,6 +409,25 @@ class ResursBank {
 	}
 
 	/**
+	 * @param $eventName
+	 *
+	 * @return mixed|null
+	 * @since 1.0.36
+	 * @since 1.1.36
+	 * @since 1.3.9
+	 */
+	private function event($eventName) {
+		$args = func_get_args();
+		$value = null;
+
+		if (function_exists('ecom_event_run')) {
+			$value = ecom_event_run($eventName, $args);
+		}
+
+		return $value;
+	}
+
+	/**
 	 * Session usage
 	 * @return bool
 	 * @since 1.0.29
@@ -504,7 +523,12 @@ class ResursBank {
 	 * @throws \Exception
 	 */
 	private function testWrappers() {
-		if ( ! in_array( 'https', @stream_get_wrappers() ) ) {
+		// suddenly, in some system, this data returns null without any reason
+		$streamWrappers = @stream_get_wrappers();
+		if ( ! is_array( $streamWrappers ) ) {
+			$streamWrappers = array();
+		}
+		if ( ! in_array( 'https', array_map( "strtolower", $streamWrappers ) ) ) {
 			throw new \Exception( __FUNCTION__ . ": HTTPS wrapper can not be found", \RESURS_EXCEPTIONS::SSL_WRAPPER_MISSING );
 		}
 	}
@@ -521,10 +545,15 @@ class ResursBank {
 	 * @since 1.0.1
 	 * @since 1.1.1
 	 */
-	private function InitializeServices($reInitializeCurl = true) {
+	private function InitializeServices( $reInitializeCurl = true ) {
 
+		$inheritExtendedSoapWarnings = false;
 		if ( is_null( $this->CURL ) ) {
 			$reInitializeCurl = true;
+		} else {
+			if ($this->CURL->hasFlag('SOAPWARNINGS_EXTEND')) {
+				$inheritExtendedSoapWarnings = $this->CURL->getFlag('SOAPWARNINGS_EXTEND');
+			}
 		}
 		if ( ! $reInitializeCurl ) {
 			return;
@@ -541,7 +570,10 @@ class ResursBank {
 		if ( class_exists( '\Resursbank\RBEcomPHP\Tornevall_cURL' ) || class_exists( '\TorneLIB\Tornevall_cURL' ) ) {
 			$this->CURL = new Tornevall_cURL();
 			$this->CURL->setChain( false );
-			$this->CURL->setFlag('SOAPCHAIN', false);
+			if ($inheritExtendedSoapWarnings) {
+				$this->CURL->setFlag('SOAPWARNINGS_EXTEND', true);
+			}
+			$this->CURL->setFlag( 'SOAPCHAIN', false );
 			$this->CURL->setStoreSessionExceptions( true );
 			$this->CURL->setAuthentication( $this->soapOptions['login'], $this->soapOptions['password'] );
 			$this->CURL->setUserAgent( $this->myUserAgent );
@@ -585,6 +617,18 @@ class ResursBank {
 		$this->curlStats['debug'] = $this->debug;
 
 		return $this->curlStats;
+	}
+
+	/**
+	 * Get curl mode version without the debugging requirement
+	 * @param bool $fullRelease
+	 *
+	 * @return string
+	 */
+	public function getCurlVersion( $fullRelease = false ) {
+		if ( ! is_null( $this->CURL ) ) {
+			return $this->CURL->getVersion( $fullRelease );
+		}
 	}
 
 	/**
@@ -803,11 +847,16 @@ class ResursBank {
 	 * @since 1.2.0
 	 */
 	public function setFlag( $flagKey = '', $flagValue = null ) {
+		if ( is_null( $this->CURL ) ) {
+			$this->InitializeServices();
+		}
 		if ( is_null( $flagValue ) ) {
 			$flagValue = true;
 		}
 
 		if ( ! empty( $flagKey ) ) {
+			// CURL bypass
+			$this->CURL->setFlag( $flagKey, $flagValue );
 			$this->internalFlags[ $flagKey ] = $flagValue;
 
 			return true;
@@ -1446,7 +1495,7 @@ class ResursBank {
 			return true;
 		}
 
-		throw new \Exception("Could not register callback", $code);
+		throw new \Exception("setRegisterCallbackException ($code): Could not register callback event " . $renderCallback['eventType'] . ' (service: '.$registerBy.')', $code);
 	}
 
 	/**
@@ -3664,6 +3713,11 @@ class ResursBank {
 		$this->InitializeServices();
 		$this->handlePayload( $payload );
 
+		$updateStoreIdEvent = $this->event( 'update_store_id');
+		if ( ! is_null( $updateStoreIdEvent ) ) {
+			$this->setStoreId( $updateStoreIdEvent );
+		}
+
 		if ( empty( $this->defaultUnitMeasure ) ) {
 			$this->setDefaultUnitMeasure();
 		}
@@ -3707,6 +3761,7 @@ class ResursBank {
 			$paymentDataPayload['paymentData']['paymentMethodId']   = $payment_id_or_method;
 			$paymentDataPayload['paymentData']['preferredId']       = $this->getPreferredPaymentId();
 			$paymentDataPayload['paymentData']['customerIpAddress'] = $this->getCustomerIp();
+
 			if ( $this->enforceService === RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW ) {
 				if ( ! isset( $this->Payload['storeId'] ) && ! empty( $this->storeId ) ) {
 					$this->Payload['storeId'] = $this->storeId;
@@ -3726,7 +3781,7 @@ class ResursBank {
 					unset( $this->Payload['paymentData']['finalizeIfBooked'] );
 				}
 			}
-			$this->handlePayload( $paymentDataPayload );
+			$this->handlePayload( $paymentDataPayload, true );
 		}
 		if ( ( $this->enforceService == RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT || $this->enforceService == RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW ) ) {
 			// Convert signing to checkouturls if exists (not receommended as failurl might not always be the backurl)
@@ -3784,6 +3839,11 @@ class ResursBank {
 			if ( isset( $this->PaymentMethod->specificType ) ) {
 				$this->validateCardData( $this->PaymentMethod->specificType );
 			}
+		}
+
+		$eventReturns = $this->event( 'update_payload', $this->Payload );
+		if ( ! is_null( $eventReturns ) ) {
+			$this->Payload = $eventReturns;
 		}
 	}
 
@@ -4307,23 +4367,24 @@ class ResursBank {
 	 * Compile user defined payload with payload that may have been pre-set by other calls
 	 *
 	 * @param array $userDefinedPayload
-	 *
+	 * @param bool $replacePayload Allow replacements of old payload data
 	 * @throws \Exception
-	 *
 	 * @since 1.0.2
 	 * @since 1.1.2
 	 */
-	private function handlePayload( $userDefinedPayload = array() ) {
+	private function handlePayload( $userDefinedPayload = array(), $replacePayload = false ) {
 		$myFlow = $this->getPreferredPaymentFlowService();
 		if ( is_array( $userDefinedPayload ) && count( $userDefinedPayload ) ) {
 			foreach ( $userDefinedPayload as $payloadKey => $payloadContent ) {
-				if ( ! isset( $this->Payload[ $payloadKey ] ) ) {
+				if ( ! isset( $this->Payload[ $payloadKey ] ) && ! $replacePayload ) {
 					$this->Payload[ $payloadKey ] = $payloadContent;
 				} else {
 					// If the payloadkey already exists, there might be something that wants to share information.
 					// In this case, append more data to the children
 					foreach ( $userDefinedPayload[ $payloadKey ] as $subKey => $subValue ) {
 						if ( ! isset( $this->Payload[ $payloadKey ][ $subKey ] ) ) {
+							$this->Payload[ $payloadKey ][ $subKey ] = $subValue;
+						} else if ($replacePayload) {
 							$this->Payload[ $payloadKey ][ $subKey ] = $subValue;
 						}
 					}
