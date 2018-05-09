@@ -11,10 +11,10 @@
  *
  */
 
-if (file_exists(__DIR__ . "/../vendor/autoload.php")) {
-	require_once(__DIR__ . '/../vendor/autoload.php');
+if ( file_exists( __DIR__ . "/../vendor/autoload.php" ) ) {
+	require_once( __DIR__ . '/../vendor/autoload.php' );
 } else {
-	require_once('../source/classes/rbapiloader.php');
+	require_once( '../source/classes/rbapiloader.php' );
 }
 
 use PHPUnit\Framework\TestCase;
@@ -24,6 +24,7 @@ use \Resursbank\RBEcomPHP\RESURS_PAYMENT_STATUS_RETURNCODES;
 use \Resursbank\RBEcomPHP\RESURS_FLOW_TYPES;
 use \Resursbank\RBEcomPHP\RESURS_CALLBACK_REACHABILITY;
 use \Resursbank\RBEcomPHP\RESURS_AFTERSHOP_RENDER_TYPES;
+use \Resursbank\RBEcomPHP\RESURS_ENVIRONMENTS;
 
 // Split library section - Set up the correct curl- and network pointers here depending on release version
 use \TorneLIB\Tornevall_cURL;
@@ -32,23 +33,22 @@ use \TorneLIB\TorneLIB_Network;
 ///// ADD ALWAYS SECTION
 
 // Automatically set to test the pushCustomerUserAgent
-if (!isset($_SERVER['HTTP_USER_AGENT'])) {
+if ( ! isset( $_SERVER['HTTP_USER_AGENT'] ) ) {
 	$_SERVER['HTTP_USER_AGENT'] = "EComPHP/Test-InternalClient";
 }
-ini_set('memory_limit', -1);
+ini_set( 'memory_limit', - 1 );
 
-if (file_exists("/etc/ecomphp.json")) {
-	$ecomExt = @json_decode(@file_get_contents("/etc/ecomphp.json"));
-	if (isset($ecomExt->skip)) {
-		define('SKIP_TEST', $ecomExt->skip);
+if ( file_exists( "/etc/ecomphp.json" ) ) {
+	$ecomExt = @json_decode( @file_get_contents( "/etc/ecomphp.json" ) );
+	if ( isset( $ecomExt->skip ) ) {
+		define( 'SKIP_TEST', $ecomExt->skip );
 	}
 }
 
 /**
- * Class ResursBankTest: Primary test client
+ * Class resursBankTest: Primary test client
  */
-class ResursBankTest extends TestCase
-{
+class ResursBankTest extends TestCase {
 	/**
 	 * Resurs Bank API Gateway, PHPUnit Test Client
 	 *
@@ -58,14 +58,17 @@ class ResursBankTest extends TestCase
 	public function setUp() {
 		$this->globalInitialize();
 	}
-	public function tearDown() {}
 
-	private function isSkip($skipKey = '') {
-		if (defined('SKIP_TEST')) {
-			if (!empty($skipKey) && in_array($skipKey, SKIP_TEST)) {
+	public function tearDown() {
+	}
+
+	private function isSkip( $skipKey = '' ) {
+		if ( defined( 'SKIP_TEST' ) ) {
+			if ( ! empty( $skipKey ) && in_array( $skipKey, SKIP_TEST ) ) {
 				return true;
 			}
 		}
+
 		return false;
 	}
 
@@ -76,8 +79,9 @@ class ResursBankTest extends TestCase
 	private function globalInitialize() {
 		$this->setupConfig();
 
-		$this->CURL    = new Tornevall_cURL();
-		$this->CURL->setChain(false);   // Unchain the module for backward
+		$this->CURL = new Tornevall_cURL();
+		$this->CURL->setFlag( "SOAPCHAIN", true );
+		$this->CURL->setChain( false );   // Unchain the module for backward
 
 		$this->NETWORK = new TorneLIB_Network();
 		if ( version_compare( PHP_VERSION, '5.3.0', "<" ) ) {
@@ -87,22 +91,23 @@ class ResursBankTest extends TestCase
 		}
 		register_shutdown_function( array( $this, 'shutdownSuite' ) );
 		/* Set up default government id for bookings */
-		$this->testGovId       = $this->govIdNatural;
+		$this->testGovId = $this->govIdNatural;
 
 		/*
 		 * If HTTP_HOST is not set, Resurs Checkout will not run properly, since the iFrame requires a valid internet connection (actually browser vs http server).
 		 */
-		if (!isset($_SERVER['HTTP_HOST'])) {
+		if ( ! isset( $_SERVER['HTTP_HOST'] ) ) {
 			$_SERVER['HTTP_HOST'] = "localhost";
 		}
 		if ( empty( $overrideUsername ) ) {
 			$this->rb = new ResursBank( $this->username, $this->password );
 		} else {
 			//$this->rb = new ResursBank( $overrideUsername, $overridePassword );
-			throw new \Exception("User- and pass overriders are deprecated", 500);
+			throw new \Exception( "User- and pass overriders are deprecated", 500 );
 		}
-		$this->rb->setPushCustomerUserAgent(true);
-		$this->rb->setUserAgent("EComPHP/TestSuite");
+		$this->rb->setSoapChain();
+		$this->rb->setPushCustomerUserAgent( true );
+		$this->rb->setUserAgent( "EComPHP/TestSuite" );
 		$this->rb->setDebug();
 	}
 
@@ -117,7 +122,7 @@ class ResursBankTest extends TestCase
 	 * @deprecated 1.1.12
 	 */
 	private $paymentMethodCount = array(
-		'mock'    => 5
+		'mock' => 5
 	);
 	private $paymentIdAuthed = "20170519125223-9587503794";
 	private $paymentIdAuthAnnulled = "20170519125725-8589567180";
@@ -305,7 +310,7 @@ class ResursBankTest extends TestCase
 	 * @throws Exception
 	 */
 	private function doBookPayment( $setMethod = '', $bookSuccess = true, $forceSigning = false, $signSuccess = true, $country = 'SE', $ownSpecline = array() ) {
-		$paymentServiceSet = $this->rb->getPreferredPaymentFlowService();
+		$paymentServiceSet  = $this->rb->getPreferredPaymentFlowService();
 		$useMethodList      = $this->availableMethods;
 		$useGovIdLegalCivic = $this->govIdLegalCivic;
 		$useGovId           = $this->testGovId;
@@ -313,7 +318,7 @@ class ResursBankTest extends TestCase
 		$bookStatus         = null;
 
 		if ( ! count( $this->availableMethods ) || empty( $this->username ) ) {
-			$this->markTestSkipped('No payment methods are available');
+			static::markTestSkipped( 'No payment methods are available' );
 		}
 		if ( $this->zeroSpecLine ) {
 			if ( ! $this->zeroSpecLineZeroTax ) {
@@ -389,13 +394,13 @@ class ResursBankTest extends TestCase
 
 		if ( $bookStatus == "SIGNING" ) {
 			/* Pick up the signing url */
-			$signUrl         = $res->signingUrl;
+			$signUrl = $res->signingUrl;
 			// Authentication is different to signing
-			if (preg_match("/authenticate/i", $signUrl)) {
-				$authenticate = $signUrl . "&govId=" . $useGovId;
-				$authenticate = preg_replace("/authenticate/i", 'doAuth', $authenticate);
-				$authenticateRequest = $this->CURL->doGet($authenticate);
-				$getSuccessContent = $this->CURL->getParsedResponse($authenticateRequest);
+			if ( preg_match( "/authenticate/i", $signUrl ) ) {
+				$authenticate        = $signUrl . "&govId=" . $useGovId;
+				$authenticate        = preg_replace( "/authenticate/i", 'doAuth', $authenticate );
+				$authenticateRequest = $this->CURL->doGet( $authenticate );
+				$getSuccessContent   = $this->CURL->getParsedResponse( $authenticateRequest );
 			} else {
 				$getSigningPage  = file_get_contents( $signUrl );
 				$NETWORK         = new TorneLIB_Network();
@@ -431,7 +436,7 @@ class ResursBankTest extends TestCase
 					}
 				}
 			} else {
-				$this->markTestSkipped( "\$getSuccessContent does not contain any success-object." );
+				static::markTestSkipped( "\$getSuccessContent does not contain any success-object." );
 
 				return false;
 			}
@@ -506,14 +511,14 @@ class ResursBankTest extends TestCase
 	 */
 	public function testGetEnvironment() {
 		if ( $this->ignoreDefaultTests ) {
-			$this->markTestSkipped();
+			static::markTestSkipped();
 		}
 
 		try {
 			$paymentMethods = $this->rb->getPaymentMethods();
 		} catch ( \Exception $e ) {
 		}
-		$this->assertTrue(count( $paymentMethods ) > 0);
+		static::assertTrue( count( $paymentMethods ) > 0 );
 	}
 
 	/**
@@ -521,24 +526,25 @@ class ResursBankTest extends TestCase
 	 */
 	public function testGetPaymentMethods() {
 		if ( $this->ignoreDefaultTests ) {
-			$this->markTestSkipped();
+			static::markTestSkipped();
 		}
 		$paymentMethods = $this->rb->getPaymentMethods();
-		$this->assertTrue( count( $paymentMethods ) > 0 );
+		static::assertTrue( count( $paymentMethods ) > 0 );
 	}
+
 	public function testGetPaymentMethodsFail() {
 		$paymentMethods = array();
 		if ( $this->ignoreDefaultTests ) {
-			$this->markTestSkipped();
+			static::markTestSkipped();
 		}
-		$fail = new ResursBank("fail", "fail");
+		$fail = new ResursBank( "fail", "fail" );
 		try {
 			$paymentMethods = $fail->getPaymentMethods();
-		} catch (\Exception $e) {
+		} catch ( \Exception $e ) {
 			$prevErr = $e->getPrevious();
-			print_R($prevErr);
+			print_R( $prevErr );
 		}
-		$this->assertFalse( count( $paymentMethods ) > 0 );
+		static::assertFalse( count( $paymentMethods ) > 0 );
 	}
 
 	/**
@@ -546,10 +552,10 @@ class ResursBankTest extends TestCase
 	 */
 	public function testGetPaymentMethodsAll() {
 		if ( $this->ignoreDefaultTests ) {
-			$this->markTestSkipped();
+			static::markTestSkipped();
 		}
 		$paymentMethods = $this->rb->getPaymentMethods();
-		$this->assertTrue( count( $paymentMethods ) === $this->paymentMethodCount[ $this->environmentName ] );
+		static::assertTrue( count( $paymentMethods ) === $this->paymentMethodCount[ $this->environmentName ] );
 	}
 
 
@@ -557,16 +563,16 @@ class ResursBankTest extends TestCase
 	public function testInvoiceSequenceReset() {
 		$this->rb->resetInvoiceNumber();
 		$currentInvoiceNumber = $this->rb->getNextInvoiceNumber();
-		$this->assertTrue($currentInvoiceNumber == 1);
+		static::assertTrue( $currentInvoiceNumber == 1 );
 		// Restore invoice sequence to the latest correct so new tests can be initated without problems.
-		$this->rb->getNextInvoiceNumberByDebits(5);
+		$this->rb->getNextInvoiceNumberByDebits( 5 );
 	}
 
 	// testInvoiceSequenceAndFinalize: Function to test invoice sequence and the finalization is no longer necessary as the functions are self healing
 
 	function testInvoiceSequenceFindByFind() {
-		$lastInvoiceNumber = $this->rb->getNextInvoiceNumberByDebits(5);
-		$this->assertTrue($lastInvoiceNumber > 0);
+		$lastInvoiceNumber = $this->rb->getNextInvoiceNumberByDebits( 5 );
+		static::assertTrue( $lastInvoiceNumber > 0 );
 	}
 
 
@@ -575,26 +581,26 @@ class ResursBankTest extends TestCase
 	 */
 	public function testGetAddressNatural() {
 		if ( $this->ignoreDefaultTests ) {
-			$this->markTestSkipped();
+			static::markTestSkipped();
 		}
 		$getAddressData = array();
 		try {
 			$getAddressData = $this->rb->getAddress( $this->govIdNatural, 'NATURAL', '127.0.0.1' );
 		} catch ( \Exception $e ) {
 		}
-		$this->assertTrue( ! empty( $getAddressData->fullName ) );
+		static::assertTrue( ! empty( $getAddressData->fullName ) );
 	}
 
 	public function testGetAddressMockIP() {
 		if ( $this->ignoreDefaultTests ) {
-			$this->markTestSkipped();
+			static::markTestSkipped();
 		}
 		$getAddressData = array();
 		try {
 			$getAddressData = $this->rb->getAddress( $this->govIdNatural, 'NATURAL', 'blablabla' );
 		} catch ( \Exception $e ) {
 		}
-		$this->assertTrue( ! empty( $getAddressData->fullName ) );
+		static::assertTrue( ! empty( $getAddressData->fullName ) );
 	}
 
 	/**
@@ -602,14 +608,14 @@ class ResursBankTest extends TestCase
 	 */
 	public function testGetAddressLegalCivic() {
 		if ( $this->ignoreDefaultTests ) {
-			$this->markTestSkipped();
+			static::markTestSkipped();
 		}
 		$getAddressData = array();
 		try {
 			$getAddressData = $this->rb->getAddress( $this->govIdLegalCivic, 'LEGAL', '127.0.0.1' );
 		} catch ( \Exception $e ) {
 		}
-		$this->assertTrue( ! empty( $getAddressData->fullName ) );
+		static::assertTrue( ! empty( $getAddressData->fullName ) );
 	}
 
 	/**
@@ -617,14 +623,14 @@ class ResursBankTest extends TestCase
 	 */
 	public function testGetAddressLegalOrg() {
 		if ( $this->ignoreDefaultTests ) {
-			$this->markTestSkipped();
+			static::markTestSkipped();
 		}
 		$getAddressData = array();
 		try {
 			$getAddressData = $this->rb->getAddress( $this->govIdLegalOrg, 'LEGAL', '127.0.0.1' );
 		} catch ( \Exception $e ) {
 		}
-		$this->assertTrue( ! empty( $getAddressData->fullName ) );
+		static::assertTrue( ! empty( $getAddressData->fullName ) );
 	}
 
 	/**
@@ -632,7 +638,7 @@ class ResursBankTest extends TestCase
 	 */
 	public function testGetAnnuityFactors() {
 		if ( $this->ignoreDefaultTests ) {
-			$this->markTestSkipped();
+			static::markTestSkipped();
 		}
 		$annuity = false;
 		$methods = $this->rb->getPaymentMethods();
@@ -641,7 +647,7 @@ class ResursBankTest extends TestCase
 			$id      = $method->id;
 			$annuity = $this->rb->getAnnuityFactors( $id );
 		}
-		$this->assertTrue( count( $annuity ) > 1 );
+		static::assertTrue( count( $annuity ) > 1 );
 	}
 
 	/**
@@ -651,10 +657,10 @@ class ResursBankTest extends TestCase
 	 */
 	public function testBookSimplifiedPaymentInvoiceNatural() {
 		if ( $this->ignoreBookingTests ) {
-			$this->markTestSkipped();
+			static::markTestSkipped();
 		}
 		$bookResult = $this->doBookPayment( $this->availableMethods['invoice_natural'], true, false, true );
-		$this->assertTrue( $bookResult );
+		static::assertTrue( $bookResult );
 	}
 
 	/**
@@ -665,12 +671,12 @@ class ResursBankTest extends TestCase
 	 */
 	public function testBookPaymentInvoiceHostedNatural() {
 		if ( $this->ignoreBookingTests ) {
-			$this->markTestSkipped();
+			static::markTestSkipped();
 		}
 		$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW );
 		$bookResult = $this->doBookPayment( $this->availableMethods['invoice_natural'], true, false, true );
 		// Can't do bookings yet, since this is a forwarder. We would like to emulate browser clicking here, to complete the order.
-		$this->assertTrue( strlen( $bookResult ) > 1024 );
+		static::assertTrue( strlen( $bookResult ) > 1024 );
 	}
 
 	/**
@@ -678,7 +684,7 @@ class ResursBankTest extends TestCase
 	 */
 	public function testFindPayments() {
 		$paymentList = $this->rb->findPayments();
-		$this->assertGreaterThan( 0, count( $paymentList ) );
+		static::assertGreaterThan( 0, count( $paymentList ) );
 	}
 
 	/**
@@ -686,16 +692,33 @@ class ResursBankTest extends TestCase
 	 */
 	public function testGetPayment() {
 		if ( $this->ignoreBookingTests ) {
-			$this->markTestSkipped();
+			static::markTestSkipped();
 		}
 		$paymentList = $this->rb->findPayments();
 		if ( is_array( $paymentList ) && count( $paymentList ) ) {
 			$existingPayment = array_pop( $paymentList );
 			$existingPayment->paymentId;
 			$payment = $this->rb->getPayment( $existingPayment->paymentId );
-			$this->assertTrue( $payment->id == $existingPayment->paymentId );
+			static::assertTrue( $payment->id == $existingPayment->paymentId );
 		} else {
-			$this->markTestSkipped( "No payments available to run with getPayment()" );
+			static::markTestSkipped( "No payments available to run with getPayment()" );
+		}
+	}
+
+	public function testGetPaymentFail() {
+		try {
+			$this->rb->getPayment( "FAIL_HERE" );
+		} catch ( \Exception $e ) {
+			static::assertTrue( $e->getCode() == 3 || $e->getCode() == 8 || $e->getCode() == 404 );
+		}
+	}
+
+	public function testGetPaymentFailBySoap() {
+		try {
+			$this->rb->setFlag( 'GET_PAYMENT_BY_SOAP' );
+			$payment = $this->rb->getPayment( "FAIL_HERE" );
+		} catch ( \Exception $e ) {
+			static::assertTrue( $e->getCode() === 8 );
 		}
 	}
 
@@ -704,12 +727,12 @@ class ResursBankTest extends TestCase
 	 */
 	public function testGetPaymentInvoices() {
 		if ( $this->ignoreBookingTests ) {
-			$this->markTestSkipped();
+			static::markTestSkipped();
 		}
 		try {
 			$invoicesArray = $this->rb->getPaymentInvoices( "20170802114006-2638609880" );
 		} catch ( \Exception $e ) {
-			$this->markTestSkipped( "This test requires an order that contains one or more debits (it's a very special test) and the payment used to test this does not seem to exist here." );
+			static::markTestSkipped( "This test requires an order that contains one or more debits (it's a very special test) and the payment used to test this does not seem to exist here." );
 
 			return;
 		}
@@ -719,9 +742,9 @@ class ResursBankTest extends TestCase
 			$hasInvoices = true;
 		}
 		if ( $hasInvoices ) {
-			$this->assertTrue( $hasInvoices );
+			static::assertTrue( $hasInvoices );
 		} else {
-			$this->markTestSkipped( "No debits available in current test" );
+			static::markTestSkipped( "No debits available in current test" );
 		}
 	}
 
@@ -750,7 +773,7 @@ class ResursBankTest extends TestCase
 	 */
 	public function testBookPaymentZeroInvoiceNatural() {
 		if ( $this->ignoreBookingTests ) {
-			$this->markTestSkipped();
+			static::markTestSkipped();
 		}
 		$this->zeroSpecLine = true;
 		$hasException       = false;
@@ -759,7 +782,7 @@ class ResursBankTest extends TestCase
 		} catch ( \Exception $exceptionWanted ) {
 			$hasException = true;
 		}
-		$this->assertTrue( $hasException );
+		static::assertTrue( $hasException );
 	}
 
 	/**
@@ -769,11 +792,11 @@ class ResursBankTest extends TestCase
 	 */
 	public function testBookPaymentInvoiceNaturalDenied() {
 		if ( $this->ignoreBookingTests ) {
-			$this->markTestSkipped();
+			static::markTestSkipped();
 		}
 		$this->testGovId = $this->govIdNaturalDenied;
 		$bookResult      = $this->doBookPayment( $this->availableMethods['invoice_natural'], false, false, true );
-		$this->assertTrue( $bookResult );
+		static::assertTrue( $bookResult );
 	}
 
 	/**
@@ -783,13 +806,13 @@ class ResursBankTest extends TestCase
 	 */
 	public function testBookPaymentInvoiceLegal() {
 		if ( $this->ignoreBookingTests ) {
-			$this->markTestSkipped();
+			static::markTestSkipped();
 		}
-		$this->username = $this->usernameSweden;
-		$this->password = $this->passwordSweden;
+		$this->username  = $this->usernameSweden;
+		$this->password  = $this->passwordSweden;
 		$this->testGovId = $this->govIdLegalOrg;
 		$bookResult      = $this->doBookPayment( $this->availableMethods['invoice_legal'], false, false, true );
-		$this->assertTrue( $bookResult );
+		static::assertTrue( $bookResult );
 	}
 
 	/**
@@ -797,10 +820,10 @@ class ResursBankTest extends TestCase
 	 */
 	public function testBookPaymentCard() {
 		if ( $this->ignoreBookingTests ) {
-			$this->markTestSkipped();
+			static::markTestSkipped();
 		}
 		$bookResult = $this->doBookPayment( $this->availableMethods['card'], true, false, true, 'SE' );
-		$this->assertTrue( $bookResult === true );
+		static::assertTrue( $bookResult === true );
 	}
 
 	/**
@@ -808,10 +831,10 @@ class ResursBankTest extends TestCase
 	 */
 	public function testBookPaymentNewCard() {
 		if ( $this->ignoreBookingTests ) {
-			$this->markTestSkipped();
+			static::markTestSkipped();
 		}
 		$bookResult = $this->doBookPayment( $this->availableMethods['card_new'], true, false, true, 'SE' );
-		$this->assertTrue( $bookResult === true );
+		static::assertTrue( $bookResult === true );
 	}
 
 	/**
@@ -820,7 +843,7 @@ class ResursBankTest extends TestCase
 	 */
 	public function testSekkiSimple() {
 		if ( $this->ignoreSEKKItests ) {
-			$this->markTestSkipped();
+			static::markTestSkipped();
 		}
 		$methodSimple = $this->getAMethod();
 		$amount       = rand( 1000, 10000 );
@@ -837,7 +860,7 @@ class ResursBankTest extends TestCase
 				}
 			}
 		}
-		$this->assertTrue( $matches === $appenders );
+		static::assertTrue( $matches === $appenders );
 	}
 
 	/**
@@ -846,7 +869,7 @@ class ResursBankTest extends TestCase
 	 */
 	public function testSekkiArray() {
 		if ( $this->ignoreSEKKItests ) {
-			$this->markTestSkipped();
+			static::markTestSkipped();
 		}
 		$methodSimple   = $this->getAMethod();
 		$amount         = rand( 1000, 10000 );
@@ -865,7 +888,7 @@ class ResursBankTest extends TestCase
 					}
 				}
 			}
-			$this->assertTrue( $matches === $appenders );
+			static::assertTrue( $matches === $appenders );
 		}
 	}
 
@@ -874,7 +897,7 @@ class ResursBankTest extends TestCase
 	 */
 	public function testSekkiAll() {
 		if ( $this->ignoreSEKKItests ) {
-			$this->markTestSkipped();
+			static::markTestSkipped();
 		}
 		$amount    = rand( 1000, 10000 );
 		$sekkiUrls = $this->rb->getSekkiUrls( $amount );
@@ -892,7 +915,7 @@ class ResursBankTest extends TestCase
 				}
 			}
 		}
-		$this->assertTrue( $matches === $appenders );
+		static::assertTrue( $matches === $appenders );
 	}
 
 	/**
@@ -900,12 +923,12 @@ class ResursBankTest extends TestCase
 	 */
 	public function testSekkiCustom() {
 		if ( $this->ignoreSEKKItests ) {
-			$this->markTestSkipped();
+			static::markTestSkipped();
 		}
 		$amount    = rand( 1000, 10000 );
 		$URL       = "https://test.resurs.com/customurl/index.html?content=true&secondparameter=true";
 		$customURL = $this->rb->getSekkiUrls( $amount, null, $URL );
-		$this->assertTrue( ( preg_match( "/amount=$amount/i", $customURL ) ? true : false ) );
+		static::assertTrue( ( preg_match( "/amount=$amount/i", $customURL ) ? true : false ) );
 	}
 
 	/** @var string $framePaymentId */
@@ -926,7 +949,7 @@ class ResursBankTest extends TestCase
 			$iFrameUrl = false;
 		}
 		if ( $this->ignoreBookingTests ) {
-			$this->markTestSkipped();
+			static::markTestSkipped();
 		}
 		$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT );
 		$newReferenceId = $this->rb->getPreferredPaymentId();
@@ -935,7 +958,7 @@ class ResursBankTest extends TestCase
 			$iframeUrls    = $this->NETWORK->getUrlsFromHtml( $bookResult, 0, 1 );
 			$iFrameUrl     = array_pop( $iframeUrls );
 			$iframeContent = $this->CURL->doGet( $iFrameUrl );
-			$iframeBody = $this->CURL->getResponseBody();
+			$iframeBody    = $this->CURL->getResponseBody();
 			if ( ! empty( $iframeBody ) ) {
 				$assumeThis = true;
 			}
@@ -960,14 +983,14 @@ class ResursBankTest extends TestCase
 		try {
 			$getFrameUrl = $this->getCheckoutFrame( true );
 		} catch ( \Exception $e ) {
-			$this->markTestSkipped( "getCheckoutFrameException: " . $e->getMessage() );
+			static::markTestSkipped( "getCheckoutFrameException: " . $e->getMessage() );
 		}
 		//$SessionID = $this->rb->getPaymentSessionId();
 		$UrlDomain = $this->NETWORK->getUrlDomain( $getFrameUrl );
 		// If there is no https defined in the frameUrl, the test might have failed
 		if ( $UrlDomain[1] == "https" ) {
 			$FrameContent = $this->CURL->doGet( $getFrameUrl );
-			$this->assertTrue( $this->CURL->getResponseCode() == 200 && strlen( $this->CURL->getResponseBody() ) > 1024 );
+			static::assertTrue( $this->CURL->getResponseCode() == 200 && strlen( $this->CURL->getResponseBody() ) > 1024 );
 		}
 	}
 
@@ -987,7 +1010,7 @@ class ResursBankTest extends TestCase
 		$this->rb->setCheckoutUrls( "https://google.com/?q=signingSuccessful", "https://google.com/?q=signingFailed", false );
 		$theFrame = $this->rb->createPayment( $iframePaymentReference );
 		$urls     = $this->NETWORK->getUrlsFromHtml( $theFrame );
-		$this->assertTrue( count( $urls ) == 2 );
+		static::assertTrue( count( $urls ) == 2 );
 	}
 
 	/**
@@ -998,7 +1021,7 @@ class ResursBankTest extends TestCase
 		try {
 			$iFrameUrl = $this->getCheckoutFrame( true );
 		} catch ( \Exception $e ) {
-			$this->markTestSkipped( "Exception: " . $e->getCode() . ": " . $e->getMessage() );
+			static::markTestSkipped( "Exception: " . $e->getCode() . ": " . $e->getMessage() );
 		}
 
 		$this->CURL->setAuthentication( $this->username, $this->password );
@@ -1009,24 +1032,25 @@ class ResursBankTest extends TestCase
 		$orderLines = array( "orderLines" => $payload['orderLines'] );
 
 		$iframeContent = $this->CURL->getResponseBody();;
-		$Success       = false;
+		$Success = false;
 		if ( ! empty( $iframePaymentReference ) && ! empty( $iFrameUrl ) && ! empty( $iframeContent ) && strlen( $iframeContent ) > 1024 ) {
-			$newReference      = $this->rb->getPreferredPaymentId( 30, "UPDATE-", true, true );
+			$newReference = $this->rb->getPreferredPaymentId( 30, "UPDATE-", true, true );
 			try {
 				$Success = $this->rb->updatePaymentReference( $iframePaymentReference, $newReference );
-			} catch (\Exception $successException) {
-				$this->markTestSkipped( "updatePaymentReferenceException: " . $successException->getCode() . ": " . $successException->getMessage() );
+			} catch ( \Exception $successException ) {
+				static::markTestSkipped( "updatePaymentReferenceException: " . $successException->getCode() . ": " . $successException->getMessage() );
 			}
 			try {
 				// Currently, this test always gets a HTTP-200 from ecommerce, regardless of successful or failing updates.
 				$updateCart = $this->rb->updateCheckoutOrderLines( $newReference, $orderLines );
-				$this->assertTrue( $updateCart );
+				static::assertTrue( $updateCart );
+
 				return;
 			} catch ( \Exception $e ) {
-				$this->markTestSkipped( "updateCheckoutOrderLinesException: " . $e->getCode() . ": " . $e->getMessage() );
+				static::markTestSkipped( "updateCheckoutOrderLinesException: " . $e->getCode() . ": " . $e->getMessage() );
 			}
 		}
-		$this->assertTrue( $Success === true );
+		static::assertTrue( $Success === true );
 	}
 
 	/**
@@ -1037,7 +1061,7 @@ class ResursBankTest extends TestCase
 		try {
 			$iFrameUrl = $this->getCheckoutFrame( true );
 		} catch ( \Exception $e ) {
-			$this->markTestSkipped( "Exception: " . $e->getMessage() );
+			static::markTestSkipped( "Exception: " . $e->getMessage() );
 		}
 		$this->CURL->setAuthentication( $this->username, $this->password );
 		$this->CURL->setLocalCookies( true );
@@ -1046,18 +1070,19 @@ class ResursBankTest extends TestCase
 		$payload    = $this->rb->getPayload();
 		$orderLines = array( "orderLines" => $payload['orderLines'] );
 
-		$iframeContent = $this->CURL->getResponseBody($iframeRequest);
+		$iframeContent = $this->CURL->getResponseBody( $iframeRequest );
 		if ( ! empty( $iframePaymentReference ) && ! empty( $iFrameUrl ) && ! empty( $iframeContent ) && strlen( $iframeContent ) > 1024 ) {
 			$newReference = $this->rb->getPreferredPaymentId( 30, "UPDATE-", true, true );
 			try {
 				$this->rb->updatePaymentReference( $iframePaymentReference, $newReference );
 				$this->rb->updateCheckoutOrderLines( $iframePaymentReference, $orderLines );
 			} catch ( \Exception $e ) {
-				$this->assertTrue( $e->getCode() >= 400 );
+				static::assertTrue( $e->getCode() >= 400 );
+
 				return;
 			}
 		}
-		$this->markTestSkipped( __FUNCTION__ . " failed." );
+		static::markTestSkipped( __FUNCTION__ . " failed." );
 	}
 
 	public function testUpdateWrongPaymentReference() {
@@ -1065,22 +1090,23 @@ class ResursBankTest extends TestCase
 		try {
 			$iFrameUrl = $this->getCheckoutFrame( true );
 		} catch ( \Exception $e ) {
-			$this->markTestSkipped( "Exception: " . $e->getMessage() );
+			static::markTestSkipped( "Exception: " . $e->getMessage() );
 		}
 		$this->CURL->setAuthentication( $this->username, $this->password );
 		$this->CURL->setLocalCookies( true );
 		$iframeRequest = $this->CURL->doGet( $iFrameUrl );
-		$iframeContent = $this->CURL->getResponseBody($iframeRequest);
+		$iframeContent = $this->CURL->getResponseBody( $iframeRequest );
 		if ( ! empty( $iframePaymentReference ) && ! empty( $iFrameUrl ) && ! empty( $iframeContent ) && strlen( $iframeContent ) > 1024 ) {
 			$newReference = "#" . $this->rb->getPreferredPaymentId( 30, "FAIL-", true, true );
 			try {
 				$this->rb->updatePaymentReference( $iframePaymentReference, $newReference );
 			} catch ( \Exception $e ) {
-				$this->assertTrue( $e->getCode() >= 400 );
+				static::assertTrue( $e->getCode() >= 400 );
+
 				return;
 			}
 		}
-		$this->markTestSkipped( __FUNCTION__ . " failed." );
+		static::markTestSkipped( __FUNCTION__ . " failed." );
 	}
 
 
@@ -1089,7 +1115,19 @@ class ResursBankTest extends TestCase
 	 */
 	public function testGetCallbackListByRest() {
 		$cbr = $this->rb->getCallBacksByRest();
-		$this->assertGreaterThan( 0, count( $cbr ) );
+		static::assertGreaterThan( 0, count( $cbr ) );
+	}
+
+	/**
+	 * Get all callbacks by a rest call (objects) - broken
+	 */
+	public function testGetCallbackListByRestWithWrongCredentials() {
+		$ownCall = new ResursBank( "fail", "fail" );
+		try {
+			$ownCall->getCallBacksByRest();
+		} catch ( \Exception $e ) {
+			static::assertTrue( $e->getCode() == "401" );
+		}
 	}
 
 	/**
@@ -1097,7 +1135,7 @@ class ResursBankTest extends TestCase
 	 */
 	public function testGetCallbackListAsArrayByRest() {
 		$cbr = $this->rb->getCallBacksByRest( true );
-		$this->assertGreaterThan( 0, count( $cbr ) );
+		static::assertGreaterThan( 0, count( $cbr ) );
 	}
 
 	/**
@@ -1118,9 +1156,9 @@ class ResursBankTest extends TestCase
 		if ( isset( $paymentList[ $chosenPayment ] ) ) {
 			$paymentData = $paymentList[ $chosenPayment ];
 			$paymentId   = $paymentData->paymentId;
-			$this->assertTrue( $this->rb->addMetaData( $paymentId, "RandomKey" . rand( 1000, 1999 ), "RandomValue" . rand( 2000, 3000 ) ) );
+			static::assertTrue( $this->rb->addMetaData( $paymentId, "RandomKey" . rand( 1000, 1999 ), "RandomValue" . rand( 2000, 3000 ) ) );
 		} else {
-			$this->markTestSkipped( "No valid payment found" );
+			static::markTestSkipped( "No valid payment found" );
 		}
 	}
 
@@ -1135,11 +1173,11 @@ class ResursBankTest extends TestCase
 		try {
 			$this->rb->addMetaData( "UnexistentPaymentId", "RandomKey" . rand( 1000, 1999 ), "RandomValue" . rand( 2000, 3000 ) );
 		} catch ( \Exception $e ) {
-			$this->assertTrue( true );
+			static::assertTrue( true );
 			$hasException = true;
 		}
 		if ( ! $hasException ) {
-			$this->markTestSkipped( "addMetaDataFailure failed since it never got an exception" );
+			static::markTestSkipped( "addMetaDataFailure failed since it never got an exception" );
 		}
 	}
 
@@ -1148,7 +1186,7 @@ class ResursBankTest extends TestCase
 	 */
 	function testGetCostOfPurchase() {
 		$PurchaseInfo = $this->rb->getCostOfPurchase( $this->getAMethod(), 100 );
-		$this->assertTrue( is_string( $PurchaseInfo ) && strlen( $PurchaseInfo ) >= 1024 );
+		static::assertTrue( is_string( $PurchaseInfo ) && strlen( $PurchaseInfo ) >= 1024 );
 	}
 
 	/***
@@ -1231,7 +1269,7 @@ class ResursBankTest extends TestCase
 				$successFulCallbacks ++;
 			}
 		}
-		$this->assertEquals( count( $cResponse ), $successFulCallbacks );
+		static::assertEquals( count( $cResponse ), $successFulCallbacks );
 	}
 
 	/**
@@ -1251,7 +1289,7 @@ class ResursBankTest extends TestCase
 				$successFulCallbacks ++;
 			}
 		}
-		$this->assertEquals( count( $cResponse ), $successFulCallbacks );
+		static::assertEquals( count( $cResponse ), $successFulCallbacks );
 	}
 
 	/**
@@ -1260,7 +1298,7 @@ class ResursBankTest extends TestCase
 	public function testSetRegisterCallbacksRest() {
 		$callbackArrayData = $this->renderCallbackData( true );
 		$cResponse         = array();
-		$globalDigest = $this->rb->setCallbackDigest( $this->mkpass() );
+		$globalDigest      = $this->rb->setCallbackDigest( $this->mkpass() );
 		$this->rb->setRegisterCallbacksViaRest( true );
 		foreach ( $callbackArrayData as $indexCB => $callbackInfo ) {
 			$cbResult = $this->rb->setRegisterCallback( $callbackInfo[0], $callbackInfo[1] . "&via=rest", $callbackInfo[2] );
@@ -1274,16 +1312,16 @@ class ResursBankTest extends TestCase
 				$successFulCallbacks ++;
 			}
 		}
-		$this->assertEquals( count( $cResponse ), $successFulCallbacks );
+		static::assertEquals( count( $cResponse ), $successFulCallbacks );
 	}
 
 	/**
 	 * Register new callback urls via REST
 	 */
 	public function testSetRegisterCallbacksRestUrlRewrite() {
-		$callbackArrayData = $this->renderCallbackData(true);
+		$callbackArrayData = $this->renderCallbackData( true );
 		$cResponse         = array();
-		$globalDigest = $this->rb->setCallbackDigest( $this->mkpass() );
+		$globalDigest      = $this->rb->setCallbackDigest( $this->mkpass() );
 		$this->rb->setRegisterCallbacksViaRest( true );
 		foreach ( $callbackArrayData as $indexCB => $callbackInfo ) {
 			$cbResult = $this->rb->setRegisterCallback( $callbackInfo[0], $callbackInfo[1] . "&via=rest", $callbackInfo[2] );
@@ -1297,18 +1335,19 @@ class ResursBankTest extends TestCase
 				$successFulCallbacks ++;
 			}
 		}
-		$this->assertEquals( count( $cResponse ), $successFulCallbacks );
+		static::assertEquals( count( $cResponse ), $successFulCallbacks );
 	}
 
 	// External test not functioning (Bamboo-3rdparty -- using this service requires patching from that server, as it is located in a special OpenVZ-isolation)
 	public function testValidateExternalUrlSuccess() {
 		$callbackArrayData = $this->renderCallbackData();
 		$this->rb->setValidateExternalCallbackUrl( $callbackArrayData[0][1] );
-		$Reachable = $this->rb->validateExternalAddress();
-		if ( $Reachable !== RESURS_CALLBACK_REACHABILITY::IS_FULLY_REACHABLE ) {
-			$this->markTestSkipped( "External address validation returned $Reachable instead of " . RESURS_CALLBACK_REACHABILITY::IS_FULLY_REACHABLE . ".\nPlease check your callback url (" . $callbackArrayData[0][1] . ") so that is properly configured and reachable." );
+		$getReachableStatus = $this->rb->validateExternalAddress();
+		if ( $getReachableStatus != RESURS_CALLBACK_REACHABILITY::IS_FULLY_REACHABLE ) {
+			static::fail( "External address validation returned $getReachableStatus instead of " . RESURS_CALLBACK_REACHABILITY::IS_FULLY_REACHABLE . ".\nPlease check your callback url (" . $callbackArrayData[0][1] . ") so that is properly configured and reachable." );
+		} else {
+			static::assertTrue( $getReachableStatus === RESURS_CALLBACK_REACHABILITY::IS_FULLY_REACHABLE );
 		}
-		$this->assertTrue( $Reachable === RESURS_CALLBACK_REACHABILITY::IS_FULLY_REACHABLE );
 	}
 
 	/**
@@ -1325,7 +1364,7 @@ class ResursBankTest extends TestCase
 					$this->rb->setValidateExternalCallbackUrl( $callbackInfo[1] . "&via=restValidated" );
 					$cResponse[ $callbackInfo[0] ] = $this->rb->setRegisterCallback( $callbackInfo[0], $callbackInfo[1] . "&via=restValidated", $callbackInfo[2] );
 				} catch ( \Exception $e ) {
-					$this->markTestSkipped( "Exception thrown: URL Validation failed for " . ( isset( $callbackInfo[1] ) && ! empty( $callbackInfo[1] ) ? $callbackInfo[1] . "&via=restValidated" : "??" ) . " during the setRegisterCallback procss (" . $e->getMessage() . ")" );
+					static::markTestSkipped( "Exception thrown: URL Validation failed for " . ( isset( $callbackInfo[1] ) && ! empty( $callbackInfo[1] ) ? $callbackInfo[1] . "&via=restValidated" : "??" ) . " during the setRegisterCallback procss (" . $e->getMessage() . ")" );
 				}
 			}
 			$successFulCallbacks = 0;
@@ -1334,9 +1373,9 @@ class ResursBankTest extends TestCase
 					$successFulCallbacks ++;
 				}
 			}
-			$this->assertEquals( count( $cResponse ), $successFulCallbacks );
+			static::assertEquals( count( $cResponse ), $successFulCallbacks );
 		} else {
-			$this->markTestSkipped( "ignoreUrlExternalValidation is active, skipping test" );
+			static::markTestSkipped( "ignoreUrlExternalValidation is active, skipping test" );
 		}
 	}
 
@@ -1346,7 +1385,7 @@ class ResursBankTest extends TestCase
 	public function testUnregisterEventCallbackViaRest() {
 		$this->rb->setRegisterCallbacksViaRest( true );
 
-		$this->assertTrue( $this->rb->unregisterEventCallback( RESURS_CALLBACK_TYPES::CALLBACK_TYPE_ANNULMENT ) );
+		static::assertTrue( $this->rb->unregisterEventCallback( RESURS_CALLBACK_TYPES::CALLBACK_TYPE_ANNULMENT ) );
 	}
 
 	/**
@@ -1354,7 +1393,7 @@ class ResursBankTest extends TestCase
 	 */
 	public function testUnregisterEventCallbackViaSoap() {
 		$this->rb->setRegisterCallbacksViaRest( false );
-		$this->assertTrue( $this->rb->unregisterEventCallback( RESURS_CALLBACK_TYPES::CALLBACK_TYPE_ANNULMENT ) );
+		static::assertTrue( $this->rb->unregisterEventCallback( RESURS_CALLBACK_TYPES::CALLBACK_TYPE_ANNULMENT ) );
 	}
 
 	/**
@@ -1368,7 +1407,7 @@ class ResursBankTest extends TestCase
 			}
 		} catch ( \Exception $e ) {
 			$errorMessage = $e->getMessage();
-			$this->assertTrue( ! empty( $errorMessage ) );
+			static::assertTrue( ! empty( $errorMessage ) );
 		}
 	}
 
@@ -1377,7 +1416,7 @@ class ResursBankTest extends TestCase
 	 */
 	public function testCallbacks() {
 		if ( $this->ignoreDefaultTests ) {
-			$this->markTestSkipped( "Testing of deprecated callback function is disabled on request" );
+			static::markTestSkipped( "Testing of deprecated callback function is disabled on request" );
 		}
 		/* If disabled */
 		$callbackArrayData = $this->renderCallbackData();
@@ -1392,32 +1431,32 @@ class ResursBankTest extends TestCase
 			}
 		}
 		// Registered callbacks must be at least 4 to be successful, as there are at least 4 important callbacks to pass through
-		$this->assertGreaterThanOrEqual( 4, count( $callbackSetResult ) );
+		static::assertGreaterThanOrEqual( 4, count( $callbackSetResult ) );
 	}
 
 	function testGetNextInvoiceNumber() {
-		$this->assertTrue( $this->rb->getNextInvoiceNumber() >= 1 );
+		static::assertTrue( $this->rb->getNextInvoiceNumber() >= 1 );
 	}
 
 	/*
 	function testSetNextInvoiceNumber()
 	{
-		$this->markTestSkipped("This is a special test that should normally not be necessary to run");
+		static::markTestSkipped("This is a special test that should normally not be necessary to run");
 		$this->rb->getNextInvoiceNumber(true, 1000);
-		$this->assertEquals(1000, $this->rb->getNextInvoiceNumber());
+		static::assertEquals(1000, $this->rb->getNextInvoiceNumber());
 	}
 	*/
 
 	function testSetCustomerNatural() {
 		$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT );
 		$ReturnedPayload = $this->rb->setBillingByGetAddress( $this->govIdNatural );
-		$this->assertEquals( $this->govIdNatural, $ReturnedPayload['customer']['governmentId'] );
+		static::assertEquals( $this->govIdNatural, $ReturnedPayload['customer']['governmentId'] );
 	}
 
 	function testSetCustomerLegal() {
 		$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT );
 		$ReturnedPayload = $this->rb->setBillingByGetAddress( $this->govIdLegalCivic, "LEGAL" );
-		$this->assertTrue( $ReturnedPayload['customer']['governmentId'] == $this->govIdLegalCivic && $ReturnedPayload['customer']['address']['fullName'] == $this->govIdLegalFullname );
+		static::assertTrue( $ReturnedPayload['customer']['governmentId'] == $this->govIdLegalCivic && $ReturnedPayload['customer']['address']['fullName'] == $this->govIdLegalFullname );
 	}
 
 	private function addRandomOrderLine( $articleNumberOrId = "Artikel", $description = "Beskrivning", $unitAmountWithoutVat = "0.80", $vatPct = 25, $type = null, $quantity = 10 ) {
@@ -1433,25 +1472,33 @@ class ResursBankTest extends TestCase
 	}
 
 	private function doMockSign( $URL, $govId, $fail = false ) {
-		$MockFormResponse   = $this->CURL->doGet( $URL );
-		$MockDomain         = $this->NETWORK->getUrlDomain( $this->CURL->getResponseUrl() );
-		$MockDomainPath = null;
+		$mockFormResponse  = $this->CURL->doGet( $URL );
+		$MockDomain        = $this->NETWORK->getUrlDomain( $this->CURL->getResponseUrl() );
+		$MockDomainPath    = null;
 		$mockDomainPathDir = null;
-		if (isset($MockDomain[2])) {
-			$MockDomainPath = explode( "/", $MockDomain[2] );
-			$mockDomainPathDir = isset($MockDomainPath[1]) && !empty($MockDomainPath[1]) ? $MockDomainPath[1] : "";
+		if ( isset( $MockDomain[2] ) ) {
+			$MockDomainPath    = explode( "/", $MockDomain[2] );
+			$mockDomainPathDir = isset( $MockDomainPath[1] ) && ! empty( $MockDomainPath[1] ) ? $MockDomainPath[1] : "";
 		}
 
+		$MockForm = $this->CURL->getResponseBody( $mockFormResponse );
+		if ( method_exists( $this->CURL, "getParsedDomById" ) ) {
+			$this->CURL->setParseHtml( true );
+			$mockFormDom = $this->CURL->getParsedDomById();
+			if ( isset( $mockFormDom['mockForm']['innerhtml'] ) && ! empty( $mockFormDom['mockForm']['innerhtml'] ) ) {
+				$MockForm = $mockFormDom['mockForm']['innerhtml'];
+			}
+			$this->CURL->setParseHtml( false );
+		}
 		//$SignBody           = $this->CURL->getResponseBody( $this->CURL->doGet( $URL ) );
-		$MockForm           = $this->CURL->getResponseBody( $MockFormResponse );
 		$MockFormActionPath = preg_replace( "/(.*?)action=\"(.*?)\"(.*)/is", '$2', $MockForm );
 		$MockFormToken      = preg_replace( "/(.*?)resursToken\" value=\"(.*?)\"(.*)/is", '$2', $MockForm );
-		$mockFailUrl = preg_replace("/(.*?)\"\/mock\/failAuth(.*?)\"(.*)/is", '$2', $MockForm);
+		$mockFailUrl        = preg_replace( "/(.*?)\"\/mock\/failAuth(.*?)\"(.*)/is", '$2', $MockForm );
 		$prepareMockSuccess = $MockDomain[1] . "://" . $MockDomain[0] . "/" . $mockDomainPathDir . "/" . $MockFormActionPath . "?resursToken=" . $MockFormToken . "&govId=" . $govId;
-		$prepareMockFail = $MockDomain[1] . "://". $MockDomain[0] . "/mock/failAuth" . $mockFailUrl;
-		if (!$fail) {
+		$prepareMockFail    = $MockDomain[1] . "://" . $MockDomain[0] . "/mock/failAuth" . $mockFailUrl;
+		if ( ! $fail ) {
 			$ValidateUrl = $this->NETWORK->getUrlDomain( $prepareMockSuccess, true );
-			if ( isset($ValidateUrl[0]) && ! empty( $ValidateUrl[0] ) ) {
+			if ( isset( $ValidateUrl[0] ) && ! empty( $ValidateUrl[0] ) ) {
 				$mockSuccess = $this->CURL->getParsedResponse( $this->CURL->doGet( $prepareMockSuccess ) );
 				if ( isset( $mockSuccess->_GET->success ) ) {
 					return $mockSuccess->_GET;
@@ -1462,7 +1509,7 @@ class ResursBankTest extends TestCase
 			if ( ! empty( $ValidateUrl[0] ) ) {
 				try {
 					$mockSuccess = $this->CURL->getParsedResponse( $this->CURL->doGet( $prepareMockFail ) );
-				} catch (\Exception $e) {
+				} catch ( \Exception $e ) {
 					return false;
 				}
 				if ( isset( $mockSuccess->_GET->success ) ) {
@@ -1517,15 +1564,17 @@ class ResursBankTest extends TestCase
 			try {
 				// Using myPayLoad will lead tgo FROZEN
 				$Payment = $this->rb->createPayment( $this->availableMethods['invoice_natural'] );
-				$this->assertTrue( $Payment->bookPaymentStatus == "BOOKED" );
+
+				static::assertTrue( $Payment->bookPaymentStatus == "BOOKED" );
 			} catch ( \Exception $e ) {
 				echo __FUNCTION__ . ": " . $e->getMessage() . "\n";
 			}
 
 		} catch ( \Exception $e ) {
-			$this->markTestSkipped( $e->getMessage() );
+			static::markTestSkipped( $e->getMessage() );
 		}
 	}
+
 	function testCreatePaymentPayloadOwnPayLoadIpManipulation1() {
 		try {
 			$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW );
@@ -1534,7 +1583,7 @@ class ResursBankTest extends TestCase
 			$this->rb->setCustomer( "198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL" );
 			$this->addRandomOrderLine( "Art " . rand( 1024, 2048 ), "Beskrivning " . rand( 2048, 4096 ), "0.80", 25, null, 10 );
 			$useThisPaymentId = $this->rb->getPreferredPaymentId();
-			$myPayLoad = array(
+			$myPayLoad        = array(
 				'paymentData' => array(
 					'waitForFraudControl' => false,
 					'annulIfFrozen'       => false,
@@ -1553,15 +1602,16 @@ class ResursBankTest extends TestCase
 			try {
 				// Using myPayLoad will lead tgo FROZEN
 				$Payment = $this->rb->createPayment( $this->availableMethods['invoice_natural'], $myPayLoad );
-				$this->assertTrue( $Payment->bookPaymentStatus == "FROZEN" );
+				static::assertTrue( $Payment->bookPaymentStatus == "FROZEN" );
 			} catch ( \Exception $e ) {
-				$this->assertTrue( $e->getCode() > 0 );
+				static::assertTrue( $e->getCode() > 0 );
 			}
 
 		} catch ( \Exception $e ) {
-			$this->markTestSkipped( $e->getMessage() );
+			static::markTestSkipped( $e->getMessage() );
 		}
 	}
+
 	function testCreatePaymentPayloadOwnPayLoadIpManipulation2() {
 		try {
 			$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW );
@@ -1570,7 +1620,7 @@ class ResursBankTest extends TestCase
 			$this->rb->setCustomer( "198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL" );
 			$this->addRandomOrderLine( "Art " . rand( 1024, 2048 ), "Beskrivning " . rand( 2048, 4096 ), "0.80", 25, null, 10 );
 			$useThisPaymentId = $this->rb->getPreferredPaymentId();
-			$myPayLoad = array(
+			$myPayLoad        = array(
 				'paymentData' => array(
 					'waitForFraudControl' => false,
 					'annulIfFrozen'       => false,
@@ -1589,15 +1639,16 @@ class ResursBankTest extends TestCase
 			try {
 				// Using myPayLoad will lead tgo FROZEN
 				$Payment = $this->rb->createPayment( $this->availableMethods['invoice_natural'], $myPayLoad );
-				$this->assertTrue( $Payment->bookPaymentStatus == "FROZEN" );
+				static::assertTrue( $Payment->bookPaymentStatus == "FROZEN" );
 			} catch ( \Exception $e ) {
-				$this->assertTrue( $e->getCode() > 0 );
+				static::assertTrue( $e->getCode() > 0 );
 			}
 
 		} catch ( \Exception $e ) {
-			$this->markTestSkipped( $e->getMessage() );
+			static::markTestSkipped( $e->getMessage() );
 		}
 	}
+
 	function testCreatePaymentPayloadOwnPayLoadSpoofedIpFrozenWithFraudControl() {
 		try {
 			$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW );
@@ -1606,7 +1657,7 @@ class ResursBankTest extends TestCase
 			$this->rb->setCustomer( "198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL" );
 			$this->addRandomOrderLine( "Art " . rand( 1024, 2048 ), "Beskrivning " . rand( 2048, 4096 ), "0.80", 25, null, 10 );
 			$useThisPaymentId = $this->rb->getPreferredPaymentId();
-			$myPayLoad = array(
+			$myPayLoad        = array(
 				'paymentData' => array(
 					'waitForFraudControl' => false,
 					'annulIfFrozen'       => false,
@@ -1625,13 +1676,13 @@ class ResursBankTest extends TestCase
 			try {
 				// Using myPayLoad will lead tgo FROZEN
 				$Payment = $this->rb->createPayment( $this->availableMethods['invoice_natural'], $myPayLoad );
-				$this->assertTrue( $Payment->bookPaymentStatus == "FROZEN" );
+				static::assertTrue( $Payment->bookPaymentStatus == "FROZEN" );
 			} catch ( \Exception $e ) {
-				$this->assertTrue( $e->getCode() > 0 );
+				static::assertTrue( $e->getCode() > 0 );
 			}
 
 		} catch ( \Exception $e ) {
-			$this->markTestSkipped( $e->getMessage() );
+			static::markTestSkipped( $e->getMessage() );
 		}
 	}
 
@@ -1654,16 +1705,17 @@ class ResursBankTest extends TestCase
 				if ( $Payment->bookPaymentStatus == "SIGNING" ) {
 					$signUrl  = $Payment->signingUrl;
 					$signData = $this->doMockSign( $signUrl, "198305147715" );
-					$this->assertTrue( $signData->success == "true" );
+					static::assertTrue( $signData->success == "true" );
 				}
 			} catch ( \Exception $e ) {
 				echo __FUNCTION__ . ": " . $e->getMessage() . "\n";
 			}
 
 		} catch ( \Exception $e ) {
-			$this->markTestSkipped( $e->getMessage() );
+			static::markTestSkipped( $e->getMessage() );
 		}
 	}
+
 	function testCreatePaymentPayloadForcedSigningMultipleSimplified() {
 		try {
 			$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW );
@@ -1678,26 +1730,27 @@ class ResursBankTest extends TestCase
 			try {
 				$Payment = $this->rb->createPayment( $this->availableMethods['invoice_natural'] );
 				if ( $Payment->bookPaymentStatus == "SIGNING" ) {
-					$signUrl  = $Payment->signingUrl;
+					$signUrl = $Payment->signingUrl;
 					try {
-						$signings = 0;
-						$signData[$signings++] = $this->doMockSign( $signUrl, "198305147715" );
-						$signData[$signings++] = $this->doMockSign( $signUrl, "198305147715" );
-						$signData[$signings++] = $this->doMockSign( $signUrl, "198305147715" );
-						$signData[$signings++] = $this->doMockSign( $signUrl, "198305147715" );
-					} catch (\Exception $e) {
+						$signings                 = 0;
+						$signData[ $signings ++ ] = $this->doMockSign( $signUrl, "198305147715" );
+						$signData[ $signings ++ ] = $this->doMockSign( $signUrl, "198305147715" );
+						$signData[ $signings ++ ] = $this->doMockSign( $signUrl, "198305147715" );
+						$signData[ $signings ++ ] = $this->doMockSign( $signUrl, "198305147715" );
+					} catch ( \Exception $e ) {
 
 					}
-					$this->assertCount( 4, $signData );
+					static::assertCount( 4, $signData );
 				}
 			} catch ( \Exception $e ) {
 				echo __FUNCTION__ . ": " . $e->getMessage() . "\n";
 			}
 
 		} catch ( \Exception $e ) {
-			$this->markTestSkipped( $e->getMessage() );
+			static::markTestSkipped( $e->getMessage() );
 		}
 	}
+
 	function testCreatePaymentPayloadForcedSigningReUseMockFailSimplified() {
 		try {
 			$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW );
@@ -1712,21 +1765,21 @@ class ResursBankTest extends TestCase
 			try {
 				$Payment = $this->rb->createPayment( $this->availableMethods['invoice_natural'] );
 				if ( $Payment->bookPaymentStatus == "SIGNING" ) {
-					$signUrl  = $Payment->signingUrl;
+					$signUrl = $Payment->signingUrl;
 					try {
-						$signings = 0;
-						$signData[$signings++] = $this->doMockSign( $signUrl, "198305147715", true );
-						$signData[$signings++] = $this->doMockSign( $signUrl, "198305147715", true );
-					} catch (\Exception $e) {
+						$signings                 = 0;
+						$signData[ $signings ++ ] = $this->doMockSign( $signUrl, "198305147715", true );
+						$signData[ $signings ++ ] = $this->doMockSign( $signUrl, "198305147715", true );
+					} catch ( \Exception $e ) {
 					}
-					$this->assertTrue( empty($signData[1]) );
+					static::assertTrue( empty( $signData[1] ) );
 				}
 			} catch ( \Exception $e ) {
 				echo __FUNCTION__ . ": " . $e->getMessage() . "\n";
 			}
 
 		} catch ( \Exception $e ) {
-			$this->markTestSkipped( $e->getMessage() );
+			static::markTestSkipped( $e->getMessage() );
 		}
 	}
 	/*function testCreatePaymentPayloadForcedSigningReUseMockFailNewCardSimplified() {
@@ -1752,14 +1805,14 @@ class ResursBankTest extends TestCase
 						$signData[$signings++] = $this->doMockSign( $signUrl, "198305147715", true );
 					} catch (\Exception $e) {
 					}
-					$this->assertTrue( empty($signData[1]) );
+					static::assertTrue( empty($signData[1]) );
 				}
 			} catch ( \Exception $e ) {
 				echo __FUNCTION__ . ": " . $e->getMessage() . "\n";
 			}
 
 		} catch ( \Exception $e ) {
-			$this->markTestSkipped( $e->getMessage() );
+			static::markTestSkipped( $e->getMessage() );
 		}
 	}*/
 
@@ -1781,17 +1834,17 @@ class ResursBankTest extends TestCase
 				if ( isset( $delayPayment['status'] ) && $delayPayment['status'] == "delayed" ) {
 					//$thePayload = $this->rb->getPayload();
 					$thePayment = $this->rb->Execute( $this->availableMethods['invoice_natural'] );
-					$this->assertTrue( $thePayment->bookPaymentStatus == "BOOKED" );
+					static::assertTrue( $thePayment->bookPaymentStatus == "BOOKED" );
 
 					return;
 				}
 			} catch ( \Exception $e ) {
-				$this->markTestSkipped( $e->getMessage() );
+				static::markTestSkipped( $e->getMessage() );
 			}
 		} catch ( \Exception $e ) {
-			$this->markTestSkipped( "Outer exception thrown (" . $e->getMessage() . ")" );
+			static::markTestSkipped( "Outer exception thrown (" . $e->getMessage() . ")" );
 		}
-		$this->markTestSkipped( "CreatePayment via Delayed create failed - never passed through the payload generation." );
+		static::markTestSkipped( "CreatePayment via Delayed create failed - never passed through the payload generation." );
 	}
 
 	/**
@@ -1813,26 +1866,26 @@ class ResursBankTest extends TestCase
 				if ( isset( $delayPayment['status'] ) && $delayPayment['status'] == "delayed" ) {
 					$thePayload = $this->rb->getPayload();
 					$thePayment = $this->rb->Execute( $this->availableMethods['invoice_natural'] );
-					$this->assertTrue( preg_match( "/iframe src/i", $thePayment ) ? true : false );
+					static::assertTrue( preg_match( "/iframe src/i", $thePayment ) ? true : false );
 
 					return;
 				}
 			} catch ( \Exception $e ) {
-				$this->markTestSkipped( $e->getMessage() );
+				static::markTestSkipped( $e->getMessage() );
 			}
 		} catch ( \Exception $e ) {
-			$this->markTestSkipped( "Outer exception thrown (" . $e->getMessage() . ")" );
+			static::markTestSkipped( "Outer exception thrown (" . $e->getMessage() . ")" );
 		}
-		$this->markTestSkipped( "CreatePayment via Delayed create failed - never passed through the payload generation." );
+		static::markTestSkipped( "CreatePayment via Delayed create failed - never passed through the payload generation." );
 	}
 
 
 	function testCanDebit() {
 		try {
 			$payment = $this->rb->getPayment( "20170519070836-6799421526" );
-			$this->assertTrue( $this->rb->canDebit( $payment ) );
+			static::assertTrue( $this->rb->canDebit( $payment ) );
 		} catch ( \Exception $e ) {
-			$this->markTestSkipped( "Can not find any debitable snapshot to test." );
+			static::markTestSkipped( "Can not find any debitable snapshot to test." );
 		}
 	}
 
@@ -1862,7 +1915,7 @@ class ResursBankTest extends TestCase
 
 	private function getPaymentIdFromOrderByClientChoice( $orderLines = 8, $quantity = 1, $minAmount = 1000, $maxAmount = 2000, $govId = '198305147715' ) {
 		$Payment = $this->generateOrderByClientChoice( $orderLines, $quantity, $minAmount, $maxAmount, $govId );
-		if (isset($Payment)) {
+		if ( isset( $Payment ) ) {
 			return $Payment->paymentId;
 		}
 	}
@@ -1870,7 +1923,7 @@ class ResursBankTest extends TestCase
 	function testHugeQuantity() {
 		try {
 			$hasOrder = $this->generateOrderByClientChoice( 2, 16000, 1, 1 );
-			$this->assertTrue( $hasOrder->bookPaymentStatus == "BOOKED" );
+			static::assertTrue( $hasOrder->bookPaymentStatus == "BOOKED" );
 		} catch ( \Exception $e ) {
 		}
 	}
@@ -1879,7 +1932,7 @@ class ResursBankTest extends TestCase
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
 		$this->rb->addOrderLine( "myExtraOrderLine-1", "One orderline added with additionalDebitOfPayment", 100, 25 );
 		$this->rb->addOrderLine( "myExtraOrderLine-2", "One orderline added with additionalDebitOfPayment", 200, 25 );
-		$this->assertTrue( $this->rb->setAdditionalDebitOfPayment( $paymentId ) );
+		static::assertTrue( $this->rb->setAdditionalDebitOfPayment( $paymentId ) );
 	}
 
 	function testAdditionalDebitAnnulled() {
@@ -1887,7 +1940,7 @@ class ResursBankTest extends TestCase
 		$this->rb->annulPayment( $paymentId );
 		$this->rb->addOrderLine( "myExtraOrderLine-1", "One orderline added with additionalDebitOfPayment", 100, 25 );
 		$this->rb->addOrderLine( "myExtraOrderLine-2", "One orderline added with additionalDebitOfPayment", 200, 25 );
-		$this->assertTrue( $this->rb->setAdditionalDebitOfPayment( $paymentId ) );
+		static::assertTrue( $this->rb->setAdditionalDebitOfPayment( $paymentId ) );
 	}
 
 	function testAdditionalDebitResursCheckout() {
@@ -1896,7 +1949,7 @@ class ResursBankTest extends TestCase
 		$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT );
 		$this->rb->addOrderLine( "myExtraOrderLine-1", "One orderline added with additionalDebitOfPayment", 100, 25 );
 		$this->rb->addOrderLine( "myExtraOrderLine-2", "One orderline added with additionalDebitOfPayment", 200, 25 );
-		$this->assertTrue( $this->rb->setAdditionalDebitOfPayment( $paymentId ) );
+		static::assertTrue( $this->rb->setAdditionalDebitOfPayment( $paymentId ) );
 	}
 
 	/** Test wrong, bad and stupid behaviour when orderlines are duplicated */
@@ -1909,10 +1962,10 @@ class ResursBankTest extends TestCase
 			$this->rb->addOrderLine( "myExtraOrderLine-1", "One orderline added with additionalDebitOfPayment", 100, 25 );
 			$this->rb->addOrderLine( "myExtraOrderLine-2", "One orderline added with additionalDebitOfPayment", 200, 25 );
 			$this->rb->setAdditionalDebitOfPayment( $paymentId );
-		} catch (\Exception $additionalException) {
+		} catch ( \Exception $additionalException ) {
 		}
-		$paymentResult = $this->rb->getPaymentSpecCount($paymentId);
-		$this->assertTrue($paymentResult['AUTHORIZE'] == 5);
+		$paymentResult = $this->rb->getPaymentSpecCount( $paymentId );
+		static::assertTrue( $paymentResult['AUTHORIZE'] == 5 );
 	}
 
 	function testAdditionalDebitReduceFail() {
@@ -1926,7 +1979,7 @@ class ResursBankTest extends TestCase
 			$this->rb->setAdditionalDebitOfPayment( $paymentId );
 		} catch ( \Exception $e ) {
 			// Exceptions that comes from this part of the system does not seem to generate any exception code.
-			$this->assertTrue( $e->getCode() == 500 || $e->getCode() == \RESURS_EXCEPTIONS::UNKOWN_SOAP_EXCEPTION_CODE_ZERO);
+			static::assertTrue( $e->getCode() == 500 || $e->getCode() == \RESURS_EXCEPTIONS::UNKOWN_SOAP_EXCEPTION_CODE_ZERO );
 		}
 	}
 
@@ -1951,7 +2004,7 @@ class ResursBankTest extends TestCase
 				$added ++;
 			}
 		}
-		$this->assertEquals( 2, $added );
+		static::assertEquals( 2, $added );
 	}
 
 	/**
@@ -1959,50 +2012,72 @@ class ResursBankTest extends TestCase
 	 */
 	function testAdditionalDualDebitWithDifferentAmount() {
 		if ( $this->isSkip( 'aftershop' ) ) {
-			$this->markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
+			static::markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
 		}
-		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
-		$this->rb->finalizePayment( $paymentId );
-		$this->rb->addOrderLine( "myAdditionalOrderLine", "One orderline added with additionalDebitOfPayment", 100, 25 );
-		$this->rb->setAdditionalDebitOfPayment( $paymentId );
-		$this->rb->addOrderLine( "myAdditionalOrderLine", "One orderline added with additionalDebitOfPayment", 105, 25 );
-		$this->rb->setAdditionalDebitOfPayment( $paymentId );
-		$merged   = $this->rb->getPaymentSpecByStatus( $paymentId );
-		$quantity = 0;
-		foreach ( $merged['AUTHORIZE'] as $articles ) {
-			if ( $articles->artNo == "myAdditionalOrderLine" ) {
-				$quantity += $articles->quantity;
+		try {
+			$paymentId = $this->getPaymentIdFromOrderByClientChoice();
+			$this->rb->finalizePayment( $paymentId );
+			$this->rb->addOrderLine( "myAdditionalOrderLine", "One orderline added with additionalDebitOfPayment", 100, 25 );
+			$this->rb->setAdditionalDebitOfPayment( $paymentId );
+			$this->rb->addOrderLine( "myAdditionalOrderLine", "One orderline added with additionalDebitOfPayment", 105, 25 );
+			$this->rb->setAdditionalDebitOfPayment( $paymentId );
+			$merged   = $this->rb->getPaymentSpecByStatus( $paymentId );
+			$quantity = 0;
+			foreach ( $merged['AUTHORIZE'] as $articles ) {
+				if ( $articles->artNo == "myAdditionalOrderLine" ) {
+					$quantity += $articles->quantity;
+				}
+			}
+			static::assertEquals( 2, $quantity );
+		} catch ( \Exception $e ) {
+			if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
+				if ( ! defined( 'SKIP_TEST' ) ) {
+					define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
+				}
+				static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
+			} else {
+				throw new \Exception( $e->getMessage(), $e->getCode(), $e );
 			}
 		}
-		$this->assertEquals( 2, $quantity );
 	}
 
 	public function testRenderSpeclineByObject() {
 		$payment = $this->getAPayment( null, true );
 		if ( isset( $payment->id ) ) {
-			$this->assertTrue( is_array( $this->rb->getPaymentSpecByStatus( $payment ) ) );
+			static::assertTrue( is_array( $this->rb->getPaymentSpecByStatus( $payment ) ) );
 		}
 	}
 
 	public function testRenderSpeclineByOrderId() {
 		$payment = $this->getAPayment( null, true );
 		if ( isset( $payment->id ) ) {
-			$this->assertTrue( is_array( $this->rb->getPaymentSpecByStatus( $payment->id ) ) );
+			static::assertTrue( is_array( $this->rb->getPaymentSpecByStatus( $payment->id ) ) );
 		}
 	}
 
 	function testFinalizeFullDeprecated() {
 		if ( $this->isSkip( 'aftershop' ) ) {
-			$this->markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
+			static::markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
 		}
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice();
-		$this->assertTrue( $this->rb->finalizePayment( $paymentId ) );
+		try {
+			static::assertTrue( $this->rb->finalizePayment( $paymentId ) );
+		} catch ( \Exception $e ) {
+			if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
+				if ( ! defined( 'SKIP_TEST' ) ) {
+					define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
+				}
+				static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
+			} else {
+				throw new \Exception( $e->getMessage(), $e->getCode(), $e );
+			}
+		}
 	}
 
 	function testAfterShopSanitizer() {
 		$paymentId         = $this->getPaymentIdFromOrderByClientChoice( 2 );
 		$sanitizedShopSpec = $this->rb->sanitizeAfterShopSpec( $paymentId, RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_FINALIZE );
-		$this->assertCount( 2, $sanitizedShopSpec );
+		static::assertCount( 2, $sanitizedShopSpec );
 	}
 
 	/**
@@ -2010,7 +2085,7 @@ class ResursBankTest extends TestCase
 	 */
 	function testSoapErrorXPath() {
 		$CURL = new Tornevall_cURL();
-		$CURL->setChain(false);
+		$CURL->setChain( false );
 		$CURL->setAuthentication( $this->username, $this->password );
 		$wsdl = $CURL->doGet( 'https://test.resurs.com/ecommerce-test/ws/V4/AfterShopFlowService?wsdl' );
 		try {
@@ -2020,7 +2095,7 @@ class ResursBankTest extends TestCase
 			$soapLibResponse = $soapObject->getLibResponse();
 			$soapBody        = $this->CURL->ParseContent( $soapLibResponse['body'], false, "xml" );
 			$getSoapFault    = $soapBody->xpath( "//soap:Fault/detail/*" );
-			$this->assertTrue( isset( $getSoapFault[0] ) && is_object( $getSoapFault[0] ) && isset( $getSoapFault[0]->fixableByYou ) );
+			static::assertTrue( isset( $getSoapFault[0] ) && is_object( $getSoapFault[0] ) && isset( $getSoapFault[0]->fixableByYou ) );
 		}
 	}
 
@@ -2029,14 +2104,14 @@ class ResursBankTest extends TestCase
 	 */
 	function testSoapError() {
 		$CURL = new Tornevall_cURL();
-		$CURL->setChain(false);
+		$CURL->setChain( false );
 		$wsdl = $CURL->doGet( 'https://test.resurs.com/ecommerce-test/ws/V4/SimplifiedShopFlowService?wsdl' );
 		try {
 			$wsdl->getPaymentMethods();
 		} catch ( \Exception $e ) {
 			$previousException = $e->getPrevious();
 			// $exceptionMessage = $e->getMessage();
-			$this->assertTrue( isset( $previousException->faultstring ) && ! empty( $previousException->faultstring ) );
+			static::assertTrue( isset( $previousException->faultstring ) && ! empty( $previousException->faultstring ) );
 		}
 	}
 
@@ -2046,14 +2121,26 @@ class ResursBankTest extends TestCase
 	 */
 	function testAftershopFullFinalization() {
 		if ( $this->isSkip( 'aftershop' ) ) {
-			$this->markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
+			static::markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
 		}
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 2 );
 		if ( $this->resetConnection() ) {
 			$this->rb->setAfterShopInvoiceExtRef( "Test Testsson" );
-			$finalizeResult = $this->rb->paymentFinalize( $paymentId );
-			$testOrder      = $this->rb->getPaymentSpecCount( $paymentId );
-			$this->assertTrue( ( $finalizeResult == 200 && $testOrder['AUTHORIZE'] == 2 && $testOrder['DEBIT'] == 2 ) );
+			try {
+				$finalizeResult = $this->rb->paymentFinalize( $paymentId );
+				$testOrder      = $this->rb->getPaymentSpecCount( $paymentId );
+				static::assertTrue( ( $finalizeResult == 200 && $testOrder['AUTHORIZE'] == 2 && $testOrder['DEBIT'] == 2 ) );
+			} catch ( \Exception $e ) {
+				if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
+					if ( ! defined( 'SKIP_TEST' ) ) {
+						define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
+					}
+					static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
+				} else {
+					throw new \Exception( $e->getMessage(), $e->getCode(), $e );
+				}
+
+			}
 		}
 	}
 
@@ -2063,7 +2150,7 @@ class ResursBankTest extends TestCase
 	 */
 	function testAftershopPartialAutomatedFinalization() {
 		if ( $this->isSkip( 'aftershop' ) ) {
-			$this->markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
+			static::markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
 		}
 		// Add one order line to the random one
 		$this->rb->addOrderLine( "myAdditionalPartialAutomatedOrderLine", "One orderline added with addOrderLine", 100, 25 );
@@ -2073,9 +2160,21 @@ class ResursBankTest extends TestCase
 			// Add the orderLine that should be handled in the finalization
 			// id, desc, unitAmoutWithoutVat, vatPct, unitMeasure, ORDER_LINE, quantity
 			$this->rb->addOrderLine( "myAdditionalPartialAutomatedOrderLine", "One orderline added with addOrderLine", 100, 25 );
-			$finalizeResult = $this->rb->paymentFinalize( $paymentId );
-			$testOrder      = $this->rb->getPaymentSpecCount( $paymentId );
-			$this->assertTrue( ( $finalizeResult == 200 && $testOrder['AUTHORIZE'] == 2 && $testOrder['DEBIT'] == 1 ) );
+			try {
+				$finalizeResult = $this->rb->paymentFinalize( $paymentId );
+				$testOrder      = $this->rb->getPaymentSpecCount( $paymentId );
+				static::assertTrue( ( $finalizeResult == 200 && $testOrder['AUTHORIZE'] == 2 && $testOrder['DEBIT'] == 1 ) );
+			} catch ( \Exception $e ) {
+				if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
+					if ( ! defined( 'SKIP_TEST' ) ) {
+						define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
+					}
+					static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
+				} else {
+					throw new \Exception( $e->getMessage(), $e->getCode(), $e );
+				}
+
+			}
 		}
 	}
 
@@ -2085,7 +2184,7 @@ class ResursBankTest extends TestCase
 	 */
 	function testAftershopPartialAutomatedQuantityFinalization() {
 		if ( $this->isSkip( 'aftershop' ) ) {
-			$this->markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
+			static::markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
 		}
 		// Add one order line to the random one, with 4 in quantity
 		$this->rb->addOrderLine( "myAdditionalAutomatedOrderLine", "One orderline added with addOrderLine", 100, 25, 'st', 'ORDER_LINE', 4 );
@@ -2094,11 +2193,23 @@ class ResursBankTest extends TestCase
 			$this->rb->setAfterShopInvoiceExtRef( "Test Testsson" );
 			// Add the orderLine that should be handled in the finalization, but only 2 of the set up above
 			$this->rb->addOrderLine( "myAdditionalAutomatedOrderLine", "One orderline added with addOrderLine", 100, 25, 'st', 'ORDER_LINE', 2 );
-			$finalizeResult = $this->rb->paymentFinalize( $paymentId );
-			$countOrder     = $this->rb->getPaymentSpecCount( $paymentId );
-			$testOrder      = $this->rb->getPaymentSpecByStatus( $paymentId );
-			// Also check the quantity on this
-			$this->assertTrue( ( $finalizeResult == 200 && $countOrder['AUTHORIZE'] == 2 && $countOrder['DEBIT'] == 1 && (int) $testOrder['DEBIT']['0']->quantity == 2 ) );
+			try {
+				$finalizeResult = $this->rb->paymentFinalize( $paymentId );
+				$countOrder     = $this->rb->getPaymentSpecCount( $paymentId );
+				$testOrder      = $this->rb->getPaymentSpecByStatus( $paymentId );
+				// Also check the quantity on this
+				static::assertTrue( ( $finalizeResult == 200 && $countOrder['AUTHORIZE'] == 2 && $countOrder['DEBIT'] == 1 && (int) $testOrder['DEBIT']['0']->quantity == 2 ) );
+			} catch ( \Exception $e ) {
+				if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
+					if ( ! defined( 'SKIP_TEST' ) ) {
+						define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
+					}
+					static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
+				} else {
+					throw new \Exception( $e->getMessage(), $e->getCode(), $e );
+				}
+
+			}
 		}
 	}
 
@@ -2108,23 +2219,35 @@ class ResursBankTest extends TestCase
 	 */
 	function testAftershopPartialManualFinalization() {
 		if ( $this->isSkip( 'aftershop' ) ) {
-			$this->markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
+			static::markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
 		}
 		// Add one order line to the random one
 		$this->rb->addOrderLine( "myAdditionalManualOrderLine", "One orderline added with addOrderLine", 100, 25 );
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1 );
 		if ( $this->resetConnection() ) {
 			$this->rb->setAfterShopInvoiceExtRef( "Test Testsson" );
-			$newArray       = array(
+			$newArray = array(
 				'artNo'                => 'myAdditionalManualOrderLine',
 				'description'          => "One orderline added with addOrderLine",
 				'unitAmountWithoutVat' => 100,
 				'vatPct'               => 25,
 				'quantity'             => 1
 			);
-			$finalizeResult = $this->rb->paymentFinalize( $paymentId, $newArray );
-			$testOrder      = $this->rb->getPaymentSpecCount( $paymentId );
-			$this->assertTrue( ( $finalizeResult == 200 && $testOrder['AUTHORIZE'] == 2 && $testOrder['DEBIT'] == 1 ) );
+			try {
+				$finalizeResult = $this->rb->paymentFinalize( $paymentId, $newArray );
+				$testOrder      = $this->rb->getPaymentSpecCount( $paymentId );
+				static::assertTrue( ( $finalizeResult == 200 && $testOrder['AUTHORIZE'] == 2 && $testOrder['DEBIT'] == 1 ) );
+			} catch ( \Exception $e ) {
+				if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
+					if ( ! defined( 'SKIP_TEST' ) ) {
+						define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
+					}
+					static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
+				} else {
+					throw new \Exception( $e->getMessage(), $e->getCode(), $e );
+				}
+
+			}
 		}
 	}
 
@@ -2134,7 +2257,7 @@ class ResursBankTest extends TestCase
 	 */
 	function testAftershopPartialMultipleManualFinalization() {
 		if ( $this->isSkip( 'aftershop' ) ) {
-			$this->markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
+			static::markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
 		}
 		// Add one order line to the random one
 		$this->rb->addOrderLine( "myAdditionalManualFirstOrderLine", "One orderline added with addOrderLine", 100, 25 );
@@ -2158,9 +2281,21 @@ class ResursBankTest extends TestCase
 					'quantity'             => 1
 				),
 			);
-			$finalizeResult = $this->rb->paymentFinalize( $paymentId, $orderLineArray );
-			$testOrder      = $this->rb->getPaymentSpecCount( $paymentId );
-			$this->assertTrue( ( $finalizeResult == 200 && $testOrder['AUTHORIZE'] == 3 && $testOrder['DEBIT'] == 2 ) );
+			try {
+				$finalizeResult = $this->rb->paymentFinalize( $paymentId, $orderLineArray );
+				$testOrder      = $this->rb->getPaymentSpecCount( $paymentId );
+				static::assertTrue( ( $finalizeResult == 200 && $testOrder['AUTHORIZE'] == 3 && $testOrder['DEBIT'] == 2 ) );
+			} catch ( \Exception $e ) {
+				if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
+					if ( ! defined( 'SKIP_TEST' ) ) {
+						define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
+					}
+					static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
+				} else {
+					throw new \Exception( $e->getMessage(), $e->getCode(), $e );
+				}
+
+			}
 		}
 	}
 
@@ -2170,37 +2305,49 @@ class ResursBankTest extends TestCase
 	 */
 	function testAftershopPartialManualFinalizationWithMismatchingKeys() {
 		if ( $this->isSkip( 'aftershop' ) ) {
-			$this->markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
+			static::markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
 		}
 		// Add one order line to the random one
 		$this->rb->addOrderLine( "myAdditionalManualOrderLine", "One orderline added with addOrderLine", 100, 25 );
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1 );
 		if ( $this->resetConnection() ) {
 			$this->rb->setAfterShopInvoiceExtRef( "Test Testsson" );
-			$newArray       = array(
+			$newArray = array(
 				'artNo'                => 'myAdditionalMismatchingOrderLine',
 				'description'          => "One orderline added with addOrderLine",
 				'unitAmountWithoutVat' => 101,
 				'vatPct'               => 25,
 				'quantity'             => 2
 			);
-			$finalizeResult = $this->rb->paymentFinalize( $paymentId, $newArray );
-			$countOrder     = $this->rb->getPaymentSpecCount( $paymentId );
-			$testOrder      = $this->rb->getPaymentSpecByStatus( $paymentId );
-			$this->assertTrue( ( $finalizeResult == 200 && $countOrder['AUTHORIZE'] == 2 && $countOrder['DEBIT'] == 1 && (int) $testOrder['DEBIT']['0']->quantity == 2 ) );
+			try {
+				$finalizeResult = $this->rb->paymentFinalize( $paymentId, $newArray );
+				$countOrder     = $this->rb->getPaymentSpecCount( $paymentId );
+				$testOrder      = $this->rb->getPaymentSpecByStatus( $paymentId );
+				static::assertTrue( ( $finalizeResult == 200 && $countOrder['AUTHORIZE'] == 2 && $countOrder['DEBIT'] == 1 && (int) $testOrder['DEBIT']['0']->quantity == 2 ) );
+			} catch ( \Exception $e ) {
+				if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
+					if ( ! defined( 'SKIP_TEST' ) ) {
+						define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
+					}
+					static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
+				} else {
+					throw new \Exception( $e->getMessage(), $e->getCode(), $e );
+				}
+
+			}
 		}
 	}
 
 	function testAftershopFullFinalizationFailure() {
 		if ( $this->isSkip( 'aftershop' ) ) {
-			$this->markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
+			static::markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
 		}
 		define( 'TEST_OVERRIDE_AFTERSHOP_PAYLOAD', 'a:9:{s:9:"paymentId";s:19:"unExistentPaymentId";s:9:"orderDate";s:10:"2017-09-28";s:11:"invoiceDate";s:10:"2017-09-28";s:9:"invoiceId";i:1366;s:9:"createdBy";s:14:"EComPHP_010122";s:9:"specLines";a:2:{i:0;a:9:{s:2:"id";i:1;s:5:"artNo";s:8:"Art 1065";s:11:"description";s:16:"Beskrivning 3222";s:8:"quantity";s:7:"1.00000";s:11:"unitMeasure";s:2:"st";s:20:"unitAmountWithoutVat";s:10:"1309.00000";s:6:"vatPct";s:8:"25.00000";s:14:"totalVatAmount";s:19:"327.250000000000000";s:11:"totalAmount";s:20:"1636.250000000000000";}i:1;a:9:{s:2:"id";i:2;s:5:"artNo";s:8:"Art 2022";s:11:"description";s:16:"Beskrivning 4048";s:8:"quantity";s:7:"1.00000";s:11:"unitMeasure";s:2:"st";s:20:"unitAmountWithoutVat";s:10:"1292.00000";s:6:"vatPct";s:8:"25.00000";s:14:"totalVatAmount";s:19:"323.000000000000000";s:11:"totalAmount";s:20:"1615.000000000000000";}}s:11:"totalAmount";d:3251.25;s:14:"totalVatAmount";d:650.25;s:15:"partPaymentSpec";a:3:{s:9:"specLines";a:2:{i:0;a:9:{s:2:"id";i:1;s:5:"artNo";s:8:"Art 1065";s:11:"description";s:16:"Beskrivning 3222";s:8:"quantity";s:7:"1.00000";s:11:"unitMeasure";s:2:"st";s:20:"unitAmountWithoutVat";s:10:"1309.00000";s:6:"vatPct";s:8:"25.00000";s:14:"totalVatAmount";s:19:"327.250000000000000";s:11:"totalAmount";s:20:"1636.250000000000000";}i:1;a:9:{s:2:"id";i:2;s:5:"artNo";s:8:"Art 2022";s:11:"description";s:16:"Beskrivning 4048";s:8:"quantity";s:7:"1.00000";s:11:"unitMeasure";s:2:"st";s:20:"unitAmountWithoutVat";s:10:"1292.00000";s:6:"vatPct";s:8:"25.00000";s:14:"totalVatAmount";s:19:"323.000000000000000";s:11:"totalAmount";s:20:"1615.000000000000000";}}s:11:"totalAmount";d:3251.25;s:14:"totalVatAmount";d:650.25;}}' );
 		try {
 			$this->rb->paymentFinalizeTest();
 		} catch ( \Exception $paymentFinalizeException ) {
 			$exceptionCode = $paymentFinalizeException->getCode();
-			$this->assertTrue( $exceptionCode == RESURS_EXCEPTIONS::ECOMMERCEERROR_REFERENCED_DATA_DONT_EXISTS || $exceptionCode >= 500 );
+			static::assertTrue( $exceptionCode == RESURS_EXCEPTIONS::ECOMMERCEERROR_REFERENCED_DATA_DONT_EXISTS || $exceptionCode >= 500 );
 		}
 	}
 
@@ -2210,7 +2357,7 @@ class ResursBankTest extends TestCase
 	 */
 	function testAftershopFullCancellation() {
 		if ( $this->isSkip( 'aftershop' ) ) {
-			$this->markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
+			static::markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
 		}
 		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
 		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
@@ -2218,56 +2365,97 @@ class ResursBankTest extends TestCase
 		$this->rb->addOrderLine( "authLine-2", "One orderline added with addOrderLine", 100, 25 );
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 0 );
 
-		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
-		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
-		$this->rb->paymentFinalize( $paymentId );
+		try {
+			$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
+			$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
+			$this->rb->paymentFinalize( $paymentId );
 
-		$this->rb->setAfterShopInvoiceExtRef( "Test Testsson" );
-		$cancellationResult = $this->rb->paymentCancel( $paymentId );
-		$result             = $this->rb->getPaymentSpecCount( $paymentId );
-		$this->assertTrue( $cancellationResult && $result['AUTHORIZE'] == 4 && $result['DEBIT'] == 2 && $result['CREDIT'] == 2 && $result['ANNUL'] == 2 );
+			$this->rb->setAfterShopInvoiceExtRef( "Test Testsson" );
+			$cancellationResult = $this->rb->paymentCancel( $paymentId );
+			$result             = $this->rb->getPaymentSpecCount( $paymentId );
+			static::assertTrue( $cancellationResult && $result['AUTHORIZE'] == 4 && $result['DEBIT'] == 2 && $result['CREDIT'] == 2 && $result['ANNUL'] == 2 );
+		} catch ( \Exception $e ) {
+			if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
+				if ( ! defined( 'SKIP_TEST' ) ) {
+					define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
+				}
+				static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
+			} else {
+				throw new \Exception( $e->getMessage(), $e->getCode(), $e );
+			}
+
+		}
 	}
 
 	function testAftershopCreditBulk() {
 		if ( $this->isSkip( 'aftershop' ) ) {
-			$this->markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
+			static::markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
 		}
 		$this->rb->addOrderLine( "a", "One orderline added with addOrderLine", 100, 25 );
 		$this->rb->addOrderLine( "b", "One orderline added with addOrderLine", 100, 25 );
 		$this->rb->addOrderLine( "c", "One orderline added with addOrderLine", 100, 25 );
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 0 );
-		$this->rb->paymentFinalize( $paymentId );
-		$this->rb->addOrderLine( "z", "One orderline added with addOrderLine", 300, 25 );
-		$this->rb->paymentCredit( $paymentId );
-		$result = $this->rb->getPaymentSpecCount( $paymentId );
-		$this->assertTrue( $result['AUTHORIZE'] == 3 && $result['DEBIT'] == 3 && $result['CREDIT'] == 1 && $result['ANNUL'] == 0 );
+		try {
+			$this->rb->paymentFinalize( $paymentId );
+			$this->rb->addOrderLine( "z", "One orderline added with addOrderLine", 300, 25 );
+			$this->rb->paymentCredit( $paymentId );
+			$result = $this->rb->getPaymentSpecCount( $paymentId );
+			static::assertTrue( $result['AUTHORIZE'] == 3 && $result['DEBIT'] == 3 && $result['CREDIT'] == 1 && $result['ANNUL'] == 0 );
+		} catch ( \Exception $e ) {
+			if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
+				if ( ! defined( 'SKIP_TEST' ) ) {
+					define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
+				}
+				static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
+			} else {
+				throw new \Exception( $e->getMessage(), $e->getCode(), $e );
+			}
+		}
 	}
 
 	function testAftershopBuy10Annul20() {
 		if ( $this->isSkip( 'aftershop' ) ) {
-			$this->markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
+			static::markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
 		}
 		$this->rb->addOrderLine( "a", "One orderline added with addOrderLine", 100, 25, null, null, 10 );
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 0 );
 		$this->rb->addOrderLine( "a", "One orderline added with addOrderLine", 100, 25, null, null, 20 );
 		try {
 			$this->rb->paymentAnnul( $paymentId );
-		} catch (\Exception $negativeException) {
-			$this->assertTrue($negativeException->getCode() > 0);
+		} catch ( \Exception $negativeException ) {
+			static::assertTrue( $negativeException->getCode() > 0 );
 		}
 	}
+
 	function testAftershopBuy10Credit20() {
 		if ( $this->isSkip( 'aftershop' ) ) {
-			$this->markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
+			static::markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
 		}
 		$this->rb->addOrderLine( "a", "One orderline added with addOrderLine", 100, 25, null, null, 10 );
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 0 );
-		$this->rb->paymentFinalize( $paymentId );
-		$this->rb->addOrderLine( "a", "One orderline added with addOrderLine", 100, 25, null, null, 20 );
 		try {
-			$this->rb->paymentCredit( $paymentId );
-		} catch (\Exception $negativeException) {
-			$this->assertTrue($negativeException->getCode() > 0);
+			$this->rb->paymentFinalize( $paymentId );
+			$this->rb->addOrderLine( "a", "One orderline added with addOrderLine", 100, 25, null, null, 20 );
+			try {
+				$this->rb->paymentCredit( $paymentId );
+			} catch ( \Exception $negativeException ) {
+				if ( $negativeException->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
+					if ( ! defined( 'SKIP_TEST' ) ) {
+						define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
+					}
+					static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
+				}
+				static::assertTrue( $negativeException->getCode() > 0 );
+			}
+		} catch ( \Exception $e ) {
+			if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
+				if ( ! defined( 'SKIP_TEST' ) ) {
+					define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
+				}
+				static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
+			} else {
+				throw new \Exception( $e->getMessage(), $e->getCode(), $e );
+			}
 		}
 	}
 
@@ -2277,7 +2465,7 @@ class ResursBankTest extends TestCase
 	 */
 	function testAftershopPartialCancellation() {
 		if ( $this->isSkip( 'aftershop' ) ) {
-			$this->markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
+			static::markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
 		}
 		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
 		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
@@ -2312,15 +2500,15 @@ class ResursBankTest extends TestCase
 		try {
 			$cancellationResult = $this->rb->paymentCancel( $paymentId, $newArray );
 		} catch ( \Exception $somethingWentWrongException ) {
-			$this->markTestSkipped( $somethingWentWrongException->getMessage() );
+			static::markTestSkipped( $somethingWentWrongException->getMessage() );
 		}
 		$result = $this->rb->getPaymentSpecCount( $paymentId );
-		$this->assertTrue( $cancellationResult && $result['AUTHORIZE'] == 4 && $result['DEBIT'] == 2 && $result['CREDIT'] == 1 && $result['ANNUL'] == 1 );
+		static::assertTrue( $cancellationResult && $result['AUTHORIZE'] == 4 && $result['DEBIT'] == 2 && $result['CREDIT'] == 1 && $result['ANNUL'] == 1 );
 	}
 
 	function testBitMaskSanitizer() {
 		if ( $this->isSkip( 'aftershop' ) ) {
-			$this->markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
+			static::markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
 		}
 		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
 		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
@@ -2331,16 +2519,29 @@ class ResursBankTest extends TestCase
 		//$this->resetConnection();
 		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
 		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
-		$this->rb->paymentFinalize( $paymentId );
+		try {
+			$this->rb->paymentFinalize( $paymentId );
 
-		//$this->resetConnection();
-		$this->rb->addOrderLine( "authLine-1", "One orderline added with addOrderLine", 100, 25 );
-		$this->rb->addOrderLine( "authLine-2", "One orderline added with addOrderLine", 100, 25 );
-		$this->rb->paymentAnnul( $paymentId );
+			//$this->resetConnection();
+			$this->rb->addOrderLine( "authLine-1", "One orderline added with addOrderLine", 100, 25 );
+			$this->rb->addOrderLine( "authLine-2", "One orderline added with addOrderLine", 100, 25 );
+			$this->rb->paymentAnnul( $paymentId );
+		} catch ( \Exception $e ) {
+			if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
+				if ( ! defined( 'SKIP_TEST' ) ) {
+					define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
+				}
+				static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
+			} else {
+				throw new \Exception( $e->getMessage(), $e->getCode(), $e );
+			}
+
+		}
+
 
 		//$this->resetConnection();
 		$remainArray = $this->rb->sanitizeAfterShopSpec( $paymentId, ( RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_ANNUL + RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_CREDIT ) );
-		$this->assertCount( 2, $remainArray );
+		static::assertCount( 2, $remainArray );
 	}
 
 	/**
@@ -2355,7 +2556,7 @@ class ResursBankTest extends TestCase
 	 */
 	function testAfterShopFaultyDebitAnnul() {
 		if ( $this->isSkip( 'aftershop' ) ) {
-			$this->markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
+			static::markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
 		}
 		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
 		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
@@ -2365,43 +2566,65 @@ class ResursBankTest extends TestCase
 
 		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
 		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
-		$this->rb->paymentFinalize( $paymentId );
+		try {
+			$this->rb->paymentFinalize( $paymentId );
 
-		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
-		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
-		$this->rb->paymentCredit( $paymentId );
+			$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
+			$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
+			$this->rb->paymentCredit( $paymentId );
 
-		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
-		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
-		$this->rb->paymentAnnul( $paymentId );
-		$paymentSpecCount = $this->rb->getPaymentSpecCount( $paymentId );
-		$this->assertTrue( $paymentSpecCount['AUTHORIZE'] == 4 && $paymentSpecCount['DEBIT'] == 2 && $paymentSpecCount['CREDIT'] == 2 && $paymentSpecCount['ANNUL'] == 2 );
+			$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
+			$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
+			$this->rb->paymentAnnul( $paymentId );
+			$paymentSpecCount = $this->rb->getPaymentSpecCount( $paymentId );
+			static::assertTrue( $paymentSpecCount['AUTHORIZE'] == 4 && $paymentSpecCount['DEBIT'] == 2 && $paymentSpecCount['CREDIT'] == 2 && $paymentSpecCount['ANNUL'] == 2 );
+		} catch ( \Exception $e ) {
+			if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
+				if ( ! defined( 'SKIP_TEST' ) ) {
+					define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
+				}
+				static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
+			} else {
+				throw new \Exception( $e->getMessage(), $e->getCode(), $e );
+			}
+		}
 	}
 
 	function testAfterShopFaultyDebitAnnulOldMerge() {
 		if ( $this->isSkip( 'aftershop' ) ) {
-			$this->markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
+			static::markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
 		}
-		$this->rb->setFlag("MERGEBYSTATUS_DEPRECATED_METHOD");
+		$this->rb->setFlag( "MERGEBYSTATUS_DEPRECATED_METHOD" );
 		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
 		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
 		$this->rb->addOrderLine( "authLine-1", "One orderline added with addOrderLine", 100, 25 );
 		$this->rb->addOrderLine( "authLine-2", "One orderline added with addOrderLine", 100, 25 );
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 0 );
 
-		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
-		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
-		$this->rb->paymentFinalize( $paymentId );
+		try {
+			$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
+			$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
+			$this->rb->paymentFinalize( $paymentId );
 
-		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
-		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
-		$this->rb->paymentCredit( $paymentId );
+			$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
+			$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
+			$this->rb->paymentCredit( $paymentId );
 
-		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
-		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
-		$this->rb->paymentAnnul( $paymentId );
-		$paymentSpecCount = $this->rb->getPaymentSpecCount( $paymentId );
-		$this->assertTrue( $paymentSpecCount['AUTHORIZE'] == 4 && $paymentSpecCount['DEBIT'] == 2 && $paymentSpecCount['CREDIT'] == 2 && $paymentSpecCount['ANNUL'] == 2 );
+			$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
+			$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
+			$this->rb->paymentAnnul( $paymentId );
+			$paymentSpecCount = $this->rb->getPaymentSpecCount( $paymentId );
+			static::assertTrue( $paymentSpecCount['AUTHORIZE'] == 4 && $paymentSpecCount['DEBIT'] == 2 && $paymentSpecCount['CREDIT'] == 2 && $paymentSpecCount['ANNUL'] == 2 );
+		} catch ( \Exception $e ) {
+			if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
+				if ( ! defined( 'SKIP_TEST' ) ) {
+					define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
+				}
+				static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
+			} else {
+				throw new \Exception( $e->getMessage(), $e->getCode(), $e );
+			}
+		}
 	}
 
 	/**
@@ -2416,7 +2639,7 @@ class ResursBankTest extends TestCase
 	 */
 	function testAfterShopFaultyContraryDirection() {
 		if ( $this->isSkip( 'aftershop' ) ) {
-			$this->markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
+			static::markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
 		}
 		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
 		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
@@ -2426,18 +2649,30 @@ class ResursBankTest extends TestCase
 
 		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
 		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
-		$this->rb->paymentFinalize( $paymentId );
+		try {
+			$this->rb->paymentFinalize( $paymentId );
 
-		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
-		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
-		$this->rb->paymentAnnul( $paymentId );
+			$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
+			$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
+			$this->rb->paymentAnnul( $paymentId );
 
-		$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
-		$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
-		$this->rb->paymentCredit( $paymentId );
+			$this->rb->addOrderLine( "debitLine-1", "One orderline added with addOrderLine", 100, 25 );
+			$this->rb->addOrderLine( "debitLine-2", "One orderline added with addOrderLine", 100, 25 );
+			$this->rb->paymentCredit( $paymentId );
 
-		$paymentSpecCount = $this->rb->getPaymentSpecCount( $paymentId );
-		$this->assertTrue( $paymentSpecCount['AUTHORIZE'] == 4 && $paymentSpecCount['DEBIT'] == 2 && $paymentSpecCount['CREDIT'] == 2 && $paymentSpecCount['ANNUL'] == 2 );
+			$paymentSpecCount = $this->rb->getPaymentSpecCount( $paymentId );
+			static::assertTrue( $paymentSpecCount['AUTHORIZE'] == 4 && $paymentSpecCount['DEBIT'] == 2 && $paymentSpecCount['CREDIT'] == 2 && $paymentSpecCount['ANNUL'] == 2 );
+		} catch ( \Exception $e ) {
+			if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
+				if ( ! defined( 'SKIP_TEST' ) ) {
+					define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
+				}
+				static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
+			} else {
+				throw new \Exception( $e->getMessage(), $e->getCode(), $e );
+			}
+
+		}
 	}
 
 	/**
@@ -2463,23 +2698,23 @@ class ResursBankTest extends TestCase
 			$thirdMethodList = $this->rb->getPaymentMethods();
 
 			// Assert diff
-			$this->assertTrue( count( $secondMethodList ) != count( $thirdMethodList ) );
+			static::assertTrue( count( $secondMethodList ) != count( $thirdMethodList ) );
 		} else {
-			$this->markTestSkipped( "Current account does not have any PSP methods" );
+			static::markTestSkipped( "Current account does not have any PSP methods" );
 		}
 	}
 
 	public function testGitTags() {
 		$tagVersions = $this->rb->getVersionsByGitTag();
-		$currentTag = array_pop($tagVersions);
-		$lastTag = array_pop($tagVersions);
-		$notCurrent = $this->rb->getIsCurrent($lastTag);
-		$perfect = $this->rb->getIsCurrent($currentTag);
-		$this->assertTrue($notCurrent === false && $perfect === true);
+		$currentTag  = array_pop( $tagVersions );
+		$lastTag     = array_pop( $tagVersions );
+		$notCurrent  = $this->rb->getIsCurrent( $lastTag );
+		$perfect     = $this->rb->getIsCurrent( $currentTag );
+		static::assertTrue( $notCurrent === false && $perfect === true );
 	}
 
 	public function testHostedCountryCode() {
-		$this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW);
+		$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW );
 		$this->rb->setBillingAddress(
 			"Given Name",
 			"Given",
@@ -2492,61 +2727,89 @@ class ResursBankTest extends TestCase
 		);
 		$this->addRandomOrderLine();
 		$payloadResult = $this->rb->getPayload();
-		$this->assertTrue(isset($payloadResult['customer']['address']['countryCode']) && $payloadResult['customer']['address']['countryCode'] == "SE");
+		static::assertTrue( isset( $payloadResult['customer']['address']['countryCode'] ) && $payloadResult['customer']['address']['countryCode'] == "SE" );
 	}
 
 	public function testOldEnvironmentClass() {
-		$this->assertTrue(\Resursbank\RBEcomPHP\ResursEnvironments::ENVIRONMENT_TEST === 1);
+		static::assertTrue( RESURS_ENVIRONMENTS::ENVIRONMENT_TEST === 1 );
 	}
 
 	public function testBasicOrderStatusFinalizationEvent() {
 		if ( $this->isSkip( 'aftershop' ) ) {
-			$this->markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
+			static::markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
 		}
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1, 1, 1000, 2000 );
-		$this->rb->paymentFinalize( $paymentId );
-		$this->assertTrue($this->rb->getOrderStatusByPayment($paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_FINALIZATION) === RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED);
+		try {
+			$this->rb->paymentFinalize( $paymentId );
+			static::assertTrue( $this->rb->getOrderStatusByPayment( $paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_FINALIZATION ) === RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED );
+		} catch ( \Exception $e ) {
+			if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
+				if ( ! defined( 'SKIP_TEST' ) ) {
+					define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
+				}
+				static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
+			} else {
+				throw new \Exception( $e->getMessage(), $e->getCode(), $e );
+			}
+		}
 	}
+
 	public function testBasicOrderStatusFinalizationEventSynchronous() {
 		$this->rb->setFinalizeIfBooked();
 		$this->rb->setAnnulIfFrozen();
 		$this->rb->setWaitForFraudControl();
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1, 1, 1000, 2000 );
 		//$this->rb->paymentFinalize( $paymentId );
-		$this->assertTrue($this->rb->getOrderStatusByPayment($paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_FINALIZATION) === RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED);
+		static::assertTrue( $this->rb->getOrderStatusByPayment( $paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_FINALIZATION ) === RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED );
 	}
+
 	public function testBasicOrderStatusAnnulEvent() {
 		if ( $this->isSkip( 'aftershop' ) ) {
-			$this->markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
+			static::markTestSkipped( "External configuration marked " . __FUNCTION__ . " this as skippable." );
 		}
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1 );
-		$this->rb->paymentAnnul( $paymentId );
-		$this->assertTrue($this->rb->getOrderStatusByPayment($paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_ANNULMENT) === RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_ANNULLED);
+		try {
+			$this->rb->paymentAnnul( $paymentId );
+			static::assertTrue( $this->rb->getOrderStatusByPayment( $paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_ANNULMENT ) === RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_ANNULLED );
+		} catch ( \Exception $e ) {
+			if ( $e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ) {
+				if ( ! defined( 'SKIP_TEST' ) ) {
+					define( 'SKIP_TEST', array( 'skip' => 'aftershop' ) );
+				}
+				static::markTestSkipped( 'Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)' );
+			} else {
+				throw new \Exception( $e->getMessage(), $e->getCode(), $e );
+			}
+		}
 	}
+
 	public function testBookedCallbackByDelayedCustomer() {
 		// Unfreeze after 10m
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1, 1, 1000, 2000, '198101010000' );
-		$this->assertTrue($this->rb->getOrderStatusByPayment($paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_BOOKED) == RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING);
+		static::assertTrue( $this->rb->getOrderStatusByPayment( $paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_BOOKED ) == RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING );
 	}
+
 	public function testUnfreezeCallbackByHappyFlow() {
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1, 1, 1000, 2000, '198305147715' );
-		$this->assertTrue($this->rb->getOrderStatusByPayment($paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UNFREEZE) == RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PROCESSING);
+		static::assertTrue( $this->rb->getOrderStatusByPayment( $paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UNFREEZE ) == RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PROCESSING );
 	}
+
 	public function testAutoFraudCallbackByHappyFlow() {
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1, 1, 1000, 2000, '198305147715' );
-		$this->assertTrue($this->rb->getOrderStatusByPayment($paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_AUTOMATIC_FRAUD_CONTROL, 'THAWED') == RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PROCESSING);
+		static::assertTrue( $this->rb->getOrderStatusByPayment( $paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_AUTOMATIC_FRAUD_CONTROL, 'THAWED' ) == RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PROCESSING );
 	}
+
 	public function testAutoFraudCallbackByFrozenFlow() {
 		$paymentId = $this->getPaymentIdFromOrderByClientChoice( 1, 1, 1000, 2000, '198209123705' );
-		$this->assertTrue($this->rb->getOrderStatusByPayment($paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_AUTOMATIC_FRAUD_CONTROL, 'FROZEN') == RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING);
+		static::assertTrue( $this->rb->getOrderStatusByPayment( $paymentId, RESURS_CALLBACK_TYPES::CALLBACK_TYPE_AUTOMATIC_FRAUD_CONTROL, 'FROZEN' ) == RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING );
 	}
 
 	function testUnAuthorized() {
-		$newRb = new ResursBank("fail", "fail");
+		$newRb = new ResursBank( "fail", "fail" );
 		try {
 			print_R( $newRb->getPaymentMethods() );
-		} catch (\Exception $e) {
-			$this->assertTrue($e->getCode() == 401);
+		} catch ( \Exception $e ) {
+			static::assertTrue( $e->getCode() == 401 );
 		}
 	}
 
@@ -2555,7 +2818,7 @@ class ResursBankTest extends TestCase
 	 * @throws Exception
 	 */
 	public function testHostedThreeFlags() {
-		$this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW);
+		$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW );
 		$this->rb->setBillingAddress(
 			"Given Name",
 			"Given",
@@ -2572,7 +2835,7 @@ class ResursBankTest extends TestCase
 		$this->rb->setWaitForFraudControl();
 
 		$payloadResult = $this->rb->getPayload();
-		$this->assertTrue(isset($payloadResult['waitForFraudControl']) && isset($payloadResult['annulIfFrozen']) && isset($payloadResult['finalizeIfBooked']));
+		static::assertTrue( isset( $payloadResult['waitForFraudControl'] ) && isset( $payloadResult['annulIfFrozen'] ) && isset( $payloadResult['finalizeIfBooked'] ) );
 	}
 
 	/**
@@ -2580,7 +2843,7 @@ class ResursBankTest extends TestCase
 	 * @throws Exception
 	 */
 	public function testSimplifiedThreeFlags() {
-		$this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW);
+		$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW );
 		$this->rb->setBillingAddress(
 			"Given Name",
 			"Given",
@@ -2597,35 +2860,38 @@ class ResursBankTest extends TestCase
 		$this->rb->setWaitForFraudControl();
 
 		$payloadResult = $this->rb->getPayload();
-		$this->assertTrue(isset($payloadResult['paymentData']['waitForFraudControl']) && isset($payloadResult['paymentData']['annulIfFrozen']) && isset($payloadResult['paymentData']['finalizeIfBooked']));
+		static::assertTrue( isset( $payloadResult['paymentData']['waitForFraudControl'] ) && isset( $payloadResult['paymentData']['annulIfFrozen'] ) && isset( $payloadResult['paymentData']['finalizeIfBooked'] ) );
 	}
 
 	/**
 	 * Test netcurl 6.0.15 SOAPWARNINGS flag
 	 */
 	public function testCredentialFailure() {
-		$isolatedRB = new ResursBank("fail", "fail");
+		$isolatedRB = new ResursBank( "fail", "fail" );
 		try {
 			$isolatedRB->getPaymentMethods();
-		} catch (\Exception $failException) {
+		} catch ( \Exception $failException ) {
 			$exceptionMessage = $failException->getMessage();
-			$authTest = (preg_match("/401 unauthorized/i", $exceptionMessage) ? true : false);
-			$this->assertTrue( $authTest );
+			$authTest         = ( preg_match( "/401 unauthorized/i", $exceptionMessage ) ? true : false );
+			static::assertTrue( $authTest );
 		}
 	}
 
 	public function testGetSaltKeyDeprecated() {
-		$this->assertTrue(strlen($this->rb->getSaltKey()) > 0);
+		static::assertTrue( strlen( $this->rb->getSaltKey() ) > 0 );
 	}
+
 	public function testGetSaltByCrypto() {
-		$this->assertTrue(strlen($this->rb->getSaltByCrypto(3, 128)) == 128);
+		static::assertTrue( strlen( $this->rb->getSaltByCrypto( 3, 128 ) ) == 128 );
 	}
-	public function testWcMtRandEntropyKeyGen()  {
-		$this->assertTrue(strlen(uniqid( mt_rand(), true )) <= 35);
+
+	public function testWcMtRandEntropyKeyGen() {
+		static::assertTrue( strlen( uniqid( mt_rand(), true ) ) <= 35 );
 	}
+
 	public function testLastPayload() {
 		$this->getPaymentIdFromOrderByClientChoice( 1, 1, 1000, 2000, '198101010000' );
-		$poppedPayload = $this->rb->getPayload(true);
-		$this->assertTrue(isset($poppedPayload['Payload']) && isset($poppedPayload['SpecLines']));
+		$poppedPayload = $this->rb->getPayload( true );
+		static::assertTrue( isset( $poppedPayload['Payload'] ) && isset( $poppedPayload['SpecLines'] ) );
 	}
 }
