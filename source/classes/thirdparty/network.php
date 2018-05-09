@@ -790,8 +790,6 @@ if ( ! class_exists( 'NETCURL_PARSER' ) && ! class_exists( 'Resursbank\RBEcomPHP
 		public function getParsedResponse() {
 			return $this->PARSE_CONTENT_OUTPUT;
 		}
-
-
 	}
 }
 if ( ! class_exists( 'NETCURL_DRIVER_CONTROLLER' ) && ! class_exists( 'Resursbank\RBEcomPHP\NETCURL_DRIVER_CONTROLLER' ) ) {
@@ -1088,9 +1086,10 @@ if ( ! class_exists( 'NETCURL_DRIVER_CONTROLLER' ) && ! class_exists( 'Resursban
 				return $this->DRIVER;
 			}
 
-			if (!is_null($ownClass) && class_exists($ownClass)) {
-				$this->DRIVER = $this->getDriverByClass($netDriver, $parameters, $ownClass);
+			if ( ! is_null( $ownClass ) && class_exists( $ownClass ) ) {
+				$this->DRIVER    = $this->getDriverByClass( $netDriver, $parameters, $ownClass );
 				$this->DRIVER_ID = $netDriver;
+
 				return $this->DRIVER;
 			}
 
@@ -1105,7 +1104,7 @@ if ( ! class_exists( 'NETCURL_DRIVER_CONTROLLER' ) && ! class_exists( 'Resursban
 
 			} else {
 				if ( $this->hasCurl() ) {
-					$this->DRIVER = NETCURL_NETWORK_DRIVERS::DRIVER_CURL;
+					$this->DRIVER    = NETCURL_NETWORK_DRIVERS::DRIVER_CURL;
 					$this->DRIVER_ID = NETCURL_NETWORK_DRIVERS::DRIVER_CURL;
 				} else {
 					// Last resort: Check if there is any other driver available if this fails
@@ -1252,9 +1251,10 @@ if ( ! class_exists( 'MODULE_SSL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MOD
 		 * @return bool
 		 */
 		public static function hasSsl() {
-			if (!count(self::getCurlSslAvailable())) {
+			if ( ! count( self::getCurlSslAvailable() ) ) {
 				return true;
 			}
+
 			return false;
 		}
 
@@ -1458,9 +1458,10 @@ if ( ! class_exists( 'MODULE_SSL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MOD
 			);
 			// During tests, this bundle might disappear depending on what happens in tests. If something fails, that might render
 			// strange false alarms, so we'll just add the file into the array if it's set. Many tests in a row can strangely have this effect.
-			if (!empty($sslCaBundle)) {
+			if ( ! empty( $sslCaBundle ) ) {
 				$contextGenerateArray['cafile'] = $sslCaBundle;
 			}
+
 			return $contextGenerateArray;
 		}
 
@@ -1476,7 +1477,7 @@ if ( ! class_exists( 'MODULE_SSL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MOD
 		public function getSslStream( $optionsArray = array(), $addonContextData = array() ) {
 			$streamContextOptions = array();
 			if ( is_object( $this->PARENT ) ) {
-				$this->PARENT->setUserAgent(NETCURL_SSL_CLIENTNAME . "-" . NETCURL_SSL_RELEASE);
+				$this->PARENT->setUserAgent( NETCURL_SSL_CLIENTNAME . "-" . NETCURL_SSL_RELEASE );
 				$streamContextOptions['http'] = array(
 					"user_agent" => $this->PARENT->getUserAgent()
 				);
@@ -1768,7 +1769,7 @@ if ( ! class_exists( 'NETCURL_AUTH_TYPES' ) && ! class_exists( 'Resursbank\RBEco
 if ( ! class_exists( 'CURL_AUTH_TYPES' ) && ! class_exists( 'Resursbank\RBEcomPHP\CURL_AUTH_TYPES' ) ) {
 	/**
 	 * @package TorneLIB
-	 * @deprecated Use NETCURL_AUTH_TYPES
+	 * @deprecated 6.0.20 Use NETCURL_AUTH_TYPES
 	 */
 	abstract class CURL_AUTH_TYPES extends NETCURL_AUTH_TYPES {
 	}
@@ -1788,13 +1789,13 @@ if ( ! class_exists( 'NETCURL_HTTP_OBJECT' ) && ! class_exists( 'Resursbank\RBEc
 		private $NETCURL_URL;
 		private $NETCURL_IP;
 
-		public function __construct($header = array(), $body = '', $code = 0, $parsed = '', $url = '', $ip = '') {
+		public function __construct( $header = array(), $body = '', $code = 0, $parsed = '', $url = '', $ip = '' ) {
 			$this->NETCURL_HEADER = $header;
-			$this->NETCURL_BODY = $body;
-			$this->NETCURL_CODE = $code;
+			$this->NETCURL_BODY   = $body;
+			$this->NETCURL_CODE   = $code;
 			$this->NETCURL_PARSED = $parsed;
-			$this->NETCURL_URL = $url;
-			$this->NETCURL_IP = $ip;
+			$this->NETCURL_URL    = $url;
+			$this->NETCURL_IP     = $ip;
 		}
 
 		public function getHeader() {
@@ -1845,7 +1846,6 @@ if ( ! class_exists( 'NETCURL_POST_DATATYPES' ) && ! class_exists( 'Resursbank\R
 	 * @package TorneLIB
 	 * @since 6.0.20
 	 */
-
 	abstract class NETCURL_POST_DATATYPES {
 		const DATATYPE_NOT_SET = 0;
 		const DATATYPE_JSON = 1;
@@ -1857,8 +1857,7 @@ if ( ! class_exists( 'NETCURL_POST_DATATYPES' ) && ! class_exists( 'Resursbank\R
 if ( ! class_exists( 'CURL_POST_AS' ) && ! class_exists( 'Resursbank\RBEcomPHP\CURL_POST_AS' ) ) {
 	/**
 	 * @package TorneLIB
-	 * @deprecated Use NETCURL_POST_DATATYPES
-	 * @since 6.0.20
+	 * @deprecated 6.0.20 Use NETCURL_POST_DATATYPES
 	 */
 	abstract class CURL_POST_AS extends NETCURL_POST_DATATYPES {
 		/**
@@ -1903,8 +1902,7 @@ if ( ! class_exists( 'TORNELIB_CURL_DRIVERS' ) && ! class_exists( 'Resursbank\RB
 	/**
 	 * Class TORNELIB_CURL_DRIVERS
 	 * @package TorneLIB
-	 * @deprecated use NETCURL_NETWORK_DRIVERS
-	 * @since 6.0.20
+	 * @deprecated .0.20 Use NETCURL_NETWORK_DRIVERS
 	 */
 	abstract class TORNELIB_CURL_DRIVERS extends NETCURL_NETWORK_DRIVERS {
 	}
@@ -1951,8 +1949,7 @@ if ( ! class_exists( 'TorneLIB_Network_IP' ) && ! class_exists( 'Resursbank\RBEc
 	/**
 	 * Class TorneLIB_Network_IP
 	 * @package TorneLIB
-	 * @deprecated Use NETCURL_IP_PROTOCOLS
-	 * @since 6.0.20
+	 * @deprecated 6.0.20 Use NETCURL_IP_PROTOCOLS
 	 */
 	abstract class TorneLIB_Network_IP extends NETCURL_IP_PROTOCOLS {
 		const IPTYPE_NONE = 0;
@@ -1965,8 +1962,7 @@ if ( ! class_exists( 'TorneLIB_Network_IP_Protocols' ) && ! class_exists( 'Resur
 	/**
 	 * Class TorneLIB_Network_IP_Protocols
 	 * @package TorneLIB
-	 * @deprecated Use NETCURL_IP_PROTOCOLS
-	 * @since 6.0.20
+	 * @deprecated 6.0.20 Use NETCURL_IP_PROTOCOLS
 	 */
 	abstract class TorneLIB_Network_IP_Protocols extends TorneLIB_Network_IP {
 	}
@@ -1991,8 +1987,7 @@ if ( ! class_exists( 'NETCURL_POST_METHODS' ) && ! class_exists( 'Resursbank\RBE
 if ( ! class_exists( 'CURL_METHODS' ) && ! class_exists( 'Resursbank\RBEcomPHP\CURL_METHODS' ) ) {
 	/**
 	 * @package TorneLIB
-	 * @deprecated Use NETCURL_POST_METHODS
-	 * @since 6.0.20
+	 * @deprecated 6.0.20 Use NETCURL_POST_METHODS
 	 */
 	abstract class CURL_METHODS extends NETCURL_POST_METHODS {
 	}
@@ -2014,8 +2009,7 @@ if ( ! class_exists( 'NETCURL_RESOLVER' ) && ! class_exists( 'Resursbank\RBEcomP
 if ( ! class_exists( 'CURL_RESOLVER' ) && ! class_exists( 'Resursbank\RBEcomPHP\CURL_RESOLVER' ) ) {
 	/**
 	 * @package TorneLIB
-	 * @deprecated Use NETCURL_RESOLVER
-	 * @since 6.0.20
+	 * @deprecated 6.0.20 Use NETCURL_RESOLVER
 	 */
 	abstract class CURL_RESOLVER extends NETCURL_RESOLVER {
 	}
@@ -2036,18 +2030,17 @@ if ( ! class_exists( 'NETCURL_RESPONSETYPE' ) && ! class_exists( 'Resursbank\RBE
 		/**
 		 * Class TORNELIB_CURL_RESPONSETYPE
 		 * @package TorneLIB
-		 * @deprecated Use NETCURL_RESPONSETYPE
-		 * @since 6.0.20
+		 * @deprecated 6.0.20 Use NETCURL_RESPONSETYPE
 		 */
 		abstract class TORNELIB_CURL_RESPONSETYPE extends NETCURL_RESPONSETYPE {
 		}
 	}
 }
 if ( ! class_exists( 'MODULE_NETWORK' ) && ! class_exists( 'Resursbank\RBEcomPHP\MODULE_NETWORK' ) ) {
-	if (!defined('NETCURL_NETWORK_RELEASE')) {
+	if ( ! defined( 'NETCURL_NETWORK_RELEASE' ) ) {
 		define( 'NETCURL_NETWORK_RELEASE', '6.0.6' );
 	}
-	if (!defined('NETCURL_NETWORK_MODIFY')) {
+	if ( ! defined( 'NETCURL_NETWORK_MODIFY' ) ) {
 		define( 'NETCURL_NETWORK_MODIFY', '20180325' );
 	}
 
@@ -2058,7 +2051,7 @@ if ( ! class_exists( 'MODULE_NETWORK' ) && ! class_exists( 'Resursbank\RBEcomPHP
 	 * @link https://phpdoc.tornevall.net/TorneLIBv5/class-TorneLIB.TorneLIB_Network.html PHPDoc/Staging - TorneLIB_Network
 	 * @link https://docs.tornevall.net/x/KQCy TorneLIB (PHP) Landing documentation
 	 * @link https://bitbucket.tornevall.net/projects/LIB/repos/tornelib-php/browse Sources of TorneLIB
-	 * 
+	 *
 	 * @package TorneLIB
 	 */
 	class MODULE_NETWORK {
@@ -2318,11 +2311,11 @@ if ( ! class_exists( 'MODULE_NETWORK' ) && ! class_exists( 'Resursbank\RBEcomPHP
 					foreach ( $urls as $url ) {
 						$trimUrl = trim( $url );
 						if ( ! empty( $trimUrl ) ) {
-							$prependUrl    = $protocol . $url;
-							if (!$preventDuplicates) {
+							$prependUrl = $protocol . $url;
+							if ( ! $preventDuplicates ) {
 								$returnArray[] = $prependUrl;
 							} else {
-								if (!in_array($prependUrl, $returnArray)) {
+								if ( ! in_array( $prependUrl, $returnArray ) ) {
 									$returnArray[] = $prependUrl;
 								}
 							}
@@ -2691,6 +2684,7 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'Resursbank\RBEcomP
 	/**
 	 * Class MODULE_CURL
 	 * @package TorneLIB
+	 * @deprecated 6.0.20 Use MODULE_NETWORK
 	 */
 	class TorneLIB_Network extends MODULE_NETWORK {
 		function __construct() {
@@ -3523,8 +3517,9 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 			try {
 				$ownCookiePath = $this->getFlag( 'NETCURL_COOKIE_LOCATION' );
 				if ( ! empty( $ownCookiePath ) ) {
-					return $this->setCookiePathUserDefined($ownCookiePath);
+					return $this->setCookiePathUserDefined( $ownCookiePath );
 				}
+
 				return $this->setCookiePathBySystem();
 
 			} catch ( \Exception $e ) {
@@ -3535,12 +3530,13 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 
 		/**
 		 * Sets, if defined by user, up a cookie directory storage
+		 *
 		 * @param $ownCookiePath
 		 *
 		 * @return bool
 		 * @since 6.0.20
 		 */
-		private function setCookiePathUserDefined($ownCookiePath) {
+		private function setCookiePathUserDefined( $ownCookiePath ) {
 			if ( is_dir( $ownCookiePath ) ) {
 				$this->COOKIE_PATH = $ownCookiePath;
 
@@ -3582,6 +3578,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 					}
 				}
 			}
+
 			return false;
 		}
 
@@ -4036,7 +4033,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 			}
 
 			if ( ! empty( $CustomUserAgent ) ) {
-				$this->mergeUserAgent($CustomUserAgent);
+				$this->mergeUserAgent( $CustomUserAgent );
 			} else {
 				$this->HTTP_USER_AGENT = $this->userAgents['Mozilla'] . ' +TorneLIB-NetCURL-' . NETCURL_RELEASE . " +" . NETCURL_CURL_CLIENTNAME . "+-" . NETCURL_CURL_RELEASE . ' (' . $this->netCurlUrl . ')';
 			}
@@ -4044,9 +4041,10 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 
 		/**
 		 * @param string $CustomUserAgent
+		 *
 		 * @since 6.0.20
 		 */
-		private function mergeUserAgent($CustomUserAgent = "") {
+		private function mergeUserAgent( $CustomUserAgent = "" ) {
 			$trimmedUserAgent = trim( $CustomUserAgent );
 			if ( ! in_array( $trimmedUserAgent, $this->CUSTOM_USER_AGENT ) ) {
 				$this->CUSTOM_USER_AGENT[] = $trimmedUserAgent;
@@ -4867,13 +4865,14 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 * @throws \Exception
 		 * @since 6.0.20
 		 */
-		private function getParsedExceptionCheck($inputResponse) {
+		private function getParsedExceptionCheck( $inputResponse ) {
 			// If the input response is an array and contains the deprecated editon of an error code
 			if ( is_array( $inputResponse ) ) {
 				if ( isset( $inputResponse['code'] ) && $inputResponse['code'] >= 400 ) {
 					throw new \Exception( NETCURL_CURL_CLIENTNAME . " parseResponse exception - Unexpected response code from server: " . $inputResponse['code'], $inputResponse['code'] );
 				}
 			}
+
 			return false;
 		}
 
@@ -6624,7 +6623,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 * Class MODULE_CURL
 		 * @package TorneLIB
 		 * @throws \Exception
-		 * @since 6.0
+		 * @deprecated 6.0.20
 		 */
 		class Tornevall_cURL extends MODULE_CURL {
 			function __construct( $requestUrl = '', $requestPostData = array(), $requestPostMethod = NETCURL_POST_METHODS::METHOD_POST, $requestFlags = array() ) {
@@ -6652,6 +6651,7 @@ if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 	 * Making no difference of a SOAP call and a regular GET/POST
 	 *
 	 * @package TorneLIB
+	 * @since 6.0.20
 	 */
 	class MODULE_SOAP extends MODULE_CURL {
 		protected $soapClient;
@@ -7036,6 +7036,7 @@ if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		/**
 		 * Class MODULE_CURL
 		 * @package TorneLIB
+		 * @deprecated 6.0.20 Use MODULE_SOAP
 		 */
 		class Tornevall_SimpleSoap extends MODULE_SOAP {
 			function __construct( string $Url, $that = null ) {
