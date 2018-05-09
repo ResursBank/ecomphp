@@ -16,7 +16,6 @@
 
 namespace Resursbank\RBEcomPHP;
 
-// Location of RBEcomPHP class files (if they are loaded from somewhere else than default)
 if ( ! defined( 'RB_API_PATH' ) ) {
 	define( 'RB_API_PATH', __DIR__ );
 }
