@@ -7,7 +7,7 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.1
- * @version 1.1.36
+ * @version 1.1.37
  * @deprecated Maintenance version only - Use composer based package v1.3 or higher if possible
  * @link https://test.resurs.com/docs/x/BACt Migration from 1.0/1.1 to 1.3 documentation
  * @link https://test.resurs.com/docs/x/TYNM Get started with EComPHP
@@ -34,16 +34,17 @@ use Resursbank\RBEcomPHP\CURL_POST_AS;
 use Resursbank\RBEcomPHP\Tornevall_cURL;
 use Resursbank\RBEcomPHP\TorneLIB_Network;
 use Resursbank\RBEcomPHP\TorneLIB_Crypto;
+use Resursbank\RBEcomPHP\MODULE_NETBITS;
 use Resursbank\RBEcomPHP\TorneLIB_NetBits;
 use Resursbank\RBEcomPHP\TorneLIB_IO;
 use Resursbank\RBEcomPHP\MODULE_IO;
 
 // Globals starts here
 if ( ! defined( 'ECOMPHP_VERSION' ) ) {
-	define( 'ECOMPHP_VERSION', '1.1.36' );
+	define( 'ECOMPHP_VERSION', '1.1.37' );
 }
 if ( ! defined( 'ECOMPHP_MODIFY_DATE' ) ) {
-	define( 'ECOMPHP_MODIFY_DATE', '20180509' );
+	define( 'ECOMPHP_MODIFY_DATE', '20180511' );
 }
 
 /**
@@ -2064,10 +2065,11 @@ class ResursBank {
 	public function getCallBacksByRest( $ReturnAsArray = false ) {
 		$this->InitializeServices();
 		try {
-			$ResursResponse = $this->CURL->getParsedResponse( $this->CURL->doGet( $this->getCheckoutUrl() . "/callbacks" ) );
+			$ResursResponse = $this->CURL->getParsed( $this->CURL->doGet( $this->getCheckoutUrl() . "/callbacks" ) );
 		} catch ( \Exception $restException ) {
 			throw new \Exception( $restException->getMessage(), $restException->getCode() );
 		}
+		$ResursResponse = array();
 		if ( $ReturnAsArray ) {
 			$ResursResponseArray = array();
 			if ( is_array( $ResursResponse ) && count( $ResursResponse ) ) {
@@ -2159,6 +2161,7 @@ class ResursBank {
 	 */
 	public function setRegisterCallback( $callbackType = RESURS_CALLBACK_TYPES::CALLBACK_TYPE_NOT_SET, $callbackUriTemplate = "", $digestData = array(), $basicAuthUserName = null, $basicAuthPassword = null ) {
 		$this->InitializeServices();
+		$registerBy = "unknown";
 		if ( is_array( $this->validateExternalUrl ) && count( $this->validateExternalUrl ) ) {
 			$isValidAddress = $this->validateExternalAddress();
 			if ( $isValidAddress == RESURS_CALLBACK_REACHABILITY::IS_NOT_REACHABLE ) {
@@ -2210,6 +2213,7 @@ class ResursBank {
 		}
 		////// DIGEST CONFIGURATION FINISH
 		if ( $this->registerCallbacksViaRest && $callbackType !== RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UPDATE ) {
+			$registerBy = 'rest';
 			$serviceUrl        = $this->getCheckoutUrl() . "/callbacks";
 			$renderCallbackUrl = $serviceUrl . "/" . $renderCallback['eventType'];
 			if ( isset( $renderCallback['eventType'] ) ) {
@@ -2218,6 +2222,7 @@ class ResursBank {
 			$renderedResponse = $this->CURL->doPost( $renderCallbackUrl, $renderCallback, CURL_POST_AS::POST_AS_JSON );
 			$code             = $this->CURL->getResponseCode($renderedResponse);
 		} else {
+			$registerBy = 'wsdl';
 			$renderCallbackUrl = $this->getServiceUrl( "registerEventCallback" );
 			// We are not using postService here, since we are dependent on the response code rather than the response itself
 			$renderedResponse = $this->CURL->doPost( $renderCallbackUrl )->registerEventCallback( $renderCallback );
@@ -2234,44 +2239,84 @@ class ResursBank {
 			return true;
 		}
 
-		throw new \Exception("setRegisterCallbackException ($code): Could not register callback event " . $renderCallback['eventType'] . ' (service: '.$registerBy.')', $code);
+		throw new \Exception( "setRegisterCallbackException ($code): Could not register callback event " . $renderCallback['eventType'] . ' (service: ' . $registerBy . ')', $code );
 	}
 
 	/**
 	 * Simplifies removal of callbacks even when they does not exist at first.
 	 *
 	 * @param int $callbackType
+	 * @param bool $isMultiple Supports bitmasked unregistration of callbacks (setting callbackType 255 and this value to true, will register all callbacks in one call)
 	 *
 	 * @return bool
 	 * @throws \Exception
 	 * @since 1.0.1
 	 * @since 1.1.1
 	 */
-	public function unregisterEventCallback( $callbackType = RESURS_CALLBACK_TYPES::CALLBACK_TYPE_NOT_SET ) {
+	public function unregisterEventCallback( $callbackType = RESURS_CALLBACK_TYPES::CALLBACK_TYPE_NOT_SET, $isMultiple = false ) {
+		$hasAtLeastOne = false;
+
+		if ($isMultiple) {
+			$this->BIT = new MODULE_NETBITS();
+			$this->BIT->setBitStructure(
+				array(
+					'UNFREEZE'                => RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UNFREEZE,
+					'ANNULMENT'               => RESURS_CALLBACK_TYPES::CALLBACK_TYPE_ANNULMENT,
+					'AUTOMATIC_FRAUD_CONTROL' => RESURS_CALLBACK_TYPES::CALLBACK_TYPE_AUTOMATIC_FRAUD_CONTROL,
+					'FINALIZATION'            => RESURS_CALLBACK_TYPES::CALLBACK_TYPE_FINALIZATION,
+					'TEST'                    => RESURS_CALLBACK_TYPES::CALLBACK_TYPE_TEST,
+					'UPDATE'                  => RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UPDATE,
+					'BOOKED'                  => RESURS_CALLBACK_TYPES::CALLBACK_TYPE_BOOKED,
+				)
+			);
+			$callbackTypes = $this->BIT->getBitArray($callbackType);
+		}
+
 		$callbackType = $this->getCallbackTypeString( $callbackType );
 
-		if ( ! empty( $callbackType ) ) {
-			if ( $this->registerCallbacksViaRest ) {
-				$this->InitializeServices();
-				$serviceUrl        = $this->getCheckoutUrl() . "/callbacks";
-				$renderCallbackUrl = $serviceUrl . "/" . $callbackType;
-				$curlResponse      = $this->CURL->doDelete( $renderCallbackUrl );
-				$curlCode          = $this->CURL->getResponseCode( $curlResponse );
-				if ( $curlCode >= 200 && $curlCode <= 250 ) {
-					return true;
-				}
-			} else {
-				$this->InitializeServices();
-				// Not using postService here, since we're
-				$curlResponse = $this->CURL->doGet( $this->getServiceUrl( 'unregisterEventCallback' ) )->unregisterEventCallback( array( 'eventType' => $callbackType ) );
-				$curlCode     = $this->CURL->getResponseCode( $curlResponse );
-				if ( $curlCode >= 200 && $curlCode <= 250 ) {
-					return true;
+		if ( ! isset( $callbackTypes ) || ! is_array( $callbackTypes ) ) {
+			$callbackTypes = array( $callbackType );
+		}
+
+		$unregisteredCallbacks = array();
+		foreach ($callbackTypes as $callbackType) {
+			if ( ! empty( $callbackType ) ) {
+				if ( $this->registerCallbacksViaRest && $callbackType != 'UPDATE' ) {
+					$this->InitializeServices();
+					$serviceUrl        = $this->getCheckoutUrl() . "/callbacks";
+					$renderCallbackUrl = $serviceUrl . "/" . $callbackType;
+					$curlResponse      = $this->CURL->doDelete( $renderCallbackUrl );
+					$curlCode          = $this->CURL->getCode( $curlResponse );
+					if ( $curlCode >= 200 && $curlCode <= 250 ) {
+						if (!$isMultiple) {
+							return true;
+						} else {
+							$hasAtLeastOne = true;
+							$unregisteredCallbacks[$callbackType] = true;
+						}
+					}
+				} else {
+					$this->InitializeServices();
+					// Not using postService here, since we're
+					$curlResponse = $this->CURL->doGet( $this->getServiceUrl( 'unregisterEventCallback' ) )->unregisterEventCallback( array( 'eventType' => $callbackType ) );
+					$curlCode     = $this->CURL->getCode( $curlResponse );
+					if ( $curlCode >= 200 && $curlCode <= 250 ) {
+						if (!$isMultiple) {
+							return true;
+						} else {
+							$hasAtLeastOne = true;
+							$unregisteredCallbacks[$callbackType] = true;
+						}
+					}
 				}
 			}
 		}
 
-		return false;
+		if (!$isMultiple) {
+			return false;
+		} else {
+			return $unregisteredCallbacks;
+		}
 	}
 
 	/**
