@@ -3040,16 +3040,29 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 *
 		 * @throws \Exception
 		 */
-		public function __construct( $requestUrl = '', $requestPostData = array(), $requestPostMethod = NETCURL_POST_METHODS::METHOD_POST, $requestFlags = array() ) {
+		public function __construct( $requestUrl = '', $requestPostData = array(), $requestPostMethod = null, $requestFlags = array() ) {
 			register_shutdown_function( array( $this, 'netcurl_terminate' ) );
+
+			if (!is_null($requestPostData)) {
+				$requestPostData = array();
+			}
 
 			// PHP versions not supported to chaining gets the chaining parameter disabled by default.
 			if ( version_compare( PHP_VERSION, "5.4.0", "<" ) ) {
+				// Something really magic happens in PHP 5.3 with default request method, so instead we default this to GET
+				// instead of POST if running lower versions.
+				if (is_null($requestPostMethod)) {
+					$requestPostMethod = NETCURL_POST_METHODS::METHOD_GET;
+				}
+
 				try {
 					$this->setFlag( 'NOCHAIN', true );
 				} catch ( \Exception $ignoreEmptyException ) {
 					// This will never occur
 				}
+			}
+			if (is_null($requestPostMethod)) {
+				$requestPostMethod = NETCURL_POST_METHODS::METHOD_POST;
 			}
 			if ( is_array( $requestFlags ) && count( $requestFlags ) ) {
 				$this->setFlags( $requestFlags );
@@ -3079,7 +3092,6 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 				} else if ( $requestPostMethod == NETCURL_POST_METHODS::METHOD_DELETE ) {
 					$InstantResponse = $this->doDelete( $requestUrl, $requestPostData );
 				}
-
 				return $InstantResponse;
 			}
 
@@ -6003,6 +6015,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 			if ( $currentDriver === NETCURL_NETWORK_DRIVERS::DRIVER_CURL ) {
 				try {
 					$returnContent                     = $this->internal_curl_execute();
+
 					$this->DEBUG_DATA['data']['url'][] = array(
 						'url'       => $this->CURL_STORED_URL,
 						'opt'       => $this->getCurlOptByKeys(),
@@ -7046,10 +7059,10 @@ if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 	}
 }
 if ( ! defined( 'TORNELIB_IO_RELEASE' ) ) {
-	define( 'TORNELIB_IO_RELEASE', '6.0.9' );
+	define( 'TORNELIB_IO_RELEASE', '6.0.11' );
 }
 if ( ! defined( 'TORNELIB_IO_MODIFY' ) ) {
-	define( 'TORNELIB_IO_MODIFY', '20180426' );
+	define( 'TORNELIB_IO_MODIFY', '20180514' );
 }
 if ( ! defined( 'TORNELIB_IO_CLIENTNAME' ) ) {
 	define( 'TORNELIB_IO_CLIENTNAME', 'MODULE_IO' );
@@ -7550,7 +7563,9 @@ if ( ! class_exists( 'MODULE_IO' ) && ! class_exists( 'Resursbank\RBEcomPHP\MODU
 		public function getFromXml( $dataIn = '', $normalize = false ) {
 			$dataIn = trim( $dataIn );
 
-			if ( preg_match( "/&\b(.*?)+;(.*)/is", $dataIn ) ) {
+			// Run entity checker only if there seems to be no initial tags located in the input string, as this may cause bad loops
+			// for PHP (in older versions this also cause SEGFAULTs)
+			if ( ! preg_match( "/^\</", $dataIn ) && preg_match( "/&\b(.*?)+;(.*)/is", $dataIn ) ) {
 				$dataEntity = trim( html_entity_decode( $dataIn ) );
 				if ( preg_match( "/^\</", $dataEntity ) ) {
 
