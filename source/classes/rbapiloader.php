@@ -7,7 +7,7 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.3
- * @version 1.3.10
+ * @version 1.3.11
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @license Apache License
@@ -35,10 +35,10 @@ use \TorneLIB\CURL_POST_AS;
 
 // Globals starts here
 if ( ! defined( 'ECOMPHP_VERSION' ) ) {
-	define( 'ECOMPHP_VERSION', '1.3.10' );
+	define( 'ECOMPHP_VERSION', '1.3.11' );
 }
 if ( ! defined( 'ECOMPHP_MODIFY_DATE' ) ) {
-	define( 'ECOMPHP_MODIFY_DATE', '20180511' );
+	define( 'ECOMPHP_MODIFY_DATE', '20180522' );
 }
 
 /**
@@ -3699,7 +3699,7 @@ class ResursBank {
 		if ( ! empty( $this->createPaymentExecuteCommand ) ) {
 			return $this->createPaymentExecute( $this->createPaymentExecuteCommand, $this->Payload );
 		} else {
-			throw new \Exception( "setRequiredExecute() must used before you use this function", 403 );
+			throw new \Exception( "createPaymentDelay() must used before you use this function", 403 );
 		}
 	}
 
@@ -4130,18 +4130,32 @@ class ResursBank {
 	/**
 	 * Enable execute()-mode on data passed through createPayment()
 	 *
-	 * If you run createPayment() and does not succeed during the primary function, you can enable this function to not fulfill the
+	 * @param bool $enableExecute
+	 * @since 1.0.3
+	 * @since 1.1.3
+	 * @deprecated Use createPaymentDelay() (making life easier on debugging stage)
+	 */
+	public function setRequiredExecute( $enableExecute = false ) {
+		$this->createPaymentDelay($enableExecute);
+	}
+
+	/**
+	 * Enable execute()-mode on data passed through createPayment()
+	 *
+	 * If you run createPayment() and do not succeed during the primary function, you can enable this function to not fulfill the
 	 * whole part of the payment until doing an execute(). In this case EComPHP will only prepare the required parameters for the payment
 	 * to run. When this function is enabled you can also, before creating the payment do for example a getPayload() to see how it looks
 	 * before completion.
 	 *
-	 * @param bool $enableExecute
+	 * @param bool $enableManualExecution
 	 *
-	 * @since 1.0.3
-	 * @since 1.1.3
+	 * @since 1.0.38
+	 * @since 1.1.38
+	 * @since 1.3.11
+	 * @since 2.0.0
 	 */
-	public function setRequiredExecute( $enableExecute = false ) {
-		$this->forceExecute = $enableExecute;
+	public function createPaymentDelay($enableManualExecution = false) {
+		$this->forceExecute = $enableManualExecution;
 	}
 
 	/**
