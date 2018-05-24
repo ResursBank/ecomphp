@@ -25,10 +25,10 @@ namespace Resursbank\RBEcomPHP;
 
 // Library Release Information
 if ( ! defined( 'NETCURL_RELEASE' ) ) {
-	define( 'NETCURL_RELEASE', '6.0.20' );
+	define( 'NETCURL_RELEASE', '6.0.21' );
 }
 if ( ! defined( 'NETCURL_MODIFY' ) ) {
-	define( 'NETCURL_MODIFY', '20180328' );
+	define( 'NETCURL_MODIFY', '20180523' );
 }
 if ( ! defined( 'TORNELIB_NETCURL_RELEASE' ) ) {
 	// Compatibility constant
@@ -530,6 +530,12 @@ if ( ! class_exists( 'NETCURL_PARSER' ) && ! class_exists( 'Resursbank\RBEcomPHP
 		private $PARSE_CONTENT_TYPE = '';
 		private $PARSE_CONTENT_OUTPUT = '';
 
+		/**
+		 * @var bool
+		 */
+		private $NETCURL_CONTENT_IS_DOMCONTENT = false;
+
+
 		/** @var MODULE_IO $IO */
 		private $IO;
 
@@ -743,6 +749,14 @@ if ( ! class_exists( 'NETCURL_PARSER' ) && ! class_exists( 'Resursbank\RBEcomPHP
 		}
 
 		/**
+		 * @return bool
+		 * @since 6.0.1
+		 */
+		public function getIsDomContent() {
+			return $this->NETCURL_CONTENT_IS_DOMCONTENT;
+		}
+
+		/**
 		 * @return array
 		 * @throws \Exception
 		 * @since 6.0.0
@@ -759,6 +773,8 @@ if ( ! class_exists( 'NETCURL_PARSER' ) && ! class_exists( 'Resursbank\RBEcomPHP
 					libxml_use_internal_errors( true );
 					$DOM->loadHTML( $this->PARSE_CONTAINER );
 					if ( isset( $DOM->childNodes->length ) && $DOM->childNodes->length > 0 ) {
+						$this->NETCURL_CONTENT_IS_DOMCONTENT = true;
+
 						$elementsByTagName = $DOM->getElementsByTagName( '*' );
 						$childNodeArray    = $this->getChildNodes( $elementsByTagName );
 						$childTagArray     = $this->getChildNodes( $elementsByTagName, 'tagnames' );
@@ -2695,10 +2711,10 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'Resursbank\RBEcomP
 if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MODULE_CURL' ) ) {
 
 	if ( ! defined( 'NETCURL_CURL_RELEASE' ) ) {
-		define( 'NETCURL_CURL_RELEASE', '6.0.19' );
+		define( 'NETCURL_CURL_RELEASE', '6.0.20' );
 	}
 	if ( ! defined( 'NETCURL_CURL_MODIFY' ) ) {
-		define( 'NETCURL_CURL_MODIFY', '20180403' );
+		define( 'NETCURL_CURL_MODIFY', '20180522' );
 	}
 	if ( ! defined( 'NETCURL_CURL_CLIENTNAME' ) ) {
 		define( 'NETCURL_CURL_CLIENTNAME', 'MODULE_CURL' );
@@ -2780,6 +2796,27 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		protected $NETCURL_RESPONSE_RAW;
 		protected $NETCURL_REQUEST_HEADERS;
 		protected $NETCURL_REQUEST_BODY;
+
+		/**
+		 * When you just need output responses and nothing else (except for exceptions)
+		 * @var bool $NETCURL_SIMPLIFY_RESPONSES
+		 * @since 6.0.21
+		 */
+		protected $NETCURL_SIMPLIFY_RESPONSES = false;
+
+		/**
+		 * Allow domcontent to be parsed in simplified mode
+		 * @var bool
+		 * @since 6.0.21
+		 */
+		protected $NETCURL_SIMPLIFY_DOMCONTENT = false;
+
+		/**
+		 * Will be set to true if the parser passed DOM-content analyze
+		 * @var bool
+		 * @since 6.0.21
+		 */
+		protected $NETCURL_CONTENT_IS_DOMCONTENT = false;
 
 		private $userAgents = array(
 			'Mozilla' => 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; .NET CLR 1.0.3705; .NET CLR 1.1.4322; Media Center PC 4.0;)'
@@ -3106,6 +3143,15 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		}
 
 		/**
+		 * Termination Controller
+		 *
+		 * As of 6.0.20 cookies will be only stored if there is a predefined cookiepath or if system tempdir is allowed
+		 * @since 5.0
+		 */
+		function netcurl_terminate() {
+		}
+
+		/**
 		 * Initialize NetCURL module and requirements
 		 *
 		 * @return resource
@@ -3303,12 +3349,25 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		}
 
 		/**
-		 * Termination Controller
+		 * When you just need responses and nothing else (except for exceptions)
 		 *
-		 * As of 6.0.20 cookies will be only stored if there is a predefined cookiepath or if system tempdir is allowed
-		 * @since 5.0
+		 * Activation means you will always get a proper response back, on http requests (defaults to parsed content, but if the parse is empty, we will fall back on the body parts and if bodyparts is empty netcurl will fall back to an array called simplifiedContainer).
+		 *
+		 * @param bool $simplifyResponses
+		 * @param bool $allowDomTree
 		 */
-		function netcurl_terminate() {
+		public function setSimplifiedResponse( $simplifyResponses = true, $allowDomTree = false ) {
+			$this->NETCURL_SIMPLIFY_RESPONSES  = $simplifyResponses;
+			$this->NETCURL_SIMPLIFY_DOMCONTENT = $allowDomTree;
+		}
+
+		/**
+		 * Get the status of the simplified responses setting
+		 * @return bool
+		 * @since 6.0.21
+		 */
+		public function getSimplifiedResponse() {
+			return $this->NETCURL_SIMPLIFY_RESPONSES;
 		}
 
 		/**
@@ -4726,8 +4785,6 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 			);
 			$returnResponse['URL'] = $this->CURL_STORED_URL;
 			$returnResponse['ip']  = isset( $this->CURL_IP_ADDRESS ) ? $this->CURL_IP_ADDRESS : null;  // Will only be filled if there is custom address set.
-
-			$this->throwCodeException( trim( $httpMessage ), $code );
 			$contentType           = isset( $headerInfo['Content-Type'] ) ? $headerInfo['Content-Type'] : null;
 			$arrayedResponse['ip'] = $this->CURL_IP_ADDRESS;
 
@@ -4738,6 +4795,9 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 			$this->NETCURL_RESPONSE_CONTAINER_HTTPMESSAGE = trim( $httpMessage );
 			$this->NETCURL_RESPONSE_CONTAINER_BODY        = $body;
 			$this->NETCURL_RESPONSE_CONTAINER_HEADER      = $header;
+
+			// Check if there is any exception to take care of and throw - or continue.
+			$this->throwCodeException( trim( $httpMessage ), $code );
 
 			if ( $this->isFlag( 'IS_SOAP' ) && ! $this->isFlag( 'ALLOW_PARSE_SOAP' ) ) {
 				$arrayedResponse['parsed'] = null;
@@ -4751,15 +4811,56 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 			$arrayedResponse['parsed']               = $parsedContent;
 			$this->NETCURL_RESPONSE_CONTAINER_PARSED = $parsedContent;
 
+			$this->NETCURL_CONTENT_IS_DOMCONTENT = $NCP->getIsDomContent();
+
 
 			if ( $this->NETCURL_RETURN_RESPONSE_TYPE == NETCURL_RESPONSETYPE::RESPONSETYPE_OBJECT ) {
 				return new NETCURL_HTTP_OBJECT( $arrayedResponse['header'], $arrayedResponse['body'], $arrayedResponse['code'], $arrayedResponse['parsed'], $this->CURL_STORED_URL, $this->CURL_IP_ADDRESS );
 			}
+
+			if ( $this->NETCURL_SIMPLIFY_RESPONSES ) {
+				return $this->getSimplifiedResponseReturnData();
+			}
+
 			if ( $this->isFlag( 'CHAIN' ) && ! $this->isFlag( 'IS_SOAP' ) ) {
 				return $this;
 			}
 
 			return $arrayedResponse;
+		}
+
+		/**
+		 * @return array|null
+		 * @since 6.0.21
+		 */
+		private function getSimplifiedResponseReturnData() {
+
+			// If domcontent is detected it us usually parsed as a domtree object. This defines if domtrees are allowed to be dumped out
+			// or if the body should be use primarily
+			if ( $this->NETCURL_CONTENT_IS_DOMCONTENT ) {
+				if ( $this->NETCURL_SIMPLIFY_DOMCONTENT ) {
+					return $this->NETCURL_RESPONSE_CONTAINER_PARSED;
+				} else {
+					return $this->NETCURL_RESPONSE_CONTAINER_BODY;
+				}
+			}
+
+			if ( ! empty( $this->NETCURL_RESPONSE_CONTAINER_PARSED ) ) {
+				return $this->NETCURL_RESPONSE_CONTAINER_PARSED;
+			} else if ( ! empty( $this->NETCURL_RESPONSE_CONTAINER_BODY ) ) {
+				return $this->NETCURL_RESPONSE_CONTAINER_BODY;
+			} else {
+				return array(
+					'simplifiedContainer' => array(
+						'NETCURL_RESPONSE_RAW'                   => $this->NETCURL_RESPONSE_RAW,
+						'NETCURL_RESPONSE_CONTAINER'             => $this->NETCURL_RESPONSE_CONTAINER,
+						'NETCURL_RESPONSE_CONTAINER_CODE'        => $this->NETCURL_RESPONSE_CONTAINER_CODE,
+						'NETCURL_RESPONSE_CONTAINER_HTTPMESSAGE' => $this->NETCURL_RESPONSE_CONTAINER_HTTPMESSAGE,
+						'NETCURL_RESPONSE_CONTAINER_BODY'        => $this->NETCURL_RESPONSE_CONTAINER_BODY,
+						'NETCURL_RESPONSE_CONTAINER_HEADER'      => $this->NETCURL_RESPONSE_CONTAINER_HEADER,
+					)
+				);
+			}
 		}
 
 		/**
@@ -6585,6 +6686,8 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 						$childNodeArray    = $this->getChildNodes( $elementsByTagName );
 						$childTagArray     = $this->getChildNodes( $elementsByTagName, 'tagnames' );
 						$childIdArray      = $this->getChildNodes( $elementsByTagName, 'id' );
+
+						$this->NETCURL_CONTENT_IS_DOMCONTENT = true;
 
 						if ( is_array( $childNodeArray ) && count( $childNodeArray ) ) {
 							$parsedContent['ByNodes'] = $childNodeArray;
