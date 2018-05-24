@@ -38,7 +38,7 @@ if ( ! defined( 'ECOMPHP_VERSION' ) ) {
 	define( 'ECOMPHP_VERSION', '1.3.11' );
 }
 if ( ! defined( 'ECOMPHP_MODIFY_DATE' ) ) {
-	define( 'ECOMPHP_MODIFY_DATE', '20180522' );
+	define( 'ECOMPHP_MODIFY_DATE', '20180524' );
 }
 
 /**
@@ -2339,7 +2339,7 @@ class ResursBank {
 			// Get internal exceptions before http responses
 			$exceptionTestBody = @json_decode($this->CURL->getResponseBody());
 			if (isset($exceptionTestBody->errorCode) && isset($exceptionTestBody->description)) {
-				throw new \Exception($exceptionTestBody->errorMessage, $exceptionTestBody->errorCode, $e);
+				throw new \Exception($exceptionTestBody->description, $exceptionTestBody->errorCode, $e);
 			}
 			throw new \Exception($e->getMessage(), $e->getCode(), $e);
 		}
@@ -3531,46 +3531,82 @@ class ResursBank {
 			return $myFlowResponse;
 		} else if ( $myFlow == RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT ) {
 			$checkoutUrl      = $this->getCheckoutUrl() . "/checkout/payments/" . $payment_id_or_method;
-			$checkoutResponse = $this->CURL->doPost( $checkoutUrl, $this->Payload, CURL_POST_AS::POST_AS_JSON );
-			$parsedResponse   = $this->CURL->getParsedResponse( $checkoutResponse );
-			$responseCode     = $this->CURL->getResponseCode( $checkoutResponse );
-			// Do not trust response codes!
-			if ( isset( $parsedResponse->paymentSessionId ) ) {
-				$this->paymentSessionId = $parsedResponse->paymentSessionId;
-				$this->SpecLines        = array();
+			try {
+				$checkoutResponse = $this->CURL->doPost( $checkoutUrl, $this->Payload, CURL_POST_AS::POST_AS_JSON );
+				$parsedResponse   = $this->CURL->getParsedResponse( $checkoutResponse );
+				$responseCode     = $this->CURL->getResponseCode( $checkoutResponse );
+				// Do not trust response codes!
+				if ( isset( $parsedResponse->paymentSessionId ) ) {
+					$this->paymentSessionId = $parsedResponse->paymentSessionId;
+					$this->SpecLines        = array();
 
-				return $parsedResponse->html;
-			} else {
-				if ( isset( $parsedResponse->error ) ) {
-					$error[] = $parsedResponse->error;
+					return $parsedResponse->html;
+				} else {
+					if ( isset( $parsedResponse->error ) ) {
+						$error[] = $parsedResponse->error;
+					}
+					if ( isset( $parsedResponse->message ) ) {
+						$error[] = $parsedResponse->message;
+					}
+					throw new \Exception( implode( "\n", $error ), $responseCode );
 				}
-				if ( isset( $parsedResponse->message ) ) {
-					$error[] = $parsedResponse->message;
-				}
-				throw new \Exception( implode( "\n", $error ), $responseCode );
+			} catch (\Exception $e) {
+				$this->handlePostErrors($e);
 			}
 
 			return $parsedResponse;
 		} else if ( $myFlow == RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW ) {
 			$hostedUrl      = $this->getHostedUrl();
-			$hostedResponse = $this->CURL->doPost( $hostedUrl, $this->Payload, CURL_POST_AS::POST_AS_JSON );
-			$parsedResponse = $this->CURL->getParsedResponse( $hostedResponse );
-			// Do not trust response codes!
-			if ( isset( $parsedResponse->location ) ) {
-				$this->resetPayload();
+			try {
+				$hostedResponse = $this->CURL->doPost( $hostedUrl, $this->Payload, CURL_POST_AS::POST_AS_JSON );
+				$parsedResponse = $this->CURL->getParsedResponse( $hostedResponse );
+				// Do not trust response codes!
+				if ( isset( $parsedResponse->location ) ) {
+					$this->resetPayload();
 
-				return $parsedResponse->location;
-			} else {
-				if ( isset( $parsedResponse->error ) ) {
-					$error[] = $parsedResponse->error;
+					return $parsedResponse->location;
+				} else {
+					if ( isset( $parsedResponse->error ) ) {
+						$error[] = $parsedResponse->error;
+					}
+					if ( isset( $parsedResponse->message ) ) {
+						$error[] = $parsedResponse->message;
+					}
+					$responseCode = $this->CURL->getResponseCode( $hostedResponse );
+					throw new \Exception( implode( "\n", $error ), $responseCode );
 				}
-				if ( isset( $parsedResponse->message ) ) {
-					$error[] = $parsedResponse->message;
-				}
-				$responseCode = $this->CURL->getResponseCode( $hostedResponse );
-				throw new \Exception( implode( "\n", $error ), $responseCode );
+				throw new \Exception( "Could not parse location of hosted flow (missing)", 404 );
+			} catch (\Exception $e) {
+				$this->handlePostErrors($e);
 			}
-			throw new \Exception( "Could not parse location of hosted flow (missing)", 404 );
+		}
+	}
+
+	/**
+	 * Handle post errors and extract eventual errors from a http body
+	 *
+	 * @param $e
+	 *
+	 * @throws \Exception
+	 * @since 1.0.38
+	 * @since 1.1.38
+	 * @since 1.3.11
+	 * @since 2.0.0
+	 */
+	private function handlePostErrors($e) {
+		$bodyTest = $this->CURL->getBody();
+		if (is_string($bodyTest) && !empty($bodyTest)) {
+			$bodyErrTest = json_decode($bodyTest);
+			if (is_object($bodyErrTest)) {
+				if (isset($bodyErrTest->message) &&isset($bodyErrTest->status)) {
+					throw new \Exception($bodyErrTest->message, $bodyErrTest->status);
+				} else if (isset($bodyErrTest->description)) {
+					throw new \Exception($bodyErrTest->description, isset($bodyErrTest->errorCode) ? $bodyErrTest->errorCode: 500);
+				}
+			}
+		}
+		if (method_exists($e, 'getMessage')) {
+			throw new \Exception($e->getMessage(), $e->getCode(), $e);
 		}
 	}
 
