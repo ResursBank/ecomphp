@@ -7,7 +7,7 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.1
- * @version 1.1.38
+ * @version 1.1.39
  * @deprecated Maintenance version only - Use composer based package v1.3 or higher if possible
  * @link https://test.resurs.com/docs/x/BACt Migration from 1.0/1.1 to 1.3 documentation
  * @link https://test.resurs.com/docs/x/TYNM Get started with EComPHP
@@ -41,7 +41,7 @@ use Resursbank\RBEcomPHP\MODULE_IO;
 
 // Globals starts here
 if ( ! defined( 'ECOMPHP_VERSION' ) ) {
-	define( 'ECOMPHP_VERSION', '1.1.38' );
+	define( 'ECOMPHP_VERSION', '1.1.38.1' );
 }
 if ( ! defined( 'ECOMPHP_MODIFY_DATE' ) ) {
 	define( 'ECOMPHP_MODIFY_DATE', '20180524' );
@@ -2063,13 +2063,13 @@ class ResursBank {
 	 * @since 1.0.1
 	 */
 	public function getCallBacksByRest( $ReturnAsArray = false ) {
+		$ResursResponse = array();
 		$this->InitializeServices();
 		try {
 			$ResursResponse = $this->CURL->getParsed( $this->CURL->doGet( $this->getCheckoutUrl() . "/callbacks" ) );
 		} catch ( \Exception $restException ) {
 			throw new \Exception( $restException->getMessage(), $restException->getCode() );
 		}
-		$ResursResponse = array();
 		if ( $ReturnAsArray ) {
 			$ResursResponseArray = array();
 			if ( is_array( $ResursResponse ) && count( $ResursResponse ) ) {
