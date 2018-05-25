@@ -41,10 +41,10 @@ use Resursbank\RBEcomPHP\MODULE_IO;
 
 // Globals starts here
 if ( ! defined( 'ECOMPHP_VERSION' ) ) {
-	define( 'ECOMPHP_VERSION', '1.1.38.1' );
+	define( 'ECOMPHP_VERSION', '1.1.38.2' );
 }
 if ( ! defined( 'ECOMPHP_MODIFY_DATE' ) ) {
-	define( 'ECOMPHP_MODIFY_DATE', '20180524' );
+	define( 'ECOMPHP_MODIFY_DATE', '20180525' );
 }
 
 /**
@@ -2066,7 +2066,11 @@ class ResursBank {
 		$ResursResponse = array();
 		$this->InitializeServices();
 		try {
-			$ResursResponse = $this->CURL->getParsed( $this->CURL->doGet( $this->getCheckoutUrl() . "/callbacks" ) );
+			$callbackResponse = $this->CURL->getParsed( $this->CURL->doGet( $this->getCheckoutUrl() . "/callbacks" ) );
+			$callbacksBody    = trim( $this->CURL->getBody() );
+			if ( ! empty( $callbackResponse ) ) {
+				$ResursResponse = $this->CURL->getParsed();
+			}
 		} catch ( \Exception $restException ) {
 			throw new \Exception( $restException->getMessage(), $restException->getCode() );
 		}
@@ -2090,9 +2094,11 @@ class ResursBank {
 			return $ResursResponseArray;
 		}
 		$hasUpdate = false;
-		foreach ( $ResursResponse as $responseObject ) {
-			if ( isset( $responseObject->eventType ) && $responseObject->eventType == "UPDATE" ) {
-				$hasUpdate = true;
+		if ( is_array( $ResursResponse ) || is_object( $ResursResponse ) ) {
+			foreach ( $ResursResponse as $responseObject ) {
+				if ( isset( $responseObject->eventType ) && $responseObject->eventType == "UPDATE" ) {
+					$hasUpdate = true;
+				}
 			}
 		}
 		if ( ! $hasUpdate ) {
