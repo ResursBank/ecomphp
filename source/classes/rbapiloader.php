@@ -44,9 +44,7 @@ if ( ! defined( 'ECOMPHP_MODIFY_DATE' ) ) {
 
 /**
  * Class ResursBank
- *
- * The API-gateway will connect to Resurs Bank test environment, so to use production mode this must be configured at runtime. This secures that you, during development, won't destroy anything in production.
- *
+ * Works with dynamic data arrays. By default, the API-gateway will connect to Resurs Bank test environment, so to use production mode this must be configured at runtime.
  * @package Resursbank\RBEcomPHP
  */
 class ResursBank {
