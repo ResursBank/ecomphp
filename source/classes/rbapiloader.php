@@ -20,31 +20,26 @@ if ( ! defined( 'RB_API_PATH' ) ) {
 	define( 'RB_API_PATH', __DIR__ );
 }
 require_once( RB_API_PATH . '/thirdparty/network.php' );
-require_once( RB_API_PATH . '/thirdparty/crypto.php' );
 require_once( RB_API_PATH . '/rbapiloader/ResursTypeClasses.php' );
 require_once( RB_API_PATH . '/rbapiloader/ResursException.php' );
-if ( file_exists( RB_API_PATH . "/../../vendor/autoload.php" ) ) {
-	require_once( RB_API_PATH . '/../../vendor/autoload.php' );
-}
+//if ( file_exists( RB_API_PATH . "/../../vendor/autoload.php" ) ) {	require_once( RB_API_PATH . '/../../vendor/autoload.php' ); }
 if ( file_exists( RB_API_PATH . '/ecomhooks.php' ) ) {
 	require_once( RB_API_PATH . '/ecomhooks.php' );
 }
 
-use Resursbank\RBEcomPHP\CURL_POST_AS;
-use Resursbank\RBEcomPHP\Tornevall_cURL;
-use Resursbank\RBEcomPHP\TorneLIB_Network;
-use Resursbank\RBEcomPHP\TorneLIB_Crypto;
+use Resursbank\RBEcomPHP\NETCURL_POST_DATATYPES;
+use Resursbank\RBEcomPHP\MODULE_CURL;
+use Resursbank\RBEcomPHP\MODULE_NETWORK;
+use Resursbank\RBEcomPHP\MODULE_CRYPTO;
 use Resursbank\RBEcomPHP\MODULE_NETBITS;
-use Resursbank\RBEcomPHP\TorneLIB_NetBits;
-use Resursbank\RBEcomPHP\TorneLIB_IO;
 use Resursbank\RBEcomPHP\MODULE_IO;
 
 // Globals starts here
 if ( ! defined( 'ECOMPHP_VERSION' ) ) {
-	define( 'ECOMPHP_VERSION', '1.1.38.1' );
+	define( 'ECOMPHP_VERSION', '1.1.39' );
 }
 if ( ! defined( 'ECOMPHP_MODIFY_DATE' ) ) {
-	define( 'ECOMPHP_MODIFY_DATE', '20180524' );
+	define( 'ECOMPHP_MODIFY_DATE', '20180606' );
 }
 
 /**
@@ -299,7 +294,8 @@ class ResursBank {
 	///// Communication
 	/**
 	 * Primary class for handling all HTTP calls
-	 * @var Tornevall_cURL
+	 *
+	 * @var MODULE_CURL
 	 * @since 1.0.1
 	 * @since 1.1.1
 	 */
@@ -310,17 +306,17 @@ class ResursBank {
 	 */
 	private $curlStats = array();
 	/**
-	 * @var TorneLIB_Network Class for handling Network related checks
+	 * @var MODULE_NETWORK Class for handling Network related checks
 	 * @since 1.0.1
 	 * @since 1.1.1
 	 */
 	private $NETWORK;
 	/**
-	 * @var TorneLIB_NetBits Class for handling bitmasks
+	 * @var MODULE_NETBITS Class for handling bitmasks
 	 */
 	private $BIT;
 	/**
-	 * @var TorneLIB_Crypto Class for handling data encoding/encryption
+	 * @var MODULE_CRYPTO Class for handling data encoding/encryption
 	 * @since 1.0.13
 	 * @since 1.1.13
 	 * @since 1.2.0
@@ -384,12 +380,14 @@ class ResursBank {
 	private $env_omni_pos_test = "https://postest.resurs.com";
 	/** @var string Default URL to omnicheckout production */
 	private $env_omni_pos_prod = "https://poscheckout.resurs.com";
-	/** @var string Country of choice */
+    /** @var bool Defined if the environment will point at Resurs Checkout POS */
+    private $env_omni_pos = false;
+    /** @var string The current chosen URL for omnicheckout after initiation */
+    private $env_omni_current = "";
+    /** @var string The current chosen URL for hosted flow after initiation */
+    private $env_hosted_current = "";
+    /** @var string Country of choice */
 	private $envCountry;
-	/** @var string The current chosen URL for omnicheckout after initiation */
-	private $env_omni_current = "";
-	/** @var string The current chosen URL for hosted flow after initiation */
-	private $env_hosted_current = "";
 	/** @var string ShopUrl to use with the checkout */
 	private $checkoutShopUrl = "";
 	/** @var bool Set to true via setValidateCheckoutShopUrl() if you require validation of a proper shopUrl */
@@ -1021,7 +1019,8 @@ class ResursBank {
 	 * Return the CURL communication handle to the client, when in debug mode (Read only)
 	 *
 	 * @param bool $bulk
-	 * @return Tornevall_cURL
+	 *
+	 * @return MODULE_CURL
 	 * @throws \Exception
 	 * @since 1.0.22
 	 * @since 1.1.22
@@ -1139,7 +1138,7 @@ class ResursBank {
 	private function isNetWork() {
 		// When no initialization of this library has been done yet
 		if (is_null($this->NETWORK)) {
-			$this->NETWORK = new TorneLIB_Network();
+			$this->NETWORK = new MODULE_NETWORK();
 		}
 	}
 
@@ -1324,7 +1323,7 @@ class ResursBank {
 			}
 		}
 
-		if ( class_exists( '\Resursbank\RBEcomPHP\Tornevall_cURL' ) ) {
+		if ( class_exists('\Resursbank\RBEcomPHP\MODULE_CURL' ) ) {
 
 			$inheritExtendedSoapWarnings = false;
 			if ( is_null( $this->CURL ) ) {
@@ -1335,7 +1334,7 @@ class ResursBank {
 				}
 			}
 			if ( $reInitializeCurl ) {
-				$this->CURL = new \Resursbank\RBEcomPHP\Tornevall_cURL();
+				$this->CURL = new \Resursbank\RBEcomPHP\MODULE_CURL();
 				$this->CURL->setChain( false );
 				if ($inheritExtendedSoapWarnings) {
 					$this->CURL->setFlag('SOAPWARNINGS_EXTEND', true);
@@ -1345,7 +1344,7 @@ class ResursBank {
 				$this->CURL->setAuthentication( $this->soapOptions['login'], $this->soapOptions['password'] );
 				$this->CURL->setUserAgent( $this->myUserAgent );
 			}
-			$this->NETWORK = new \Resursbank\RBEcomPHP\TorneLIB_Network();
+			$this->NETWORK = new \Resursbank\RBEcomPHP\MODULE_NETWORK();
 			$this->BIT     = $this->NETWORK->BIT;
 		}
 		// Prepare services URL in case of nonWsdl mode.
@@ -1900,7 +1899,7 @@ class ResursBank {
 	 * @since 1.3.4
 	 */
 	public function getSaltByCrypto( $complexity = 3, $totalLength = 24 ) {
-		$this->T_CRYPTO = new TorneLIB_Crypto();
+		$this->T_CRYPTO = new MODULE_CRYPTO();
 
 		return $this->T_CRYPTO->mkpass( $complexity, $totalLength );
 	}
@@ -2159,88 +2158,88 @@ class ResursBank {
 	 * @since 1.0.1
 	 * @since 1.1.1
 	 */
-	public function setRegisterCallback( $callbackType = RESURS_CALLBACK_TYPES::CALLBACK_TYPE_NOT_SET, $callbackUriTemplate = "", $digestData = array(), $basicAuthUserName = null, $basicAuthPassword = null ) {
-		$this->InitializeServices();
-		$registerBy = "unknown";
-		if ( is_array( $this->validateExternalUrl ) && count( $this->validateExternalUrl ) ) {
-			$isValidAddress = $this->validateExternalAddress();
-			if ( $isValidAddress == RESURS_CALLBACK_REACHABILITY::IS_NOT_REACHABLE ) {
-				throw new \Exception( "Reachability Response: Your site might not be available to our callbacks" );
-			} else if ( $isValidAddress == RESURS_CALLBACK_REACHABILITY::IS_REACHABLE_WITH_PROBLEMS ) {
-				throw new \Exception( "Reachability Response: Your site is availble from the outide. However, problems occured during tests, that indicates that your site is not available to our callbacks" );
-			}
-		}
-		// The final array
-		$renderCallback = array();
+    public function setRegisterCallback( $callbackType = RESURS_CALLBACK_TYPES::CALLBACK_TYPE_NOT_SET, $callbackUriTemplate = "", $digestData = array(), $basicAuthUserName = null, $basicAuthPassword = null ) {
+        $this->InitializeServices();
+        if ( is_array( $this->validateExternalUrl ) && count( $this->validateExternalUrl ) ) {
+            $isValidAddress = $this->validateExternalAddress();
+            if ( $isValidAddress == RESURS_CALLBACK_REACHABILITY::IS_NOT_REACHABLE ) {
+                throw new \Exception( "Reachability Response: Your site might not be available to our callbacks" );
+            } else if ( $isValidAddress == RESURS_CALLBACK_REACHABILITY::IS_REACHABLE_WITH_PROBLEMS ) {
+                throw new \Exception( "Reachability Response: Your site is availble from the outide. However, problems occured during tests, that indicates that your site is not available to our callbacks" );
+            }
+        }
+        // The final array
+        $renderCallback = array();
 
-		// DEFAULT SETUP
-		$renderCallback['eventType'] = $this->getCallbackTypeString( $callbackType );
-		if ( empty( $renderCallback['eventType'] ) ) {
-			throw new \Exception( __FUNCTION__ . ": The callback type you are trying to register is not supported by EComPHP", \RESURS_EXCEPTIONS::CALLBACK_TYPE_UNSUPPORTED );
-		}
-		$renderCallback['uriTemplate'] = $callbackUriTemplate;
+        // DEFAULT SETUP
+        $renderCallback['eventType'] = $this->getCallbackTypeString( $callbackType );
+        if ( empty( $renderCallback['eventType'] ) ) {
+            throw new \Exception( __FUNCTION__ . ": The callback type you are trying to register is not supported by EComPHP", \RESURS_EXCEPTIONS::CALLBACK_TYPE_UNSUPPORTED );
+        }
+        $renderCallback['uriTemplate'] = $callbackUriTemplate;
 
-		// BASIC AUTH CONTROL
-		if ( ! empty( $basicAuthUserName ) && ! empty( $basicAuthPassword ) ) {
-			$renderCallback['basicAuthUserName'] = $basicAuthUserName;
-			$renderCallback['basicAuthPassword'] = $basicAuthPassword;
-		}
+        // BASIC AUTH CONTROL
+        if ( ! empty( $basicAuthUserName ) && ! empty( $basicAuthPassword ) ) {
+            $renderCallback['basicAuthUserName'] = $basicAuthUserName;
+            $renderCallback['basicAuthPassword'] = $basicAuthPassword;
+        }
 
-		////// DIGEST CONFIGURATION BEGIN
-		$renderCallback['digestConfiguration'] = array(
-			'digestParameters' => $this->getCallbackTypeParameters( $callbackType )
-		);
-		if ( isset( $digestData['digestAlgorithm'] ) && strtolower( $digestData['digestAlgorithm'] ) != "sha1" && strtolower( $digestData['digestAlgorithm'] ) != "md5" ) {
-			$renderCallback['digestConfiguration']['digestAlgorithm'] = "sha1";
-		} elseif ( ! isset( $callbackDigest['digestAlgorithm'] ) ) {
-			$renderCallback['digestConfiguration']['digestAlgorithm'] = "sha1";
-		}
-		$renderCallback['digestConfiguration']['digestAlgorithm'] = strtoupper( $renderCallback['digestConfiguration']['digestAlgorithm'] );
-		if ( ! empty( $callbackDigest['digestSalt'] ) ) {
-			if ( $digestData['digestSalt'] ) {
-				$renderCallback['digestConfiguration']['digestSalt'] = $digestData['digestSalt'];
-			}
-		}
-		// Overriders - if the globalDigestKey or the digestKey (specific type required) is set, it means that setCallbackDigest has been used.
-		if ( ! empty( $this->globalDigestKey ) ) {
-			$renderCallback['digestConfiguration']['digestSalt'] = $this->globalDigestKey;
-		}
-		if ( isset( $this->digestKey[ $renderCallback['eventType'] ] ) && ! empty( $this->digestKey[ $renderCallback['eventType'] ] ) ) {
-			$renderCallback['digestConfiguration']['digestSalt'] = $this->digestKey['eventType'];
-		}
-		if ( empty( $renderCallback['digestConfiguration']['digestSalt'] ) ) {
-			throw new \Exception( "Can not continue without a digest salt key", \RESURS_EXCEPTIONS::CALLBACK_SALTDIGEST_MISSING );
-		}
-		////// DIGEST CONFIGURATION FINISH
-		if ( $this->registerCallbacksViaRest && $callbackType !== RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UPDATE ) {
-			$registerBy = 'rest';
-			$serviceUrl        = $this->getCheckoutUrl() . "/callbacks";
-			$renderCallbackUrl = $serviceUrl . "/" . $renderCallback['eventType'];
-			if ( isset( $renderCallback['eventType'] ) ) {
-				unset( $renderCallback['eventType'] );
-			}
-			$renderedResponse = $this->CURL->doPost( $renderCallbackUrl, $renderCallback, CURL_POST_AS::POST_AS_JSON );
-			$code             = $this->CURL->getResponseCode($renderedResponse);
-		} else {
-			$registerBy = 'wsdl';
-			$renderCallbackUrl = $this->getServiceUrl( "registerEventCallback" );
-			// We are not using postService here, since we are dependent on the response code rather than the response itself
-			$renderedResponse = $this->CURL->doPost( $renderCallbackUrl )->registerEventCallback( $renderCallback );
-			$code             = $this->CURL->getResponseCode( $renderedResponse );
-		}
-		if ( $code >= 200 && $code <= 250 ) {
-			if ( isset( $this->skipCallbackValidation ) && $this->skipCallbackValidation === false ) {
-				$callbackUriControl = $this->CURL->getParsedResponse( $this->CURL->doGet( $renderCallbackUrl ) );
-				if ( isset( $callbackUriControl->uriTemplate ) && is_string( $callbackUriControl->uriTemplate ) && strtolower( $callbackUriControl->uriTemplate ) == strtolower( $callbackUriTemplate ) ) {
-					return true;
-				}
-			}
+        ////// DIGEST CONFIGURATION BEGIN
+        $renderCallback['digestConfiguration'] = array(
+            'digestParameters' => $this->getCallbackTypeParameters( $callbackType )
+        );
+        if ( isset( $digestData['digestAlgorithm'] ) && strtolower( $digestData['digestAlgorithm'] ) != "sha1" && strtolower( $digestData['digestAlgorithm'] ) != "md5" ) {
+            $renderCallback['digestConfiguration']['digestAlgorithm'] = "sha1";
+        } elseif ( ! isset( $callbackDigest['digestAlgorithm'] ) ) {
+            $renderCallback['digestConfiguration']['digestAlgorithm'] = "sha1";
+        }
+        $renderCallback['digestConfiguration']['digestAlgorithm'] = strtoupper( $renderCallback['digestConfiguration']['digestAlgorithm'] );
+        if ( ! empty( $callbackDigest['digestSalt'] ) ) {
+            if ( $digestData['digestSalt'] ) {
+                $renderCallback['digestConfiguration']['digestSalt'] = $digestData['digestSalt'];
+            }
+        }
+        // Overriders - if the globalDigestKey or the digestKey (specific type required) is set, it means that setCallbackDigest has been used.
+        if ( ! empty( $this->globalDigestKey ) ) {
+            $renderCallback['digestConfiguration']['digestSalt'] = $this->globalDigestKey;
+        }
+        if ( isset( $this->digestKey[ $renderCallback['eventType'] ] ) && ! empty( $this->digestKey[ $renderCallback['eventType'] ] ) ) {
+            $renderCallback['digestConfiguration']['digestSalt'] = $this->digestKey['eventType'];
+        }
+        if ( empty( $renderCallback['digestConfiguration']['digestSalt'] ) ) {
+            throw new \Exception( "Can not continue without a digest salt key", \RESURS_EXCEPTIONS::CALLBACK_SALTDIGEST_MISSING );
+        }
+        ////// DIGEST CONFIGURATION FINISH
+        if ( $this->registerCallbacksViaRest && $callbackType !== RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UPDATE ) {
+            $registerBy = 'rest';
+            $serviceUrl        = $this->getCheckoutUrl() . "/callbacks";
+            $renderCallbackUrl = $serviceUrl . "/" . $renderCallback['eventType'];
+            if ( isset( $renderCallback['eventType'] ) ) {
+                unset( $renderCallback['eventType'] );
+            }
+            $renderedResponse = $this->CURL->doPost( $renderCallbackUrl, $renderCallback, NETCURL_POST_DATATYPES::DATATYPE_JSON );
+            $code             = $this->CURL->getCode($renderedResponse);
+        } else {
+            $registerBy = 'wsdl';
+            $renderCallbackUrl = $this->getServiceUrl( "registerEventCallback" );
+            // We are not using postService here, since we are dependent on the response code rather than the response itself
+            /** @noinspection PhpUndefinedMethodInspection */
+            $renderedResponse = $this->CURL->doPost( $renderCallbackUrl )->registerEventCallback( $renderCallback );
+            $code             = $this->CURL->getCode( $renderedResponse );
+        }
+        if ( $code >= 200 && $code <= 250 ) {
+            if ( isset( $this->skipCallbackValidation ) && $this->skipCallbackValidation === false ) {
+                $callbackUriControl = $this->CURL->getParsed( $this->CURL->doGet( $renderCallbackUrl ) );
+                if ( isset( $callbackUriControl->uriTemplate ) && is_string( $callbackUriControl->uriTemplate ) && strtolower( $callbackUriControl->uriTemplate ) == strtolower( $callbackUriTemplate ) ) {
+                    return true;
+                }
+            }
 
-			return true;
-		}
+            return true;
+        }
 
-		throw new \Exception( "setRegisterCallbackException ($code): Could not register callback event " . $renderCallback['eventType'] . ' (service: ' . $registerBy . ')', $code );
-	}
+        throw new \Exception( "setRegisterCallbackException ($code): Could not register callback event " . $renderCallback['eventType'] . ' (service: ' . $registerBy . ')', $code );
+    }
 
 	/**
 	 * Simplifies removal of callbacks even when they does not exist at first.
@@ -2552,6 +2551,7 @@ class ResursBank {
 			} catch ( \Exception $serviceRequestException ) {
 				// Try to fetch previous exception (This is what we actually want)
 				$previousException = $serviceRequestException->getPrevious();
+                $previousExceptionCode = null;
 				if ( ! empty( $previousException ) ) {
 					$previousExceptionMessage = $previousException->getMessage();
 					$previousExceptionCode    = $previousException->getCode();
@@ -2627,7 +2627,7 @@ class ResursBank {
 	 * @since 1.2.0
 	 */
 	public function setPushCustomerUserAgent( $enableCustomerUserAgent = false ) {
-		$this->T_CRYPTO = new TorneLIB_Crypto();
+		$this->T_CRYPTO = new MODULE_CRYPTO();
 		if ( ! empty( $this->T_CRYPTO ) ) {
 			$this->customerUserAgentPush = $enableCustomerUserAgent;
 		}
@@ -3283,7 +3283,7 @@ class ResursBank {
 		}
 		$this->InitializeServices();
 		$url          = $this->getCheckoutUrl() . '/checkout/payments/' . $paymentId . '/updatePaymentReference';
-		$result       = $this->CURL->doPut( $url, array( 'paymentReference' => $to ), CURL_POST_AS::POST_AS_JSON );
+		$result       = $this->CURL->doPut( $url, array( 'paymentReference' => $to ), NETCURL_POST_DATATYPES::DATATYPE_JSON );
 		$ResponseCode = $this->CURL->getResponseCode( $result );
 		if ( $ResponseCode >= 200 && $ResponseCode <= 250 ) {
 			return true;
@@ -3579,7 +3579,7 @@ class ResursBank {
 			$base64url        = $this->base64url_encode( $useUrl );
 			$ExternalPostData = array( 'link' => $useUrl, "returnEncoded" => true );
 			try {
-				$this->CURL->doPost( $ExternalAPI, $ExternalPostData, CURL_POST_AS::POST_AS_JSON );
+				$this->CURL->doPost( $ExternalAPI, $ExternalPostData, NETCURL_POST_DATATYPES::DATATYPE_JSON );
 				$WebResponse = $this->CURL->getParsedResponse();
 			} catch ( \Exception $e ) {
 				return RESURS_CALLBACK_REACHABILITY::IS_REACHABLE_NOT_KNOWN;
@@ -4205,11 +4205,11 @@ class ResursBank {
 		$this->CURL->setUserAgent( $this->myUserAgent );
 
 		if ( $curlMethod == RESURS_CURL_METHODS::METHOD_POST ) {
-			$CurlLibResponse = $this->CURL->doPost( $url, $jsonData, CURL_POST_AS::POST_AS_JSON );
+			$CurlLibResponse = $this->CURL->doPost( $url, $jsonData, NETCURL_POST_DATATYPES::DATATYPE_JSON );
 		} else if ( $curlMethod == RESURS_CURL_METHODS::METHOD_PUT ) {
-			$CurlLibResponse = $this->CURL->doPut( $url, $jsonData, CURL_POST_AS::POST_AS_JSON );
+			$CurlLibResponse = $this->CURL->doPut( $url, $jsonData, NETCURL_POST_DATATYPES::DATATYPE_JSON );
 		} else {
-			$CurlLibResponse = $this->CURL->doGet( $url, CURL_POST_AS::POST_AS_JSON );
+			$CurlLibResponse = $this->CURL->doGet( $url, NETCURL_POST_DATATYPES::DATATYPE_JSON );
 		}
 		$curlCode = $this->CURL->getResponseCode( $CurlLibResponse );
 		if ( $curlCode >= 400 ) {
@@ -5100,7 +5100,7 @@ class ResursBank {
 	 * @since 1.0.2
 	 * @since 1.1.2
 	 */
-	public function setCountry( $Country = RESURS_COUNTRY::COUNTRY_UNSET ) {
+	public function setCountry( $Country = RESURS_COUNTRY::COUNTRY_NOT_SET ) {
 		if ( $Country === RESURS_COUNTRY::COUNTRY_DK ) {
 			$this->envCountry = "DK";
 		} else if ( $Country === RESURS_COUNTRY::COUNTRY_NO ) {
@@ -5334,6 +5334,7 @@ class ResursBank {
 	 * @throws \Exception
 	 * @since 1.0.2
 	 * @since 1.1.2
+     * @todo SPLIT!
 	 */
 	private function createPaymentExecute( $payment_id_or_method = '', $payload = array() ) {
 		/**
@@ -5381,7 +5382,7 @@ class ResursBank {
 		} else if ( $myFlow == RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT ) {
 			$checkoutUrl      = $this->getCheckoutUrl() . "/checkout/payments/" . $payment_id_or_method;
 			try {
-				$checkoutResponse = $this->CURL->doPost( $checkoutUrl, $this->Payload, CURL_POST_AS::POST_AS_JSON );
+				$checkoutResponse = $this->CURL->doPost( $checkoutUrl, $this->Payload, NETCURL_POST_DATATYPES::DATATYPE_JSON );
 				$parsedResponse   = $this->CURL->getParsedResponse( $checkoutResponse );
 				$responseCode     = $this->CURL->getResponseCode( $checkoutResponse );
 				// Do not trust response codes!
@@ -5403,11 +5404,11 @@ class ResursBank {
 				$this->handlePostErrors($e);
 			}
 
-			return $parsedResponse;
+            return isset($parsedResponse) ? $parsedResponse : null;
 		} else if ( $myFlow == RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW ) {
 			$hostedUrl      = $this->getHostedUrl();
 			try {
-				$hostedResponse = $this->CURL->doPost( $hostedUrl, $this->Payload, CURL_POST_AS::POST_AS_JSON );
+				$hostedResponse = $this->CURL->doPost( $hostedUrl, $this->Payload, NETCURL_POST_DATATYPES::DATATYPE_JSON );
 				$parsedResponse = $this->CURL->getParsedResponse( $hostedResponse );
 				// Do not trust response codes!
 				if ( isset( $parsedResponse->location ) ) {
@@ -5429,7 +5430,9 @@ class ResursBank {
 				$this->handlePostErrors($e);
 			}
 		}
-	}
+
+        throw new \Exception(__FUNCTION__ . "exception: Flow unmatched during execution", 500);
+    }
 
 	/**
 	 * Handle post errors and extract eventual errors from a http body
@@ -6862,18 +6865,20 @@ class ResursBank {
 		return null;
 	}
 
-	/**
-	 * Get the iframe resizer URL if requested from a site
-	 *
-	 * @return string
-	 * @since 1.0.2
-	 * @since 1.1.2
-	 */
-	public function getIframeResizerUrl() {
-		if ( ! empty( $this->ocShopScript ) ) {
-			return trim( $this->ocShopScript );
-		}
-	}
+    /**
+     * Get the iframe resizer URL if requested from a site
+     *
+     * @return string
+     * @throws \Exception
+     * @since 1.0.2
+     * @since 1.1.2
+     */
+    public function getIframeResizerUrl() {
+        if ( ! empty( $this->ocShopScript ) ) {
+            return trim( $this->ocShopScript );
+        }
+        throw new \Exception(__FUNCTION__ . "exception: could not fetch th ocShopScript from iframe");
+    }
 
 	/**
 	 * Retrieve the correct omnicheckout url depending chosen environment
@@ -7031,7 +7036,7 @@ class ResursBank {
 			$outputOrderLines = $orderLines;
 		}
 		$sanitizedOutputOrderLines    = $this->sanitizePaymentSpec( $outputOrderLines, RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT );
-		$updateOrderLinesResponse     = $this->CURL->doPut( $this->getCheckoutUrl() . "/checkout/payments/" . $paymentId, array( 'orderLines' => $sanitizedOutputOrderLines ), CURL_POST_AS::POST_AS_JSON );
+		$updateOrderLinesResponse     = $this->CURL->doPut( $this->getCheckoutUrl() . "/checkout/payments/" . $paymentId, array( 'orderLines' => $sanitizedOutputOrderLines ), NETCURL_POST_DATATYPES::DATATYPE_JSON );
 		$updateOrderLinesResponseCode = $this->CURL->getResponseCode( $updateOrderLinesResponse );
 		if ( $updateOrderLinesResponseCode >= 400 ) {
 			throw new \Exception( "Could not update order lines", $updateOrderLinesResponseCode );
@@ -7882,65 +7887,65 @@ class ResursBank {
 	 * @since 1.1.22
 	 * @since 1.2.0
 	 */
-	private function getAfterShopObjectByPayload( $paymentId = "", $customPayloadItemList = array(), $payloadType = RESURS_AFTERSHOP_RENDER_TYPES::NONE ) {
+    private function getAfterShopObjectByPayload( $paymentId = "", $customPayloadItemList = array(), $payloadType = RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_NO_CHOICE ) {
+        $finalAfterShopSpec = array(
+            'paymentId' => $paymentId
+        );
+        if ( ! is_array( $customPayloadItemList ) ) {
+            // Make sure this is correct
+            $customPayloadItemList = array();
+        }
 
-		$finalAfterShopSpec = array(
-			'paymentId' => $paymentId
-		);
-		if ( ! is_array( $customPayloadItemList ) ) {
-			// Make sure this is correct
-			$customPayloadItemList = array();
-		}
+        $storedPayment       = $this->getPayment( $paymentId );
+        $paymentMethod       = $storedPayment->paymentMethodId;
+        $paymentMethodData   = $this->getPaymentMethodSpecific( $paymentMethod );
+        $paymentSpecificType = strtoupper( isset( $paymentMethodData->specificType ) ? $paymentMethodData->specificType : null );
+        if ( $paymentSpecificType == "INVOICE" ) {
+            $finalAfterShopSpec['orderDate']   = date( 'Y-m-d', time() );
+            $finalAfterShopSpec['invoiceDate'] = date( 'Y-m-d', time() );
+            if ( empty( $this->afterShopInvoiceId ) ) {
+                $finalAfterShopSpec['invoiceId'] = $this->getNextInvoiceNumber();
+            }
+            $extRef = $this->getAfterShopInvoiceExtRef();
+            if ( ! empty( $extRef ) ) {
+                $this->addMetaData( $paymentId, 'invoiceExtRef', $extRef );
+            }
+        }
 
-		$storedPayment       = $this->getPayment( $paymentId );
-		$paymentMethod       = $storedPayment->paymentMethodId;
-		$paymentMethodData   = $this->getPaymentMethodSpecific( $paymentMethod );
-		$paymentSpecificType = strtoupper( isset( $paymentMethodData->specificType ) ? $paymentMethodData->specificType : null );
-		if ( $paymentSpecificType == "INVOICE" ) {
-			$finalAfterShopSpec['orderDate']   = date( 'Y-m-d', time() );
-			$finalAfterShopSpec['invoiceDate'] = date( 'Y-m-d', time() );
-			if ( empty( $this->afterShopInvoiceId ) ) {
-				$finalAfterShopSpec['invoiceId'] = $this->getNextInvoiceNumber();
-			}
-			$extRef = $this->getAfterShopInvoiceExtRef();
-			if ( ! empty( $extRef ) ) {
-				$this->addMetaData( $paymentId, 'invoiceExtRef', $extRef );
-			}
-		}
+        // Rendered order spec, use when customPayloadItemList is not set, to handle full orders
+        $actualEcommerceOrderSpec = $this->sanitizeAfterShopSpec( $storedPayment, $payloadType );
 
-		// Rendered order spec, use when customPayloadItemList is not set, to handle full orders
-		$actualEcommerceOrderSpec = $this->sanitizeAfterShopSpec( $storedPayment, $payloadType );
+        $finalAfterShopSpec['createdBy'] = $this->getCreatedBy();
+        $this->renderPaymentSpec( RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW );
 
-		$finalAfterShopSpec['createdBy'] = $this->getCreatedBy();
-		$this->renderPaymentSpec( RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW );
+        try {
+            // Try to fetch internal order data.
+            /** @noinspection PhpUnusedLocalVariableInspection */
+            $orderDataArray = $this->getOrderData();
+        } catch ( \Exception $getOrderDataException ) {
+            // If there is no payload, make sure we'll render this from the current payment
+            if ( $getOrderDataException->getCode() == \RESURS_EXCEPTIONS::BOOKPAYMENT_NO_BOOKDATA && ! count( $customPayloadItemList ) ) {
+                //array_merge($this->SpecLines, $actualEcommerceOrderSpec);
+                $this->SpecLines += $this->objectsIntoArray( $actualEcommerceOrderSpec ); // Convert objects
+            }
+        }
 
-		try {
-			// Try to fetch internal order data.
-			$orderDataArray = $this->getOrderData();
-		} catch ( \Exception $getOrderDataException ) {
-			// If there is no payload, make sure we'll render this from the current payment
-			if ( $getOrderDataException->getCode() == \RESURS_EXCEPTIONS::BOOKPAYMENT_NO_BOOKDATA && ! count( $customPayloadItemList ) ) {
-				//array_merge($this->SpecLines, $actualEcommerceOrderSpec);
-				$this->SpecLines += $this->objectsIntoArray( $actualEcommerceOrderSpec ); // Convert objects
-			}
-		}
+        if ( count( $customPayloadItemList ) ) {
+            // If there is a customized specrowArray injected, no appending should occur.
+            //$this->SpecLines += $this->objectsIntoArray($customPayloadItemList);
+            $this->SpecLines = $this->objectsIntoArray( $customPayloadItemList );
+        }
+        $this->renderPaymentSpec( RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW );
+        $orderDataArray = $this->getOrderData();
 
-		if ( count( $customPayloadItemList ) ) {
-			// If there is a customized specrowArray injected, no appending should occur.
-			//$this->SpecLines += $this->objectsIntoArray($customPayloadItemList);
-			$this->SpecLines = $this->objectsIntoArray( $customPayloadItemList );
-		}
-		$this->renderPaymentSpec( RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW );
-		$orderDataArray = $this->getOrderData();
+        if ( isset( $orderDataArray['specLines'] ) ) {
+            $orderDataArray['partPaymentSpec'] = $orderDataArray;
+        }
 
-		if ( isset( $orderDataArray['specLines'] ) ) {
-			$orderDataArray['partPaymentSpec'] = $orderDataArray;
-		}
+        $finalAfterShopSpec += $orderDataArray;
 
-		$finalAfterShopSpec += $orderDataArray;
-
-		return $finalAfterShopSpec;
-	}
+        return $finalAfterShopSpec;
+    }
 
 	/**
 	 * Identical to paymentFinalize but used for testing errors

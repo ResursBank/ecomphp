@@ -16,19 +16,21 @@
  * limitations under the License.
  *
  * Tornevall Networks netCurl library - Yet another http- and network communicator library
- * Each class in this library has its own version numbering to keep track of where the changes are. However, there is a major version too.
+ * Each class in this library has its own version numbering to keep track of where the changes are. However, there is a
+ * major version too.
+ *
  * @package TorneLIB
- * @version 6.0.21
+ * @version 6.0.22
  */
 
 namespace Resursbank\RBEcomPHP;
 
 // Library Release Information
 if ( ! defined( 'NETCURL_RELEASE' ) ) {
-	define( 'NETCURL_RELEASE', '6.0.21' );
+	define( 'NETCURL_RELEASE', '6.0.22' );
 }
 if ( ! defined( 'NETCURL_MODIFY' ) ) {
-	define( 'NETCURL_MODIFY', '20180525' );
+	define( 'NETCURL_MODIFY', '20180606' );
 }
 if ( ! defined( 'TORNELIB_NETCURL_RELEASE' ) ) {
 	// Compatibility constant
@@ -46,40 +48,44 @@ if ( defined( 'NETCURL_REQUIRE' ) ) {
 	}
 }
 
-if ( file_exists( __DIR__ . '/../vendor/autoload.php' ) && ( defined( 'NETCURL_ALLOW_AUTOLOAD' ) && NETCURL_ALLOW_AUTOLOAD === true ) ) {
-	require_once( __DIR__ . '/../vendor/autoload.php' );
+if ( file_exists( __DIR__ . '/../../vendor/autoload.php' ) && ( defined( 'NETCURL_ALLOW_AUTOLOAD' ) && NETCURL_ALLOW_AUTOLOAD === true ) ) {
+	require_once( __DIR__ . '/../../vendor/autoload.php' );
 }
 
-interface NETCURL_DRIVERS_INTERFACE {
+if (!interface_exists('NETCURL_DRIVERS_INTERFACE') && !interface_exists('TorneLIB\NETCURL_DRIVERS_INTERFACE')) {
+	interface NETCURL_DRIVERS_INTERFACE {
 
-	public function __construct( $parameters = null );
+		public function __construct( $parameters = null );
 
-	public function setDriverId( $driverId = NETCURL_NETWORK_DRIVERS::DRIVER_NOT_SET );
+		public function setDriverId( $driverId = NETCURL_NETWORK_DRIVERS::DRIVER_NOT_SET );
 
-	public function setParameters( $parameters = array() );
+		public function setParameters( $parameters = array() );
 
-	public function setContentType( $setContentTypeString = 'application/json; charset=utf-8' );
+		public function setContentType( $setContentTypeString = 'application/json; charset=utf-8' );
 
-	public function getContentType();
+		public function getContentType();
 
-	public function setAuthentication( $Username = null, $Password = null, $AuthType = NETCURL_AUTH_TYPES::AUTHTYPE_BASIC );
+		public function setAuthentication( $Username = null, $Password = null, $AuthType = NETCURL_AUTH_TYPES::AUTHTYPE_BASIC );
 
-	public function getAuthentication();
+		public function getAuthentication();
 
-	public function getWorker();
+		public function getWorker();
 
-	public function getRawResponse();
+		public function getRawResponse();
 
-	public function getStatusCode();
+		public function getStatusCode();
 
-	public function getStatusMessage();
+		public function getStatusMessage();
 
-	public function executeNetcurlRequest( $url = '', $postData = array(), $postMethod = NETCURL_POST_METHODS::METHOD_GET, $postDataType = NETCURL_POST_DATATYPES::DATATYPE_NOT_SET );
+		public function executeNetcurlRequest( $url = '', $postData = array(), $postMethod = NETCURL_POST_METHODS::METHOD_GET, $postDataType = NETCURL_POST_DATATYPES::DATATYPE_NOT_SET );
 
+	}
 }
-if ( ! class_exists( 'NETCURL_DRIVER_GUZZLEHTTP' ) && ! class_exists( 'Resursbank\RBEcomPHP\NETCURL_DRIVER_GUZZLEHTTPINTERFACE' ) ) {
+if ( ! class_exists( 'NETCURL_DRIVER_GUZZLEHTTP' ) && ! class_exists( 'Resursbank\RBEcomPHP\NETCURL_DRIVER_GUZZLEHTTP' ) ) {
 	/**
 	 * Class NETCURL_DRIVER_GUZZLEHTTP Network communications driver detection
+     *
+     * Inspections for classes and namespaces is ignored as they are dynamically loaded when they do exist.
 	 *
 	 * @package TorneLIB
 	 */
@@ -91,7 +97,9 @@ if ( ! class_exists( 'NETCURL_DRIVER_GUZZLEHTTP' ) && ! class_exists( 'Resursban
 		/** @var array Inbound parameters in the format array, object or whatever this driver takes */
 		private $PARAMETERS = array();
 
-		/** @var \GuzzleHttp\Client $DRIVER The class for where everything happens */
+        /** @noinspection PhpUndefinedClassInspection */
+        /** @noinspection PhpUndefinedNamespaceInspection */
+        /** @var \GuzzleHttp\Client $DRIVER The class for where everything happens */
 		private $DRIVER;
 
 		/** @var MODULE_NETWORK $NETWORK Network driver for using exceptions, etc */
@@ -155,13 +163,19 @@ if ( ! class_exists( 'NETCURL_DRIVER_GUZZLEHTTP' ) && ! class_exists( 'Resursban
 		private function initializeClass() {
 			if ( $this->DRIVER_ID == NETCURL_NETWORK_DRIVERS::DRIVER_GUZZLEHTTP ) {
 				if ( class_exists( 'GuzzleHttp\Client' ) ) {
-					$this->DRIVER = new \GuzzleHttp\Client;
+                    /** @noinspection PhpUndefinedClassInspection */
+                    /** @noinspection PhpUndefinedNamespaceInspection */
+                    $this->DRIVER = new \GuzzleHttp\Client;
 				}
 			} else if ( $this->DRIVER_ID === NETCURL_NETWORK_DRIVERS::DRIVER_GUZZLEHTTP_STREAM ) {
 				if ( class_exists( 'GuzzleHttp\Handler\StreamHandler' ) ) {
-					/** @var \GuzzleHttp\Handler\StreamHandler $streamHandler */
+                    /** @noinspection PhpUndefinedClassInspection */
+                    /** @noinspection PhpUndefinedNamespaceInspection */
+                    /** @var \GuzzleHttp\Handler\StreamHandler $streamHandler */
 					$streamHandler = new \GuzzleHttp\Handler\StreamHandler();
-					/** @var \GuzzleHttp\Client */
+                    /** @noinspection PhpUndefinedClassInspection */
+                    /** @noinspection PhpUndefinedNamespaceInspection */
+                    /** @var \GuzzleHttp\Client */
 					$this->DRIVER = new \GuzzleHttp\Client( array( 'handler' => $streamHandler ) );
 				}
 			}
@@ -220,7 +234,9 @@ if ( ! class_exists( 'NETCURL_DRIVER_GUZZLEHTTP' ) && ! class_exists( 'Resursban
 		 * @throws \Exception
 		 */
 		private function getGuzzle() {
-			/** @var $gResponse \GuzzleHttp\Psr7\Response */
+            /** @noinspection PhpUndefinedClassInspection */
+            /** @noinspection PhpUndefinedNamespaceInspection */
+            /** @var $gResponse \GuzzleHttp\Psr7\Response */
 			$gResponse          = null;
 			$this->RESPONSE_RAW = null;
 			$gBody              = null;
@@ -237,36 +253,48 @@ if ( ! class_exists( 'NETCURL_DRIVER_GUZZLEHTTP' ) && ! class_exists( 'Resursban
 			return $this;
 		}
 
-		/**
-		 * @return NETCURL_DRIVER_GUZZLEHTTP
-		 * @throws \Exception
-		 */
+        /**
+         * @param $gRequest
+         *
+         * @return NETCURL_DRIVER_GUZZLEHTTP
+         * @throws \Exception
+         */
 		private function getRenderedGuzzleResponse($gRequest) {
 			$this->WORKER_DATA  = array( 'worker' => $this->DRIVER, 'request' => $gRequest );
-			$gHeaders           = $gRequest->getHeaders();
-			$gBody              = $gRequest->getBody()->getContents();
-			$this->HTTP_STATUS  = $gRequest->getStatusCode();
-			$this->HTTP_MESSAGE = $gRequest->getReasonPhrase();
-			$this->RESPONSE_RAW .= "HTTP/" . $gRequest->getProtocolVersion() . " " . $this->HTTP_STATUS . " " . $this->HTTP_MESSAGE . "\r\n";
-			$this->RESPONSE_RAW .= "X-NetCurl-ClientDriver: " . $this->DRIVER_ID . "\r\n";
-			if ( is_array( $gHeaders ) ) {
-				foreach ( $gHeaders as $hParm => $hValues ) {
-					$this->RESPONSE_RAW .= $hParm . ": " . implode( "\r\n", $hValues ) . "\r\n";
-				}
-			}
-			$this->RESPONSE_RAW .= "\r\n" . $gBody;
+			if (method_exists($gRequest, 'getHeaders')) {
+                $gHeaders           = $gRequest->getHeaders();
+                /** @noinspection PhpUndefinedMethodInspection */
+                $gBody              = $gRequest->getBody()->getContents();
+                /** @noinspection PhpUndefinedMethodInspection */
+                $this->HTTP_STATUS  = $gRequest->getStatusCode();
+                /** @noinspection PhpUndefinedMethodInspection */
+                $this->HTTP_MESSAGE = $gRequest->getReasonPhrase();
+                /** @noinspection PhpUndefinedMethodInspection */
+                $this->RESPONSE_RAW .= "HTTP/" . $gRequest->getProtocolVersion() . " " . $this->HTTP_STATUS . " " . $this->HTTP_MESSAGE . "\r\n";
+                $this->RESPONSE_RAW .= "X-NetCurl-ClientDriver: " . $this->DRIVER_ID . "\r\n";
+                if (is_array($gHeaders)) {
+                    foreach ($gHeaders as $hParm => $hValues) {
+                        $this->RESPONSE_RAW .= $hParm . ": " . implode("\r\n", $hValues) . "\r\n";
+                    }
+                }
+                $this->RESPONSE_RAW .= "\r\n" . $gBody;
 
-			// Prevent problems during authorization. Unsupported media type checks defaults to application/json
-			if ( $this->HAS_AUTHENTICATION && $this->HTTP_STATUS == 415 ) {
-				$contentTypeRequest = $gRequest->getHeader( 'content-type' );
-				if ( empty( $contentTypeRequest ) ) {
-					$this->setContentType();
-				} else {
-					$this->setContentType( $contentTypeRequest );
-				}
+                // Prevent problems during authorization. Unsupported media type checks defaults to application/json
+                if ($this->HAS_AUTHENTICATION && $this->HTTP_STATUS == 415) {
+                    /** @noinspection PhpUndefinedMethodInspection */
+                    $contentTypeRequest = $gRequest->getHeader('content-type');
+                    if (empty($contentTypeRequest)) {
+                        $this->setContentType();
+                    } else {
+                        $this->setContentType($contentTypeRequest);
+                    }
 
-				return $this->getGuzzle();
-			}
+                    return $this->getGuzzle();
+                }
+            } else {
+                throw new \Exception( NETCURL_CURL_CLIENTNAME . "-".__FUNCTION__." exception: Guzzle driver missing proper methods like getHeaders(), can not render response", $this->NETWORK->getExceptionCode( 'NETCURL_GUZZLE_RESPONSE_EXCEPTION' ) );
+            }
+			return $this;
 		}
 
 		/**
@@ -308,8 +336,16 @@ if ( ! class_exists( 'NETCURL_DRIVER_GUZZLEHTTP' ) && ! class_exists( 'Resursban
 			return $postOptions;
 		}
 
-		private function getGuzzleRequest() {
-			/** @var \Psr\Http\Message\ResponseInterface $gRequest */
+		/** @noinspection PhpUndefinedClassInspection */
+        /** @noinspection PhpUndefinedNamespaceInspection */
+        /**
+         * @return \Psr\Http\Message\ResponseInterface
+         * @throws \Exception
+         */
+        private function getGuzzleRequest() {
+            /** @noinspection PhpUndefinedClassInspection */
+            /** @noinspection PhpUndefinedNamespaceInspection */
+            /** @var \Psr\Http\Message\ResponseInterface $gRequest */
 			$gRequest = null;
 			if ( method_exists( $this->DRIVER, 'request' ) ) {
 				if ( $this->POST_METHOD == NETCURL_POST_METHODS::METHOD_GET ) {
@@ -336,8 +372,16 @@ if ( ! class_exists( 'NETCURL_DRIVER_GUZZLEHTTP' ) && ! class_exists( 'Resursban
 			return $this->RESPONSE_RAW;
 		}
 
-		public function executeNetcurlRequest( $url = '', $postData = array(), $postMethod = NETCURL_POST_METHODS::METHOD_GET, $postDataType = NETCURL_POST_DATATYPES::DATATYPE_NOT_SET ) {
-
+        /**
+         * @param string $url
+         * @param array  $postData
+         * @param int    $postMethod
+         * @param int    $postDataType
+         *
+         * @return NETCURL_DRIVER_GUZZLEHTTP
+         * @throws \Exception
+         */
+        public function executeNetcurlRequest( $url = '', $postData = array(), $postMethod = NETCURL_POST_METHODS::METHOD_GET, $postDataType = NETCURL_POST_DATATYPES::DATATYPE_NOT_SET ) {
 			$this->REQUEST_URL    = $url;
 			$this->POST_DATA      = $postData;
 			$this->POST_METHOD    = $postMethod;
@@ -374,7 +418,8 @@ if ( ! class_exists( 'NETCURL_DRIVER_WORDPRESS' ) && ! class_exists( 'Resursbank
 		/** @var array Inbound parameters in the format array, object or whatever this driver takes */
 		private $PARAMETERS = array();
 
-		/** @var \WP_Http $DRIVER */
+        /** @noinspection PhpUndefinedClassInspection */
+        /** @var \WP_Http $DRIVER When this class exists, it should be referred to WP_Http */
 		private $DRIVER;
 
 		/** @var \stdClass $TRANSPORT Wordpress transport layer */
@@ -465,15 +510,26 @@ if ( ! class_exists( 'NETCURL_DRIVER_WORDPRESS' ) && ! class_exists( 'Resursbank
 			return $this->HTTP_MESSAGE;
 		}
 
-		private function initializeClass() {
-			$this->DRIVER    = new \WP_Http();
-			$this->TRANSPORT = $this->DRIVER->_get_first_available_transport( array() );
+        /**
+         * @throws \Exception
+         */
+        private function initializeClass()
+        {
+            /** @noinspection PhpUndefinedClassInspection */
+            $this->DRIVER = new \WP_Http();
+            if (method_exists($this->DRIVER, '_get_first_available_transport')) {
+                $this->TRANSPORT = $this->DRIVER->_get_first_available_transport(array());
+            }
+            if (empty($this->TRANSPORT)) {
+                throw new \Exception(NETCURL_CURL_CLIENTNAME . " " . __FUNCTION__ . " exception: Could not find any available transport for WordPress Driver",
+                    $this->NETWORK->getExceptionCode('NETCURL_WP_TRANSPORT_ERROR'));
+            }
+        }
 
-			if ( empty( $this->TRANSPORT ) ) {
-				throw new \Exception( NETCURL_CURL_CLIENTNAME . " " . __FUNCTION__ . " exception: Could not find any available transport for WordPress Driver", $this->NETWORK->getExceptionCode( 'NETCURL_WP_TRANSPORT_ERROR' ) );
-			}
-		}
-
+        /**
+         * @return $this
+         * @throws \Exception
+         */
 		private function getWp() {
 			$postThis = array( 'body' => $this->POST_DATA );
 			if ( $this->POST_DATA_TYPE == NETCURL_POST_DATATYPES::DATATYPE_JSON ) {
@@ -482,30 +538,62 @@ if ( ! class_exists( 'NETCURL_DRIVER_WORDPRESS' ) && ! class_exists( 'Resursbank
 			}
 
 			$wpResponse = $this->getWpResponse($postThis);
+            /** @noinspection PhpUndefinedClassInspection */
 
-			/** @var $httpResponse \WP_HTTP_Requests_Response */
+            /** @var $httpResponse \WP_HTTP_Requests_Response */
 			$httpResponse = $wpResponse['http_response'];
-			/** @var $httpReponseObject \Requests_Response */
-			$httpResponseObject = $httpResponse->get_response_object();
-			$this->RESPONSE_RAW = isset($httpResponseObject->raw) ? $httpResponseObject->raw : null;
+
+			if (method_exists($httpResponse, 'get_response_object')) {
+                /** @noinspection PhpUndefinedClassInspection */
+                /** @var $httpReponseObject \Requests_Response */
+                $httpResponseObject = $httpResponse->get_response_object();
+                $this->RESPONSE_RAW = isset($httpResponseObject->raw) ? $httpResponseObject->raw : null;
+            } else {
+                throw new \Exception(NETCURL_CURL_CLIENTNAME . " " . __FUNCTION__ . " exception: Wordpress driver seem to miss get_response_object",
+                    $this->NETWORK->getExceptionCode('NETCURL_WP_REQUEST_ERROR'));
+            }
 
 			return $this;
 		}
 
-		private function getWpResponse($postData) {
-			$wpResponse = null;
-			if ( $this->POST_METHOD == NETCURL_POST_METHODS::METHOD_HEAD ) {
-				$wpResponse = $this->DRIVER->head( $this->REQUEST_URL, $postThis );
-			} else if ( $this->POST_METHOD == NETCURL_POST_METHODS::METHOD_POST ) {
-				$wpResponse = $this->DRIVER->post( $this->REQUEST_URL, $postThis );
-			} else if ( $this->POST_METHOD == NETCURL_POST_METHODS::METHOD_REQUEST ) {
-				$wpResponse = $this->DRIVER->request( $this->REQUEST_URL, $postThis );
-			} else {
-				$wpResponse = $this->DRIVER->get( $this->REQUEST_URL, $postThis );
-			}
-			return $wpResponse;
-		}
+        /**
+         * @param $postData
+         *
+         * @return null
+         */
+        private function getWpResponse($postData)
+        {
+            $wpResponse = null;
+            if ($this->POST_METHOD == NETCURL_POST_METHODS::METHOD_HEAD) {
+                if (method_exists($this->DRIVER, 'head')) {
+                    $wpResponse = $this->DRIVER->head($this->REQUEST_URL, $postData);
+                }
+            } elseif ($this->POST_METHOD == NETCURL_POST_METHODS::METHOD_POST) {
+                if (method_exists($this->DRIVER, 'post')) {
+                    $wpResponse = $this->DRIVER->post($this->REQUEST_URL, $postData);
+                }
+            } elseif ($this->POST_METHOD == NETCURL_POST_METHODS::METHOD_REQUEST) {
+                if (method_exists($this->DRIVER, 'request')) {
+                    $wpResponse = $this->DRIVER->request($this->REQUEST_URL, $postData);
+                }
+            } else {
+                if (method_exists($this->DRIVER, 'get')) {
+                    $wpResponse = $this->DRIVER->get($this->REQUEST_URL, $postData);
+                }
+            }
 
+            return $wpResponse;
+        }
+
+        /**
+         * @param string $url
+         * @param array  $postData
+         * @param int    $postMethod
+         * @param int    $postDataType
+         *
+         * @return NETCURL_DRIVER_WORDPRESS
+         * @throws \Exception
+         */
 		public function executeNetcurlRequest( $url = '', $postData = array(), $postMethod = NETCURL_POST_METHODS::METHOD_GET, $postDataType = NETCURL_POST_DATATYPES::DATATYPE_NOT_SET ) {
 			$this->REQUEST_URL    = $url;
 			$this->POST_DATA      = $postData;
@@ -535,6 +623,14 @@ if ( ! class_exists( 'NETCURL_PARSER' ) && ! class_exists( 'Resursbank\RBEcomPHP
 		 */
 		private $NETCURL_CONTENT_IS_DOMCONTENT = false;
 
+		/**
+		 * Do not include Dom content in the basic parser (default = true, as it might destroy output data in legacy products)
+		 *
+		 * @var bool $NETCURL_PROHIBIT_DOMCONTENT_PARSE
+		 * @since 6.0.3
+		 */
+		private $NETCURL_PROHIBIT_DOMCONTENT_PARSE = true;
+
 
 		/** @var MODULE_IO $IO */
 		private $IO;
@@ -547,13 +643,19 @@ if ( ! class_exists( 'NETCURL_PARSER' ) && ! class_exists( 'Resursbank\RBEcomPHP
 		 *
 		 * @param string $htmlContent
 		 * @param string $contentType
+		 * @param array  $flags
 		 *
 		 * @throws \Exception
 		 * @since 6.0.0
 		 */
-		public function __construct( $htmlContent = '', $contentType = '' ) {
+		public function __construct( $htmlContent = '', $contentType = '', $flags = array() ) {
 			$this->NETWORK = new MODULE_NETWORK();
 			$this->IO      = new MODULE_IO();
+
+			if (isset($flags['NETCURL_PROHIBIT_DOMCONTENT_PARSE'])) {
+				$this->NETCURL_PROHIBIT_DOMCONTENT_PARSE = $flags['NETCURL_PROHIBIT_DOMCONTENT_PARSE'];
+			}
+
 			/*if (is_null($this->IO)) {
 				throw new \Exception( NETCURL_CURL_CLIENTNAME . " is missing MODULE_IO for rendering post data content", $this->NETWORK->getExceptionCode( 'NETCURL_PARSE_XML_FAILURE' ) );
 			}*/
@@ -562,10 +664,12 @@ if ( ! class_exists( 'NETCURL_PARSER' ) && ! class_exists( 'Resursbank\RBEcomPHP
 			$this->PARSE_CONTENT_OUTPUT = $this->getContentByTest();
 		}
 
-		/**
-		 * @return null|string
-		 * @since 6.0.0
-		 */
+        /**
+         * @param bool $returnAsIs
+         *
+         * @return null|string
+         * @since 6.0.0
+         */
 		public function getContentByJson( $returnAsIs = false ) {
 			try {
 				if ( $returnAsIs ) {
@@ -578,6 +682,27 @@ if ( ! class_exists( 'NETCURL_PARSER' ) && ! class_exists( 'Resursbank\RBEcomPHP
 			}
 
 			return null;
+		}
+
+		/**
+		 * Enable/disable the parsing of Dom content
+		 *
+		 * @param bool $domContentProhibit
+		 *
+		 * @since 6.0.3
+		 */
+		public function setDomContentParser( $domContentProhibit = false ) {
+			$this->NETCURL_PROHIBIT_DOMCONTENT_PARSE = $domContentProhibit;
+		}
+
+		/**
+		 * Get the status of dom content parser mode
+		 *
+		 * @return bool
+		 * @since 6.0.3
+		 */
+		public function getDomContentParser() {
+			return $this->NETCURL_PROHIBIT_DOMCONTENT_PARSE;
 		}
 
 		/**
@@ -647,17 +772,18 @@ if ( ! class_exists( 'NETCURL_PARSER' ) && ! class_exists( 'Resursbank\RBEcomPHP
 		 * @since 6.0.0
 		 */
 		private function getNull( $testData = '' ) {
-			if (is_array($testData) || is_object($testData)) {
+			if ( is_array( $testData ) || is_object( $testData ) ) {
 				return $testData;
 			}
+
 			return empty( $testData ) ? null : $testData;
 		}
 
-		/**
-		 * @return null|void
-		 * @throws \Exception
-		 * @since 6.0.0
-		 */
+        /**
+         * @return array|null|string
+         * @throws \Exception
+         * @since 6.0.0
+         */
 		private function getContentByTest() {
 			$returnNonNullValue = null;
 
@@ -669,7 +795,7 @@ if ( ! class_exists( 'NETCURL_PARSER' ) && ! class_exists( 'Resursbank\RBEcomPHP
 				$returnNonNullValue = $respond;
 			} else if ( ! is_null( $respond = $this->getContentByYaml() ) ) {
 				$returnNonNullValue = $respond;
-			} else if ( ! is_null( $response = $this->getDomElements() ) ) {
+			} else if ( ! $this->NETCURL_PROHIBIT_DOMCONTENT_PARSE && ! is_null( $response = $this->getDomElements() ) ) {
 				return $response;
 			}
 
@@ -680,7 +806,7 @@ if ( ! class_exists( 'NETCURL_PARSER' ) && ! class_exists( 'Resursbank\RBEcomPHP
 		/**
 		 * Experimental: Convert DOMDocument to an array
 		 *
-		 * @param array $childNode
+		 * @param array  $childNode
 		 * @param string $getAs
 		 *
 		 * @return array
@@ -692,13 +818,14 @@ if ( ! class_exists( 'NETCURL_PARSER' ) && ! class_exists( 'Resursbank\RBEcomPHP
 			$childIdArray        = array();
 			$returnContext       = "";
 			if ( is_object( $childNode ) ) {
-				/** @var \DOMNodeList $nodeItem */
-				foreach ( $childNode as $nodeItem ) {
+				/** @var \DOMElement $nodeItem */
+                foreach ( $childNode as $nodeItem ) {
 					if ( is_object( $nodeItem ) ) {
 						if ( isset( $nodeItem->tagName ) ) {
 							if ( strtolower( $nodeItem->tagName ) == "title" ) {
 								$elementData['pageTitle'] = $nodeItem->nodeValue;
 							}
+
 							$elementData            = array( 'tagName' => $nodeItem->tagName );
 							$elementData['id']      = $nodeItem->getAttribute( 'id' );
 							$elementData['name']    = $nodeItem->getAttribute( 'name' );
@@ -816,7 +943,7 @@ if ( ! class_exists( 'NETCURL_DRIVER_CONTROLLER' ) && ! class_exists( 'Resursban
 	 * Class NETCURL_DRIVERS Network communications driver detection
 	 *
 	 * @package TorneLIB
-	 * @since 6.0.20
+	 * @since   6.0.20
 	 */
 	class NETCURL_DRIVER_CONTROLLER {
 
@@ -829,6 +956,7 @@ if ( ! class_exists( 'NETCURL_DRIVER_CONTROLLER' ) && ! class_exists( 'Resursban
 
 		/**
 		 * Class drivers supported by NETCURL
+		 *
 		 * @var array
 		 */
 		private $DRIVERS_SUPPORTED = array(
@@ -843,9 +971,9 @@ if ( ! class_exists( 'NETCURL_DRIVER_CONTROLLER' ) && ! class_exists( 'Resursban
 			'WP_Http'                          => 'NETCURL_DRIVER_WORDPRESS'
 		);
 
-		private $DRIVERS_STREAMABLE = array(
+/*		private $DRIVERS_STREAMABLE = array(
 			'GuzzleHttp\Handler\StreamHandler' => 'NETCURL_DRIVER_GUZZLEHTTP'
-		);
+		);*/
 
 		/** @var array $DRIVERS_AVAILABLE */
 		private $DRIVERS_AVAILABLE = array();
@@ -858,10 +986,6 @@ if ( ! class_exists( 'NETCURL_DRIVER_CONTROLLER' ) && ! class_exists( 'Resursban
 
 		/** @var int $DRIVER_ID */
 		private $DRIVER_ID = 0;
-
-		private $URL = array(
-			'drivers' => 'https://docs.tornevall.net/x/CYBiAQ#Module:NetCurl-Internaldrivers'
-		);
 
 		/**
 		 * @var MODULE_NETWORK $NETWORK Handles exceptions
@@ -961,6 +1085,10 @@ if ( ! class_exists( 'NETCURL_DRIVER_CONTROLLER' ) && ! class_exists( 'Resursban
 			}
 		}
 
+        /**
+         * @return int|NETCURL_DRIVERS_INTERFACE
+         * @throws \Exception
+         */
 		public static function setAutoDetect() {
 			return self::getStatic()->getAutodetectedDriver();
 		}
@@ -1002,14 +1130,15 @@ if ( ! class_exists( 'NETCURL_DRIVER_CONTROLLER' ) && ! class_exists( 'Resursban
 			return false;
 		}
 
-		/**
-		 * Set up driver by class name
-		 *
-		 * @param int $driverId
-		 * @param array $parameters
-		 *
-		 * @return NETCURL_DRIVERS_INTERFACE
-		 */
+        /**
+         * Set up driver by class name
+         *
+         * @param int   $driverId
+         * @param array $parameters
+         * @param null  $ownClass Defines own class to use
+         *
+         * @return NETCURL_DRIVERS_INTERFACE
+         */
 		private function getDriverByClass( $driverId = NETCURL_NETWORK_DRIVERS::DRIVER_NOT_SET, $parameters = null, $ownClass = null ) {
 			$driverClass = isset( $this->DRIVERS_AVAILABLE[ $driverId ] ) ? $this->DRIVERS_AVAILABLE[ $driverId ] : null;
 			/** @var NETCURL_DRIVERS_INTERFACE $newDriver */
@@ -1078,7 +1207,7 @@ if ( ! class_exists( 'NETCURL_DRIVER_CONTROLLER' ) && ! class_exists( 'Resursban
 		/**
 		 * Initialize driver
 		 *
-		 * @param int $netDriver
+		 * @param int  $netDriver
 		 * @param null $parameters
 		 * @param null $ownClass
 		 *
@@ -1092,7 +1221,7 @@ if ( ! class_exists( 'NETCURL_DRIVER_CONTROLLER' ) && ! class_exists( 'Resursban
 		}
 
 		/**
-		 * @param int $netDriver
+		 * @param int  $netDriver
 		 * @param null $parameters
 		 * @param null $ownClass
 		 *
@@ -1188,14 +1317,10 @@ if ( ! class_exists( 'MODULE_SSL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MOD
 
 	/**
 	 * Class MODULE_SSL SSL Helper class
+	 *
 	 * @package TorneLIB
 	 */
 	class MODULE_SSL {
-		/** @var bool Do not test certificates on older PHP-version (< 5.6.0) if this is false */
-		private $sslDriverError = array();
-		/** @var bool If SSL has been compiled in CURL, this will transform to true */
-		private $sslCurlDriver = false;
-
 		/** @var array Default paths to the certificates we are looking for */
 		private $sslPemLocations = array( '/etc/ssl/certs' );
 		/** @var array Files to look for in sslPemLocations */
@@ -1249,7 +1374,6 @@ if ( ! class_exists( 'MODULE_SSL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MOD
 
 			if ( function_exists( 'curl_version' ) ) {
 				$curlVersionRequest = curl_version();
-				$curlVersion        = $curlVersionRequest['version'];
 				if ( defined( 'CURL_VERSION_SSL' ) ) {
 					if ( isset( $curlVersionRequest['features'] ) ) {
 						$CURL_SSL_AVAILABLE = ( $curlVersionRequest['features'] & CURL_VERSION_SSL ? true : false );
@@ -1267,6 +1391,7 @@ if ( ! class_exists( 'MODULE_SSL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MOD
 
 		/**
 		 * Returns true if no errors occured in the control
+		 *
 		 * @return bool
 		 */
 		public static function hasSsl() {
@@ -1281,7 +1406,7 @@ if ( ! class_exists( 'MODULE_SSL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MOD
 		 * Make sure that we are allowed to do things
 		 *
 		 * @param bool $checkSafeMode If true, we will also check if safe_mode is active
-		 * @param bool $mockSafeMode If true, NetCurl will pretend safe_mode is true (for testing)
+		 * @param bool $mockSafeMode  If true, NetCurl will pretend safe_mode is true (for testing)
 		 *
 		 * @return bool If true, PHP is in secure mode and won't allow things like follow-redirects and setting up different paths for certificates, etc
 		 * @since 6.0.20
@@ -1301,8 +1426,6 @@ if ( ! class_exists( 'MODULE_SSL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MOD
 
 				return true;
 			}
-
-			return false;
 		}
 
 		/**
@@ -1325,16 +1448,17 @@ if ( ! class_exists( 'MODULE_SSL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MOD
 			return ( filter_var( ini_get( 'safe_mode' ), FILTER_VALIDATE_BOOLEAN ) );
 		}
 
-		/**
-		 * openssl_guess rewrite
-		 *
-		 * @return string
-		 * @since 6.0.0
-		 */
+        /**
+         * openssl_guess rewrite
+         *
+         * @param bool $forceChecking
+         * @return string
+         * @since 6.0.0
+         */
 		public function getSslCertificateBundle( $forceChecking = false ) {
 			// Assume that sysadmins can handle this, if open_basedir is set as things will fail if we proceed here
 			if ( $this->getIsSecure( false ) && ! $forceChecking ) {
-				return;
+				return null;
 			}
 
 			foreach ( $this->sslPemLocations as $filePath ) {
@@ -1699,7 +1823,8 @@ if ( ! class_exists( 'MODULE_NETBITS' ) && ! class_exists( 'Resursbank\RBEcomPHP
 if ( ! class_exists( 'TorneLIB_NetBits' ) && ! class_exists( 'Resursbank\RBEcomPHP\TorneLIB_NetBits' ) ) {
 	/**
 	 * Class TorneLIB_NetBits
-	 * @package TorneLIB
+	 *
+	 * @package    TorneLIB
 	 * @deprecated Use MODULE_NETBITS
 	 */
 	class TorneLIB_NetBits extends MODULE_NETBITS {
@@ -1712,6 +1837,7 @@ if ( ! class_exists( 'TorneLIB_NetBits' ) && ! class_exists( 'Resursbank\RBEcomP
 if ( ! class_exists( 'TorneLIB_NETCURL_EXCEPTIONS' ) && ! class_exists( 'Resursbank\RBEcomPHP\TorneLIB_NETCURL_EXCEPTIONS' ) ) {
 	/**
 	 * Class NETCURL_EXCEPTIONS
+	 *
 	 * @package TorneLIB
 	 */
 	abstract class NETCURL_EXCEPTIONS {
@@ -1756,16 +1882,18 @@ if ( ! class_exists( 'TorneLIB_NETCURL_EXCEPTIONS' ) && ! class_exists( 'Resursb
 		const NETCURL_DOMDOCUMENT_EMPTY = 1016;
 		const NETCURL_NO_DRIVER_AVAILABLE_NOT_EVEN_CURL = 1017;
 		const NETCURL_UNEXISTENT_FUNCTION = 1018;
-
 		const NETCURL_PARSE_XML_FAILURE = 1019;
 		const NETCURL_IO_PARSER_MISSING = 1020;
+        const NETCURL_GUZZLE_RESPONSE_EXCEPTION = 1021;
+        const NETCURL_WP_REQUEST_ERROR = 1022;
 	}
 }
 
 if ( ! class_exists( 'TorneLIB_NETCURL_EXCEPTIONS' ) && ! class_exists( 'Resursbank\RBEcomPHP\TorneLIB_NETCURL_EXCEPTIONS' ) ) {
 	/**
 	 * Class TORNELIB_NETCURL_EXCEPTIONS
-	 * @package TorneLIB
+	 *
+	 * @package    TorneLIB
 	 * @deprecated Use NETCURL_EXCEPTIONS
 	 */
 	abstract class TORNELIB_NETCURL_EXCEPTIONS extends NETCURL_EXCEPTIONS {
@@ -1778,7 +1906,7 @@ if ( ! class_exists( 'NETCURL_AUTH_TYPES' ) && ! class_exists( 'Resursbank\RBEco
 	 * The authentication types listed in this section defines what is fully supported by the module. In other cases you might be on your own.
 	 *
 	 * @package TorneLIB
-	 * @since 6.0.20
+	 * @since   6.0.20
 	 */
 	abstract class NETCURL_AUTH_TYPES {
 		const AUTHTYPE_NONE = 0;
@@ -1787,7 +1915,7 @@ if ( ! class_exists( 'NETCURL_AUTH_TYPES' ) && ! class_exists( 'Resursbank\RBEco
 }
 if ( ! class_exists( 'CURL_AUTH_TYPES' ) && ! class_exists( 'Resursbank\RBEcomPHP\CURL_AUTH_TYPES' ) ) {
 	/**
-	 * @package TorneLIB
+	 * @package    TorneLIB
 	 * @deprecated 6.0.20 Use NETCURL_AUTH_TYPES
 	 */
 	abstract class CURL_AUTH_TYPES extends NETCURL_AUTH_TYPES {
@@ -1796,8 +1924,9 @@ if ( ! class_exists( 'CURL_AUTH_TYPES' ) && ! class_exists( 'Resursbank\RBEcomPH
 if ( ! class_exists( 'NETCURL_HTTP_OBJECT' ) && ! class_exists( 'Resursbank\RBEcomPHP\NETCURL_HTTP_OBJECT' ) ) {
 	/**
 	 * Class NETCURL_CURLOBJECT
+	 *
 	 * @package TorneLIB
-	 * @since 6.0.20
+	 * @since   6.0.20
 	 */
 	class NETCURL_HTTP_OBJECT {
 
@@ -1846,7 +1975,8 @@ if ( ! class_exists( 'NETCURL_HTTP_OBJECT' ) && ! class_exists( 'Resursbank\RBEc
 if ( ! class_exists( 'TORNELIB_CURLOBJECT' ) && ! class_exists( 'Resursbank\RBEcomPHP\TORNELIB_CURLOBJECT' ) ) {
 	/**
 	 * Class TORNELIB_CURLOBJECT
-	 * @package TorneLIB
+	 *
+	 * @package    TorneLIB
 	 * @deprecated 6.0.20 Use NETCURL_HTTP_OBJECT
 	 */
 	class TORNELIB_CURLOBJECT extends NETCURL_HTTP_OBJECT {
@@ -1863,7 +1993,7 @@ if ( ! class_exists( 'NETCURL_POST_DATATYPES' ) && ! class_exists( 'Resursbank\R
 	 * Class NETCURL_POST_DATATYPES Prepared formatting for POST-content in this library (Also available from for example PUT)
 	 *
 	 * @package TorneLIB
-	 * @since 6.0.20
+	 * @since   6.0.20
 	 */
 	abstract class NETCURL_POST_DATATYPES {
 		const DATATYPE_NOT_SET = 0;
@@ -1875,7 +2005,7 @@ if ( ! class_exists( 'NETCURL_POST_DATATYPES' ) && ! class_exists( 'Resursbank\R
 }
 if ( ! class_exists( 'CURL_POST_AS' ) && ! class_exists( 'Resursbank\RBEcomPHP\CURL_POST_AS' ) ) {
 	/**
-	 * @package TorneLIB
+	 * @package    TorneLIB
 	 * @deprecated 6.0.20 Use NETCURL_POST_DATATYPES
 	 */
 	abstract class CURL_POST_AS extends NETCURL_POST_DATATYPES {
@@ -1896,8 +2026,9 @@ if ( ! class_exists( 'CURL_POST_AS' ) && ! class_exists( 'Resursbank\RBEcomPHP\C
 if ( ! class_exists( 'NETCURL_NETWORK_DRIVERS' ) && ! class_exists( 'Resursbank\RBEcomPHP\NETCURL_NETWORK_DRIVERS' ) ) {
 	/**
 	 * Class NETCURL_NETWORK_DRIVERS Supported network Addons
+	 *
 	 * @package TorneLIB
-	 * @since 6.0.20
+	 * @since   6.0.20
 	 */
 	abstract class NETCURL_NETWORK_DRIVERS {
 		const DRIVER_NOT_SET = 0;
@@ -1920,78 +2051,92 @@ if ( ! class_exists( 'NETCURL_NETWORK_DRIVERS' ) && ! class_exists( 'Resursbank\
 if ( ! class_exists( 'TORNELIB_CURL_DRIVERS' ) && ! class_exists( 'Resursbank\RBEcomPHP\TORNELIB_CURL_DRIVERS' ) ) {
 	/**
 	 * Class TORNELIB_CURL_DRIVERS
-	 * @package TorneLIB
+	 *
+	 * @package    TorneLIB
 	 * @deprecated .0.20 Use NETCURL_NETWORK_DRIVERS
 	 */
 	abstract class TORNELIB_CURL_DRIVERS extends NETCURL_NETWORK_DRIVERS {
 	}
 }
-if ( ! class_exists( 'NETCURL_ENVIRONMENT' ) && ! class_exists( 'Resursbank\RBEcomPHP\NETCURL_ENVIRONMENT' ) ) {
-	/**
-	 * Class NETCURL_ENVIRONMENT Unittest helping class
-	 *
-	 * @package TorneLIB
-	 * @since 6.0.0
-	 * @deprecated 6.0.20 Not in use
-	 */
-	abstract class NETCURL_ENVIRONMENT {
-		const ENVIRONMENT_PRODUCTION = 0;
-		const ENVIRONMENT_TEST = 1;
-	}
+if ( ! class_exists('NETCURL_ENVIRONMENT') && ! class_exists('TorneLIB\NETCURL_ENVIRONMENT')) {
+    /**
+     * Class NETCURL_ENVIRONMENT Unittest helping class
+     *
+     * @package    TorneLIB
+     * @since      6.0.0
+     * @deprecated 6.0.20 Not in use
+     */
+    abstract class NETCURL_ENVIRONMENT
+    {
+        const ENVIRONMENT_PRODUCTION = 0;
+        const ENVIRONMENT_TEST = 1;
+    }
 }
 
-if ( ! class_exists( 'TORNELIB_CURL_ENVIRONMENT' ) && ! class_exists( 'Resursbank\RBEcomPHP\TORNELIB_CURL_ENVIRONMENT' ) ) {
-	/**
-	 * Class TORNELIB_CURL_ENVIRONMENT
-	 * @package TorneLIB
-	 * @deprecated Use NETCURL_ENVIRONMENT
-	 * @since 6.0.0
-	 * @deprecated 6.0.20 Not in use
-	 */
-	abstract class TORNELIB_CURL_ENVIRONMENT extends NETCURL_ENVIRONMENT {
-	}
+if ( ! class_exists('TORNELIB_CURL_ENVIRONMENT') && ! class_exists('TorneLIB\TORNELIB_CURL_ENVIRONMENT')) {
+    /** @noinspection PhpDeprecationInspection */
+
+    /**
+     * Class TORNELIB_CURL_ENVIRONMENT
+     *
+     * @package    TorneLIB
+     * @deprecated Use NETCURL_ENVIRONMENT
+     * @since      6.0.0
+     * @deprecated 6.0.20 Not in use
+     */
+    abstract class TORNELIB_CURL_ENVIRONMENT extends NETCURL_ENVIRONMENT
+    {
+    }
 }
-if ( ! class_exists( 'NETCURL_IP_PROTOCOLS' ) && ! class_exists( 'Resursbank\RBEcomPHP\NETCURL_IP_PROTOCOLS' ) ) {
-	/**
-	 * Class NETCURL_IP_PROTOCOLS IP Address Types class
-	 * @package TorneLIB
-	 * @since 6.0.20
-	 */
-	abstract class NETCURL_IP_PROTOCOLS {
-		const PROTOCOL_NONE = 0;
-		const PROTOCOL_IPV4 = 4;
-		const PROTOCOL_IPV6 = 6;
-	}
+if ( ! class_exists('NETCURL_IP_PROTOCOLS') && ! class_exists('TorneLIB\NETCURL_IP_PROTOCOLS')) {
+    /**
+     * Class NETCURL_IP_PROTOCOLS IP Address Types class
+     *
+     * @package TorneLIB
+     * @since   6.0.20
+     */
+    abstract class NETCURL_IP_PROTOCOLS
+    {
+        const PROTOCOL_NONE = 0;
+        const PROTOCOL_IPV4 = 4;
+        const PROTOCOL_IPV6 = 6;
+    }
 
 }
-if ( ! class_exists( 'TorneLIB_Network_IP' ) && ! class_exists( 'Resursbank\RBEcomPHP\TorneLIB_Network_IP' ) ) {
-	/**
-	 * Class TorneLIB_Network_IP
-	 * @package TorneLIB
-	 * @deprecated 6.0.20 Use NETCURL_IP_PROTOCOLS
-	 */
-	abstract class TorneLIB_Network_IP extends NETCURL_IP_PROTOCOLS {
-		const IPTYPE_NONE = 0;
-		const IPTYPE_V4 = 4;
-		const IPTYPE_V6 = 6;
-	}
+if ( ! class_exists('TorneLIB_Network_IP') && ! class_exists('TorneLIB\TorneLIB_Network_IP')) {
+    /**
+     * Class TorneLIB_Network_IP
+     *
+     * @package    TorneLIB
+     * @deprecated 6.0.20 Use NETCURL_IP_PROTOCOLS
+     */
+    abstract class TorneLIB_Network_IP extends NETCURL_IP_PROTOCOLS
+    {
+        const IPTYPE_NONE = 0;
+        const IPTYPE_V4 = 4;
+        const IPTYPE_V6 = 6;
+    }
 }
 
-if ( ! class_exists( 'TorneLIB_Network_IP_Protocols' ) && ! class_exists( 'Resursbank\RBEcomPHP\TorneLIB_Network_IP_Protocols' ) ) {
-	/**
-	 * Class TorneLIB_Network_IP_Protocols
-	 * @package TorneLIB
-	 * @deprecated 6.0.20 Use NETCURL_IP_PROTOCOLS
-	 */
-	abstract class TorneLIB_Network_IP_Protocols extends TorneLIB_Network_IP {
-	}
+if ( ! class_exists('TorneLIB_Network_IP_Protocols') && ! class_exists('TorneLIB\TorneLIB_Network_IP_Protocols')) {
+    /** @noinspection PhpDeprecationInspection */
+
+    /**
+     * Class TorneLIB_Network_IP_Protocols
+     *
+     * @package    TorneLIB
+     * @deprecated 6.0.20 Use NETCURL_IP_PROTOCOLS
+     */
+    abstract class TorneLIB_Network_IP_Protocols extends TorneLIB_Network_IP
+    {
+    }
 }
 if ( ! class_exists( 'NETCURL_POST_METHODS' ) && ! class_exists( 'Resursbank\RBEcomPHP\NETCURL_POST_METHODS' ) ) {
 	/**
 	 * Class NETCURL_POST_METHODS List of methods available in this library
 	 *
 	 * @package TorneLIB
-	 * @since 6.0.20
+	 * @since   6.0.20
 	 */
 	abstract class NETCURL_POST_METHODS {
 		const METHOD_GET = 0;
@@ -2005,7 +2150,7 @@ if ( ! class_exists( 'NETCURL_POST_METHODS' ) && ! class_exists( 'Resursbank\RBE
 
 if ( ! class_exists( 'CURL_METHODS' ) && ! class_exists( 'Resursbank\RBEcomPHP\CURL_METHODS' ) ) {
 	/**
-	 * @package TorneLIB
+	 * @package    TorneLIB
 	 * @deprecated 6.0.20 Use NETCURL_POST_METHODS
 	 */
 	abstract class CURL_METHODS extends NETCURL_POST_METHODS {
@@ -2016,7 +2161,7 @@ if ( ! class_exists( 'NETCURL_RESOLVER' ) && ! class_exists( 'Resursbank\RBEcomP
 	 * Class NETCURL_RESOLVER Class definitions on how to resolve things on lookups
 	 *
 	 * @package TorneLIB
-	 * @since 6.0.20
+	 * @since   6.0.20
 	 */
 	abstract class NETCURL_RESOLVER {
 		const RESOLVER_DEFAULT = 0;
@@ -2027,7 +2172,7 @@ if ( ! class_exists( 'NETCURL_RESOLVER' ) && ! class_exists( 'Resursbank\RBEcomP
 
 if ( ! class_exists( 'CURL_RESOLVER' ) && ! class_exists( 'Resursbank\RBEcomPHP\CURL_RESOLVER' ) ) {
 	/**
-	 * @package TorneLIB
+	 * @package    TorneLIB
 	 * @deprecated 6.0.20 Use NETCURL_RESOLVER
 	 */
 	abstract class CURL_RESOLVER extends NETCURL_RESOLVER {
@@ -2036,8 +2181,9 @@ if ( ! class_exists( 'CURL_RESOLVER' ) && ! class_exists( 'Resursbank\RBEcomPHP\
 if ( ! class_exists( 'NETCURL_RESPONSETYPE' ) && ! class_exists( 'Resursbank\RBEcomPHP\NETCURL_RESPONSETYPE' ) ) {
 	/**
 	 * Class NETCURL_RESPONSETYPE Assoc or object?
+	 *
 	 * @package TorneLIB
-	 * @since 6.0.20
+	 * @since   6.0.20
 	 */
 	abstract class NETCURL_RESPONSETYPE {
 		const RESPONSETYPE_ARRAY = 0;
@@ -2048,7 +2194,8 @@ if ( ! class_exists( 'NETCURL_RESPONSETYPE' ) && ! class_exists( 'Resursbank\RBE
 
 		/**
 		 * Class TORNELIB_CURL_RESPONSETYPE
-		 * @package TorneLIB
+		 *
+		 * @package    TorneLIB
 		 * @deprecated 6.0.20 Use NETCURL_RESPONSETYPE
 		 */
 		abstract class TORNELIB_CURL_RESPONSETYPE extends NETCURL_RESPONSETYPE {
@@ -2067,9 +2214,10 @@ if ( ! class_exists( 'MODULE_NETWORK' ) && ! class_exists( 'Resursbank\RBEcomPHP
 	 * Library for handling network related things (currently not sockets). A conversion of a legacy PHP library called "TorneEngine" and family.
 	 *
 	 * Class MODULE_NETWORK
-	 * @link https://phpdoc.tornevall.net/TorneLIBv5/class-TorneLIB.TorneLIB_Network.html PHPDoc/Staging - TorneLIB_Network
-	 * @link https://docs.tornevall.net/x/KQCy TorneLIB (PHP) Landing documentation
-	 * @link https://bitbucket.tornevall.net/projects/LIB/repos/tornelib-php/browse Sources of TorneLIB
+	 *
+	 * @link    https://phpdoc.tornevall.net/TorneLIBv5/class-TorneLIB.TorneLIB_Network.html PHPDoc/Staging - TorneLIB_Network
+	 * @link    https://docs.tornevall.net/x/KQCy TorneLIB (PHP) Landing documentation
+	 * @link    https://bitbucket.tornevall.net/projects/LIB/repos/tornelib-php/browse Sources of TorneLIB
 	 *
 	 * @package TorneLIB
 	 */
@@ -2110,7 +2258,7 @@ if ( ! class_exists( 'MODULE_NETWORK' ) && ! class_exists( 'Resursbank\RBEcomPHP
 		function __construct() {
 			// Initiate and get client headers.
 			$this->renderProxyHeaders();
-			$this->BIT = new TorneLIB_NetBits();
+			$this->BIT = new MODULE_NETBITS();
 		}
 
 		/**
@@ -2152,8 +2300,8 @@ if ( ! class_exists( 'MODULE_NETWORK' ) && ! class_exists( 'Resursbank\RBEcomPHP
 		 * Try to fetch git tags from git URLS
 		 *
 		 * @param string $gitUrl
-		 * @param bool $cleanNonNumerics Normally you do not want to strip anything. This boolean however, decides if we will include non numerical version data in the returned array
-		 * @param bool $sanitizeNumerics If we decide to not include non numeric values from the version tag array (by $cleanNonNumerics), the tags will be sanitized in a preg_replace filter that will the keep numerics in the content only (with $cleanNonNumerics set to false, this boolen will have no effect)
+		 * @param bool   $cleanNonNumerics Normally you do not want to strip anything. This boolean however, decides if we will include non numerical version data in the returned array
+		 * @param bool   $sanitizeNumerics If we decide to not include non numeric values from the version tag array (by $cleanNonNumerics), the tags will be sanitized in a preg_replace filter that will the keep numerics in the content only (with $cleanNonNumerics set to false, this boolen will have no effect)
 		 *
 		 * @return array
 		 * @throws \Exception
@@ -2166,15 +2314,15 @@ if ( ! class_exists( 'MODULE_NETWORK' ) && ! class_exists( 'Resursbank\RBEcomPHP
 			// Clean up all user auth data in URL if exists
 			$gitUrl = preg_replace( "/\/\/(.*?)@/", '//', $gitUrl );
 			/** @var $CURL Tornevall_cURL */
-			$CURL = new Tornevall_cURL();
+			$CURL = new MODULE_CURL();
 
 			/** @noinspection PhpUnusedLocalVariableInspection */
 			$code             = 0;
 			$exceptionMessage = "";
 			try {
 				$gitGet  = $CURL->doGet( $gitUrl );
-				$code    = intval( $CURL->getResponseCode() );
-				$gitBody = $CURL->getResponseBody( $gitGet );
+				$code    = intval( $CURL->getCode() );
+				$gitBody = $CURL->getBody( $gitGet );
 				if ( $code >= 200 && $code <= 299 && ! empty( $gitBody ) ) {
 					$fetchFail = false;
 					preg_match_all( "/refs\/tags\/(.*?)\n/s", $gitBody, $tagMatches );
@@ -2271,7 +2419,7 @@ if ( ! class_exists( 'MODULE_NETWORK' ) && ! class_exists( 'Resursbank\RBEcomPHP
 		 * As some functions still uses this, we chose to keep it, but do it "right".
 		 *
 		 * @param string $requestedUrlHost
-		 * @param bool $validateHost Validate that the hostname do exist
+		 * @param bool   $validateHost Validate that the hostname do exist
 		 *
 		 * @return array
 		 * @throws \Exception
@@ -2306,17 +2454,16 @@ if ( ! class_exists( 'MODULE_NETWORK' ) && ! class_exists( 'Resursbank\RBEcomPHP
 		/**
 		 * Extract urls from a text string and return as array
 		 *
-		 * @param $stringWithUrls
-		 * @param int $offset
-		 * @param int $urlLimit
+		 * @param       $stringWithUrls
+		 * @param int   $offset
+		 * @param int   $urlLimit
 		 * @param array $protocols
-		 * @param bool $preventDuplicates
+		 * @param bool  $preventDuplicates
 		 *
 		 * @return array
 		 */
 		public function getUrlsFromHtml( $stringWithUrls, $offset = - 1, $urlLimit = - 1, $protocols = array( "http" ), $preventDuplicates = true ) {
 			$returnArray = array();
-			$urls        = array();
 
 			// Pick up all urls by protocol (adding http will include https too)
 			foreach ( $protocols as $protocol ) {
@@ -2391,9 +2538,9 @@ if ( ! class_exists( 'MODULE_NETWORK' ) && ! class_exists( 'Resursbank\RBEcomPHP
 		 * Prepare addon parameters for setting a cookie
 		 *
 		 * @param string $path
-		 * @param null $prefix
-		 * @param null $domain
-		 * @param null $secure
+		 * @param null   $prefix
+		 * @param null   $domain
+		 * @param null   $secure
 		 */
 		public function setCookieParameters( $path = "/", $prefix = null, $domain = null, $secure = null ) {
 			$this->cookieDefaultPath = $path;
@@ -2424,6 +2571,7 @@ if ( ! class_exists( 'MODULE_NETWORK' ) && ! class_exists( 'Resursbank\RBEcomPHP
 
 		/**
 		 * Render a list of client ip addresses (if exists). This requires that the server exposes the REMOTE_ADDR
+		 *
 		 * @return bool If successful, this is true
 		 */
 		private function renderProxyHeaders() {
@@ -2503,8 +2651,26 @@ if ( ! class_exists( 'MODULE_NETWORK' ) && ! class_exists( 'Resursbank\RBEcomPHP
 		 * @since 6.0.15
 		 */
 		public static function getCurrentServerProtocol( $returnProtocol = false ) {
-			/** @noinspection PhpDynamicAsStaticMethodCallInspection */
-			return self::getProtocol( $returnProtocol );
+			if ( isset( $_SERVER['HTTPS'] ) ) {
+				if ( $_SERVER['HTTPS'] == "on" ) {
+					if ( ! $returnProtocol ) {
+						return true;
+					} else {
+						return "https";
+					}
+				} else {
+					if ( ! $returnProtocol ) {
+						return false;
+					} else {
+						return "http";
+					}
+				}
+			}
+			if ( ! $returnProtocol ) {
+				return false;
+			} else {
+				return "http";
+			}
 		}
 
 		/**
@@ -2564,7 +2730,7 @@ if ( ! class_exists( 'MODULE_NETWORK' ) && ! class_exists( 'Resursbank\RBEcomPHP
 		 * Get reverse octets from ip address
 		 *
 		 * @param string $ipAddr
-		 * @param bool $returnIpType
+		 * @param bool   $returnIpType
 		 *
 		 * @return int|string
 		 */
@@ -2702,7 +2868,8 @@ if ( ! class_exists( 'MODULE_NETWORK' ) && ! class_exists( 'Resursbank\RBEcomPHP
 if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'Resursbank\RBEcomPHP\TorneLIB_Network' ) ) {
 	/**
 	 * Class MODULE_CURL
-	 * @package TorneLIB
+	 *
+	 * @package    TorneLIB
 	 * @deprecated 6.0.20 Use MODULE_NETWORK
 	 */
 	class TorneLIB_Network extends MODULE_NETWORK {
@@ -2714,10 +2881,10 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'Resursbank\RBEcomP
 if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MODULE_CURL' ) ) {
 
 	if ( ! defined( 'NETCURL_CURL_RELEASE' ) ) {
-		define( 'NETCURL_CURL_RELEASE', '6.0.20' );
+		define( 'NETCURL_CURL_RELEASE', '6.0.21' );
 	}
 	if ( ! defined( 'NETCURL_CURL_MODIFY' ) ) {
-		define( 'NETCURL_CURL_MODIFY', '20180522' );
+		define( 'NETCURL_CURL_MODIFY', '20180606' );
 	}
 	if ( ! defined( 'NETCURL_CURL_CLIENTNAME' ) ) {
 		define( 'NETCURL_CURL_CLIENTNAME', 'MODULE_CURL' );
@@ -2727,11 +2894,11 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 	 * Class MODULE_CURL
 	 *
 	 * @package TorneLIB
-	 * @link https://docs.tornevall.net/x/KQCy TorneLIBv5
-	 * @link https://bitbucket.tornevall.net/projects/LIB/repos/tornelib-php-netcurl/browse Sources of TorneLIB
-	 * @link https://docs.tornevall.net/x/KwCy Network & Curl v5 and v6 Library usage
-	 * @link https://docs.tornevall.net/x/FoBU TorneLIB Full documentation
-	 * @since 6.0.20
+	 * @link    https://docs.tornevall.net/x/KQCy TorneLIBv5
+	 * @link    https://bitbucket.tornevall.net/projects/LIB/repos/tornelib-php-netcurl/browse Sources of TorneLIB
+	 * @link    https://docs.tornevall.net/x/KwCy Network & Curl v5 and v6 Library usage
+	 * @link    https://docs.tornevall.net/x/FoBU TorneLIB Full documentation
+	 * @since   6.0.20
 	 */
 	class MODULE_CURL {
 
@@ -2802,6 +2969,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 
 		/**
 		 * When you just need output responses and nothing else (except for exceptions)
+		 *
 		 * @var bool $NETCURL_SIMPLIFY_RESPONSES
 		 * @since 6.0.21
 		 */
@@ -2809,13 +2977,23 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 
 		/**
 		 * Allow domcontent to be parsed in simplified mode
+		 *
 		 * @var bool
 		 * @since 6.0.21
 		 */
 		protected $NETCURL_SIMPLIFY_DOMCONTENT = false;
 
 		/**
+		 * Do not include Dom content in the basic parser (default = true, as it might destroy output data in legacy products)
+		 *
+		 * @var bool $NETCURL_PROHIBIT_DOMCONTENT_PARSE
+		 * @since 6.0.22
+		 */
+		private $NETCURL_PROHIBIT_DOMCONTENT_PARSE = true;
+
+		/**
 		 * Will be set to true if the parser passed DOM-content analyze
+		 *
 		 * @var bool
 		 * @since 6.0.21
 		 */
@@ -2854,14 +3032,6 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		private $SSL;
 		private $TRUST_SSL_BUNDLES = false;
 
-		/**
-		 * Target environment (if target is production some debugging values will be skipped)
-		 *
-		 * @since 5.0.0
-		 * @var int $TARGET_ENVIRONMENT
-		 * @deprecated 6.0.20 Not in use
-		 */
-		private $TARGET_ENVIRONMENT = NETCURL_ENVIRONMENT::ENVIRONMENT_PRODUCTION;
 		/** @var null Our communication channel */
 		private $NETCURL_CURL_SESSION = null;
 		/** @var null URL that was set to communicate with */
@@ -2934,11 +3104,6 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 * @deprecated 6.0.20
 		 */
 		private $TemporaryExternalResponse = null;
-		/**
-		 * @var array $ParseContainer
-		 * @deprecated 6.0.20
-		 */
-		private $ParseContainer;
 
 		/**
 		 * @var NETCURL_POST_DATATYPES $FORCE_POST_TYPE What post type to use when using POST (Enforced)
@@ -2963,8 +3128,6 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 * @deprecated 6.0.20
 		 */
 		public $CurlAutoParse = true;
-		/** @var bool Allow parsing of content bodies (tags) */
-		private $allowParseHtml = false;
 		private $NETCURL_RETURN_RESPONSE_TYPE = NETCURL_RESPONSETYPE::RESPONSETYPE_ARRAY;
 		/** @var array Authentication */
 		private $AuthData = array(
@@ -2980,6 +3143,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		private $useXmlSerializer = false;
 		/**
 		 * Store information about the URL call and if the SSL was unsafe (disabled)
+		 *
 		 * @var bool
 		 */
 		protected $unsafeSslCall = false;
@@ -2988,11 +3152,13 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		private $useLocalCookies = false;
 		/**
 		 * To which path we store cookies
+		 *
 		 * @var string $COOKIE_PATH
 		 */
 		private $COOKIE_PATH = '';
 		/**
 		 * Allow saving cookies
+		 *
 		 * @var bool
 		 */
 		private $SaveCookies = false;
@@ -3017,17 +3183,6 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		private $NETCURL_USE_COOKIES = true;
 
 		//// RESOLVING AND TIMEOUTS
-
-		/**
-		 * How to resolve hosts (Default = Not set)
-		 *
-		 * RESOLVER_IPV4
-		 * RESOLVER_IPV6
-		 *
-		 * @var int
-		 * @deprecated 6.0.20
-		 */
-		public $CurlResolve;
 
 		/**
 		 * @var NETCURL_RESOLVER $CURL_RESOLVE_TYPE
@@ -3074,16 +3229,16 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 * MODULE_CURL constructor.
 		 *
 		 * @param string $requestUrl
-		 * @param array $requestPostData
-		 * @param int $requestPostMethod
-		 * @param array $requestFlags
+		 * @param array  $requestPostData
+		 * @param int    $requestPostMethod
+		 * @param array  $requestFlags
 		 *
 		 * @throws \Exception
 		 */
 		public function __construct( $requestUrl = '', $requestPostData = array(), $requestPostMethod = null, $requestFlags = array() ) {
 			register_shutdown_function( array( $this, 'netcurl_terminate' ) );
 
-			if (!is_null($requestPostData)) {
+			if ( ! is_null( $requestPostData ) ) {
 				$requestPostData = array();
 			}
 
@@ -3091,7 +3246,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 			if ( version_compare( PHP_VERSION, "5.4.0", "<" ) ) {
 				// Something really magic happens in PHP 5.3 with default request method, so instead we default this to GET
 				// instead of POST if running lower versions.
-				if (is_null($requestPostMethod)) {
+				if ( is_null( $requestPostMethod ) ) {
 					$requestPostMethod = NETCURL_POST_METHODS::METHOD_GET;
 				}
 
@@ -3101,7 +3256,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 					// This will never occur
 				}
 			}
-			if (is_null($requestPostMethod)) {
+			if ( is_null( $requestPostMethod ) ) {
 				$requestPostMethod = NETCURL_POST_METHODS::METHOD_POST;
 			}
 			if ( is_array( $requestFlags ) && count( $requestFlags ) ) {
@@ -3115,7 +3270,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 			}
 			$this->setConstantsContainer();
 			$this->setPreparedAuthentication();
-			$this->CurlResolve        = NETCURL_RESOLVER::RESOLVER_DEFAULT;
+			$this->CURL_RESOLVE_TYPE  = NETCURL_RESOLVER::RESOLVER_DEFAULT;
 			$this->throwableHttpCodes = array();
 			$this->getSslDriver();
 
@@ -3132,6 +3287,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 				} else if ( $requestPostMethod == NETCURL_POST_METHODS::METHOD_DELETE ) {
 					$InstantResponse = $this->doDelete( $requestUrl, $requestPostData );
 				}
+
 				return $InstantResponse;
 			}
 
@@ -3140,6 +3296,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 
 		/**
 		 * @deprecated 6.0.20
+		 * @throws \Exception
 		 */
 		public function init() {
 			$this->initializeNetCurl();
@@ -3149,6 +3306,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 * Termination Controller
 		 *
 		 * As of 6.0.20 cookies will be only stored if there is a predefined cookiepath or if system tempdir is allowed
+		 *
 		 * @since 5.0
 		 */
 		function netcurl_terminate() {
@@ -3175,6 +3333,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 
 		/**
 		 * Store constants of curl errors and curlOptions
+		 *
 		 * @since 6.0.20
 		 */
 		private function setConstantsContainer() {
@@ -3197,6 +3356,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 * Set up authentication
 		 *
 		 * @since 6.0.20
+		 * @throws \Exception
 		 */
 		private function setPreparedAuthentication() {
 			$authFlags = $this->getFlag( 'auth' );
@@ -3223,15 +3383,11 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		/**
 		 * Ask this module whether there are available modules for use with http calls or not. Can also be set up to return a complete list of modules
 		 *
-		 * @param bool $getAsList
-		 * @param bool $ignoreException Do not throw any exceptions on testing
-		 *
 		 * @return bool|array
-		 * @throws \Exception
-		 * @since 6.0.14
+		 * @since      6.0.14
 		 * @deprecated Use NETCURL_DRIVER_CONTROLLER::
 		 */
-		public function getAvailableDrivers( $getAsList = false, $ignoreException = false ) {
+		public function getAvailableDrivers() {
 			return $this->DRIVER->getSystemWideDrivers();
 		}
 
@@ -3248,18 +3404,8 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		}
 
 		/**
-		 * If the internal driver is available, we also consider curl available
-		 *
-		 * @return bool
-		 * @throws \Exception
-		 * @deprecated Use NETCURL_DRIVER_CONTROLLER->hasCurl or the static method NETCURL_DRIVER_CONTROLLER::getCurl()
-		 */
-		private function hasCurl() {
-			return $this->DRIVER->hasCurl();
-		}
-
-		/**
 		 * Is internal curl configured?
+		 *
 		 * @return bool
 		 * @throws \Exception
 		 * @since 6.0.20
@@ -3344,6 +3490,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 
 		/**
 		 * Is netcurl allowed to throw exceptions on places where it is not always necessary?
+		 *
 		 * @return bool
 		 * @since 6.0.20
 		 */
@@ -3366,11 +3513,33 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 
 		/**
 		 * Get the status of the simplified responses setting
+		 *
 		 * @return bool
 		 * @since 6.0.21
 		 */
 		public function getSimplifiedResponse() {
 			return $this->NETCURL_SIMPLIFY_RESPONSES;
+		}
+
+		/**
+		 * Enable/disable the parsing of Dom content
+		 *
+		 * @param bool $domContentProhibit
+		 *
+		 * @since 6.0.22
+		 */
+		public function setDomContentParser( $domContentProhibit = false ) {
+			$this->NETCURL_PROHIBIT_DOMCONTENT_PARSE = $domContentProhibit;
+		}
+
+		/**
+		 * Get the status of dom content parser mode
+		 *
+		 * @return bool
+		 * @since 6.0.22
+		 */
+		public function getDomContentParser() {
+			return $this->NETCURL_PROHIBIT_DOMCONTENT_PARSE;
 		}
 
 		/**
@@ -3438,9 +3607,9 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		}
 
 		/**
-		 * @param int $driverId
+		 * @param int   $driverId
 		 * @param array $parameters
-		 * @param null $ownClass
+		 * @param null  $ownClass
 		 *
 		 * @return int|NETCURL_DRIVERS_INTERFACE
 		 * @throws \Exception
@@ -3453,6 +3622,10 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		/**
 		 * Returns current chosen driver (if none is preset and curl exists, we're trying to use internals)
 		 *
+		 * @param bool $byId
+		 *
+		 * @return int|NETCURL_DRIVERS_INTERFACE
+		 * @throws \Exception
 		 * @since 6.0.15
 		 */
 		public function getDriver( $byId = false ) {
@@ -3471,6 +3644,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 
 		/**
 		 * @return int|NETCURL_DRIVERS_INTERFACE
+		 * @throws \Exception
 		 * @since 6.0.20
 		 */
 		public function getDriverById() {
@@ -3482,64 +3656,13 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 *
 		 * @return mixed
 		 * @throws \Exception
-		 * @since 6.0.14
+		 * @since      6.0.14
 		 * @deprecated 6.0.20
 		 */
 		public function getDrivers() {
-			return $this->getAvailableDrivers( true );
+			/** @noinspection PhpDeprecationInspection */
+			return $this->getAvailableDrivers();
 		}
-
-		/**
-		 * @return string
-		 * @since 6.0.14
-		 * @deprecated 6.0.20
-		 */
-		private function getDisabledFunctions() {
-			return @ini_get( 'disable_functions' );
-		}
-
-		/**
-		 * Set up driver by class name
-		 *
-		 * @param int $driverId
-		 * @param string $className
-		 * @param array $parameters
-		 *
-		 * @return bool
-		 * @since 6.0.14
-		 * @deprecated 6.0.20
-		 */
-		private function setDriverByClass( $driverId = NETCURL_NETWORK_DRIVERS::DRIVER_NOT_SET, $className = '', $parameters = null ) {
-			if ( class_exists( $className ) ) {
-				if ( is_null( $parameters ) ) {
-					$this->Drivers[ $driverId ] = new $className();
-				} else {
-					$this->Drivers[ $driverId ] = new $className( $parameters );
-				}
-
-				return true;
-			}
-
-			return false;
-		}
-
-		/**
-		 * Check if driver with id is available and prepared
-		 *
-		 * @param int $driverId
-		 *
-		 * @return bool
-		 * @since 6.0.14
-		 * @deprecated 6.0.20
-		 */
-		private function getIsDriver( $driverId = NETCURL_NETWORK_DRIVERS::DRIVER_NOT_SET ) {
-			if ( isset( $this->Drivers[ $driverId ] ) && is_object( $this->Drivers[ $driverId ] ) ) {
-				return true;
-			}
-
-			return false;
-		}
-
 
 		/**
 		 * Set timeout for CURL, normally we'd like a quite short timeout here. Default: CURL default
@@ -3558,6 +3681,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 
 		/**
 		 * Get current timeout setting
+		 *
 		 * @return array
 		 * @since 6.0.13
 		 */
@@ -3630,6 +3754,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 
 		/**
 		 * Sets up cookie path if allowed, to system default storage path
+		 *
 		 * @return bool
 		 * @since 6.0.20
 		 */
@@ -3938,6 +4063,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 
 		/**
 		 * Returns the current setting whether to use local cookies or not
+		 *
 		 * @return bool
 		 * @since 6.0.6
 		 */
@@ -3992,6 +4118,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 
 		/**
 		 * Returns what to use as post method (NETCURL_POST_DATATYPES) on default. Returns null if none are set (= no overrides will be made)
+		 *
 		 * @return NETCURL_POST_DATATYPES
 		 * @since 6.0.6
 		 */
@@ -4012,34 +4139,12 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 
 		/**
 		 * Returns the boolean value of followLocationSet (see setEnforceFollowLocation)
+		 *
 		 * @return bool
 		 * @since 6.0.6
 		 */
 		public function getEnforceFollowLocation() {
 			return $this->FOLLOW_LOCATION_ENABLE;
-		}
-
-		/**
-		 * Switch over to forced debugging
-		 *
-		 * To not break production environments by setting for example _DEBUG_TCURL_UNSET_LOCAL_PEM_LOCATION, switching over to test mode is required
-		 * to use those variables.
-		 *
-		 * @since 5.0
-		 * @deprecated 6.0.20 Not in use
-		 */
-		public function setTestEnabled() {
-			$this->TARGET_ENVIRONMENT = NETCURL_ENVIRONMENT::ENVIRONMENT_TEST;
-		}
-
-		/**
-		 * Returns current target environment
-		 * @return int
-		 * @since 6.0.6
-		 * @deprecated 6.0.20 Not in use
-		 */
-		public function getTestEnabled() {
-			return $this->TARGET_ENVIRONMENT;
 		}
 
 		/**
@@ -4052,16 +4157,19 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 * @deprecated 6.0.20 No longer in use
 		 */
 		public function setCookieExceptions( $enabled = false ) {
+			/** @noinspection PhpDeprecationInspection */
 			$this->UseCookieExceptions = $enabled;
 		}
 
 		/**
 		 * Returns the boolean value set (eventually) from setCookieException
+		 *
 		 * @return bool
-		 * @since 6.0.6
+		 * @since      6.0.6
 		 * @deprecated 6.0.20 No longer in use
 		 */
 		public function getCookieExceptions() {
+			/** @noinspection PhpDeprecationInspection */
 			return $this->UseCookieExceptions;
 		}
 
@@ -4070,20 +4178,22 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 *
 		 * @param bool $enabled
 		 *
-		 * @since 6.0
-		 * @deprecated 6.0.20
+		 * @since      6.0
+		 * @deprecated 6.0.22 Use setDomContentParser and getDomContentParser
 		 */
 		public function setParseHtml( $enabled = false ) {
-			$this->allowParseHtml = $enabled;
+			$this->setDomContentParser($enabled ? false : true);
 		}
 
 		/**
 		 * Return the boolean of the setParseHtml
+		 *
 		 * @return bool
 		 * @since 6.0.20
+		 * @deprecated 6.0.22 Use setDomContentParser and getDomContentParser
 		 */
 		public function getParseHtml() {
-			return $this->allowParseHtml;
+			return $this->getDomContentParser();
 		}
 
 		/**
@@ -4092,7 +4202,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 * To make proper identification of the library we are always appending TorbeLIB+cUrl to the chosen user agent string.
 		 *
 		 * @param string $CustomUserAgent
-		 * @param array $inheritAgents Updates an array that might have lost some data
+		 * @param array  $inheritAgents Updates an array that might have lost some data
 		 *
 		 * @since 6.0
 		 */
@@ -4188,7 +4298,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 * Customize the curlopt configuration
 		 *
 		 * @param array|string $curlOptArrayOrKey If arrayed, there will be multiple options at once
-		 * @param null $curlOptValue If not null, and the first parameter is not an array, this is taken as a single update value
+		 * @param null         $curlOptValue      If not null, and the first parameter is not an array, this is taken as a single update value
 		 *
 		 * @throws \Exception
 		 * @since 6.0
@@ -4215,7 +4325,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 * curlops that can be overridden
 		 *
 		 * @param array|string $curlOptArrayOrKey
-		 * @param null $curlOptValue
+		 * @param null         $curlOptValue
 		 *
 		 * @throws \Exception
 		 * @since 6.0
@@ -4322,6 +4432,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 
 		/**
 		 * Get store exceptions
+		 *
 		 * @return array
 		 * @since 6.0
 		 */
@@ -4346,7 +4457,6 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		/**
 		 * @return array
 		 * @since 6.0
-		 * @todo Check new error vars (those uppercased)
 		 */
 		public function getErrors() {
 			return $this->NETCURL_ERROR_CONTAINER;
@@ -4366,6 +4476,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 				$this->setFlag( 'NETCURL_ALLOW_VERSION_REQUESTS', true );
 			}
 
+			/** @noinspection PhpDeprecationInspection */
 			return $this->getHasUpdateState( $libName );
 		}
 
@@ -4410,7 +4521,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 * Generate a corrected stream context
 		 *
 		 * @return void
-		 * @link https://phpdoc.tornevall.net/TorneLIBv5/source-class-TorneLIB.Tornevall_cURL.html sslStreamContextCorrection() is a part of TorneLIB 5.0, described here
+		 * @link  https://phpdoc.tornevall.net/TorneLIBv5/source-class-TorneLIB.Tornevall_cURL.html sslStreamContextCorrection() is a part of TorneLIB 5.0, described here
 		 * @since 6.0
 		 */
 		public function sslStreamContextCorrection() {
@@ -4429,7 +4540,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 *
 		 * @return array
 		 * @throws \Exception
-		 * @link http://developer.tornevall.net/apigen/TorneLIB-5.0/class-TorneLIB.Tornevall_cURL.html sslGetOptionsStream() is a part of TorneLIB 5.0, described here
+		 * @link  http://developer.tornevall.net/apigen/TorneLIB-5.0/class-TorneLIB.Tornevall_cURL.html sslGetOptionsStream() is a part of TorneLIB 5.0, described here
 		 * @since 6.0
 		 */
 		public function sslGetOptionsStream( $optionsArray = array(), $addonContextData = array() ) {
@@ -4467,11 +4578,10 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 * The $hostVerification-flag can also be called manually with setSslVerify()
 		 *
 		 * @param bool $enabledFlag
-		 * @param bool $hostVerification
 		 *
 		 * @deprecated 6.0.20 Use setSslVerify
 		 */
-		public function setCertAuto( $enabledFlag = true, $hostVerification = true ) {
+		public function setCertAuto( $enabledFlag = true ) {
 			$this->SSL->setStrictVerification( $enabledFlag );
 		}
 
@@ -4501,17 +4611,37 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		/**
 		 * @param bool $sslFailoverEnabled
 		 *
-		 * @since 6.0.20
+		 * @since 6.0.22
+		 */
+		public function setSslStrictFallback( $sslFailoverEnabled = false ) {
+			$this->SSL->setStrictFallback( $sslFailoverEnabled );
+		}
+
+		/**
+		 * @param bool $sslFailoverEnabled
+		 *
+		 * @since      6.0.20
+		 * @deprecated 6.0.22 Use setSslStrictFallback as it is better described
 		 */
 		public function setStrictFallback( $sslFailoverEnabled = false ) {
 			$this->SSL->setStrictFallback( $sslFailoverEnabled );
 		}
 
+
 		/**
 		 * @return bool
-		 * @since 6.0.20
+		 * @since      6.0.20
+		 * @deprecated 6.0.22 Use getSslStrictFallback as it is better described
 		 */
 		public function getStrictFallback() {
+			return $this->SSL->getStrictFallback();
+		}
+
+		/**
+		 * @return bool
+		 * @since 6.0.22
+		 */
+		public function getSslStrictFallback() {
 			return $this->SSL->getStrictFallback();
 		}
 
@@ -4524,7 +4654,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 *
 		 * @param bool $allowStrictFallback
 		 *
-		 * @since 5.0
+		 * @since      5.0
 		 * @deprecated 6.0.20 Use setStrictFallback
 		 */
 		public function setSslUnverified( $allowStrictFallback = false ) {
@@ -4533,8 +4663,9 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 
 		/**
 		 * Return the boolean value set from setSslUnverified
+		 *
 		 * @return bool
-		 * @since 6.0.6
+		 * @since      6.0.6
 		 * @deprecated 6.0.20 Use getStrictFallback
 		 */
 		public function getSslUnverified() {
@@ -4558,6 +4689,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 
 		/**
 		 * Return the current certificate bundle file, chosen by autodetection
+		 *
 		 * @return string
 		 * @deprecated 6.0.20
 		 */
@@ -4573,6 +4705,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 * @deprecated 6.0.20
 		 */
 		public function hasCertDefault() {
+			/** @noinspection PhpDeprecationInspection */
 			return $this->TestCerts();
 		}
 
@@ -4592,7 +4725,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 *
 		 * @throws \Exception
 		 * @since 5.0
-		 * @todo Split code (try to fix all if/elses)
+		 * @todo  Split code (try to fix all if/elses)
 		 */
 		private function handleIpList() {
 			$this->CURL_IP_ADDRESS = null;
@@ -4600,7 +4733,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 			if ( is_array( $this->IpAddr ) ) {
 				if ( count( $this->IpAddr ) == 1 ) {
 					$UseIp = ( isset( $this->IpAddr[0] ) && ! empty( $this->IpAddr[0] ) ? $this->IpAddr[0] : null );
-				} elseif ( count( $this->IpAddr ) > 1 ) {
+				} else if ( count( $this->IpAddr ) > 1 ) {
 					if ( ! $this->IpAddrRandom ) {
 						// If we have multiple ip addresses in the list, but the randomizer is not active, always use the first address in the list.
 						$UseIp = ( isset( $this->IpAddr[0] ) && ! empty( $this->IpAddr[0] ) ? $this->IpAddr[0] : null );
@@ -4636,7 +4769,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		/**
 		 * Set up a proxy
 		 *
-		 * @param $ProxyAddr
+		 * @param     $ProxyAddr
 		 * @param int $ProxyType
 		 *
 		 * @throws \Exception
@@ -4705,18 +4838,13 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 			return array();
 		}
 
-		private function netcurl_split_get_base() {
-
-		}
-
-		/**
-		 * @param string $rawInput
-		 * @param bool $internalRaw
-		 *
-		 * @return $this|array|NETCURL_HTTP_OBJECT
-		 * @throws \Exception
-		 * @todo Can this be split up?
-		 */
+        /**
+         * @param null $rawInput
+         * @param bool $internalRaw
+         *
+         * @return $this|array|null|NETCURL_HTTP_OBJECT
+         * @throws \Exception
+         */
 		public function netcurl_split_raw( $rawInput = null, $internalRaw = false ) {
 			$rawDataTest = $this->getRaw();
 			if ( $internalRaw && is_null( $rawInput ) && ! empty( $rawDataTest ) ) {
@@ -4724,14 +4852,6 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 
 				return $this;
 			}
-
-			// Standard response output
-			$arrayedResponse = array(
-				'header' => array(),
-				'body'   => '',
-				'code'   => 0,
-				'parsed' => ''
-			);
 
 			// explodeRaw usages - header and body
 			$explodeRaw        = explode( "\r\n\r\n", $rawInput . "\r\n", 2 );
@@ -4808,8 +4928,11 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 				return $arrayedResponse;
 			}
 
+			$flags = array('NETCURL_PROHIBIT_DOMCONTENT_PARSE' => $this->NETCURL_PROHIBIT_DOMCONTENT_PARSE);
+
 			// php 5.3 compliant
-			$NCP                                     = new NETCURL_PARSER( $arrayedResponse['body'], $contentType );
+			$NCP = new NETCURL_PARSER( $arrayedResponse['body'], $contentType, $flags );
+
 			$parsedContent                           = $NCP->getParsedResponse();
 			$arrayedResponse['parsed']               = $parsedContent;
 			$this->NETCURL_RESPONSE_CONTAINER_PARSED = $parsedContent;
@@ -4852,24 +4975,24 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 				return $this->NETCURL_RESPONSE_CONTAINER_PARSED;
 			} else if ( ! empty( $this->NETCURL_RESPONSE_CONTAINER_BODY ) ) {
 				return $this->NETCURL_RESPONSE_CONTAINER_BODY;
-			} else {
-				return array(
-					'simplifiedContainer' => array(
-						'NETCURL_RESPONSE_RAW'                   => $this->NETCURL_RESPONSE_RAW,
-						'NETCURL_RESPONSE_CONTAINER'             => $this->NETCURL_RESPONSE_CONTAINER,
-						'NETCURL_RESPONSE_CONTAINER_CODE'        => $this->NETCURL_RESPONSE_CONTAINER_CODE,
-						'NETCURL_RESPONSE_CONTAINER_HTTPMESSAGE' => $this->NETCURL_RESPONSE_CONTAINER_HTTPMESSAGE,
-						'NETCURL_RESPONSE_CONTAINER_BODY'        => $this->NETCURL_RESPONSE_CONTAINER_BODY,
-						'NETCURL_RESPONSE_CONTAINER_HEADER'      => $this->NETCURL_RESPONSE_CONTAINER_HEADER,
-					)
-				);
 			}
+
+			return array(
+				'simplifiedContainer' => array(
+					'NETCURL_RESPONSE_RAW'                   => $this->NETCURL_RESPONSE_RAW,
+					'NETCURL_RESPONSE_CONTAINER'             => $this->NETCURL_RESPONSE_CONTAINER,
+					'NETCURL_RESPONSE_CONTAINER_CODE'        => $this->NETCURL_RESPONSE_CONTAINER_CODE,
+					'NETCURL_RESPONSE_CONTAINER_HTTPMESSAGE' => $this->NETCURL_RESPONSE_CONTAINER_HTTPMESSAGE,
+					'NETCURL_RESPONSE_CONTAINER_BODY'        => $this->NETCURL_RESPONSE_CONTAINER_BODY,
+					'NETCURL_RESPONSE_CONTAINER_HEADER'      => $this->NETCURL_RESPONSE_CONTAINER_HEADER,
+				)
+			);
 		}
 
 		/**
 		 * @param string $netCurlResponse
 		 *
-		 * @return string|void
+		 * @return array|string|MODULE_CURL|NETCURL_HTTP_OBJECT
 		 * @throws \Exception
 		 */
 		private function netcurl_parse( $netCurlResponse = '' ) {
@@ -5019,6 +5142,8 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 			if ( isset( $inputResponse['parsed'] ) ) {
 				return $inputResponse['parsed'];
 			}
+
+			return null;
 		}
 
 		/**
@@ -5138,7 +5263,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		/**
 		 * Extract a specific key from a parsed webrequest
 		 *
-		 * @param $keyName
+		 * @param      $keyName
 		 * @param null $responseContent
 		 *
 		 * @return mixed|null
@@ -5286,30 +5411,31 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		}
 
 		/**
-		 * @return array|null|string|NETCURL_CURLOBJECT|void
+		 * @return array|null|string|MODULE_CURL|NETCURL_HTTP_OBJECT
 		 * @throws \Exception
 		 * @since 6.0.20
 		 */
 		function doRepeat() {
-			if ( $this->NETCURL_POST_METHOD == NETCURL_POST_METHODS::METHOD_GET ) {
-				return $this->doGet( $this->CURL_STORED_URL, $this->NETCURL_POST_DATA_TYPE );
-			} else if ( $this->NETCURL_POST_METHOD == NETCURL_POST_METHODS::METHOD_POST ) {
+			if ( $this->NETCURL_POST_METHOD == NETCURL_POST_METHODS::METHOD_POST ) {
 				return $this->doPost( $this->CURL_STORED_URL, $this->POST_DATA_REAL, $this->NETCURL_POST_DATA_TYPE );
 			} else if ( $this->NETCURL_POST_METHOD == NETCURL_POST_METHODS::METHOD_PUT ) {
 				return $this->doPost( $this->CURL_STORED_URL, $this->POST_DATA_REAL, $this->NETCURL_POST_DATA_TYPE );
 			} else if ( $this->NETCURL_POST_METHOD == NETCURL_POST_METHODS::METHOD_DELETE ) {
 				return $this->doPost( $this->CURL_STORED_URL, $this->POST_DATA_REAL, $this->NETCURL_POST_DATA_TYPE );
+			} else {
+				// Go GET by deault ($this->NETCURL_POST_METHOD == NETCURL_POST_METHODS::METHOD_GET)
+				return $this->doGet( $this->CURL_STORED_URL, $this->NETCURL_POST_DATA_TYPE );
 			}
 		}
 
 		/**
-		 * Call cUrl with a POST
+		 * Make POST request
 		 *
 		 * @param string $url
-		 * @param array $postData
-		 * @param int $postAs
+		 * @param array  $postData
+		 * @param int    $postAs
 		 *
-		 * @return null|void
+		 * @return array|null|string|MODULE_CURL|NETCURL_HTTP_OBJECT
 		 * @throws \Exception
 		 * @since 5.0
 		 */
@@ -5324,11 +5450,13 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		}
 
 		/**
-		 * @param string $url
-		 * @param array $postData
-		 * @param int $postAs
+		 * Make PUT request
 		 *
-		 * @return null|string|void
+		 * @param string $url
+		 * @param array  $postData
+		 * @param int    $postAs
+		 *
+		 * @return array|null|string|MODULE_CURL|NETCURL_HTTP_OBJECT
 		 * @throws \Exception
 		 * @since 5.0
 		 */
@@ -5343,11 +5471,13 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		}
 
 		/**
-		 * @param string $url
-		 * @param array $postData
-		 * @param int $postAs
+		 * Make DELETE request
 		 *
-		 * @return null|string|void
+		 * @param string $url
+		 * @param array  $postData
+		 * @param int    $postAs
+		 *
+		 * @return array|null|string|MODULE_CURL|NETCURL_HTTP_OBJECT
 		 * @throws \Exception
 		 * @since 5.0
 		 */
@@ -5362,12 +5492,12 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		}
 
 		/**
-		 * Call cUrl with a GET
+		 * Make GET request
 		 *
 		 * @param string $url
-		 * @param int $postAs
+		 * @param int    $postAs
 		 *
-		 * @return array|null|string|NETCURL_CURLOBJECT
+		 * @return array|null|string|MODULE_CURL|NETCURL_HTTP_OBJECT
 		 * @throws \Exception
 		 * @since 5.0
 		 */
@@ -5382,11 +5512,11 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		}
 
 		/**
-		 * Enable authentication with cURL.
+		 * Configure authentication
 		 *
 		 * @param null $Username
 		 * @param null $Password
-		 * @param int $AuthType Falls back on CURLAUTH_ANY if none are given. NETCURL_AUTH_TYPES are minimalistic since it follows the standards of CURLAUTH_
+		 * @param int  $AuthType Falls back on CURLAUTH_ANY if none are given. NETCURL_AUTH_TYPES are minimalistic since it follows the standards of CURLAUTH_
 		 *
 		 * @throws \Exception
 		 * @since 6.0
@@ -5530,7 +5660,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 * Make sure that we are allowed to do things
 		 *
 		 * @param bool $checkSafeMode If true, we will also check if safe_mode is active
-		 * @param bool $mockSafeMode If true, NetCurl will pretend safe_mode is true (for testing)
+		 * @param bool $mockSafeMode  If true, NetCurl will pretend safe_mode is true (for testing)
 		 *
 		 * @return bool If true, PHP is in secure mode and won't allow things like follow-redirects and setting up different paths for certificates, etc
 		 * @since 6.0.20
@@ -5551,7 +5681,6 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 				return true;
 			}
 
-			return false;
 		}
 
 		/**
@@ -5606,6 +5735,9 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 			$this->setUserAgent( NETCURL_SSL_CLIENTNAME . "-" . NETCURL_SSL_RELEASE );
 		}
 
+		/**
+		 * @throws \Exception
+		 */
 		private function internal_curl_configure_ssl() {
 			$certificateBundle = $this->SSL->getSslCertificateBundle();
 			// Change default behaviour for SSL certificates only if PHP is not in a secure mode (checking open_basedir only).
@@ -5615,7 +5747,6 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 				if ( ! $this->SSL->getStrictVerification() ) {
 					$this->setCurlOpt( CURLOPT_SSL_VERIFYHOST, 0 );
 					$this->setCurlOpt( CURLOPT_SSL_VERIFYPEER, 0 );
-					$ignoreBundle        = true;
 					$this->unsafeSslCall = true;
 				} else {
 					// From libcurl 7.28.1 CURLOPT_SSL_VERIFYHOST is deprecated. However, using the value 1 can be used
@@ -5740,7 +5871,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 					$this->setCurlOpt( CURLOPT_POSTFIELDS, $this->POST_DATA_HANDLED );  // overwrite old
 				} else if ( ( $this->NETCURL_POST_DATA_TYPE == NETCURL_POST_DATATYPES::DATATYPE_XML || $this->NETCURL_POST_DATA_TYPE == NETCURL_POST_DATATYPES::DATATYPE_SOAP_XML ) ) {
 					$this->NETCURL_HEADERS_SYSTEM_DEFINED['Content-Type']   = 'text/xml'; // ; charset=utf-8
-					$this->NETCURL_HEADERS_SYSTEM_DEFINED['Content-Length'] = strlen( $this->NETCURL_POST_DATA );
+					$this->NETCURL_HEADERS_SYSTEM_DEFINED['Content-Length'] = is_string( $this->NETCURL_POST_DATA ) ? strlen( $this->NETCURL_POST_DATA ) : 0;
 					$this->setCurlOpt( CURLOPT_CUSTOMREQUEST, 'POST' );
 					$this->setCurlOpt( CURLOPT_POSTFIELDS, $this->POST_DATA_HANDLED );
 				}
@@ -5768,11 +5899,11 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 * @since 6.0.20
 		 */
 		private function internal_curl_configure_resolver() {
-			if ( isset( $this->CurlResolve ) && $this->CurlResolve !== NETCURL_RESOLVER::RESOLVER_DEFAULT ) {
-				if ( $this->CurlResolve == NETCURL_RESOLVER::RESOLVER_IPV4 ) {
+			if ( isset( $this->CURL_RESOLVE_TYPE ) && $this->CURL_RESOLVE_TYPE !== NETCURL_RESOLVER::RESOLVER_DEFAULT ) {
+				if ( $this->CURL_RESOLVE_TYPE == NETCURL_RESOLVER::RESOLVER_IPV4 ) {
 					$this->setCurlOptInternal( CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4 );
 				}
-				if ( $this->CurlResolve == NETCURL_RESOLVER::RESOLVER_IPV6 ) {
+				if ( $this->CURL_RESOLVE_TYPE == NETCURL_RESOLVER::RESOLVER_IPV6 ) {
 					$this->setCurlOptInternal( CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V6 );
 				}
 			}
@@ -6080,9 +6211,9 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 * cURL data handler, sets up cURL in what it believes is the correct set for you.
 		 *
 		 * @param string $url
-		 * @param array $postData
-		 * @param int $postMethod
-		 * @param int $postDataType
+		 * @param array  $postData
+		 * @param int    $postMethod
+		 * @param int    $postDataType
 		 *
 		 * @return mixed
 		 * @throws \Exception
@@ -6118,7 +6249,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 
 			if ( $currentDriver === NETCURL_NETWORK_DRIVERS::DRIVER_CURL ) {
 				try {
-					$returnContent                     = $this->internal_curl_execute();
+					$returnContent = $this->internal_curl_execute();
 
 					$this->DEBUG_DATA['data']['url'][] = array(
 						'url'       => $this->CURL_STORED_URL,
@@ -6142,8 +6273,8 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 * SOAPClient detection method (moved from primary curl executor to make it possible to detect soapcalls from other Addons)
 		 *
 		 * @param string $url
-		 * @param array $postData
-		 * @param int $CurlMethod
+		 * @param array  $postData
+		 * @param int    $CurlMethod
 		 *
 		 * @return MODULE_SOAP
 		 * @throws \Exception
@@ -6213,84 +6344,13 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 
 		/// DEPRECATIONS TO MOVE
 
-
-		/**
-		 * Using WordPress curl driver to make webcalls
-		 *
-		 * SOAPClient is currently not supported through this interface, so this library will fall back to SimpleSoap before reaching this point if wsdl links are used
-		 *
-		 * @param string $url
-		 * @param array $postData
-		 * @param int $CurlMethod
-		 * @param int $postAs
-		 *
-		 * @return $this
-		 * @throws \Exception
-		 * @since 6.0.14
-		 * @deprecated 6.0.20
-		 */
-		private function executeWpHttp( $url = '', $postData = array(), $CurlMethod = NETCURL_POST_METHODS::METHOD_GET, $postAs = NETCURL_POST_DATATYPES::DATATYPE_NOT_SET ) {
-			$parsedResponse = null;
-			if ( isset( $this->Drivers[ NETCURL_NETWORK_DRIVERS::DRIVER_WORDPRESS ] ) ) {
-				/** @noinspection PhpUndefinedClassInspection */
-				/** @var $worker \WP_Http */
-				$worker = $this->Drivers[ NETCURL_NETWORK_DRIVERS::DRIVER_WORDPRESS ];
-			} else {
-				throw new \Exception( NETCURL_CURL_CLIENTNAME . " " . __FUNCTION__ . " exception: Could not find any available transport for WordPress Driver", $this->NETWORK->getExceptionCode( 'NETCURL_WP_TRANSPORT_ERROR' ) );
-			}
-
-			if ( ! is_null( $worker ) ) {
-				/** @noinspection PhpUndefinedMethodInspection */
-				$transportInfo = $worker->_get_first_available_transport( array() );
-			}
-			if ( empty( $transportInfo ) ) {
-				throw new \Exception( NETCURL_CURL_CLIENTNAME . " " . __FUNCTION__ . " exception: Could not find any available transport for WordPress Driver", $this->NETWORK->getExceptionCode( 'NETCURL_WP_TRANSPORT_ERROR' ) );
-			}
-
-			$postThis = array( 'body' => $this->POST_DATA_REAL );
-			if ( $postAs == NETCURL_POST_DATATYPES::DATATYPE_JSON ) {
-				$postThis['headers'] = array( "content-type" => "application-json" );
-				$postThis['body']    = $this->POST_DATA_HANDLED;
-			}
-
-			$wpResponse = null;
-			if ( $CurlMethod == NETCURL_POST_METHODS::METHOD_GET ) {
-				/** @noinspection PhpUndefinedMethodInspection */
-				$wpResponse = $worker->get( $url, $postThis );
-			} else if ( $CurlMethod == NETCURL_POST_METHODS::METHOD_POST ) {
-				/** @noinspection PhpUndefinedMethodInspection */
-				$wpResponse = $worker->post( $url, $postThis );
-			} else if ( $CurlMethod == NETCURL_POST_METHODS::METHOD_REQUEST ) {
-				/** @noinspection PhpUndefinedMethodInspection */
-				$wpResponse = $worker->request( $url, $postThis );
-			}
-			if ( $CurlMethod == NETCURL_POST_METHODS::METHOD_HEAD ) {
-				/** @noinspection PhpUndefinedMethodInspection */
-				$wpResponse = $worker->head( $url, $postThis );
-			}
-
-			/** @noinspection PhpUndefinedClassInspection */
-			/** @var $httpResponse \WP_HTTP_Requests_Response */
-			$httpResponse = $wpResponse['http_response'];
-			/** @noinspection PhpUndefinedClassInspection */
-			/** @var $httpReponseObject \Requests_Response */
-			/** @noinspection PhpUndefinedMethodInspection */
-			$httpResponseObject              = $httpResponse->get_response_object();
-			$rawResponse                     = $httpResponseObject->raw;
-			$this->TemporaryExternalResponse = array( 'worker' => $worker, 'request' => $wpResponse );
-			$this->ParseResponse( $rawResponse );
-
-			return $this;
-		}
-
-
 		//////// LONG TIME DEPRECATIONS
 
 		/**
 		 * @param null $responseInData
 		 *
 		 * @return int
-		 * @since 6.0
+		 * @since      6.0
 		 * @deprecated 6.0.20 Use getCode
 		 */
 		public function getResponseCode( $responseInData = null ) {
@@ -6301,7 +6361,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 * @param null $responseInData
 		 *
 		 * @return null
-		 * @since 6.0
+		 * @since      6.0
 		 * @deprecated 6.0.20 Use getBody
 		 */
 		public function getResponseBody( $responseInData = null ) {
@@ -6312,7 +6372,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 * @param null $responseInData
 		 *
 		 * @return string
-		 * @since 6.0.16
+		 * @since      6.0.16
 		 * @deprecated 6.0.20 Use getUrl
 		 */
 		public function getResponseUrl( $responseInData = null ) {
@@ -6324,7 +6384,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 *
 		 * @return null
 		 * @throws \Exception
-		 * @since 6.0
+		 * @since      6.0
 		 * @deprecated 6.0.20
 		 */
 		public function getParsedResponse( $inputResponse = null ) {
@@ -6337,7 +6397,7 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 *
 		 * @return mixed|null
 		 * @throws \Exception
-		 * @since 6.0
+		 * @since      6.0
 		 * @deprecated 6.0.20
 		 */
 		public function getParsedValue( $keyName = null, $responseContent = null ) {
@@ -6352,364 +6412,23 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 * Get what external driver see
 		 *
 		 * @return null
-		 * @since 6.0
+		 * @since      6.0
 		 * @deprecated 6.0.20
 		 */
 		public function getExternalDriverResponse() {
+			/** @noinspection PhpDeprecationInspection */
 			return $this->TemporaryExternalResponse;
 		}
 
 		/**
-		 * Guzzle wrapper
-		 *
-		 * @param string $url
-		 * @param array $postData
-		 * @param int $CurlMethod
-		 * @param int $postAs
-		 *
-		 * @return $this|MODULE_CURL
-		 * @throws \Exception
-		 * @since 6.0
-		 * @deprecated 6.0.20
-		 */
-		private function executeGuzzleHttp( $url = '', $postData = array(), $CurlMethod = NETCURL_POST_METHODS::METHOD_GET, $postAs = NETCURL_POST_DATATYPES::DATATYPE_NOT_SET ) {
-			/** @noinspection PhpUndefinedClassInspection */
-			/** @noinspection PhpUndefinedNamespaceInspection */
-			/** @var $gResponse \GuzzleHttp\Psr7\Response */
-			$gResponse   = null;
-			$rawResponse = null;
-			$gBody       = null;
-
-			$myChosenGuzzleDriver = $this->getDriver();
-			/** @noinspection PhpUndefinedClassInspection */
-			/** @noinspection PhpUndefinedNamespaceInspection */
-			/** @var $worker \GuzzleHttp\Client */
-			$worker                 = $this->Drivers[ $myChosenGuzzleDriver ];
-			$postOptions            = array();
-			$postOptions['headers'] = array();
-			$contentType            = $this->getContentType();
-
-			if ( $postAs === NETCURL_POST_DATATYPES::DATATYPE_JSON ) {
-				$postOptions['headers']['Content-Type'] = 'application/json; charset=utf-8';
-				if ( is_string( $postData ) ) {
-					$jsonPostData = @json_decode( $postData );
-					if ( is_object( $jsonPostData ) ) {
-						$postData = $jsonPostData;
-					}
-				}
-				$postOptions['json'] = $postData;
-			} else {
-				if ( is_array( $postData ) ) {
-					$postOptions['form_params'] = $postData;
-				}
-			}
-
-			$hasAuth = false;
-			if ( isset( $this->AuthData['Username'] ) ) {
-				$hasAuth = true;
-				if ( $this->AuthData['Type'] == NETCURL_AUTH_TYPES::AUTHTYPE_BASIC ) {
-					$postOptions['headers']['Accept'] = '*/*';
-					if ( ! empty( $contentType ) ) {
-						$postOptions['headers']['Content-Type'] = $contentType;
-					}
-					$postOptions['auth'] = array(
-						$this->AuthData['Username'],
-						$this->AuthData['Password']
-					);
-					//$postOptions['headers']['Authorization'] = 'Basic ' . base64_encode($this->AuthData['Username'] . ":" . $this->AuthData['Password']);
-				}
-			}
-
-			if ( method_exists( $worker, 'request' ) ) {
-				if ( $CurlMethod == NETCURL_POST_METHODS::METHOD_GET ) {
-					/** @noinspection PhpUndefinedMethodInspection */
-					$gRequest = $worker->request( 'GET', $url, $postOptions );
-				} else if ( $CurlMethod == NETCURL_POST_METHODS::METHOD_POST ) {
-					/** @noinspection PhpUndefinedMethodInspection */
-					$gRequest = $worker->request( 'POST', $url, $postOptions );
-				} else if ( $CurlMethod == NETCURL_POST_METHODS::METHOD_PUT ) {
-					/** @noinspection PhpUndefinedMethodInspection */
-					$gRequest = $worker->request( 'PUT', $url, $postOptions );
-				} else if ( $CurlMethod == NETCURL_POST_METHODS::METHOD_DELETE ) {
-					/** @noinspection PhpUndefinedMethodInspection */
-					$gRequest = $worker->request( 'DELETE', $url, $postOptions );
-				} else if ( $CurlMethod == NETCURL_POST_METHODS::METHOD_HEAD ) {
-					/** @noinspection PhpUndefinedMethodInspection */
-					$gRequest = $worker->request( 'HEAD', $url, $postOptions );
-				}
-			} else {
-				throw new \Exception( NETCURL_CURL_CLIENTNAME . " streams for guzzle is probably missing as I can't find the request method in the current class", $this->NETWORK->getExceptionCode( 'NETCURL_GUZZLESTREAM_MISSING' ) );
-			}
-			/** @noinspection PhpUndefinedVariableInspection */
-			$this->TemporaryExternalResponse = array( 'worker' => $worker, 'request' => $gRequest );
-			/** @noinspection PhpUndefinedMethodInspection */
-			$gHeaders = $gRequest->getHeaders();
-			/** @noinspection PhpUndefinedMethodInspection */
-			$gBody = $gRequest->getBody()->getContents();
-			/** @noinspection PhpUndefinedMethodInspection */
-			$statusCode = $gRequest->getStatusCode();
-			/** @noinspection PhpUndefinedMethodInspection */
-			$statusReason = $gRequest->getReasonPhrase();
-			/** @noinspection PhpUndefinedMethodInspection */
-			$rawResponse .= "HTTP/" . $gRequest->getProtocolVersion() . " " . $gRequest->getStatusCode() . " " . $gRequest->getReasonPhrase() . "\r\n";
-			$rawResponse .= "X-NetCurl-ClientDriver: " . $this->getDriver() . "\r\n";
-			if ( is_array( $gHeaders ) ) {
-				foreach ( $gHeaders as $hParm => $hValues ) {
-					$rawResponse .= $hParm . ": " . implode( "\r\n", $hValues ) . "\r\n";
-				}
-			}
-			$rawResponse .= "\r\n" . $gBody;
-
-			// Prevent problems during authorization. Unsupported media type checks defaults to application/json
-			if ( $hasAuth && $statusCode == 415 ) {
-				// Ask service for content types at first. If nothing found, run self set application/json.
-				$contentTypeRequest = $gRequest->getHeader( 'content-type' );
-				if ( empty( $contentTypeRequest ) ) {
-					$this->setContentType();
-				} else {
-					$this->setContentType( $contentTypeRequest );
-				}
-
-				return $this->executeGuzzleHttp( $url, $postData, $CurlMethod, $postAs );
-			}
-
-			$this->ParseResponse( $rawResponse );
-			$this->throwCodeException( $statusCode, $statusReason );
-
-			return $this;
-		}
-
-		/**
-		 * Execution of http-calls via external Addons
-		 *
-		 * @param string $url
-		 * @param array $postData
-		 * @param int $CurlMethod
-		 * @param int $postAs
-		 *
-		 * @return bool|MODULE_CURL|MODULE_SOAP
-		 * @throws \Exception
-		 * @since 6.0.14
-		 * @deprecated 6.0.20
-		 */
-		private function executeHttpExternal( $url = '', $postData = array(), $CurlMethod = NETCURL_POST_METHODS::METHOD_GET, $postAs = NETCURL_POST_DATATYPES::DATATYPE_NOT_SET ) {
-			if ( preg_match( "/\?wsdl$|\&wsdl$/i", $this->CURL_STORED_URL ) || $postAs == NETCURL_POST_DATATYPES::DATATYPE_SOAP ) {
-				if ( ! $this->hasSoap() ) {
-					throw new \Exception( NETCURL_CURL_CLIENTNAME . " " . __FUNCTION__ . " exception: SoapClient is not available in this system", $this->NETWORK->getExceptionCode( 'NETCURL_SOAPCLIENT_CLASS_MISSING' ) );
-				}
-
-				return $this->executeHttpSoap( $url, $this->POST_DATA_HANDLED, $CurlMethod );
-			}
-			$guzDrivers = array(
-				NETCURL_NETWORK_DRIVERS::DRIVER_GUZZLEHTTP,
-				NETCURL_NETWORK_DRIVERS::DRIVER_GUZZLEHTTP_STREAM
-			);
-			if ( $this->getDriver() == NETCURL_NETWORK_DRIVERS::DRIVER_WORDPRESS ) {
-				return $this->executeWpHttp( $url, $this->POST_DATA_HANDLED, $CurlMethod, $postAs );
-			} else if ( in_array( $this->getDriver(), $guzDrivers ) ) {
-				return $this->executeGuzzleHttp( $url, $this->POST_DATA_HANDLED, $CurlMethod, $postAs );
-			} else {
-				return false;
-			}
-		}
-
-		/**
-		 * Experimental: Convert DOMDocument to an array
-		 *
-		 * @param array $childNode
-		 * @param string $getAs
-		 *
-		 * @return array
-		 * @since 6.0
-		 * @deprecated 6.0.20 Use parser instead
-		 */
-		private function getChildNodes( $childNode = array(), $getAs = '' ) {
-			$childNodeArray      = array();
-			$childAttributeArray = array();
-			$childIdArray        = array();
-			$returnContext       = "";
-			if ( is_object( $childNode ) ) {
-				/** @var \DOMNodeList $nodeItem */
-				foreach ( $childNode as $nodeItem ) {
-					if ( is_object( $nodeItem ) ) {
-						if ( isset( $nodeItem->tagName ) ) {
-							if ( strtolower( $nodeItem->tagName ) == "title" ) {
-								$elementData['pageTitle'] = $nodeItem->nodeValue;
-							}
-							$elementData            = array( 'tagName' => $nodeItem->tagName );
-							$elementData['id']      = $nodeItem->getAttribute( 'id' );
-							$elementData['name']    = $nodeItem->getAttribute( 'name' );
-							$elementData['context'] = $nodeItem->nodeValue;
-							/** @since 6.0.20 Saving innerhtml */
-							$elementData['innerhtml'] = $nodeItem->ownerDocument->saveHTML( $nodeItem );
-							if ( $nodeItem->hasChildNodes() ) {
-								$elementData['childElement'] = $this->getChildNodes( $nodeItem->childNodes, $getAs );
-							}
-							$identificationName = $nodeItem->tagName;
-							if ( empty( $identificationName ) && ! empty( $elementData['name'] ) ) {
-								$identificationName = $elementData['name'];
-							}
-							if ( empty( $identificationName ) && ! empty( $elementData['id'] ) ) {
-								$identificationName = $elementData['id'];
-							}
-							$childNodeArray[] = $elementData;
-							if ( ! isset( $childAttributeArray[ $identificationName ] ) ) {
-								$childAttributeArray[ $identificationName ] = $elementData;
-							} else {
-								$childAttributeArray[ $identificationName ][] = $elementData;
-							}
-
-							$idNoName = $nodeItem->tagName;
-							// Forms without id namings will get the tagname. This will open up for reading forms and other elements without id's.
-							// NOTE: If forms are not tagged with an id, the form will not render "properly" and the form fields might pop outside the real form.
-							if ( empty( $elementData['id'] ) ) {
-								$elementData['id'] = $idNoName;
-							}
-
-							if ( ! empty( $elementData['id'] ) ) {
-								if ( ! isset( $childIdArray[ $elementData['id'] ] ) ) {
-									$childIdArray[ $elementData['id'] ] = $elementData;
-								} else {
-									$childIdArray[ $elementData['id'] ][] = $elementData;
-								}
-							}
-						}
-					}
-				}
-			}
-			if ( empty( $getAs ) || $getAs == "domnodes" ) {
-				$returnContext = $childNodeArray;
-			} else if ( $getAs == "tagnames" ) {
-				$returnContext = $childAttributeArray;
-			} else if ( $getAs == "id" ) {
-				$returnContext = $childIdArray;
-			}
-
-			return $returnContext;
-		}
-
-		/**
 		 * @return array
 		 *
-		 * @since 6.0.16
+		 * @since      6.0.16
 		 * @deprecated 6.0.20
 		 */
 		public function getTemporaryResponse() {
+			/** @noinspection PhpDeprecationInspection */
 			return $this->TemporaryResponse;
-		}
-
-		/**
-		 * Parse content and handle specially received content automatically
-		 *
-		 * If this functions receives a json string or any other special content (as PHP-serializations), it will try to convert that string automatically to a readable array.
-		 *
-		 * @param string $content
-		 * @param bool $isFullRequest
-		 * @param null $contentType
-		 *
-		 * @return array|mixed|null
-		 * @throws \Exception
-		 * @since 6.0
-		 * @deprecated 6.0.20
-		 */
-		public function ParseContent( $content = '', $isFullRequest = false, $contentType = null ) {
-			if ( $isFullRequest ) {
-				$newContent  = $this->ParseResponse( $content );
-				$content     = trim( $newContent['body'] );
-				$contentType = isset( $newContent['header']['info']['Content-Type'] ) ? $newContent['header']['info']['Content-Type'] : null;
-			}
-			$parsedContent     = null;
-			$testSerialization = null;
-			$testJson          = @json_decode( $content );
-			if ( gettype( $testJson ) === "object" || ( ! empty( $testJson ) && is_array( $testJson ) ) ) {
-				$parsedContent = $testJson;
-			} else {
-				if ( is_string( $content ) ) {
-					$testSerialization = @unserialize( $content );
-					if ( gettype( $testSerialization ) == "object" || gettype( $testSerialization ) === "array" ) {
-						$parsedContent = $testSerialization;
-					}
-				}
-			}
-			if ( is_null( $parsedContent ) && ( preg_match( "/xml version/", $content ) || preg_match( "/rss version/", $content ) || preg_match( "/xml/i", $contentType ) ) ) {
-				$trimmedContent        = trim( $content ); // PHP 5.3: Can't use function return value in write context
-				$overrideXmlSerializer = false;
-				if ( $this->useXmlSerializer ) {
-					$serializerPath = stream_resolve_include_path( 'XML/Unserializer.php' );
-					if ( ! empty( $serializerPath ) ) {
-						$overrideXmlSerializer = true;
-						/** @noinspection PhpIncludeInspection */
-						require_once( 'XML/Unserializer.php' );
-					}
-				}
-
-				if ( class_exists( 'SimpleXMLElement' ) && ! $overrideXmlSerializer ) {
-					if ( ! empty( $trimmedContent ) ) {
-						if ( ! $this->allowCdata ) {
-							$simpleXML = new \SimpleXMLElement( $content, LIBXML_NOCDATA );
-						} else {
-							$simpleXML = new \SimpleXMLElement( $content );
-						}
-						if ( isset( $simpleXML ) && ( is_object( $simpleXML ) || is_array( $simpleXML ) ) ) {
-							return $simpleXML;
-						}
-					} else {
-						return null;
-					}
-				} else {
-					// Returns empty class if the SimpleXMLElement is missing.
-					if ( $overrideXmlSerializer ) {
-						/** @noinspection PhpUndefinedClassInspection */
-						$xmlSerializer = new \XML_Unserializer();
-						/** @noinspection PhpUndefinedMethodInspection */
-						$xmlSerializer->unserialize( $content );
-
-						/** @noinspection PhpUndefinedMethodInspection */
-						return $xmlSerializer->getUnserializedData();
-					}
-
-					return new \stdClass();
-				}
-			}
-
-			// TODO: Rebuild parser to include HTML rendered data regardless of the parsed content type
-			if ( ! empty( $content ) && empty( $parsedContent ) && $this->getParseHtml() ) {
-				$parsedContent                 = array();
-				$parsedContent['ByNodes']      = array();
-				$parsedContent['ByClosestTag'] = array();
-				$parsedContent['ById']         = array();
-
-				if ( class_exists( 'DOMDocument' ) ) {
-					/** @var \DOMDocument $DOM */
-					$DOM = new \DOMDocument();
-					libxml_use_internal_errors( true );
-					$DOM->loadHTML( $content );
-					if ( isset( $DOM->childNodes->length ) && $DOM->childNodes->length > 0 ) {
-						$elementsByTagName = $DOM->getElementsByTagName( '*' );
-						$childNodeArray    = $this->getChildNodes( $elementsByTagName );
-						$childTagArray     = $this->getChildNodes( $elementsByTagName, 'tagnames' );
-						$childIdArray      = $this->getChildNodes( $elementsByTagName, 'id' );
-
-						$this->NETCURL_CONTENT_IS_DOMCONTENT = true;
-
-						if ( is_array( $childNodeArray ) && count( $childNodeArray ) ) {
-							$parsedContent['ByNodes'] = $childNodeArray;
-						}
-						if ( is_array( $childTagArray ) && count( $childTagArray ) ) {
-							$parsedContent['ByClosestTag'] = $childTagArray;
-						}
-						if ( is_array( $childIdArray ) && count( $childIdArray ) ) {
-							$parsedContent['ById'] = $childIdArray;
-						}
-					}
-				} else {
-					throw new \Exception( NETCURL_CURL_CLIENTNAME . " HtmlParse exception: Can not parse DOMDocuments without the DOMDocuments class", $this->NETWORK->getExceptionCode( "NETCURL_DOMDOCUMENT_CLASS_MISSING" ) );
-				}
-			}
-
-			$this->ParseContainer = $parsedContent;
-
-			return $parsedContent;
 		}
 
 		// Created for future use
@@ -6740,7 +6459,8 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 	if ( ! class_exists( 'Tornevall_cURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\Tornevall_cURL' ) ) {
 		/**
 		 * Class MODULE_CURL
-		 * @package TorneLIB
+		 *
+		 * @package    TorneLIB
 		 * @throws \Exception
 		 * @deprecated 6.0.20
 		 */
@@ -6770,7 +6490,7 @@ if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 	 * Making no difference of a SOAP call and a regular GET/POST
 	 *
 	 * @package TorneLIB
-	 * @since 6.0.20
+	 * @since   6.0.20
 	 */
 	class MODULE_SOAP extends MODULE_CURL {
 		protected $soapClient;
@@ -6780,7 +6500,6 @@ if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 			'trace'      => true,
 			'cache_wsdl' => 0       // Replacing WSDL_CACHE_NONE (WSDL_CACHE_BOTH = 3)
 		);
-		private $simpleSoapVersion = NETCURL_SIMPLESOAP_RELEASE;
 		private $soapUrl;
 		private $AuthData;
 		private $soapRequest;
@@ -6789,12 +6508,10 @@ if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		private $soapResponseHeaders;
 		private $libResponse;
 		private $canThrowSoapFaults = true;
-		private $CUSTOM_USER_AGENT;
 		private $soapFaultExceptionObject;
 		/** @var MODULE_CURL */
 		private $PARENT;
 
-		private $sslopt = array();
 		private $SoapFaultString = null;
 		private $SoapFaultCode = 0;
 		private $SoapTryOnce = true;
@@ -6804,7 +6521,7 @@ if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		/**
 		 * MODULE_SOAP constructor.
 		 *
-		 * @param $Url
+		 * @param      $Url
 		 * @param null $that
 		 *
 		 * @throws \Exception
@@ -6883,6 +6600,11 @@ if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 */
 		public function getSoap() {
 			$this->soapClient = null;
+            $throwErrorMessage = null;
+            $throwErrorCode    = null;
+            $throwBackCurrent  = null;
+            $soapFaultOnInit = false;
+            //$throwPrevious     = null;
 			$sslOpt           = $this->getSslOpt();
 			//$optionsStream    = $this->sslGetOptionsStream();
 			$optionsStream = $this->PARENT->sslGetOptionsStream();
@@ -6901,12 +6623,6 @@ if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 
 			$this->soapOptions['exceptions'] = true;
 			$this->soapOptions['trace']      = true;
-
-			$throwErrorMessage = null;
-			$throwErrorCode    = null;
-			$throwBackCurrent  = null;
-			//$throwPrevious     = null;
-			$soapFaultOnInit = false;
 
 			$parentFlags = $this->PARENT->getFlags();
 			foreach ( $parentFlags as $flagKey => $flagValue ) {
@@ -6959,7 +6675,7 @@ if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 											if ( ! isset( $parentFlags['SOAPWARNINGS_EXTEND'] ) ) {
 												unset( $throwErrorMessage );
 											}
-											$throwErrorMessage = "HTTP-Request exception (" . $throwErrorCode . "): " . $httpSplitError[1] . " " . trim( $httpSplitError[2] ) . "\n" . $throwErrorMessage;
+                                            $throwErrorMessage = "HTTP-Request exception (" . $throwErrorCode . "): " . $httpSplitError[1] . " " . trim($httpSplitError[2]) . (isset($throwErrorMessage) ? ("\n" . $throwErrorMessage) : null);
 										}
 									}
 								}
@@ -7018,6 +6734,13 @@ if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 			return $this->SoapTryOnce;
 		}
 
+        /**
+         * @param $name
+         * @param $arguments
+         *
+         * @return array|null
+         * @throws \Exception
+         */
 		function __call( $name, $arguments ) {
 			$returnResponse = array(
 				'header' => array( 'info' => null, 'full' => null ),
@@ -7032,7 +6755,7 @@ if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 				} else {
 					$SoapClientResponse = $this->soapClient->$name();
 				}
-			} catch ( \SoapFault $e ) {
+			} catch ( \Exception $e ) {
 				/** @noinspection PhpUndefinedMethodInspection */
 				$this->soapRequest = $this->soapClient->__getLastRequest();
 				/** @noinspection PhpUndefinedMethodInspection */
@@ -7114,7 +6837,7 @@ if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 * Get the SOAP response independently on exceptions or successes
 		 *
 		 * @return mixed
-		 * @since 5.0.0
+		 * @since      5.0.0
 		 * @deprecated 6.0.5 Use getSoapResponse()
 		 */
 		public function getLibResponse() {
@@ -7154,7 +6877,8 @@ if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 	if ( ! class_exists( 'Tornevall_SimpleSoap' ) && ! class_exists( 'Resursbank\RBEcomPHP\Tornevall_SimpleSoap' ) ) {
 		/**
 		 * Class MODULE_CURL
-		 * @package TorneLIB
+		 *
+		 * @package    TorneLIB
 		 * @deprecated 6.0.20 Use MODULE_SOAP
 		 */
 		class Tornevall_SimpleSoap extends MODULE_SOAP {
@@ -7162,6 +6886,597 @@ if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 				parent::__construct( $Url, $that );
 			}
 		}
+	}
+}
+if ( ! defined( 'TORNELIB_CRYPTO_RELEASE' ) ) {
+	define( 'TORNELIB_CRYPTO_RELEASE', '6.0.14' );
+}
+if ( ! defined( 'TORNELIB_CRYPTO_MODIFY' ) ) {
+	define( 'TORNELIB_CRYPTO_MODIFY', '20180514' );
+}
+if ( ! defined( 'TORNELIB_CRYPTO_CLIENTNAME' ) ) {
+	define( 'TORNELIB_CRYPTO_CLIENTNAME', 'MODULE_CRYPTO' );
+}
+
+if ( defined( 'TORNELIB_CRYPTO_REQUIRE' ) ) {
+	if ( ! defined( 'TORNELIB_CRYPTO_REQUIRE_OPERATOR' ) ) {
+		define( 'TORNELIB_CRYPTO_REQUIRE_OPERATOR', '==' );
+	}
+	define( 'TORNELIB_CRYPTO_ALLOW_AUTOLOAD', version_compare( TORNELIB_CRYPTO_RELEASE, TORNELIB_CRYPTO_REQUIRE, TORNELIB_CRYPTO_REQUIRE_OPERATOR ) ? true : false );
+} else {
+	if ( ! defined( 'TORNELIB_CRYPTO_ALLOW_AUTOLOAD' ) ) {
+		define( 'TORNELIB_CRYPTO_ALLOW_AUTOLOAD', true );
+	}
+}
+
+if ( ! class_exists( 'MODULE_CRYPTO' ) && ! class_exists( 'Resursbank\RBEcomPHP\MODULE_CRYPTO' ) && defined( 'TORNELIB_CRYPTO_ALLOW_AUTOLOAD' ) && TORNELIB_CRYPTO_ALLOW_AUTOLOAD === true ) {
+
+	/**
+	 * Class TorneLIB_Crypto
+	 */
+	class MODULE_CRYPTO {
+
+		private $aesKey = "";
+		private $aesIv = "";
+		private $compressionLevel;
+
+		/**
+		 * TorneLIB_Crypto constructor.
+		 */
+		function __construct() {
+			$this->setAesIv( md5( "TorneLIB Default IV - Please Change this" ) );
+			$this->setAesKey( md5( "TorneLIB Default KEY - Please Change this" ) );
+		}
+
+		/**
+		 * Set and override compression level
+		 *
+		 * @param int $compressionLevel
+		 *
+		 * @since 6.0.6
+		 */
+		function setCompressionLevel( $compressionLevel = 9 ) {
+			$this->compressionLevel = $compressionLevel;
+		}
+
+		/**
+		 * Get current compressionlevel
+		 *
+		 * @return mixed
+		 * @since 6.0.6
+		 */
+		public function getCompressionLevel() {
+			return $this->compressionLevel;
+		}
+
+		/**
+		 * Create a password or salt with different kind of complexity
+		 *
+		 * 1 = A-Z
+		 * 2 = A-Za-z
+		 * 3 = A-Za-z0-9
+		 * 4 = Full usage
+		 * 5 = Full usage and unrestricted $setMax
+		 * 6 = Complexity uses full charset of 0-255
+		 *
+		 * @param int $complexity
+		 * @param int $setMax Max string length to use
+		 * @param bool $webFriendly Set to true works best with the less complex strings as it only removes characters that could be mistaken by another character (O,0,1,l,I etc)
+		 *
+		 * @return string
+		 * @deprecated 6.0.4 Still here for people who needs it
+		 */
+		function mkpass_deprecated( $complexity = 4, $setMax = 8, $webFriendly = false ) {
+			$returnString       = null;
+			$characterListArray = array(
+				'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+				'abcdefghijklmnopqrstuvwxyz',
+				'0123456789',
+				'!@#$%*?'
+			);
+			// Set complexity to no limit if type 6 is requested
+			if ( $complexity == 6 ) {
+				$characterListArray = array( '0' => '' );
+				for ( $unlim = 0; $unlim <= 255; $unlim ++ ) {
+					$characterListArray[0] .= chr( $unlim );
+				}
+				if ( $setMax == null ) {
+					$setMax = 15;
+				}
+			}
+			// Backward-compatibility in the complexity will still give us captcha-capabilities for simpler users
+			$max = 8;       // Longest complexity
+			if ( $complexity == 1 ) {
+				unset( $characterListArray[1], $characterListArray[2], $characterListArray[3] );
+				$max = 6;
+			}
+			if ( $complexity == 2 ) {
+				unset( $characterListArray[2], $characterListArray[3] );
+				$max = 10;
+			}
+			if ( $complexity == 3 ) {
+				unset( $characterListArray[3] );
+				$max = 10;
+			}
+			if ( $setMax > 0 ) {
+				$max = $setMax;
+			}
+			$chars    = array();
+			$numchars = array();
+			//$equalityPart = ceil( $max / count( $characterListArray ) );
+			for ( $i = 0; $i < $max; $i ++ ) {
+				$charListId = rand( 0, count( $characterListArray ) - 1 );
+				if ( ! isset( $numchars[ $charListId ] ) ) {
+					$numchars[ $charListId ] = 0;
+				}
+				$numchars[ $charListId ] ++;
+				$chars[] = $characterListArray[ $charListId ]{mt_rand( 0, ( strlen( $characterListArray[ $charListId ] ) - 1 ) )};
+			}
+			shuffle( $chars );
+			$returnString = implode( "", $chars );
+			if ( $webFriendly ) {
+				// The lazyness
+				$returnString = preg_replace( "/[+\/=IG0ODQR]/i", "", $returnString );
+			}
+
+			return $returnString;
+		}
+
+		/**
+		 * Returns a string with a chosen character list
+		 *
+		 * @param string $type
+		 *
+		 * @return mixed
+		 * @since 6.0.4
+		 */
+		private function getCharacterListArray( $type = 'upper' ) {
+			$compiledArray = array(
+				'upper'    => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+				'lower'    => 'abcdefghijklmnopqrstuvwxyz',
+				'numeric'  => '0123456789',
+				'specials' => '!@#$%*?',
+				'table'    => ''
+			);
+			for ( $i = 0; $i <= 255; $i ++ ) {
+				$compiledArray['table'] .= chr( $i );
+			}
+
+			switch ( $type ) {
+				case 'table':
+					return $compiledArray['table'];
+				case 'specials':
+					return $compiledArray['specials'];
+				case 'numeric':
+					return $compiledArray['numeric'];
+				case "lower":
+					return $compiledArray['lower'];
+				default:
+					return $compiledArray['upper'];
+			}
+		}
+
+		/**
+		 * Returns a selected character list array string as a new array
+		 *
+		 * @param string $type
+		 *
+		 * @return array|false|string[]
+		 * @since 6.0.4
+		 */
+		private function getCharactersFromList( $type = 'upper' ) {
+			return preg_split( "//", $this->getCharacterListArray( $type ), - 1, PREG_SPLIT_NO_EMPTY );
+		}
+
+		/**
+		 * Returns a random character from a selected character list
+		 *
+		 * @param array $type
+		 * @param bool $ambigous
+		 *
+		 * @return mixed|string
+		 * @since 6.0.4
+		 */
+		private function getRandomCharacterFromArray( $type = array( 'upper' ), $ambigous = false ) {
+			if ( is_string( $type ) ) {
+				$type = array( $type );
+			}
+			$getType         = $type[ rand( 0, count( $type ) - 1 ) ];
+			$characterArray  = $this->getCharactersFromList( $getType );
+			$characterLength = count( $characterArray ) - 1;
+			$chosenCharacter = $characterArray[ rand( 0, $characterLength ) ];
+			$ambigousList    = array(
+				'+',
+				'/',
+				'=',
+				'I',
+				'G',
+				'0',
+				'O',
+				'D',
+				'Q',
+				'R'
+			);
+			if ( in_array( $chosenCharacter, $ambigousList ) ) {
+				$chosenCharacter = $this->getRandomCharacterFromArray( $type, $ambigous );
+			}
+
+			return $chosenCharacter;
+		}
+
+		/**
+		 * Returns a random character based on complexity selection
+		 *
+		 * @param int $complexity
+		 * @param bool $ambigous
+		 *
+		 * @return mixed|string
+		 * @since 6.0.4
+		 */
+		private function getCharacterFromComplexity( $complexity = 4, $ambigous = false ) {
+			switch ( $complexity ) {
+				case 1:
+					return $this->getRandomCharacterFromArray( array( 'upper' ), $ambigous );
+				case 2:
+					return $this->getRandomCharacterFromArray( array( 'upper', 'lower' ), $ambigous );
+				case 3:
+					return $this->getRandomCharacterFromArray( array( 'upper', 'lower', 'numeric' ), $ambigous );
+				case 4:
+					return $this->getRandomCharacterFromArray( array(
+						'upper',
+						'lower',
+						'numeric',
+						'specials'
+					), $ambigous );
+				case 5:
+					return $this->getRandomCharacterFromArray( array( 'table' ) );
+				case 6:
+					return $this->getRandomCharacterFromArray( array( 'table' ) );
+				default:
+					return $this->getRandomCharacterFromArray( 'upper', $ambigous );
+			}
+		}
+
+		/**
+		 * Refactored generator to create a random password or string
+		 *
+		 * @param int $complexity 1=UPPERCASE, 2=UPPERCASE+lowercase, 3=UPPERCASE+lowercase+numerics, 4=UPPERCASE,lowercase+numerics+specialcharacters, 5/6=Full character set
+		 * @param int $totalLength Length of the string
+		 * @param bool $ambigous Exclude what we see as ambigous characters (this has no effect in complexity > 4)
+		 *
+		 * @return string
+		 * @since 6.0.4
+		 */
+		public function mkpass( $complexity = 4, $totalLength = 16, $ambigous = false ) {
+			$pwString = "";
+			for ( $charIndex = 0; $charIndex < $totalLength; $charIndex ++ ) {
+				$pwString .= $this->getCharacterFromComplexity( $complexity, $ambigous );
+			}
+
+			return $pwString;
+		}
+
+		/**
+		 * @param int $complexity
+		 * @param int $totalLength
+		 * @param bool $ambigous
+		 *
+		 * @return string
+		 * @since 6.0.7
+		 */
+		public static function getRandomSalt( $complexity = 4, $totalLength = 16, $ambigous = false ) {
+			$selfInstance = new TorneLIB_Crypto();
+
+			return $selfInstance->mkpass( $complexity, $totalLength, $ambigous );
+		}
+
+		/**
+		 * Set up key for aes encryption.
+		 *
+		 * @param $useKey
+		 *
+		 * @since 6.0.0
+		 */
+		public function setAesKey( $useKey ) {
+			$this->aesKey = md5( $useKey );
+		}
+
+		/**
+		 * Set up ip for aes encryption
+		 *
+		 * @param $useIv
+		 *
+		 * @since 6.0.0
+		 */
+		public function setAesIv( $useIv ) {
+			$this->aesIv = md5( $useIv );
+		}
+
+		/**
+		 * Encrypt content to RIJNDAEL/AES-encryption
+		 *
+		 * @param string $decryptedContent
+		 * @param bool $asBase64
+		 *
+		 * @return string
+		 * @throws \Exception
+		 * @since 6.0.0
+		 */
+		public function aesEncrypt( $decryptedContent = "", $asBase64 = true ) {
+			$useKey      = $this->aesKey;
+			$useIv       = $this->aesIv;
+			$contentData = $decryptedContent;
+			if ( $useKey == md5( md5( "TorneLIB Default IV - Please Change this" ) ) || $useIv == md5( md5( "TorneLIB Default IV - Please Change this" ) ) ) {
+				throw new \Exception( "Current encryption key and iv is not allowed to use." );  // TODO: TORNELIB_EXCEPTIONS::TORNELIB_CRYPTO_KEY_EXCEPTION
+			}
+			if ( is_string( $decryptedContent ) ) {
+				$contentData = utf8_encode( $decryptedContent );
+			}
+			// TODO: Need better support for PHP7
+			$binEnc      = mcrypt_encrypt( MCRYPT_RIJNDAEL_256, $useKey, $contentData, MCRYPT_MODE_CBC, $useIv );
+			$baseEncoded = $this->base64url_encode( $binEnc );
+			if ( $asBase64 ) {
+				return $baseEncoded;
+			} else {
+				return $binEnc;
+			}
+		}
+
+		/**
+		 * Decrypt content encoded with RIJNDAEL/AES-encryption
+		 *
+		 * @param string $encryptedContent
+		 * @param bool $asBase64
+		 *
+		 * @return string
+		 * @throws \Exception
+		 * @since 6.0.0
+		 */
+		public function aesDecrypt( $encryptedContent = "", $asBase64 = true ) {
+			$useKey = $this->aesKey;
+			$useIv  = $this->aesIv;
+			if ( $useKey == md5( md5( "TorneLIB Default IV - Please Change this" ) ) || $useIv == md5( md5( "TorneLIB Default IV - Please Change this" ) ) ) {
+				throw new \Exception( "Current encryption key and iv is not allowed to use." );  // TODO: TORNELIB_EXCEPTIONS::TORNELIB_CRYPTO_KEY_EXCEPTION
+			}
+			$contentData = $encryptedContent;
+			if ( $asBase64 ) {
+				$contentData = $this->base64url_decode( $encryptedContent );
+			}
+			$decryptedOutput = trim( mcrypt_decrypt( MCRYPT_RIJNDAEL_256, $useKey, $contentData, MCRYPT_MODE_CBC, $useIv ) );
+
+			return $decryptedOutput;
+		}
+
+		/**
+		 * Compress data with gzencode and encode to base64url
+		 *
+		 * @param string $data
+		 * @param int $compressionLevel
+		 *
+		 * @return string
+		 * @throws \Exception
+		 * @since 6.0.0
+		 */
+		public function base64_gzencode( $data = '', $compressionLevel = - 1 ) {
+
+			if ( ! empty( $this->compressionLevel ) ) {
+				$compressionLevel = $this->compressionLevel;
+			}
+
+			if ( ! function_exists( 'gzencode' ) ) {
+				throw new \Exception( "Function gzencode is missing" );
+			}
+			$gzEncoded = gzencode( $data, $compressionLevel );
+
+			return $this->base64url_encode( $gzEncoded );
+		}
+
+		/**
+		 * Decompress gzdata that has been encoded with base64url
+		 *
+		 * @param string $data
+		 *
+		 * @return string
+		 * @throws \Exception
+		 * @since 6.0.0
+		 */
+		public function base64_gzdecode( $data = '' ) {
+			$gzDecoded = $this->base64url_decode( $data );
+
+			return $this->gzDecode( $gzDecoded );
+		}
+
+		/**
+		 * Compress data with bzcompress and base64url-encode it
+		 *
+		 * @param string $data
+		 *
+		 * @return string
+		 * @throws \Exception
+		 * @since 6.0.0
+		 */
+		public function base64_bzencode( $data = '' ) {
+			if ( ! function_exists( 'bzcompress' ) ) {
+				throw new \Exception( "bzcompress is missing" );
+			}
+			$bzEncoded = bzcompress( $data );
+
+			return $this->base64url_encode( $bzEncoded );
+		}
+
+		/**
+		 * Decompress bzdata that has been encoded with base64url
+		 *
+		 * @param $data
+		 *
+		 * @return mixed
+		 * @throws \Exception
+		 * @since 6.0.0
+		 */
+		public function base64_bzdecode( $data ) {
+			if ( ! function_exists( 'bzdecompress' ) ) {
+				throw new \Exception( "bzdecompress is missing" );
+			}
+			$bzDecoded = $this->base64url_decode( $data );
+
+			return bzdecompress( $bzDecoded );
+		}
+
+		/**
+		 * Compress and encode data with best encryption
+		 *
+		 * @param string $data
+		 *
+		 * @return mixed
+		 * @throws \Exception
+		 * @since 6.0.0
+		 */
+
+		public function base64_compress( $data = '' ) {
+			$results         = array();
+			$bestCompression = null;
+			$lengthArray     = array();
+			if ( function_exists( 'gzencode' ) ) {
+				$results['gz0'] = $this->base64_gzencode( "gz0:" . $data, 0 );
+				$results['gz9'] = $this->base64_gzencode( "gz9:" . $data, 9 );
+			}
+			if ( function_exists( 'bzcompress' ) ) {
+				$results['bz'] = $this->base64_bzencode( "bz:" . $data );
+			}
+			foreach ( $results as $type => $compressedString ) {
+				$lengthArray[ $type ] = strlen( $compressedString );
+			}
+			asort( $lengthArray );
+			foreach ( $lengthArray as $compressionType => $compressionLength ) {
+				$bestCompression = $compressionType;
+				break;
+			}
+
+			return $results[ $bestCompression ];
+		}
+
+		/**
+		 * Decompress data that has been compressed with base64_compress
+		 *
+		 * @param string $data
+		 * @param bool $getCompressionType
+		 *
+		 * @return string
+		 * @throws \Exception
+		 * @since 6.0.0
+		 */
+		public function base64_decompress( $data = '', $getCompressionType = false ) {
+			$results       = array();
+			$results['gz'] = $this->base64_gzdecode( $data );
+			if ( function_exists( 'bzdecompress' ) ) {
+				$results['bz'] = $this->base64_bzdecode( $data );
+			}
+			$acceptedString = "";
+			foreach ( $results as $result ) {
+				$resultExploded = explode( ":", $result, 2 );
+				if ( isset( $resultExploded[0] ) && isset( $resultExploded[1] ) ) {
+					if ( $resultExploded[0] == "gz0" || $resultExploded[0] == "gz9" ) {
+						$acceptedString = $resultExploded[1];
+						if ( $getCompressionType ) {
+							$acceptedString = $resultExploded[0];
+						}
+						break;
+					}
+					if ( $resultExploded[0] == "bz" ) {
+						$acceptedString = $resultExploded[1];
+						if ( $getCompressionType ) {
+							$acceptedString = $resultExploded[0];
+						}
+						break;
+					}
+				}
+			}
+
+			return $acceptedString;
+		}
+
+		/**
+		 * Decode gzcompressed data. If gzdecode is actually missing (which has happened in early version of PHP), there will be a fallback to gzinflate instead
+		 *
+		 * @param $data
+		 *
+		 * @return string
+		 * @throws \Exception
+		 * @since 6.0.0
+		 */
+		private function gzDecode( $data ) {
+			if ( function_exists( 'gzdecode' ) ) {
+				return gzdecode( $data );
+			}
+			if ( ! function_exists( 'gzinflate' ) ) {
+				throw new \Exception( "Function gzinflate and gzdecode is missing" );
+			}
+			// Inhherited from TorneEngine-Deprecated
+			$flags       = ord( substr( $data, 3, 1 ) );
+			$headerlen   = 10;
+			$extralen    = 0;
+			$filenamelen = 0;
+			if ( $flags & 4 ) {
+				$extralen  = unpack( 'v', substr( $data, 10, 2 ) );
+				$extralen  = $extralen[1];
+				$headerlen += 2 + $extralen;
+			}
+			if ( $flags & 8 ) // Filename
+			{
+				$headerlen = strpos( $data, chr( 0 ), $headerlen ) + 1;
+			}
+			if ( $flags & 16 ) // Comment
+			{
+				$headerlen = strpos( $data, chr( 0 ), $headerlen ) + 1;
+			}
+			if ( $flags & 2 ) // CRC at end of file
+			{
+				$headerlen += 2;
+			}
+			$unpacked = gzinflate( substr( $data, $headerlen ) );
+			if ( $unpacked === false ) {
+				$unpacked = $data;
+			}
+
+			return $unpacked;
+		}
+
+		/**
+		 * URL compatible base64_encode
+		 *
+		 * @param $data
+		 *
+		 * @return string
+		 * @since 6.0.0
+		 */
+		public function base64url_encode( $data ) {
+			return rtrim( strtr( base64_encode( $data ), '+/', '-_' ), '=' );
+		}
+
+		/**
+		 * URL compatible base64_decode
+		 *
+		 * @param $data
+		 *
+		 * @return string
+		 * @since 6.0.0
+		 */
+		public function base64url_decode( $data ) {
+			return base64_decode( str_pad( strtr( $data, '-_', '+/' ), strlen( $data ) % 4, '=', STR_PAD_RIGHT ) );
+		}
+	}
+}
+
+if ( ! class_exists( 'TORNELIB_CRYPTO_CRYPTOTYPES' ) && ! class_exists( 'Resursbank\RBEcomPHP\TORNELIB_CRYPTO_CRYPTOTYPES' ) ) {
+	abstract class TORNELIB_CRYPTO_TYPES {
+		const TYPE_NONE = 0;
+		const TYPE_GZ = 1;
+		const TYPE_BZ2 = 2;
+	}
+}
+
+if ( ! class_exists( 'TorneLIB_Crypto' ) && ! class_exists( 'Resursbank\RBEcomPHP\TorneLIB_Crypto' ) ) {
+	class TorneLIB_Crypto extends MODULE_CRYPTO {
 	}
 }
 if ( ! defined( 'TORNELIB_IO_RELEASE' ) ) {
