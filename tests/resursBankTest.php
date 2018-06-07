@@ -31,9 +31,9 @@ use \Resursbank\RBEcomPHP\RESURS_PAYMENT_STATUS_RETURNCODES;
 use \Resursbank\RBEcomPHP\RESURS_FLOW_TYPES;
 use \Resursbank\RBEcomPHP\RESURS_CALLBACK_REACHABILITY;
 use \Resursbank\RBEcomPHP\RESURS_AFTERSHOP_RENDER_TYPES;
-use \Resursbank\RBEcomPHP\Tornevall_cURL;
-use \Resursbank\RBEcomPHP\TorneLIB_Network;
-use Resursbank\RBEcomPHP\TorneLIB_IO;
+use \Resursbank\RBEcomPHP\MODULE_CURL;
+use \Resursbank\RBEcomPHP\MODULE_NETWORK;
+use Resursbank\RBEcomPHP\MODULE_IO;
 
 /*
  * Global test configuration section
@@ -56,379 +56,436 @@ if ( file_exists( "/etc/ecomphp.json" ) ) {
 
 class resursBankTest extends TestCase {
 
-	/**
-	 * @var ResursBank $API EComPHP
-	 */
-	protected $API;
+    /**
+     * @var ResursBank $API EComPHP
+     */
+    protected $API;
 
-	/** @var RESURS_TEST_BRIDGE $TEST Used for standard tests and simpler flow setup */
-	protected $TEST;
+    /** @var RESURS_TEST_BRIDGE $TEST Used for standard tests and simpler flow setup */
+    protected $TEST;
 
-	/** @var string Username to web services */
-	private $username = "ecomphpPipelineTest";
-	/** @var string Password to web services */
-	private $password = "4Em4r5ZQ98x3891D6C19L96TQ72HsisD";
+    /** @var string Username to web services */
+    private $username = "ecomphpPipelineTest";
+    /** @var string Password to web services */
+    private $password = "4Em4r5ZQ98x3891D6C19L96TQ72HsisD";
 
-	private $flowHappyCustomer = "8305147715";
-	private $flowHappyCustomerName = "Vincent Williamsson Alexandersson";
+    private $flowHappyCustomer = "8305147715";
+    private $flowHappyCustomerName = "Vincent Williamsson Alexandersson";
 
-	/** @var string Landing page for callbacks */
-	private $callbackUrl = "https://test.resurs.com/signdummy/index.php?isCallback=1";
+    /** @var string Landing page for callbacks */
+    private $callbackUrl = "https://test.resurs.com/signdummy/index.php?isCallback=1";
 
-	/** @var string Landing page for signings */
-	private $signUrl = "https://test.resurs.com/signdummy/index.php?isSigningUrl=1";
+    /** @var string Landing page for signings */
+    private $signUrl = "https://test.resurs.com/signdummy/index.php?isSigningUrl=1";
 
-	function setUp() {
-		$this->API = new ResursBank();
-		$this->API->setDebug( true );
-		$this->TEST = new RESURS_TEST_BRIDGE();
-	}
+    /**
+     * @throws \Exception
+     */
+    function setUp() {
+        $this->API = new ResursBank();
+        $this->API->setDebug( true );
+        $this->TEST = new RESURS_TEST_BRIDGE();
+    }
 
-	function tearDown() {
+    function tearDown() {
 
-	}
+    }
 
-	private function getHappyCustomerData() {
-		$lastHappyCustomer = $this->TEST->share( 'happyCustomer' );
-		if ( empty( $lastHappyCustomer ) ) {
-			$this->getAddress( true );
-			$lastHappyCustomer = $this->TEST->share( 'happyCustomer' );
-		}
-		if ( isset( $lastHappyCustomer[0] ) ) {
-			return $lastHappyCustomer[0];
-		}
-	}
+    /**
+     * @return null
+     * @throws \Exception
+     */
+    private function getHappyCustomerData() {
+        $lastHappyCustomer = $this->TEST->share( 'happyCustomer' );
+        if ( empty( $lastHappyCustomer ) ) {
+            $this->getAddress( true );
+            $lastHappyCustomer = $this->TEST->share( 'happyCustomer' );
+        }
+        if ( isset( $lastHappyCustomer[0] ) ) {
+            return $lastHappyCustomer[0];
+        }
+        return null;
+    }
 
-	private function getPaymentMethodsData() {
-		$paymentMethods = $this->TEST->share( 'paymentMethods' );
-		if ( empty( $paymentMethods ) ) {
-			$this->getPaymentMethods();
-			$paymentMethods = $this->TEST->share( 'paymentMethods' );
-		}
-		if ( isset( $paymentMethods[0] ) ) {
-			return $paymentMethods[0];
-		}
-	}
+    /**
+     * @return null
+     * @throws \Exception
+     */
+    private function getPaymentMethodsData() {
+        $paymentMethods = $this->TEST->share( 'paymentMethods' );
+        if ( empty( $paymentMethods ) ) {
+            $this->getPaymentMethods();
+            $paymentMethods = $this->TEST->share( 'paymentMethods' );
+        }
+        if ( isset( $paymentMethods[0] ) ) {
+            return $paymentMethods[0];
+        }
+        return null;
+    }
 
-	/**
-	 * @test
-	 */
-	function clearStorage() {
-		@unlink( __DIR__ . "/storage/shared.serialize" );
-		static::assertTrue( ! file_exists( __DIR__ . '/storage/shared.serialize' ) );
-	}
+    /**
+     * @test
+     */
+    function clearStorage() {
+        @unlink( __DIR__ . "/storage/shared.serialize" );
+        static::assertTrue( ! file_exists( __DIR__ . '/storage/shared.serialize' ) );
+    }
 
-	/**
-	 * @test
-	 * @testdox Tests API credentials and getPaymentMethods. Expected result: Approved connection with a specific number of payment methods
-	 *
-	 * @throws \Exception
-	 */
-	function apiPaymentMethodsWithCredentials() {
-		static::assertTrue( count( $this->TEST->getCredentialControl() ) > 0 );
-	}
+    /**
+     * @test
+     * @testdox Tests API credentials and getPaymentMethods. Expected result: Approved connection with a specific number of payment methods
+     *
+     * @throws \Exception
+     */
+    function apiPaymentMethodsWithCredentials() {
+        static::assertTrue( count( $this->TEST->getCredentialControl() ) > 0 );
+    }
 
-	/**
-	 * @test
-	 * @testdox EComPHP throws \Exceptions on credential failures
-	 * @throws \Exception
-	 */
-	function apiPaymentMethodsWithWrongCredentials() {
-		try {
-			$this->TEST->getCredentialControl( false );
-		} catch ( \Exception $e ) {
-			static::assertTrue( ( $e->getCode() == 401 ) );
-		}
-	}
+    /**
+     * @test
+     * @testdox EComPHP throws \Exceptions on credential failures
+     * @throws \Exception
+     */
+    function apiPaymentMethodsWithWrongCredentials() {
+        try {
+            $this->TEST->getCredentialControl( false );
+        } catch ( \Exception $e ) {
+            static::assertTrue( ( $e->getCode() == 401 ) );
+        }
+    }
 
-	/**
-	 * @test
-	 * @testdox Testing this suite's capabilities to share data between tests
-	 */
-	function shareDataOut() {
-		$this->TEST->share( "outShare", 1 );
-		$keys = $this->TEST->share( "thisKey", "thatValue" );
-		static::assertTrue( count( $keys ) > 0 ? true : false );
-	}
+    /**
+     * @test
+     * @testdox Testing this suite's capabilities to share data between tests
+     */
+    function shareDataOut() {
+        $this->TEST->share( "outShare", 1 );
+        $keys = $this->TEST->share( "thisKey", "thatValue" );
+        static::assertTrue( count( $keys ) > 0 ? true : false );
+    }
 
-	/**
-	 * @test
-	 * @testdox Testing this suite's capabilites to retreive shared data
-	 */
-	function shareDataIn() {
-		$keys = $this->TEST->share( "thisKey" );
-		static::assertTrue( count( $keys ) > 0 ? true : false );
-	}
+    /**
+     * @test
+     * @testdox Testing this suite's capabilites to retreive shared data
+     */
+    function shareDataIn() {
+        $keys = $this->TEST->share( "thisKey" );
+        static::assertTrue( count( $keys ) > 0 ? true : false );
+    }
 
-	/**
-	 * @test
-	 * @testdox Testing this suite's capability to remove keys from shared data (necessary to reset things)
-	 */
-	function shareDataRemove() {
-		if ( $this->TEST->share( "outShare" ) ) {
-			$this->TEST->unshare( "outShare" );
-			$keys = $this->TEST->share();
-			static::assertTrue( is_array( $keys ) );
+    /**
+     * @test
+     * @testdox Testing this suite's capability to remove keys from shared data (necessary to reset things)
+     */
+    function shareDataRemove() {
+        if ( $this->TEST->share( "outShare" ) ) {
+            $this->TEST->unshare( "outShare" );
+            $keys = $this->TEST->share();
+            static::assertTrue( is_array( $keys ) );
 
-		} else {
-			static::markTestSkipped( "Test has been started without shareDataOut" );
-		}
-	}
+        } else {
+            static::markTestSkipped( "Test has been started without shareDataOut" );
+        }
+    }
 
-	/**
-	 * @test
-	 * @testdox Direct test - Basic getAddressTest with caching
-	 */
-	function getAddress( $noAssert = false ) {
-		$happyCustomer = $this->TEST->ECOM->getAddress( $this->flowHappyCustomer );
-		$this->TEST->share( 'happyCustomer', $happyCustomer, false );
-		if ( ! $noAssert ) {
-			static::assertContains( $this->flowHappyCustomerName, $happyCustomer->fullName );
-		}
+    /**
+     * @test
+     * @testdox Direct test - Basic getAddressTest with caching
+     *
+     * @param bool $noAssert
+     *
+     * @return array|mixed|null
+     * @throws \Exception
+     */
+    function getAddress( $noAssert = false ) {
+        $happyCustomer = $this->TEST->ECOM->getAddress( $this->flowHappyCustomer );
+        $this->TEST->share( 'happyCustomer', $happyCustomer, false );
+        if ( ! $noAssert ) {
+            static::assertContains( $this->flowHappyCustomerName, $happyCustomer->fullName );
+        }
 
-		return $happyCustomer;
-	}
+        return $happyCustomer;
+    }
 
-	/**
-	 * @test
-	 * @testdox getCurlHandle (using getAddress)
-	 */
-	function getAddressCurlHandle() {
-		if ( ! class_exists( '\SimpleXMLElement' ) ) {
-			static::markTestSkipped( "SimpleXMLElement missing" );
-		}
+    /**
+     * @test
+     * @testdox getCurlHandle (using getAddress)
+     * @throws \Exception
+     */
+    function getAddressCurlHandle() {
+        if ( ! class_exists( '\SimpleXMLElement' ) ) {
+            static::markTestSkipped( "SimpleXMLElement missing" );
+        }
 
-		$this->TEST->ECOM->getAddress( $this->flowHappyCustomer );
-		/** @var Tornevall_cURL $lastCurlHandle */
+        $this->TEST->ECOM->getAddress( $this->flowHappyCustomer );
+        /** @var MODULE_CURL $lastCurlHandle */
 
-		if ( defined( 'TORNELIB_NETCURL_RELEASE' ) && version_compare( TORNELIB_NETCURL_RELEASE, '6.0.20', '<' ) ) {
-			// In versions prior to 6.0.20, you need to first extract the SOAP body from simpleSoap itself (via getLibResponse).
-			$lastCurlHandle = $this->TEST->ECOM->getCurlHandle( true );
-			/** @var Tornevall_SimpleSoap $lastCurlHandle */
-			$soapLibResponse = $lastCurlHandle->getLibResponse();
-			$selfParser      = new TorneLIB_IO();
-			$byIo            = $selfParser->getFromXml( $soapLibResponse['body'], true );
-			static::assertTrue( ( $byIo->fullName == $this->flowHappyCustomerName ? true : false ) && ( $soapLibResponse['parsed']->fullName == $this->flowHappyCustomerName ? true : false ) );
+        if ( defined( 'TORNELIB_NETCURL_RELEASE' ) && version_compare( TORNELIB_NETCURL_RELEASE, '6.0.20', '<' ) ) {
+            // In versions prior to 6.0.20, you need to first extract the SOAP body from simpleSoap itself (via getLibResponse).
+            $lastCurlHandle = $this->TEST->ECOM->getCurlHandle( true );
+            /** @var MODULE_SOAP $lastCurlHandle */
+            $soapLibResponse = $lastCurlHandle->getSoapResponse();
+            $selfParser      = new MODULE_IO();
+            $byIo            = $selfParser->getFromXml( $soapLibResponse['body'], true );
+            /** @noinspection PhpUndefinedFieldInspection */
+            static::assertTrue(($byIo->fullName == $this->flowHappyCustomerName ? true : false ) && ($soapLibResponse['parsed']->fullName == $this->flowHappyCustomerName ? true : false ) );
 
-			return;
-		}
+            return;
+        }
 
-		// The XML parser in the IO MODULE should give the same response as the direct curl handle
-		// From NetCURL 6.0.20 and the IO library, this could be extracted directly from the curl handle
-		$selfParser = new TorneLIB_IO();
-		// Get the curl handle without bulk request
-		$lastCurlHandle = $this->TEST->ECOM->getCurlHandle();
+        // The XML parser in the IO MODULE should give the same response as the direct curl handle
+        // From NetCURL 6.0.20 and the IO library, this could be extracted directly from the curl handle
+        $selfParser = new MODULE_IO();
+        // Get the curl handle without bulk request
+        $lastCurlHandle = $this->TEST->ECOM->getCurlHandle();
 
-		$byIo     = $selfParser->getFromXml( $lastCurlHandle->getResponseBody(), true );
-		$byHandle = $lastCurlHandle->getParsedResponse();
+        $byIo     = $selfParser->getFromXml( $lastCurlHandle->getBody(), true );
+        $byHandle = $lastCurlHandle->getParsed();
 
-		static::assertTrue( $byIo->fullName == $this->flowHappyCustomerName && $byHandle->fullName == $this->flowHappyCustomerName );
-	}
+        /** @noinspection PhpUndefinedFieldInspection */
+        /** @noinspection PhpUndefinedFieldInspection */
+        static::assertTrue($byIo->fullName == $this->flowHappyCustomerName && $byHandle->fullName == $this->flowHappyCustomerName );
+    }
 
-	/**
-	 * @test
-	 * @testdox Test if getPaymentMethods work and in the same time cache it for future use
-	 */
-	function getPaymentMethods( $noAssert = false ) {
-		$this->TEST->ECOM->setSimplifiedPsp( true );
-		$paymentMethods = $this->TEST->ECOM->getPaymentMethods();
-		foreach ( $paymentMethods as $method ) {
-			$this->TEST->share( 'METHOD_' . $method->specificType, $method, false );
-		}
-		$this->TEST->share( 'paymentMethods', $paymentMethods, false );
-		if ( ! $noAssert ) {
-			static::assertGreaterThan( 1, $paymentMethods );
-		}
-	}
+    /**
+     * @test
+     * @testdox Test if getPaymentMethods work and in the same time cache it for future use
+     *
+     * @param bool $noAssert
+     *
+     * @throws \Exception
+     */
+    function getPaymentMethods( $noAssert = false ) {
+        $this->TEST->ECOM->setSimplifiedPsp( true );
+        $paymentMethods = $this->TEST->ECOM->getPaymentMethods();
+        foreach ( $paymentMethods as $method ) {
+            $this->TEST->share( 'METHOD_' . $method->specificType, $method, false );
+        }
+        $this->TEST->share( 'paymentMethods', $paymentMethods, false );
+        if ( ! $noAssert ) {
+            static::assertGreaterThan( 1, $paymentMethods );
+        }
+    }
 
-	/**
-	 * Get a method that suites our needs of type, with the help from getPaymentMethods
-	 *
-	 * @param string $specificType
-	 *
-	 * @return mixed
-	 */
-	function getMethod( $specificType = 'INVOICE' ) {
-		$specificMethod = $this->TEST->share( 'METHOD_' . $specificType );
-		if ( empty( $specificMethod ) ) {
-			$this->getPaymentMethods( false );
-			$specificMethod = $this->TEST->share( 'METHOD_' . $specificType );
-		}
+    /**
+     * Get a method that suites our needs of type, with the help from getPaymentMethods
+     *
+     * @param string $specificType
+     *
+     * @return mixed
+     * @throws \Exception
+     */
+    function getMethod( $specificType = 'INVOICE' ) {
+        $specificMethod = $this->TEST->share( 'METHOD_' . $specificType );
+        if ( empty( $specificMethod ) ) {
+            $this->getPaymentMethods( false );
+            $specificMethod = $this->TEST->share( 'METHOD_' . $specificType );
+        }
 
-		if ( isset( $specificMethod[0] ) ) {
-			return $specificMethod[0];
-		}
+        if ( isset( $specificMethod[0] ) ) {
+            return $specificMethod[0];
+        }
 
-		return $specificMethod;
-	}
+        return $specificMethod;
+    }
 
-	/**
-	 * Get the payment method ID from the internal getMethod()
-	 *
-	 * @param string $specificType
-	 *
-	 * @return mixed
-	 */
-	function getMethodId( $specificType = 'INVOICE' ) {
-		$specificMethod = $this->getMethod( $specificType );
-		if ( isset( $specificMethod->id ) ) {
-			return $specificMethod->id;
-		}
-	}
+    /**
+     * Get the payment method ID from the internal getMethod()
+     *
+     * @param string $specificType
+     *
+     * @return mixed
+     * @throws \Exception
+     */
+    function getMethodId( $specificType = 'INVOICE' ) {
+        $specificMethod = $this->getMethod( $specificType );
+        if ( isset( $specificMethod->id ) ) {
+            return $specificMethod->id;
+        }
+        return null;
+    }
 
-	/**
-	 * @test
-	 * @testdox Direct test - Test adding orderlines via the library and extract correct data
-	 */
-	function addOrderLine() {
-		$this->TEST->ECOM->addOrderLine( "Product-1337", "One simple orderline", 800, 25 );
-		$orderLines = $this->TEST->ECOM->getOrderLines();
-		static::assertTrue( count( $orderLines ) > 0 && $orderLines[0]['artNo'] == "Product-1337" );
-	}
+    /**
+     * @test
+     * @testdox Direct test - Test adding orderlines via the library and extract correct data
+     */
+    function addOrderLine() {
+        $this->TEST->ECOM->addOrderLine( "Product-1337", "One simple orderline", 800, 25 );
+        $orderLines = $this->TEST->ECOM->getOrderLines();
+        static::assertTrue( count( $orderLines ) > 0 && $orderLines[0]['artNo'] == "Product-1337" );
+    }
 
-	/**
-	 * @test
-	 */
-	function generateSimpleSimplifiedInvoiceOrder( $noAssert = false ) {
-		$customerData = $this->getHappyCustomerData();
-		$this->TEST->ECOM->addOrderLine( "Product-1337", "One simple orderline", 800, 25 );
-		$this->TEST->ECOM->setBillingByGetAddress( $customerData );
-		$this->TEST->ECOM->setCustomer( "198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL" );
-		$this->TEST->ECOM->setSigning( $this->signUrl . '&success=true', $this->signUrl . '&success=false', false );
-		$response = $this->TEST->ECOM->createPayment( $this->getMethodId() );
-		if ( ! $noAssert ) {
-			static::assertContains( 'BOOKED', $response->bookPaymentStatus );
-		}
+    /**
+     * @test
+     *
+     * @param bool $noAssert
+     *
+     * @return array
+     * @throws \Exception
+     */
+    function generateSimpleSimplifiedInvoiceOrder( $noAssert = false ) {
+        $customerData = $this->getHappyCustomerData();
+        $this->TEST->ECOM->addOrderLine( "Product-1337", "One simple orderline", 800, 25 );
+        $this->TEST->ECOM->setBillingByGetAddress( $customerData );
+        $this->TEST->ECOM->setCustomer( "198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL" );
+        $this->TEST->ECOM->setSigning( $this->signUrl . '&success=true', $this->signUrl . '&success=false', false );
+        $response = $this->TEST->ECOM->createPayment( $this->getMethodId() );
+        if ( ! $noAssert ) {
+            /** @noinspection PhpUndefinedFieldInspection */
+            static::assertContains( 'BOOKED', $response->bookPaymentStatus );
+        }
 
-		return $response;
-	}
+        return $response;
+    }
 
-	/**
-	 * @test Direct test - Extract orderdata from library
-	 * @testdox
-	 * @throws \Exception
-	 */
-	function getOrderData() {
-		$this->TEST->ECOM->setBillingByGetAddress( $this->flowHappyCustomer );
-		$this->TEST->ECOM->addOrderLine( "RDL-1337", "One simple orderline", 800, 25 );
-		$orderData = $this->TEST->ECOM->getOrderData();
-		static::assertTrue( $orderData['totalAmount'] == "1000" );
-	}
+    /**
+     * @test Direct test - Extract orderdata from library
+     * @testdox
+     * @throws \Exception
+     */
+    function getOrderData() {
+        $this->TEST->ECOM->setBillingByGetAddress( $this->flowHappyCustomer );
+        $this->TEST->ECOM->addOrderLine( "RDL-1337", "One simple orderline", 800, 25 );
+        $orderData = $this->TEST->ECOM->getOrderData();
+        static::assertTrue( $orderData['totalAmount'] == "1000" );
+    }
 
-	/**
-	 * @test
-	 * @testdox Make sure the current version of ECom is not 1.0.0 and getCurrentRelease() says something
-	 */
-	function getCurrentReleaseTests() {
-		$currentReleaseShouldNotBeEmpty = $this->TEST->ECOM->getCurrentRelease();  // php 5.5
-		static::assertFalse( $this->TEST->ECOM->getIsCurrent( "1.0.0" ) && ! empty( $currentReleaseShouldNotBeEmpty ) );
-	}
+    /**
+     * @test
+     * @testdox Make sure the current version of ECom is not 1.0.0 and getCurrentRelease() says something
+     * @throws \Exception
+     */
+    function getCurrentReleaseTests() {
+        $currentReleaseShouldNotBeEmpty = $this->TEST->ECOM->getCurrentRelease();  // php 5.5
+        static::assertFalse( $this->TEST->ECOM->getIsCurrent( "1.0.0" ) && ! empty( $currentReleaseShouldNotBeEmpty ) );
+    }
 
-	/**
-	 * @test
-	 */
-	function getAnnuityMethods() {
-		$annuityObjectList = $this->TEST->ECOM->getPaymentMethodsByAnnuity();
-		$annuityIdList     = $this->TEST->ECOM->getPaymentMethodsByAnnuity( true );
-		static::assertTrue( count( $annuityIdList ) >= 1 && count( $annuityObjectList ) >= 1 );
-	}
+    /**
+     * @test
+     * @throws \Exception
+     */
+    function getAnnuityMethods() {
+        $annuityObjectList = $this->TEST->ECOM->getPaymentMethodsByAnnuity();
+        $annuityIdList     = $this->TEST->ECOM->getPaymentMethodsByAnnuity( true );
+        static::assertTrue( count( $annuityIdList ) >= 1 && count( $annuityObjectList ) >= 1 );
+    }
 
-	/**
-	 * @test
-	 */
-	function findPaymentsXmlBody() {
-		$paymentScanList = $this->TEST->ECOM->findPayments( array( 'statusSet' => array( 'IS_DEBITED' ) ), 1, 10, array(
-			'ascending'   => false,
-			'sortColumns' => array( 'FINALIZED_TIME', 'MODIFIED_TIME', 'BOOKED_TIME' )
-		) );
+    /**
+     * @test
+     * @throws \Exception
+     */
+    function findPaymentsXmlBody() {
+        $paymentScanList = $this->TEST->ECOM->findPayments( array( 'statusSet' => array( 'IS_DEBITED' ) ), 1, 10, array(
+            'ascending'   => false,
+            'sortColumns' => array( 'FINALIZED_TIME', 'MODIFIED_TIME', 'BOOKED_TIME' )
+        ) );
 
-		$handle      = $this->TEST->ECOM->getCurlHandle();
-		$requestBody = $handle->getRequestBody();
-		static::assertTrue( strlen( $requestBody ) > 100 && count( $paymentScanList ) );
-	}
+        $handle      = $this->TEST->ECOM->getCurlHandle();
+        $requestBody = $handle->getRequestBody();
+        static::assertTrue( strlen( $requestBody ) > 100 && count( $paymentScanList ) );
+    }
 
-	/**
-	 * @test
-	 */
-	function hookExperiment1() {
-		if ( ! function_exists( 'ecom_event_register' ) ) {
-			static::markTestIncomplete( 'ecomhooks does not exist' );
+    /**
+     * @test
+     * @throws \Exception
+     * @throws \Exception
+     */
+    function hookExperiment1() {
+        if ( ! function_exists( 'ecom_event_register' ) ) {
+            static::markTestIncomplete( 'ecomhooks does not exist' );
 
-			return;
-		}
-		ecom_event_register('update_store_id', 'inject_test_storeid');
-		$customerData = $this->getHappyCustomerData();
-		$this->TEST->ECOM->addOrderLine( "Product-1337", "One simple orderline", 800, 25 );
-		$this->TEST->ECOM->setBillingByGetAddress( $customerData );
-		$this->TEST->ECOM->setCustomer( "198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL" );
-		$this->TEST->ECOM->setSigning( $this->signUrl . '&success=true', $this->signUrl . '&success=false', false );
-		$myPayLoad = $this->TEST->ECOM->getPayload();
-		static::assertTrue(isset($myPayLoad['storeId']) && $myPayLoad['storeId'] >= 0);
-	}
-	/**
-	 * @test
-	 */
-	function hookExperiment2() {
-		if ( ! function_exists( 'ecom_event_register' ) ) {
-			static::markTestIncomplete( 'ecomhooks does not exist' );
+            return;
+        }
+        ecom_event_register('update_store_id', 'inject_test_storeid');
+        $customerData = $this->getHappyCustomerData();
+        $this->TEST->ECOM->addOrderLine( "Product-1337", "One simple orderline", 800, 25 );
+        $this->TEST->ECOM->setBillingByGetAddress( $customerData );
+        $this->TEST->ECOM->setCustomer( "198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL" );
+        $this->TEST->ECOM->setSigning( $this->signUrl . '&success=true', $this->signUrl . '&success=false', false );
+        $myPayLoad = $this->TEST->ECOM->getPayload();
+        static::assertTrue(isset($myPayLoad['storeId']) && $myPayLoad['storeId'] >= 0);
+    }
 
-			return;
-		}
-		ecom_event_register('update_payload', 'ecom_inject_payload');
-		$customerData = $this->getHappyCustomerData();
-		$errorCode = 0;
-		$this->TEST->ECOM->addOrderLine( "Product-1337", "One simple orderline", 800, 25 );
-		$this->TEST->ECOM->setBillingByGetAddress( $customerData );
-		$this->TEST->ECOM->setCustomer( "198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL" );
-		$this->TEST->ECOM->setSigning( $this->signUrl . '&success=true', $this->signUrl . '&success=false', false );
-		try {
-			$myPayLoad = $this->TEST->ECOM->getPayload();
-			$response = $this->TEST->ECOM->createPayment( $this->getMethodId() );
-		} catch (\Exception $e) {
-			$errorCode = $e->getCode();
-		}
+    /**
+     * @test
+     * @throws \Exception
+     * @throws \Exception
+     */
+    function hookExperiment2() {
+        if ( ! function_exists( 'ecom_event_register' ) ) {
+            static::markTestIncomplete( 'ecomhooks does not exist' );
 
-		static::assertTrue(isset($myPayLoad['add_a_problem_into_payload']) && !isset($myPayLoad['signing']) && $errorCode == 3);
-	}
+            return;
+        }
+        ecom_event_register('update_payload', 'ecom_inject_payload');
+        $customerData = $this->getHappyCustomerData();
+        $errorCode = 0;
+        $this->TEST->ECOM->addOrderLine( "Product-1337", "One simple orderline", 800, 25 );
+        $this->TEST->ECOM->setBillingByGetAddress( $customerData );
+        $this->TEST->ECOM->setCustomer( "198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL" );
+        $this->TEST->ECOM->setSigning( $this->signUrl . '&success=true', $this->signUrl . '&success=false', false );
+        try {
+            $myPayLoad = $this->TEST->ECOM->getPayload();
+            $this->TEST->ECOM->createPayment( $this->getMethodId() );
+        } catch (\Exception $e) {
+            $errorCode = $e->getCode();
+        }
 
-	/**
-	 * @test
-	 * @testdox Expect arrays regardless of response
-	 * @throws \Exception
-	 */
-	function getEmptyCallbacksList() {
-		/**
-		 * Standard request returns:
-		 *
-		 *   array(
-		 *      [index-1] => stdObject
-		 *      [index-2] => stdObject
-		 *   )
-		 *
-		 *   asArrayRequest returns:
-		 *   array(
-		 *      [keyCallbackName1] => URL
-		 *      [keyCallbackName2] => URL
-		 *   )
-		 *
-		 * Standard request when empty should return array()
-		 *
-		 */
+        static::assertTrue(isset($myPayLoad['add_a_problem_into_payload']) && !isset($myPayLoad['signing']) && $errorCode == 3);
+    }
 
-		try {
-			$this->TEST->ECOM->unregisterEventCallback( 255, true );
-		} catch (\Exception $e) {
-		}
-		$callbacks = $this->TEST->ECOM->getCallBacksByRest();
-		static::assertTrue( is_array( $callbacks ) && ! count( $callbacks ) ? true : false );
+    /**
+     * @test
+     * @testdox Expect arrays regardless of response
+     * @throws \Exception
+     */
+    function getEmptyCallbacksList() {
+        /**
+         * Standard request returns:
+         *
+         *   array(
+         *      [index-1] => stdObject
+         *      [index-2] => stdObject
+         *   )
+         *
+         *   asArrayRequest returns:
+         *   array(
+         *      [keyCallbackName1] => URL
+         *      [keyCallbackName2] => URL
+         *   )
+         *
+         * Standard request when empty should return array()
+         *
+         */
 
-	}
+        try {
+            $this->TEST->ECOM->unregisterEventCallback( 255, true );
+        } catch (\Exception $e) {
+        }
+        $callbacks = $this->TEST->ECOM->getCallBacksByRest(true);
+        static::assertTrue( is_array( $callbacks ) && ! count( $callbacks ) ? true : false );
 
-	/**
-	 * @test
-	 * @testdox Clean up special test data from share file
-	 */
-	function finalTest() {
-		static::assertEmpty( $this->TEST->unshare( "thisKey" ) );
-	}
+    }
+
+    /**
+     * @test
+     * @testdox The normal way
+     * @throws \Exception
+     */
+    function getEmptyCallbacksListSecond() {
+        try {
+            $this->TEST->ECOM->unregisterEventCallback( 255, true );
+        } catch (\Exception $e) {
+        }
+        $callbacks = $this->TEST->ECOM->getCallBacksByRest();
+        static::assertTrue( is_array( $callbacks ) && ! count( $callbacks ) ? true : false );
+    }
+
+    /**
+     * @test
+     * @testdox Clean up special test data from share file
+     */
+    function finalTest() {
+        static::assertTrue( $this->TEST->unshare( "thisKey" ) );
+    }
 }
