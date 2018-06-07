@@ -16,7 +16,7 @@ use PHPUnit\Framework\TestCase;
 ini_set( 'memory_limit', - 1 );    // Free memory limit, some tests requires more memory (like ip-range handling)
 
 /** @noinspection PhpUndefinedClassInspection */
-class extendedTest extends TestCase
+class curlTest extends TestCase
 {
     /**
      * @var MODULE_CURL $CURL
@@ -284,7 +284,6 @@ class extendedTest extends TestCase
      */
     function rbSoapChain()
     {
-        $wsdlResponse = null;
         $this->disableSslVerifyByPhpVersions();
         $this->CURL->setFlag("SOAPCHAIN");
         $this->CURL->setAuthentication($this->username, $this->password);
@@ -300,7 +299,6 @@ class extendedTest extends TestCase
     // Currently dysfunctional
     function rbSimpleXml()
     {
-        $wsdlResponse = null;
         try {
             $this->CURL->setAuthentication($this->username, $this->password);
             $this->CURL->setFlag('XMLSOAP', true);

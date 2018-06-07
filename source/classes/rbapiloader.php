@@ -41,13 +41,13 @@ if ( ! defined('ECOMPHP_VERSION')) {
     define('ECOMPHP_VERSION', '1.3.12');
 }
 if ( ! defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20180606');
+    define('ECOMPHP_MODIFY_DATE', '20180607');
 }
 
 /**
  * Class ResursBank
  *
- * The API-gateway will connect to Resurs Bank test environment, so to use production mode this must be configured at runtime. This secures that you, during development, won't destroy anything in production. 
+ * The API-gateway will connect to Resurs Bank test environment, so to use production mode this must be configured at runtime. This secures that you, during development, won't destroy anything in production.
  *
  * @package Resursbank\RBEcomPHP
  */
