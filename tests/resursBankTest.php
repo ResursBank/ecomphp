@@ -26,21 +26,11 @@ if ( file_exists( __DIR__ . "/../vendor/autoload.php" ) ) {
 
 // Resurs Bank usages
 use PHPUnit\Framework\TestCase;
-use \Resursbank\RBEcomPHP\ResursBank;
-use \Resursbank\RBEcomPHP\RESURS_CALLBACK_TYPES;
-use \Resursbank\RBEcomPHP\RESURS_PAYMENT_STATUS_RETURNCODES;
-use \Resursbank\RBEcomPHP\RESURS_FLOW_TYPES;
-use \Resursbank\RBEcomPHP\RESURS_CALLBACK_REACHABILITY;
-use \Resursbank\RBEcomPHP\RESURS_AFTERSHOP_RENDER_TYPES;
 
 // curl wrapper, extended network handling functions etc
 use TorneLIB\MODULE_CURL;
 use TorneLIB\MODULE_IO;
-use TorneLIB\NETCURL_PARSER;
-use TorneLIB\TorneLIB_IO;
-use \TorneLIB\Tornevall_cURL;
-use \TorneLIB\TorneLIB_Network;
-use TorneLIB\Tornevall_SimpleSoap;
+use TorneLIB\MODULE_SOAP;
 
 // Global test configuration section starts here
 require_once( __DIR__ . "/classes/ResursBankTestClass.php" );
@@ -67,21 +57,27 @@ class resursBankTest extends TestCase {
 
 	/** @var RESURS_TEST_BRIDGE $TEST Used for standard tests and simpler flow setup */
 	protected $TEST;
+    /** @noinspection PhpUnusedPrivateFieldInspection */
 
-	/** @var string Username to web services */
+    /** @noinspection PhpUnusedPrivateFieldInspection */
+    /** @var string Username to web services */
 	private $username = "ecomphpPipelineTest";
-	/** @var string Password to web services */
+    /** @noinspection PhpUnusedPrivateFieldInspection */
+    /** @var string Password to web services */
 	private $password = "4Em4r5ZQ98x3891D6C19L96TQ72HsisD";
 
 	private $flowHappyCustomer = "8305147715";
 	private $flowHappyCustomerName = "Vincent Williamsson Alexandersson";
-
-	/** @var string Landing page for callbacks */
+    /** @noinspection PhpUnusedPrivateFieldInspection */
+    /** @var string Landing page for callbacks */
 	private $callbackUrl = "https://test.resurs.com/signdummy/index.php?isCallback=1";
 
 	/** @var string Landing page for signings */
 	private $signUrl = "https://test.resurs.com/signdummy/index.php?isSigningUrl=1";
 
+    /**
+     * @throws \Exception
+     */
 	function setUp() {
 		$this->API = new ResursBank();
 		$this->API->setDebug( true );
@@ -92,6 +88,10 @@ class resursBankTest extends TestCase {
 
 	}
 
+    /**
+     * @return null
+     * @throws \Exception
+     */
 	private function getHappyCustomerData() {
 		$lastHappyCustomer = $this->TEST->share( 'happyCustomer' );
 		if ( empty( $lastHappyCustomer ) ) {
@@ -101,8 +101,14 @@ class resursBankTest extends TestCase {
 		if ( isset( $lastHappyCustomer[0] ) ) {
 			return $lastHappyCustomer[0];
 		}
+		return null;
 	}
 
+	/** @noinspection PhpUnusedPrivateMethodInspection */
+    /**
+     * @return null
+     * @throws \Exception
+     */
 	private function getPaymentMethodsData() {
 		$paymentMethods = $this->TEST->share( 'paymentMethods' );
 		if ( empty( $paymentMethods ) ) {
@@ -112,6 +118,7 @@ class resursBankTest extends TestCase {
 		if ( isset( $paymentMethods[0] ) ) {
 			return $paymentMethods[0];
 		}
+		return null;
 	}
 
 	/**
@@ -179,10 +186,15 @@ class resursBankTest extends TestCase {
 		}
 	}
 
-	/**
-	 * @test
-	 * @testdox Direct test - Basic getAddressTest with caching
-	 */
+    /**
+     * @test
+     * @testdox Direct test - Basic getAddressTest with caching
+     *
+     * @param bool $noAssert
+     *
+     * @return array|mixed|null
+     * @throws \Exception
+     */
 	function getAddress( $noAssert = false ) {
 		$happyCustomer = $this->TEST->ECOM->getAddress( $this->flowHappyCustomer );
 		$this->TEST->share( 'happyCustomer', $happyCustomer, false );
@@ -193,46 +205,54 @@ class resursBankTest extends TestCase {
 		return $happyCustomer;
 	}
 
-	/**
-	 * @test
-	 * @testdox getCurlHandle (using getAddress)
-	 */
+    /**
+     * @test
+     * @testdox getCurlHandle (using getAddress)
+     * @throws \Exception
+     */
 	function getAddressCurlHandle() {
 		if ( ! class_exists( '\SimpleXMLElement' ) ) {
 			static::markTestSkipped( "SimpleXMLElement missing" );
 		}
 
 		$this->TEST->ECOM->getAddress( $this->flowHappyCustomer );
-		/** @var Tornevall_cURL $lastCurlHandle */
+		/** @var MODULE_CURL $lastCurlHandle */
 
 		if ( defined( 'TORNELIB_NETCURL_RELEASE' ) && version_compare( TORNELIB_NETCURL_RELEASE, '6.0.20', '<' ) ) {
 			// In versions prior to 6.0.20, you need to first extract the SOAP body from simpleSoap itself (via getLibResponse).
-			$lastCurlHandle = $this->TEST->ECOM->getCurlHandle( true );
-			/** @var Tornevall_SimpleSoap $lastCurlHandle */
-			$soapLibResponse = $lastCurlHandle->getLibResponse();
-			$selfParser      = new TorneLIB_IO();
+            $lastCurlHandle = $this->TEST->ECOM->getCurlHandle( true );
+			/** @var MODULE_SOAP $lastCurlHandle */
+			$soapLibResponse = $lastCurlHandle->getSoapResponse();
+			$selfParser      = new MODULE_IO();
 			$byIo            = $selfParser->getFromXml( $soapLibResponse['body'], true );
-			static::assertTrue( ( $byIo->fullName == $this->flowHappyCustomerName ? true : false ) && ( $soapLibResponse['parsed']->fullName == $this->flowHappyCustomerName ? true : false ) );
+            /** @noinspection PhpUndefinedFieldInspection */
+            static::assertTrue(($byIo->fullName == $this->flowHappyCustomerName ? true : false ) && ($soapLibResponse['parsed']->fullName == $this->flowHappyCustomerName ? true : false ) );
 
 			return;
 		}
 
 		// The XML parser in the IO MODULE should give the same response as the direct curl handle
 		// From NetCURL 6.0.20 and the IO library, this could be extracted directly from the curl handle
-		$selfParser = new TorneLIB_IO();
+		$selfParser = new MODULE_IO();
 		// Get the curl handle without bulk request
 		$lastCurlHandle = $this->TEST->ECOM->getCurlHandle();
 
-		$byIo     = $selfParser->getFromXml( $lastCurlHandle->getResponseBody(), true );
-		$byHandle = $lastCurlHandle->getParsedResponse();
+		$byIo     = $selfParser->getFromXml( $lastCurlHandle->getBody(), true );
+		$byHandle = $lastCurlHandle->getParsed();
 
-		static::assertTrue( $byIo->fullName == $this->flowHappyCustomerName && $byHandle->fullName == $this->flowHappyCustomerName );
+        /** @noinspection PhpUndefinedFieldInspection */
+        /** @noinspection PhpUndefinedFieldInspection */
+        static::assertTrue($byIo->fullName == $this->flowHappyCustomerName && $byHandle->fullName == $this->flowHappyCustomerName );
 	}
 
-	/**
-	 * @test
-	 * @testdox Test if getPaymentMethods work and in the same time cache it for future use
-	 */
+    /**
+     * @test
+     * @testdox Test if getPaymentMethods work and in the same time cache it for future use
+     *
+     * @param bool $noAssert
+     *
+     * @throws \Exception
+     */
 	function getPaymentMethods( $noAssert = false ) {
 		$this->TEST->ECOM->setSimplifiedPsp( true );
 		$paymentMethods = $this->TEST->ECOM->getPaymentMethods();
@@ -245,13 +265,14 @@ class resursBankTest extends TestCase {
 		}
 	}
 
-	/**
-	 * Get a method that suites our needs of type, with the help from getPaymentMethods
-	 *
-	 * @param string $specificType
-	 *
-	 * @return mixed
-	 */
+    /**
+     * Get a method that suites our needs of type, with the help from getPaymentMethods
+     *
+     * @param string $specificType
+     *
+     * @return mixed
+     * @throws \Exception
+     */
 	function getMethod( $specificType = 'INVOICE' ) {
 		$specificMethod = $this->TEST->share( 'METHOD_' . $specificType );
 		if ( empty( $specificMethod ) ) {
@@ -266,18 +287,20 @@ class resursBankTest extends TestCase {
 		return $specificMethod;
 	}
 
-	/**
-	 * Get the payment method ID from the internal getMethod()
-	 *
-	 * @param string $specificType
-	 *
-	 * @return mixed
-	 */
+    /**
+     * Get the payment method ID from the internal getMethod()
+     *
+     * @param string $specificType
+     *
+     * @return mixed
+     * @throws \Exception
+     */
 	function getMethodId( $specificType = 'INVOICE' ) {
 		$specificMethod = $this->getMethod( $specificType );
 		if ( isset( $specificMethod->id ) ) {
 			return $specificMethod->id;
 		}
+		return null;
 	}
 
 	/**
@@ -290,9 +313,14 @@ class resursBankTest extends TestCase {
 		static::assertTrue( count( $orderLines ) > 0 && $orderLines[0]['artNo'] == "Product-1337" );
 	}
 
-	/**
-	 * @test
-	 */
+    /**
+     * @test
+     *
+     * @param bool $noAssert
+     *
+     * @return array
+     * @throws \Exception
+     */
 	function generateSimpleSimplifiedInvoiceOrder( $noAssert = false ) {
 		$customerData = $this->getHappyCustomerData();
 		$this->TEST->ECOM->addOrderLine( "Product-1337", "One simple orderline", 800, 25 );
@@ -301,7 +329,8 @@ class resursBankTest extends TestCase {
 		$this->TEST->ECOM->setSigning( $this->signUrl . '&success=true', $this->signUrl . '&success=false', false );
 		$response = $this->TEST->ECOM->createPayment( $this->getMethodId() );
 		if ( ! $noAssert ) {
-			static::assertContains( 'BOOKED', $response->bookPaymentStatus );
+            /** @noinspection PhpUndefinedFieldInspection */
+            static::assertContains( 'BOOKED', $response->bookPaymentStatus );
 		}
 
 		return $response;
@@ -319,27 +348,30 @@ class resursBankTest extends TestCase {
 		static::assertTrue( $orderData['totalAmount'] == "1000" );
 	}
 
-	/**
-	 * @test
-	 * @testdox Make sure the current version of ECom is not 1.0.0 and getCurrentRelease() says something
-	 */
+    /**
+     * @test
+     * @testdox Make sure the current version of ECom is not 1.0.0 and getCurrentRelease() says something
+     * @throws \Exception
+     */
 	function getCurrentReleaseTests() {
 		$currentReleaseShouldNotBeEmpty = $this->TEST->ECOM->getCurrentRelease();  // php 5.5
 		static::assertFalse( $this->TEST->ECOM->getIsCurrent( "1.0.0" ) && ! empty( $currentReleaseShouldNotBeEmpty ) );
 	}
 
-	/**
-	 * @test
-	 */
+    /**
+     * @test
+     * @throws \Exception
+     */
 	function getAnnuityMethods() {
 		$annuityObjectList = $this->TEST->ECOM->getPaymentMethodsByAnnuity();
 		$annuityIdList     = $this->TEST->ECOM->getPaymentMethodsByAnnuity( true );
 		static::assertTrue( count( $annuityIdList ) >= 1 && count( $annuityObjectList ) >= 1 );
 	}
 
-	/**
-	 * @test
-	 */
+    /**
+     * @test
+     * @throws \Exception
+     */
 	function findPaymentsXmlBody() {
 		$paymentScanList = $this->TEST->ECOM->findPayments( array( 'statusSet' => array( 'IS_DEBITED' ) ), 1, 10, array(
 			'ascending'   => false,
@@ -351,9 +383,11 @@ class resursBankTest extends TestCase {
 		static::assertTrue( strlen( $requestBody ) > 100 && count( $paymentScanList ) );
 	}
 
-	/**
-	 * @test
-	 */
+    /**
+     * @test
+     * @throws \Exception
+     * @throws \Exception
+     */
 	function hookExperiment1() {
 		if ( ! function_exists( 'ecom_event_register' ) ) {
 			static::markTestIncomplete( 'ecomhooks does not exist' );
@@ -369,9 +403,12 @@ class resursBankTest extends TestCase {
 		$myPayLoad = $this->TEST->ECOM->getPayload();
 		static::assertTrue(isset($myPayLoad['storeId']) && $myPayLoad['storeId'] >= 0);
 	}
-	/**
-	 * @test
-	 */
+
+    /**
+     * @test
+     * @throws \Exception
+     * @throws \Exception
+     */
 	function hookExperiment2() {
 		if ( ! function_exists( 'ecom_event_register' ) ) {
 			static::markTestIncomplete( 'ecomhooks does not exist' );
@@ -387,7 +424,7 @@ class resursBankTest extends TestCase {
 		$this->TEST->ECOM->setSigning( $this->signUrl . '&success=true', $this->signUrl . '&success=false', false );
 		try {
 			$myPayLoad = $this->TEST->ECOM->getPayload();
-			$response = $this->TEST->ECOM->createPayment( $this->getMethodId() );
+			$this->TEST->ECOM->createPayment( $this->getMethodId() );
 		} catch (\Exception $e) {
 			$errorCode = $e->getCode();
 		}
@@ -423,9 +460,23 @@ class resursBankTest extends TestCase {
 			$this->TEST->ECOM->unregisterEventCallback( 255, true );
 		} catch (\Exception $e) {
 		}
-		$callbacks = $this->TEST->ECOM->getCallBacksByRest();
+		$callbacks = $this->TEST->ECOM->getCallBacksByRest(true);
 		static::assertTrue( is_array( $callbacks ) && ! count( $callbacks ) ? true : false );
 
+	}
+
+	/**
+	 * @test
+	 * @testdox The normal way
+	 * @throws \Exception
+	 */
+	function getEmptyCallbacksListSecond() {
+		try {
+			$this->TEST->ECOM->unregisterEventCallback( 255, true );
+		} catch (\Exception $e) {
+		}
+		$callbacks = $this->TEST->ECOM->getCallBacksByRest();
+		static::assertTrue( is_array( $callbacks ) && ! count( $callbacks ) ? true : false );
 	}
 
 	/**
@@ -433,6 +484,6 @@ class resursBankTest extends TestCase {
 	 * @testdox Clean up special test data from share file
 	 */
 	function finalTest() {
-		static::assertEmpty( $this->TEST->unshare( "thisKey" ) );
+		static::assertTrue( $this->TEST->unshare( "thisKey" ) );
 	}
 }
