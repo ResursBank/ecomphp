@@ -20,17 +20,17 @@
  * major version too.
  *
  * @package TorneLIB
- * @version 6.0.22
+ * @version 6.0.23
  */
 
 namespace Resursbank\RBEcomPHP;
 
 // Library Release Information
 if ( ! defined( 'NETCURL_RELEASE' ) ) {
-	define( 'NETCURL_RELEASE', '6.0.22' );
+	define( 'NETCURL_RELEASE', '6.0.23' );
 }
 if ( ! defined( 'NETCURL_MODIFY' ) ) {
-	define( 'NETCURL_MODIFY', '20180606' );
+	define( 'NETCURL_MODIFY', '20180619' );
 }
 if ( ! defined( 'TORNELIB_NETCURL_RELEASE' ) ) {
 	// Compatibility constant
@@ -1843,6 +1843,8 @@ if ( ! class_exists( 'TorneLIB_NETCURL_EXCEPTIONS' ) && ! class_exists( 'Resursb
 	abstract class NETCURL_EXCEPTIONS {
 		const NETCURL_NO_ERROR = 0;
 		const NETCURL_EXCEPTION_IT_WORKS = 1;
+        const NETCURL_EXCEPTION_IT_DOESNT_WORK = 500;
+
 
 		/**
 		 * @deprecated
@@ -2881,10 +2883,10 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'Resursbank\RBEcomP
 if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MODULE_CURL' ) ) {
 
 	if ( ! defined( 'NETCURL_CURL_RELEASE' ) ) {
-		define( 'NETCURL_CURL_RELEASE', '6.0.21' );
+		define( 'NETCURL_CURL_RELEASE', '6.0.22' );
 	}
 	if ( ! defined( 'NETCURL_CURL_MODIFY' ) ) {
-		define( 'NETCURL_CURL_MODIFY', '20180606' );
+		define( 'NETCURL_CURL_MODIFY', '20180619' );
 	}
 	if ( ! defined( 'NETCURL_CURL_CLIENTNAME' ) ) {
 		define( 'NETCURL_CURL_CLIENTNAME', 'MODULE_CURL' );
@@ -5865,8 +5867,18 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 				}
 
 				if ( $this->NETCURL_POST_DATA_TYPE == NETCURL_POST_DATATYPES::DATATYPE_JSON ) {
+
+                    // Use standard content type if nothing else is set
+				    $useContentType = "application/json; charset=utf-8";
+				    $testContentType = $this->getContentType();
+				    // Test user input, if setContentType has changed the content type, use this instead, with conditions that
+                    // it is still json. This should patch away a strange "bug" at packagist.org amongst others.
+				    if (preg_match("/json/i", $testContentType)) {
+				        $useContentType = $testContentType;
+                    }
+
 					// Using $jsonRealData to validate the string
-					$this->NETCURL_HEADERS_SYSTEM_DEFINED['Content-Type']   = 'application/json; charset=utf-8';
+					$this->NETCURL_HEADERS_SYSTEM_DEFINED['Content-Type']   = $useContentType;
 					$this->NETCURL_HEADERS_SYSTEM_DEFINED['Content-Length'] = strlen( $this->POST_DATA_HANDLED );
 					$this->setCurlOpt( CURLOPT_POSTFIELDS, $this->POST_DATA_HANDLED );  // overwrite old
 				} else if ( ( $this->NETCURL_POST_DATA_TYPE == NETCURL_POST_DATATYPES::DATATYPE_XML || $this->NETCURL_POST_DATA_TYPE == NETCURL_POST_DATATYPES::DATATYPE_SOAP_XML ) ) {
@@ -6888,1243 +6900,1603 @@ if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		}
 	}
 }
-if ( ! defined( 'TORNELIB_CRYPTO_RELEASE' ) ) {
-	define( 'TORNELIB_CRYPTO_RELEASE', '6.0.14' );
+if ( ! defined('TORNELIB_CRYPTO_RELEASE')) {
+    define('TORNELIB_CRYPTO_RELEASE', '6.0.16');
 }
-if ( ! defined( 'TORNELIB_CRYPTO_MODIFY' ) ) {
-	define( 'TORNELIB_CRYPTO_MODIFY', '20180514' );
+if ( ! defined('TORNELIB_CRYPTO_MODIFY')) {
+    define('TORNELIB_CRYPTO_MODIFY', '20180619');
 }
-if ( ! defined( 'TORNELIB_CRYPTO_CLIENTNAME' ) ) {
-	define( 'TORNELIB_CRYPTO_CLIENTNAME', 'MODULE_CRYPTO' );
+if ( ! defined('TORNELIB_CRYPTO_CLIENTNAME')) {
+    define('TORNELIB_CRYPTO_CLIENTNAME', 'MODULE_CRYPTO');
 }
 
-if ( defined( 'TORNELIB_CRYPTO_REQUIRE' ) ) {
-	if ( ! defined( 'TORNELIB_CRYPTO_REQUIRE_OPERATOR' ) ) {
-		define( 'TORNELIB_CRYPTO_REQUIRE_OPERATOR', '==' );
-	}
-	define( 'TORNELIB_CRYPTO_ALLOW_AUTOLOAD', version_compare( TORNELIB_CRYPTO_RELEASE, TORNELIB_CRYPTO_REQUIRE, TORNELIB_CRYPTO_REQUIRE_OPERATOR ) ? true : false );
+if (defined('TORNELIB_CRYPTO_REQUIRE')) {
+    if ( ! defined('TORNELIB_CRYPTO_REQUIRE_OPERATOR')) {
+        define('TORNELIB_CRYPTO_REQUIRE_OPERATOR', '==');
+    }
+    define('TORNELIB_CRYPTO_ALLOW_AUTOLOAD', version_compare(TORNELIB_CRYPTO_RELEASE, TORNELIB_CRYPTO_REQUIRE,
+        TORNELIB_CRYPTO_REQUIRE_OPERATOR) ? true : false);
 } else {
-	if ( ! defined( 'TORNELIB_CRYPTO_ALLOW_AUTOLOAD' ) ) {
-		define( 'TORNELIB_CRYPTO_ALLOW_AUTOLOAD', true );
-	}
+    if ( ! defined('TORNELIB_CRYPTO_ALLOW_AUTOLOAD')) {
+        define('TORNELIB_CRYPTO_ALLOW_AUTOLOAD', true);
+    }
 }
 
-if ( ! class_exists( 'MODULE_CRYPTO' ) && ! class_exists( 'Resursbank\RBEcomPHP\MODULE_CRYPTO' ) && defined( 'TORNELIB_CRYPTO_ALLOW_AUTOLOAD' ) && TORNELIB_CRYPTO_ALLOW_AUTOLOAD === true ) {
+if ( ! class_exists('MODULE_CRYPTO') && ! class_exists('TorneLIB\MODULE_CRYPTO') && defined('TORNELIB_CRYPTO_ALLOW_AUTOLOAD') && TORNELIB_CRYPTO_ALLOW_AUTOLOAD === true) {
 
-	/**
-	 * Class TorneLIB_Crypto
-	 */
-	class MODULE_CRYPTO {
+    /**
+     * Class TorneLIB_Crypto
+     */
+    class MODULE_CRYPTO
+    {
 
-		private $aesKey = "";
-		private $aesIv = "";
-		private $compressionLevel;
+        private $ENCRYPT_AES_KEY = "";
+        private $ENCRYPT_AES_IV = "";
 
-		/**
-		 * TorneLIB_Crypto constructor.
-		 */
-		function __construct() {
-			$this->setAesIv( md5( "TorneLIB Default IV - Please Change this" ) );
-			$this->setAesKey( md5( "TorneLIB Default KEY - Please Change this" ) );
-		}
+        /**
+         * @var $OPENSSL_CIPHER_METHOD
+         * @since 6.0.15
+         */
+        private $OPENSSL_CIPHER_METHOD;
 
-		/**
-		 * Set and override compression level
-		 *
-		 * @param int $compressionLevel
-		 *
-		 * @since 6.0.6
-		 */
-		function setCompressionLevel( $compressionLevel = 9 ) {
-			$this->compressionLevel = $compressionLevel;
-		}
+        /**
+         * @var $OPENSSL_IV_LENGTH
+         * @since 6.0.15
+         */
+        private $OPENSSL_IV_LENGTH;
+        private $COMPRESSION_LEVEL;
 
-		/**
-		 * Get current compressionlevel
-		 *
-		 * @return mixed
-		 * @since 6.0.6
-		 */
-		public function getCompressionLevel() {
-			return $this->compressionLevel;
-		}
+        private $USE_MCRYPT = false;
 
-		/**
-		 * Create a password or salt with different kind of complexity
-		 *
-		 * 1 = A-Z
-		 * 2 = A-Za-z
-		 * 3 = A-Za-z0-9
-		 * 4 = Full usage
-		 * 5 = Full usage and unrestricted $setMax
-		 * 6 = Complexity uses full charset of 0-255
-		 *
-		 * @param int $complexity
-		 * @param int $setMax Max string length to use
-		 * @param bool $webFriendly Set to true works best with the less complex strings as it only removes characters that could be mistaken by another character (O,0,1,l,I etc)
-		 *
-		 * @return string
-		 * @deprecated 6.0.4 Still here for people who needs it
-		 */
-		function mkpass_deprecated( $complexity = 4, $setMax = 8, $webFriendly = false ) {
-			$returnString       = null;
-			$characterListArray = array(
-				'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-				'abcdefghijklmnopqrstuvwxyz',
-				'0123456789',
-				'!@#$%*?'
-			);
-			// Set complexity to no limit if type 6 is requested
-			if ( $complexity == 6 ) {
-				$characterListArray = array( '0' => '' );
-				for ( $unlim = 0; $unlim <= 255; $unlim ++ ) {
-					$characterListArray[0] .= chr( $unlim );
-				}
-				if ( $setMax == null ) {
-					$setMax = 15;
-				}
-			}
-			// Backward-compatibility in the complexity will still give us captcha-capabilities for simpler users
-			$max = 8;       // Longest complexity
-			if ( $complexity == 1 ) {
-				unset( $characterListArray[1], $characterListArray[2], $characterListArray[3] );
-				$max = 6;
-			}
-			if ( $complexity == 2 ) {
-				unset( $characterListArray[2], $characterListArray[3] );
-				$max = 10;
-			}
-			if ( $complexity == 3 ) {
-				unset( $characterListArray[3] );
-				$max = 10;
-			}
-			if ( $setMax > 0 ) {
-				$max = $setMax;
-			}
-			$chars    = array();
-			$numchars = array();
-			//$equalityPart = ceil( $max / count( $characterListArray ) );
-			for ( $i = 0; $i < $max; $i ++ ) {
-				$charListId = rand( 0, count( $characterListArray ) - 1 );
-				if ( ! isset( $numchars[ $charListId ] ) ) {
-					$numchars[ $charListId ] = 0;
-				}
-				$numchars[ $charListId ] ++;
-				$chars[] = $characterListArray[ $charListId ]{mt_rand( 0, ( strlen( $characterListArray[ $charListId ] ) - 1 ) )};
-			}
-			shuffle( $chars );
-			$returnString = implode( "", $chars );
-			if ( $webFriendly ) {
-				// The lazyness
-				$returnString = preg_replace( "/[+\/=IG0ODQR]/i", "", $returnString );
-			}
+        /**
+         * TorneLIB_Crypto constructor.
+         */
+        function __construct()
+        {
+            $this->setAesIv(md5("TorneLIB Default IV - Please Change this"));
+            $this->setAesKey(md5("TorneLIB Default KEY - Please Change this"));
+        }
 
-			return $returnString;
-		}
+        /**
+         * Set and override compression level
+         *
+         * @param int $compressionLevel
+         *
+         * @since 6.0.6
+         */
+        function setCompressionLevel($compressionLevel = 9)
+        {
+            $this->COMPRESSION_LEVEL = $compressionLevel;
+        }
 
-		/**
-		 * Returns a string with a chosen character list
-		 *
-		 * @param string $type
-		 *
-		 * @return mixed
-		 * @since 6.0.4
-		 */
-		private function getCharacterListArray( $type = 'upper' ) {
-			$compiledArray = array(
-				'upper'    => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-				'lower'    => 'abcdefghijklmnopqrstuvwxyz',
-				'numeric'  => '0123456789',
-				'specials' => '!@#$%*?',
-				'table'    => ''
-			);
-			for ( $i = 0; $i <= 255; $i ++ ) {
-				$compiledArray['table'] .= chr( $i );
-			}
+        /**
+         * Get current compressionlevel
+         *
+         * @return mixed
+         * @since 6.0.6
+         */
+        public function getCompressionLevel()
+        {
+            return $this->COMPRESSION_LEVEL;
+        }
 
-			switch ( $type ) {
-				case 'table':
-					return $compiledArray['table'];
-				case 'specials':
-					return $compiledArray['specials'];
-				case 'numeric':
-					return $compiledArray['numeric'];
-				case "lower":
-					return $compiledArray['lower'];
-				default:
-					return $compiledArray['upper'];
-			}
-		}
+        /**
+         * @param bool $enable
+         *
+         * @since 6.0.15
+         */
+        public function setMcrypt($enable = false)
+        {
+            $this->USE_MCRYPT = $enable;
+        }
 
-		/**
-		 * Returns a selected character list array string as a new array
-		 *
-		 * @param string $type
-		 *
-		 * @return array|false|string[]
-		 * @since 6.0.4
-		 */
-		private function getCharactersFromList( $type = 'upper' ) {
-			return preg_split( "//", $this->getCharacterListArray( $type ), - 1, PREG_SPLIT_NO_EMPTY );
-		}
+        /**
+         * @return bool
+         * @since 6.0.15
+         */
+        public function getMcrypt()
+        {
+            return $this->USE_MCRYPT;
+        }
 
-		/**
-		 * Returns a random character from a selected character list
-		 *
-		 * @param array $type
-		 * @param bool $ambigous
-		 *
-		 * @return mixed|string
-		 * @since 6.0.4
-		 */
-		private function getRandomCharacterFromArray( $type = array( 'upper' ), $ambigous = false ) {
-			if ( is_string( $type ) ) {
-				$type = array( $type );
-			}
-			$getType         = $type[ rand( 0, count( $type ) - 1 ) ];
-			$characterArray  = $this->getCharactersFromList( $getType );
-			$characterLength = count( $characterArray ) - 1;
-			$chosenCharacter = $characterArray[ rand( 0, $characterLength ) ];
-			$ambigousList    = array(
-				'+',
-				'/',
-				'=',
-				'I',
-				'G',
-				'0',
-				'O',
-				'D',
-				'Q',
-				'R'
-			);
-			if ( in_array( $chosenCharacter, $ambigousList ) ) {
-				$chosenCharacter = $this->getRandomCharacterFromArray( $type, $ambigous );
-			}
+        /**
+         * Create a password or salt with different kind of complexity
+         *
+         * 1 = A-Z
+         * 2 = A-Za-z
+         * 3 = A-Za-z0-9
+         * 4 = Full usage
+         * 5 = Full usage and unrestricted $setMax
+         * 6 = Complexity uses full charset of 0-255
+         *
+         * @param int  $complexity
+         * @param int  $setMax      Max string length to use
+         * @param bool $webFriendly Set to true works best with the less complex strings as it only removes characters that could be mistaken by another character (O,0,1,l,I etc)
+         *
+         * @return string
+         * @deprecated 6.0.4 Still here for people who needs it
+         */
+        function mkpass_deprecated($complexity = 4, $setMax = 8, $webFriendly = false)
+        {
+            $returnString       = null;
+            $characterListArray = array(
+                'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+                'abcdefghijklmnopqrstuvwxyz',
+                '0123456789',
+                '!@#$%*?'
+            );
+            // Set complexity to no limit if type 6 is requested
+            if ($complexity == 6) {
+                $characterListArray = array('0' => '');
+                for ($unlim = 0; $unlim <= 255; $unlim++) {
+                    $characterListArray[0] .= chr($unlim);
+                }
+                if ($setMax == null) {
+                    $setMax = 15;
+                }
+            }
+            // Backward-compatibility in the complexity will still give us captcha-capabilities for simpler users
+            $max = 8;       // Longest complexity
+            if ($complexity == 1) {
+                unset($characterListArray[1], $characterListArray[2], $characterListArray[3]);
+                $max = 6;
+            }
+            if ($complexity == 2) {
+                unset($characterListArray[2], $characterListArray[3]);
+                $max = 10;
+            }
+            if ($complexity == 3) {
+                unset($characterListArray[3]);
+                $max = 10;
+            }
+            if ($setMax > 0) {
+                $max = $setMax;
+            }
+            $chars    = array();
+            $numchars = array();
+            //$equalityPart = ceil( $max / count( $characterListArray ) );
+            for ($i = 0; $i < $max; $i++) {
+                $charListId = rand(0, count($characterListArray) - 1);
+                if ( ! isset($numchars[$charListId])) {
+                    $numchars[$charListId] = 0;
+                }
+                $numchars[$charListId]++;
+                $chars[] = $characterListArray[$charListId]{mt_rand(0, (strlen($characterListArray[$charListId]) - 1))};
+            }
+            shuffle($chars);
+            $returnString = implode("", $chars);
+            if ($webFriendly) {
+                // The lazyness
+                $returnString = preg_replace("/[+\/=IG0ODQR]/i", "", $returnString);
+            }
 
-			return $chosenCharacter;
-		}
+            return $returnString;
+        }
 
-		/**
-		 * Returns a random character based on complexity selection
-		 *
-		 * @param int $complexity
-		 * @param bool $ambigous
-		 *
-		 * @return mixed|string
-		 * @since 6.0.4
-		 */
-		private function getCharacterFromComplexity( $complexity = 4, $ambigous = false ) {
-			switch ( $complexity ) {
-				case 1:
-					return $this->getRandomCharacterFromArray( array( 'upper' ), $ambigous );
-				case 2:
-					return $this->getRandomCharacterFromArray( array( 'upper', 'lower' ), $ambigous );
-				case 3:
-					return $this->getRandomCharacterFromArray( array( 'upper', 'lower', 'numeric' ), $ambigous );
-				case 4:
-					return $this->getRandomCharacterFromArray( array(
-						'upper',
-						'lower',
-						'numeric',
-						'specials'
-					), $ambigous );
-				case 5:
-					return $this->getRandomCharacterFromArray( array( 'table' ) );
-				case 6:
-					return $this->getRandomCharacterFromArray( array( 'table' ) );
-				default:
-					return $this->getRandomCharacterFromArray( 'upper', $ambigous );
-			}
-		}
+        /**
+         * Returns a string with a chosen character list
+         *
+         * @param string $type
+         *
+         * @return mixed
+         * @since 6.0.4
+         */
+        private function getCharacterListArray($type = 'upper')
+        {
+            $compiledArray = array(
+                'upper'    => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+                'lower'    => 'abcdefghijklmnopqrstuvwxyz',
+                'numeric'  => '0123456789',
+                'specials' => '!@#$%*?',
+                'table'    => ''
+            );
+            for ($i = 0; $i <= 255; $i++) {
+                $compiledArray['table'] .= chr($i);
+            }
 
-		/**
-		 * Refactored generator to create a random password or string
-		 *
-		 * @param int $complexity 1=UPPERCASE, 2=UPPERCASE+lowercase, 3=UPPERCASE+lowercase+numerics, 4=UPPERCASE,lowercase+numerics+specialcharacters, 5/6=Full character set
-		 * @param int $totalLength Length of the string
-		 * @param bool $ambigous Exclude what we see as ambigous characters (this has no effect in complexity > 4)
-		 *
-		 * @return string
-		 * @since 6.0.4
-		 */
-		public function mkpass( $complexity = 4, $totalLength = 16, $ambigous = false ) {
-			$pwString = "";
-			for ( $charIndex = 0; $charIndex < $totalLength; $charIndex ++ ) {
-				$pwString .= $this->getCharacterFromComplexity( $complexity, $ambigous );
-			}
+            switch ($type) {
+                case 'table':
+                    return $compiledArray['table'];
+                case 'specials':
+                    return $compiledArray['specials'];
+                case 'numeric':
+                    return $compiledArray['numeric'];
+                case "lower":
+                    return $compiledArray['lower'];
+                default:
+                    return $compiledArray['upper'];
+            }
+        }
 
-			return $pwString;
-		}
+        /**
+         * Returns a selected character list array string as a new array
+         *
+         * @param string $type
+         *
+         * @return array|false|string[]
+         * @since 6.0.4
+         */
+        private function getCharactersFromList($type = 'upper')
+        {
+            return preg_split("//", $this->getCharacterListArray($type), -1, PREG_SPLIT_NO_EMPTY);
+        }
 
-		/**
-		 * @param int $complexity
-		 * @param int $totalLength
-		 * @param bool $ambigous
-		 *
-		 * @return string
-		 * @since 6.0.7
-		 */
-		public static function getRandomSalt( $complexity = 4, $totalLength = 16, $ambigous = false ) {
-			$selfInstance = new TorneLIB_Crypto();
+        /**
+         * Returns a random character from a selected character list
+         *
+         * @param array $type
+         * @param bool  $ambigous
+         *
+         * @return mixed|string
+         * @since 6.0.4
+         */
+        private function getRandomCharacterFromArray($type = array('upper'), $ambigous = false)
+        {
+            if (is_string($type)) {
+                $type = array($type);
+            }
+            $getType         = $type[rand(0, count($type) - 1)];
+            $characterArray  = $this->getCharactersFromList($getType);
+            $characterLength = count($characterArray) - 1;
+            $chosenCharacter = $characterArray[rand(0, $characterLength)];
+            $ambigousList    = array(
+                '+',
+                '/',
+                '=',
+                'I',
+                'G',
+                '0',
+                'O',
+                'D',
+                'Q',
+                'R'
+            );
+            if (in_array($chosenCharacter, $ambigousList)) {
+                $chosenCharacter = $this->getRandomCharacterFromArray($type, $ambigous);
+            }
 
-			return $selfInstance->mkpass( $complexity, $totalLength, $ambigous );
-		}
+            return $chosenCharacter;
+        }
 
-		/**
-		 * Set up key for aes encryption.
-		 *
-		 * @param $useKey
-		 *
-		 * @since 6.0.0
-		 */
-		public function setAesKey( $useKey ) {
-			$this->aesKey = md5( $useKey );
-		}
+        /**
+         * Returns a random character based on complexity selection
+         *
+         * @param int  $complexity
+         * @param bool $ambigous
+         *
+         * @return mixed|string
+         * @since 6.0.4
+         */
+        private function getCharacterFromComplexity($complexity = 4, $ambigous = false)
+        {
+            switch ($complexity) {
+                case 1:
+                    return $this->getRandomCharacterFromArray(array('upper'), $ambigous);
+                case 2:
+                    return $this->getRandomCharacterFromArray(array('upper', 'lower'), $ambigous);
+                case 3:
+                    return $this->getRandomCharacterFromArray(array('upper', 'lower', 'numeric'), $ambigous);
+                case 4:
+                    return $this->getRandomCharacterFromArray(array(
+                        'upper',
+                        'lower',
+                        'numeric',
+                        'specials'
+                    ), $ambigous);
+                case 5:
+                    return $this->getRandomCharacterFromArray(array('table'));
+                case 6:
+                    return $this->getRandomCharacterFromArray(array('table'));
+                default:
+                    return $this->getRandomCharacterFromArray('upper', $ambigous);
+            }
+        }
 
-		/**
-		 * Set up ip for aes encryption
-		 *
-		 * @param $useIv
-		 *
-		 * @since 6.0.0
-		 */
-		public function setAesIv( $useIv ) {
-			$this->aesIv = md5( $useIv );
-		}
+        /**
+         * Refactored generator to create a random password or string
+         *
+         * @param int  $complexity  1=UPPERCASE, 2=UPPERCASE+lowercase, 3=UPPERCASE+lowercase+numerics, 4=UPPERCASE,lowercase+numerics+specialcharacters, 5/6=Full character set
+         * @param int  $totalLength Length of the string
+         * @param bool $ambigous    Exclude what we see as ambigous characters (this has no effect in complexity > 4)
+         *
+         * @return string
+         * @since 6.0.4
+         */
+        public function mkpass($complexity = 4, $totalLength = 16, $ambigous = false)
+        {
+            $pwString = "";
+            for ($charIndex = 0; $charIndex < $totalLength; $charIndex++) {
+                $pwString .= $this->getCharacterFromComplexity($complexity, $ambigous);
+            }
 
-		/**
-		 * Encrypt content to RIJNDAEL/AES-encryption
-		 *
-		 * @param string $decryptedContent
-		 * @param bool $asBase64
-		 *
-		 * @return string
-		 * @throws \Exception
-		 * @since 6.0.0
-		 */
-		public function aesEncrypt( $decryptedContent = "", $asBase64 = true ) {
-			$useKey      = $this->aesKey;
-			$useIv       = $this->aesIv;
-			$contentData = $decryptedContent;
-			if ( $useKey == md5( md5( "TorneLIB Default IV - Please Change this" ) ) || $useIv == md5( md5( "TorneLIB Default IV - Please Change this" ) ) ) {
-				throw new \Exception( "Current encryption key and iv is not allowed to use." );  // TODO: TORNELIB_EXCEPTIONS::TORNELIB_CRYPTO_KEY_EXCEPTION
-			}
-			if ( is_string( $decryptedContent ) ) {
-				$contentData = utf8_encode( $decryptedContent );
-			}
-			// TODO: Need better support for PHP7
-			$binEnc      = mcrypt_encrypt( MCRYPT_RIJNDAEL_256, $useKey, $contentData, MCRYPT_MODE_CBC, $useIv );
-			$baseEncoded = $this->base64url_encode( $binEnc );
-			if ( $asBase64 ) {
-				return $baseEncoded;
-			} else {
-				return $binEnc;
-			}
-		}
+            return $pwString;
+        }
 
-		/**
-		 * Decrypt content encoded with RIJNDAEL/AES-encryption
-		 *
-		 * @param string $encryptedContent
-		 * @param bool $asBase64
-		 *
-		 * @return string
-		 * @throws \Exception
-		 * @since 6.0.0
-		 */
-		public function aesDecrypt( $encryptedContent = "", $asBase64 = true ) {
-			$useKey = $this->aesKey;
-			$useIv  = $this->aesIv;
-			if ( $useKey == md5( md5( "TorneLIB Default IV - Please Change this" ) ) || $useIv == md5( md5( "TorneLIB Default IV - Please Change this" ) ) ) {
-				throw new \Exception( "Current encryption key and iv is not allowed to use." );  // TODO: TORNELIB_EXCEPTIONS::TORNELIB_CRYPTO_KEY_EXCEPTION
-			}
-			$contentData = $encryptedContent;
-			if ( $asBase64 ) {
-				$contentData = $this->base64url_decode( $encryptedContent );
-			}
-			$decryptedOutput = trim( mcrypt_decrypt( MCRYPT_RIJNDAEL_256, $useKey, $contentData, MCRYPT_MODE_CBC, $useIv ) );
+        /**
+         * @param int  $complexity
+         * @param int  $totalLength
+         * @param bool $ambigous
+         *
+         * @return string
+         * @since 6.0.7
+         */
+        public static function getRandomSalt($complexity = 4, $totalLength = 16, $ambigous = false)
+        {
+            $selfInstance = new TorneLIB_Crypto();
 
-			return $decryptedOutput;
-		}
+            return $selfInstance->mkpass($complexity, $totalLength, $ambigous);
+        }
 
-		/**
-		 * Compress data with gzencode and encode to base64url
-		 *
-		 * @param string $data
-		 * @param int $compressionLevel
-		 *
-		 * @return string
-		 * @throws \Exception
-		 * @since 6.0.0
-		 */
-		public function base64_gzencode( $data = '', $compressionLevel = - 1 ) {
+        /**
+         * Set up key for aes encryption.
+         *
+         * @param      $useKey
+         * @param bool $noHash
+         *
+         * @since 6.0.0
+         */
+        public function setAesKey($useKey, $noHash = false)
+        {
+            if ( ! $noHash) {
+                $this->ENCRYPT_AES_KEY = md5($useKey);
+            } else {
+                $this->ENCRYPT_AES_KEY = $useKey;
+            }
+        }
 
-			if ( ! empty( $this->compressionLevel ) ) {
-				$compressionLevel = $this->compressionLevel;
-			}
+        /**
+         * Set up ip for aes encryption
+         *
+         * @param      $useIv
+         * @param bool $noHash
+         *
+         * @since 6.0.0
+         */
+        public function setAesIv($useIv, $noHash = false)
+        {
+            if ( ! $noHash) {
+                $this->ENCRYPT_AES_IV = md5($useIv);
+            } else {
+                $this->ENCRYPT_AES_IV = $useIv;
+            }
+        }
 
-			if ( ! function_exists( 'gzencode' ) ) {
-				throw new \Exception( "Function gzencode is missing" );
-			}
-			$gzEncoded = gzencode( $data, $compressionLevel );
+        /**
+         * @return string
+         * @since 6.0.15
+         */
+        public function getAesKey()
+        {
+            return $this->ENCRYPT_AES_KEY;
+        }
 
-			return $this->base64url_encode( $gzEncoded );
-		}
+        /**
+         * @param bool $adjustLength
+         *
+         * @return string
+         * @since 6.0.15
+         */
+        public function getAesIv($adjustLength = true)
+        {
+            if ($adjustLength) {
+                if ((int)$this->OPENSSL_IV_LENGTH >= 0) {
+                    if (strlen($this->ENCRYPT_AES_IV) > $this->OPENSSL_IV_LENGTH) {
+                        $this->ENCRYPT_AES_IV = substr($this->ENCRYPT_AES_IV, 0, $this->OPENSSL_IV_LENGTH);
+                    }
+                }
+            }
 
-		/**
-		 * Decompress gzdata that has been encoded with base64url
-		 *
-		 * @param string $data
-		 *
-		 * @return string
-		 * @throws \Exception
-		 * @since 6.0.0
-		 */
-		public function base64_gzdecode( $data = '' ) {
-			$gzDecoded = $this->base64url_decode( $data );
+            return $this->ENCRYPT_AES_IV;
+        }
 
-			return $this->gzDecode( $gzDecoded );
-		}
+        /**
+         * @param bool $throwOnProblems
+         *
+         * @return bool
+         * @throws \Exception
+         * @since 6.0.15
+         */
+        private function getOpenSslEncrypt($throwOnProblems = true)
+        {
+            if (function_exists('openssl_encrypt')) {
+                return true;
+            }
+            if ($throwOnProblems) {
+                throw new \Exception("openssl_encrypt does not exist in this system. Do you have it installed?");
+            }
 
-		/**
-		 * Compress data with bzcompress and base64url-encode it
-		 *
-		 * @param string $data
-		 *
-		 * @return string
-		 * @throws \Exception
-		 * @since 6.0.0
-		 */
-		public function base64_bzencode( $data = '' ) {
-			if ( ! function_exists( 'bzcompress' ) ) {
-				throw new \Exception( "bzcompress is missing" );
-			}
-			$bzEncoded = bzcompress( $data );
+            return false;
+        }
 
-			return $this->base64url_encode( $bzEncoded );
-		}
+        /**
+         * Encrypt content to RIJNDAEL/AES-encryption (Deprecated from PHP 7.1, removed in PHP 7.2)
+         *
+         * @param string $decryptedContent
+         * @param bool   $asBase64
+         * @param bool   $forceUtf8
+         *
+         * @return string
+         * @throws \Exception
+         * @since 6.0.0
+         */
+        public function aesEncrypt($decryptedContent = "", $asBase64 = true, $forceUtf8 = true)
+        {
 
-		/**
-		 * Decompress bzdata that has been encoded with base64url
-		 *
-		 * @param $data
-		 *
-		 * @return mixed
-		 * @throws \Exception
-		 * @since 6.0.0
-		 */
-		public function base64_bzdecode( $data ) {
-			if ( ! function_exists( 'bzdecompress' ) ) {
-				throw new \Exception( "bzdecompress is missing" );
-			}
-			$bzDecoded = $this->base64url_decode( $data );
+            if ( ! $this->USE_MCRYPT) {
+                $this->setSslCipher('AES-256-CBC');
 
-			return bzdecompress( $bzDecoded );
-		}
+                return $this->getEncryptSsl($decryptedContent, $asBase64, $forceUtf8);
+            }
 
-		/**
-		 * Compress and encode data with best encryption
-		 *
-		 * @param string $data
-		 *
-		 * @return mixed
-		 * @throws \Exception
-		 * @since 6.0.0
-		 */
+            $contentData = $decryptedContent;
+            if ( ! function_exists('mcrypt_encrypt')) {
+                throw new \Exception("mcrypt does not exist in this system - it has been deprecated since PHP 7.1");
+            }
+            if ($this->ENCRYPT_AES_KEY == md5(md5("TorneLIB Default IV - Please Change this")) || $this->ENCRYPT_AES_IV == md5(md5("TorneLIB Default IV - Please Change this"))) {
+                // TODO: TORNELIB_EXCEPTIONS::TORNELIB_CRYPTO_KEY_EXCEPTION
+                throw new \Exception("Current encryption key and iv is not allowed to use.");
+            }
+            if (is_string($decryptedContent) && $forceUtf8) {
+                $contentData = utf8_encode($decryptedContent);
+            }
+            /** @noinspection PhpDeprecationInspection */
+            $binEnc      = mcrypt_encrypt(MCRYPT_RIJNDAEL_256, $this->ENCRYPT_AES_KEY, $contentData, MCRYPT_MODE_CBC,
+                $this->ENCRYPT_AES_IV);
+            $baseEncoded = $this->base64url_encode($binEnc);
+            if ($asBase64) {
+                return $baseEncoded;
+            } else {
+                return $binEnc;
+            }
+        }
 
-		public function base64_compress( $data = '' ) {
-			$results         = array();
-			$bestCompression = null;
-			$lengthArray     = array();
-			if ( function_exists( 'gzencode' ) ) {
-				$results['gz0'] = $this->base64_gzencode( "gz0:" . $data, 0 );
-				$results['gz9'] = $this->base64_gzencode( "gz9:" . $data, 9 );
-			}
-			if ( function_exists( 'bzcompress' ) ) {
-				$results['bz'] = $this->base64_bzencode( "bz:" . $data );
-			}
-			foreach ( $results as $type => $compressedString ) {
-				$lengthArray[ $type ] = strlen( $compressedString );
-			}
-			asort( $lengthArray );
-			foreach ( $lengthArray as $compressionType => $compressionLength ) {
-				$bestCompression = $compressionType;
-				break;
-			}
+        /**
+         * @param $cipherConstant
+         *
+         * @return mixed
+         * @throws \Exception
+         * @since 6.0.15
+         */
+        private function setUseCipher($cipherConstant)
+        {
+            $this->getOpenSslEncrypt();
+            if (in_array($cipherConstant, openssl_get_cipher_methods())) {
+                $this->OPENSSL_CIPHER_METHOD = $cipherConstant;
+                $this->OPENSSL_IV_LENGTH     = $this->getIvLength($cipherConstant);
 
-			return $results[ $bestCompression ];
-		}
+                return $cipherConstant;
+            }
+            throw new \Exception("Cipher does not exists in this openssl module");
+        }
 
-		/**
-		 * Decompress data that has been compressed with base64_compress
-		 *
-		 * @param string $data
-		 * @param bool $getCompressionType
-		 *
-		 * @return string
-		 * @throws \Exception
-		 * @since 6.0.0
-		 */
-		public function base64_decompress( $data = '', $getCompressionType = false ) {
-			$results       = array();
-			$results['gz'] = $this->base64_gzdecode( $data );
-			if ( function_exists( 'bzdecompress' ) ) {
-				$results['bz'] = $this->base64_bzdecode( $data );
-			}
-			$acceptedString = "";
-			foreach ( $results as $result ) {
-				$resultExploded = explode( ":", $result, 2 );
-				if ( isset( $resultExploded[0] ) && isset( $resultExploded[1] ) ) {
-					if ( $resultExploded[0] == "gz0" || $resultExploded[0] == "gz9" ) {
-						$acceptedString = $resultExploded[1];
-						if ( $getCompressionType ) {
-							$acceptedString = $resultExploded[0];
-						}
-						break;
-					}
-					if ( $resultExploded[0] == "bz" ) {
-						$acceptedString = $resultExploded[1];
-						if ( $getCompressionType ) {
-							$acceptedString = $resultExploded[0];
-						}
-						break;
-					}
-				}
-			}
+        /** @noinspection PhpUnusedPrivateMethodInspection */
+        /**
+         * @return mixed
+         * @since 6.0.15
+         */
+        private function getUseCipher()
+        {
+            return $this->OPENSSL_CIPHER_METHOD;
+        }
 
-			return $acceptedString;
-		}
+        /**
+         * @param $cipherConstant
+         *
+         * @return int
+         * @throws \Exception
+         * @since 6.0.15
+         */
+        private function getIvLength($cipherConstant)
+        {
+            $this->getOpenSslEncrypt();
+            if ( ! empty($cipherConstant)) {
+                return openssl_cipher_iv_length($cipherConstant);
+            }
 
-		/**
-		 * Decode gzcompressed data. If gzdecode is actually missing (which has happened in early version of PHP), there will be a fallback to gzinflate instead
-		 *
-		 * @param $data
-		 *
-		 * @return string
-		 * @throws \Exception
-		 * @since 6.0.0
-		 */
-		private function gzDecode( $data ) {
-			if ( function_exists( 'gzdecode' ) ) {
-				return gzdecode( $data );
-			}
-			if ( ! function_exists( 'gzinflate' ) ) {
-				throw new \Exception( "Function gzinflate and gzdecode is missing" );
-			}
-			// Inhherited from TorneEngine-Deprecated
-			$flags       = ord( substr( $data, 3, 1 ) );
-			$headerlen   = 10;
-			$extralen    = 0;
-			$filenamelen = 0;
-			if ( $flags & 4 ) {
-				$extralen  = unpack( 'v', substr( $data, 10, 2 ) );
-				$extralen  = $extralen[1];
-				$headerlen += 2 + $extralen;
-			}
-			if ( $flags & 8 ) // Filename
-			{
-				$headerlen = strpos( $data, chr( 0 ), $headerlen ) + 1;
-			}
-			if ( $flags & 16 ) // Comment
-			{
-				$headerlen = strpos( $data, chr( 0 ), $headerlen ) + 1;
-			}
-			if ( $flags & 2 ) // CRC at end of file
-			{
-				$headerlen += 2;
-			}
-			$unpacked = gzinflate( substr( $data, $headerlen ) );
-			if ( $unpacked === false ) {
-				$unpacked = $data;
-			}
+            return openssl_cipher_iv_length($this->OPENSSL_CIPHER_METHOD);
+        }
 
-			return $unpacked;
-		}
+        /**
+         * Get the cipher method name by comparing them (for testing only)
+         *
+         * @param string $encryptedString
+         * @param string $decryptedString
+         *
+         * @return null
+         * @throws \Exception
+         * @since 6.0.15
+         */
+        public function getCipherTypeByString($encryptedString = "", $decryptedString = "")
+        {
+            $this->getOpenSslEncrypt();
+            $cipherMethods  = openssl_get_cipher_methods();
+            $skippedMethods = array();
+            $originalKey    = $this->ENCRYPT_AES_KEY;
+            $originalIv     = $this->ENCRYPT_AES_IV;
+            foreach ($cipherMethods as $method) {
+                if ( ! in_array($method, $skippedMethods)) {
+                    //$skippedMethods[] = strtoupper($method);
+                    try {
+                        $this->ENCRYPT_AES_KEY = $originalKey;
+                        $this->ENCRYPT_AES_IV  = $originalIv;
+                        $this->setSslCipher($method);
+                        $result = $this->getEncryptSsl($decryptedString);
+                        if ( ! empty($result) && $result == $encryptedString) {
+                            return $method;
+                        }
+                    } catch (\Exception $e) {
+                    }
+                }
+            }
 
-		/**
-		 * URL compatible base64_encode
-		 *
-		 * @param $data
-		 *
-		 * @return string
-		 * @since 6.0.0
-		 */
-		public function base64url_encode( $data ) {
-			return rtrim( strtr( base64_encode( $data ), '+/', '-_' ), '=' );
-		}
+            return null;
+        }
 
-		/**
-		 * URL compatible base64_decode
-		 *
-		 * @param $data
-		 *
-		 * @return string
-		 * @since 6.0.0
-		 */
-		public function base64url_decode( $data ) {
-			return base64_decode( str_pad( strtr( $data, '-_', '+/' ), strlen( $data ) % 4, '=', STR_PAD_RIGHT ) );
-		}
-	}
+        /**
+         * @param string $decryptedContent
+         * @param bool   $asBase64
+         * @param bool   $forceUtf8
+         *
+         * @return string
+         * @throws \Exception
+         */
+        public function getEncryptSsl($decryptedContent = "", $asBase64 = true, $forceUtf8 = true)
+        {
+            if ($this->ENCRYPT_AES_KEY == md5(md5("TorneLIB Default IV - Please Change this")) || $this->ENCRYPT_AES_IV == md5(md5("TorneLIB Default IV - Please Change this"))) {
+                throw new \Exception("Current encryption key and iv is not allowed to use.");
+            }
+
+            if ($forceUtf8 && is_string($decryptedContent)) {
+                $contentData = utf8_encode($decryptedContent);
+            } else {
+                $contentData = $decryptedContent;
+            }
+
+            if (empty($this->OPENSSL_CIPHER_METHOD)) {
+                $this->setSslCipher();
+            } else {
+                $this->setUseCipher($this->OPENSSL_CIPHER_METHOD);
+            }
+
+            // TODO: openssl_random_pseudo_bytes
+            $binEnc = openssl_encrypt($contentData, $this->OPENSSL_CIPHER_METHOD, $this->getAesKey(), OPENSSL_RAW_DATA,
+                $this->getAesIv(true));
+
+            $baseEncoded = $this->base64url_encode($binEnc);
+            if ($asBase64) {
+                return $baseEncoded;
+            } else {
+                return $binEnc;
+            }
+
+        }
+
+        /**
+         * @param      $encryptedContent
+         * @param bool $asBase64
+         *
+         * @return string
+         * @throws \Exception
+         * @since 6.0.15
+         */
+        public function getDecryptSsl($encryptedContent, $asBase64 = true)
+        {
+            $contentData = $encryptedContent;
+            if ($asBase64) {
+                $contentData = $this->base64url_decode($encryptedContent);
+            }
+            if (empty($this->OPENSSL_CIPHER_METHOD)) {
+                $this->setSslCipher();
+            } else {
+                $this->setUseCipher($this->OPENSSL_CIPHER_METHOD);
+            }
+
+            // TODO: openssl_random_pseudo_bytes
+            return openssl_decrypt($contentData, $this->OPENSSL_CIPHER_METHOD, $this->getAesKey(), OPENSSL_RAW_DATA,
+                $this->getAesIv(true));
+        }
+
+        /**
+         * @param string $cipherConstant
+         *
+         * @throws \Exception
+         * @since 6.0.15
+         */
+        public function setSslCipher($cipherConstant = 'AES-256-CBC')
+        {
+            $this->setUseCipher($cipherConstant);
+        }
+
+        /**
+         * Decrypt content encoded with RIJNDAEL/AES-encryption
+         *
+         * @param string $encryptedContent
+         * @param bool   $asBase64
+         *
+         * @return string
+         * @throws \Exception
+         * @since 6.0.0
+         */
+        public function aesDecrypt($encryptedContent = "", $asBase64 = true)
+        {
+
+            if ( ! $this->USE_MCRYPT) {
+                return $this->getDecryptSsl($encryptedContent, $asBase64);
+            }
+
+            $useKey = $this->ENCRYPT_AES_KEY;
+            $useIv  = $this->ENCRYPT_AES_IV;
+            if ($useKey == md5(md5("TorneLIB Default IV - Please Change this")) || $useIv == md5(md5("TorneLIB Default IV - Please Change this"))) {
+                // TODO: TORNELIB_EXCEPTIONS::TORNELIB_CRYPTO_KEY_EXCEPTION
+                throw new \Exception("Current encryption key and iv is not allowed to use.");
+            }
+            $contentData = $encryptedContent;
+            if ($asBase64) {
+                $contentData = $this->base64url_decode($encryptedContent);
+            }
+            /** @noinspection PhpDeprecationInspection */
+            $decryptedOutput = trim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $useKey, $contentData, MCRYPT_MODE_CBC,
+                $useIv));
+
+            return $decryptedOutput;
+        }
+
+        /**
+         * Compress data with gzencode and encode to base64url
+         *
+         * @param string $data
+         * @param int    $compressionLevel
+         *
+         * @return string
+         * @throws \Exception
+         * @since 6.0.0
+         */
+        public function base64_gzencode($data = '', $compressionLevel = -1)
+        {
+
+            if ( ! empty($this->COMPRESSION_LEVEL)) {
+                $compressionLevel = $this->COMPRESSION_LEVEL;
+            }
+
+            if ( ! function_exists('gzencode')) {
+                throw new \Exception("Function gzencode is missing");
+            }
+            $gzEncoded = gzencode($data, $compressionLevel);
+
+            return $this->base64url_encode($gzEncoded);
+        }
+
+        /**
+         * Decompress gzdata that has been encoded with base64url
+         *
+         * @param string $data
+         *
+         * @return string
+         * @throws \Exception
+         * @since 6.0.0
+         */
+        public function base64_gzdecode($data = '')
+        {
+            $gzDecoded = $this->base64url_decode($data);
+
+            return $this->gzDecode($gzDecoded);
+        }
+
+        /**
+         * Compress data with bzcompress and base64url-encode it
+         *
+         * @param string $data
+         *
+         * @return string
+         * @throws \Exception
+         * @since 6.0.0
+         */
+        public function base64_bzencode($data = '')
+        {
+            if ( ! function_exists('bzcompress')) {
+                throw new \Exception("bzcompress is missing");
+            }
+            $bzEncoded = bzcompress($data);
+
+            return $this->base64url_encode($bzEncoded);
+        }
+
+        /**
+         * Decompress bzdata that has been encoded with base64url
+         *
+         * @param $data
+         *
+         * @return mixed
+         * @throws \Exception
+         * @since 6.0.0
+         */
+        public function base64_bzdecode($data)
+        {
+            if ( ! function_exists('bzdecompress')) {
+                throw new \Exception("bzdecompress is missing");
+            }
+            $bzDecoded = $this->base64url_decode($data);
+
+            return bzdecompress($bzDecoded);
+        }
+
+        /**
+         * Compress and encode data with best encryption
+         *
+         * @param string $data
+         *
+         * @return mixed
+         * @throws \Exception
+         * @since 6.0.0
+         */
+
+        public function base64_compress($data = '')
+        {
+            $results         = array();
+            $bestCompression = null;
+            $lengthArray     = array();
+            if (function_exists('gzencode')) {
+                $results['gz0'] = $this->base64_gzencode("gz0:" . $data, 0);
+                $results['gz9'] = $this->base64_gzencode("gz9:" . $data, 9);
+            }
+            if (function_exists('bzcompress')) {
+                $results['bz'] = $this->base64_bzencode("bz:" . $data);
+            }
+            foreach ($results as $type => $compressedString) {
+                $lengthArray[$type] = strlen($compressedString);
+            }
+            asort($lengthArray);
+            foreach ($lengthArray as $compressionType => $compressionLength) {
+                $bestCompression = $compressionType;
+                break;
+            }
+
+            return $results[$bestCompression];
+        }
+
+        /**
+         * Decompress data that has been compressed with base64_compress
+         *
+         * @param string $data
+         * @param bool   $getCompressionType
+         *
+         * @return string
+         * @throws \Exception
+         * @since 6.0.0
+         */
+        public function base64_decompress($data = '', $getCompressionType = false)
+        {
+            $results       = array();
+            $results['gz'] = $this->base64_gzdecode($data);
+            if (function_exists('bzdecompress')) {
+                $results['bz'] = $this->base64_bzdecode($data);
+            }
+            $acceptedString = "";
+            foreach ($results as $result) {
+                $resultExploded = explode(":", $result, 2);
+                if (isset($resultExploded[0]) && isset($resultExploded[1])) {
+                    if ($resultExploded[0] == "gz0" || $resultExploded[0] == "gz9") {
+                        $acceptedString = $resultExploded[1];
+                        if ($getCompressionType) {
+                            $acceptedString = $resultExploded[0];
+                        }
+                        break;
+                    }
+                    if ($resultExploded[0] == "bz") {
+                        $acceptedString = $resultExploded[1];
+                        if ($getCompressionType) {
+                            $acceptedString = $resultExploded[0];
+                        }
+                        break;
+                    }
+                }
+            }
+
+            return $acceptedString;
+        }
+
+        /**
+         * Decode gzcompressed data. If gzdecode is actually missing (which has happened in early version of PHP), there will be a fallback to gzinflate instead
+         *
+         * @param $data
+         *
+         * @return string
+         * @throws \Exception
+         * @since 6.0.0
+         */
+        private function gzDecode($data)
+        {
+            if (function_exists('gzdecode')) {
+                return gzdecode($data);
+            }
+            if ( ! function_exists('gzinflate')) {
+                throw new \Exception("Function gzinflate and gzdecode is missing");
+            }
+            // Inhherited from TorneEngine-Deprecated
+            $flags     = ord(substr($data, 3, 1));
+            $headerlen = 10;
+            //$extralen    = 0;
+            //$filenamelen = 0;
+            if ($flags & 4) {
+                $extralen  = unpack('v', substr($data, 10, 2));
+                $extralen  = $extralen[1];
+                $headerlen += 2 + $extralen;
+            }
+            if ($flags & 8) // Filename
+            {
+                $headerlen = strpos($data, chr(0), $headerlen) + 1;
+            }
+            if ($flags & 16) // Comment
+            {
+                $headerlen = strpos($data, chr(0), $headerlen) + 1;
+            }
+            if ($flags & 2) // CRC at end of file
+            {
+                $headerlen += 2;
+            }
+            $unpacked = gzinflate(substr($data, $headerlen));
+            if ($unpacked === false) {
+                $unpacked = $data;
+            }
+
+            return $unpacked;
+        }
+
+        /**
+         * URL compatible base64_encode
+         *
+         * @param $data
+         *
+         * @return string
+         * @since 6.0.0
+         */
+        public function base64url_encode($data)
+        {
+            return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+        }
+
+        /**
+         * URL compatible base64_decode
+         *
+         * @param $data
+         *
+         * @return string
+         * @since 6.0.0
+         */
+        public function base64url_decode($data)
+        {
+            return base64_decode(str_pad(strtr($data, '-_', '+/'), strlen($data) % 4, '=', STR_PAD_RIGHT));
+        }
+    }
 }
 
-if ( ! class_exists( 'TORNELIB_CRYPTO_CRYPTOTYPES' ) && ! class_exists( 'Resursbank\RBEcomPHP\TORNELIB_CRYPTO_CRYPTOTYPES' ) ) {
-	abstract class TORNELIB_CRYPTO_TYPES {
-		const TYPE_NONE = 0;
-		const TYPE_GZ = 1;
-		const TYPE_BZ2 = 2;
-	}
+if ( ! class_exists('TORNELIB_CRYPTO_CRYPTOTYPES') && ! class_exists('TorneLIB\TORNELIB_CRYPTO_CRYPTOTYPES')) {
+    abstract class TORNELIB_CRYPTO_TYPES
+    {
+        const TYPE_NONE = 0;
+        const TYPE_GZ = 1;
+        const TYPE_BZ2 = 2;
+    }
 }
 
-if ( ! class_exists( 'TorneLIB_Crypto' ) && ! class_exists( 'Resursbank\RBEcomPHP\TorneLIB_Crypto' ) ) {
-	class TorneLIB_Crypto extends MODULE_CRYPTO {
-	}
+if ( ! class_exists('TorneLIB_Crypto') && ! class_exists('TorneLIB\TorneLIB_Crypto')) {
+    class TorneLIB_Crypto extends MODULE_CRYPTO
+    {
+    }
 }
-if ( ! defined( 'TORNELIB_IO_RELEASE' ) ) {
-	define( 'TORNELIB_IO_RELEASE', '6.0.11' );
+if ( ! defined('TORNELIB_IO_RELEASE')) {
+    define('TORNELIB_IO_RELEASE', '6.0.12');
 }
-if ( ! defined( 'TORNELIB_IO_MODIFY' ) ) {
-	define( 'TORNELIB_IO_MODIFY', '20180514' );
+if ( ! defined('TORNELIB_IO_MODIFY')) {
+    define('TORNELIB_IO_MODIFY', '20180619');
 }
-if ( ! defined( 'TORNELIB_IO_CLIENTNAME' ) ) {
-	define( 'TORNELIB_IO_CLIENTNAME', 'MODULE_IO' );
+if ( ! defined('TORNELIB_IO_CLIENTNAME')) {
+    define('TORNELIB_IO_CLIENTNAME', 'MODULE_IO');
 }
 
-if ( defined( 'TORNELIB_IO_REQUIRE' ) ) {
-	if ( ! defined( 'TORNELIB_IO_REQUIRE_OPERATOR' ) ) {
-		define( 'TORNELIB_IO_REQUIRE_OPERATOR', '==' );
-	}
-	define( 'TORNELIB_IO_ALLOW_AUTOLOAD', version_compare( TORNELIB_IO_RELEASE, TORNELIB_IO_REQUIRE, TORNELIB_IO_REQUIRE_OPERATOR ) ? true : false );
+if (defined('TORNELIB_IO_REQUIRE')) {
+    if ( ! defined('TORNELIB_IO_REQUIRE_OPERATOR')) {
+        define('TORNELIB_IO_REQUIRE_OPERATOR', '==');
+    }
+    define('TORNELIB_IO_ALLOW_AUTOLOAD',
+        version_compare(TORNELIB_IO_RELEASE, TORNELIB_IO_REQUIRE, TORNELIB_IO_REQUIRE_OPERATOR) ? true : false);
 } else {
-	if ( ! defined( 'TORNELIB_IO_ALLOW_AUTOLOAD' ) ) {
-		define( 'TORNELIB_IO_ALLOW_AUTOLOAD', true );
-	}
+    if ( ! defined('TORNELIB_IO_ALLOW_AUTOLOAD')) {
+        define('TORNELIB_IO_ALLOW_AUTOLOAD', true);
+    }
 }
 
-if ( ! class_exists( 'MODULE_IO' ) && ! class_exists( 'Resursbank\RBEcomPHP\MODULE_IO' ) && defined( 'TORNELIB_IO_ALLOW_AUTOLOAD' ) && TORNELIB_IO_ALLOW_AUTOLOAD === true ) {
-
-	/**
-	 * Class MODULE_IO
-	 * @package TorneLIB
-	 */
-	class MODULE_IO {
-
-		/** @var TorneLIB_Crypto $CRYPTO */
-		private $CRYPTO;
-		/** @var bool Enforce usage SimpleXML objects even if XML_Serializer is present */
-		private $ENFORCE_SIMPLEXML = false;
-
-		/** @var bool $ENFORCE_SERIALIZER */
-		private $ENFORCE_SERIALIZER = false;
-
-		/** @var bool $ENFORCE_CDATA */
-		private $ENFORCE_CDATA = false;
-
-		/** @var bool $SOAP_ATTRIBUTES_ENABLED */
-		private $SOAP_ATTRIBUTES_ENABLED = false;
-
-		/** @var int $XML_TRANSLATE_ENTITY_RERUN */
-		private $XML_TRANSLATE_ENTITY_RERUN = 0;
-
-		public function __construct() {
-		}
-
-		function setCrypto() {
-			if ( empty( $this->CRYPTO ) ) {
-				$this->CRYPTO = new TorneLIB_Crypto();
-			}
-		}
-
-		/**
-		 * Set and override compression level
-		 *
-		 * @param int $compressionLevel
-		 *
-		 * @since 6.0.3
-		 */
-		function setCompressionLevel( $compressionLevel = 9 ) {
-			$this->setCrypto();
-			$this->CRYPTO->setCompressionLevel( $compressionLevel );
-		}
-
-		/**
-		 * Get current compressionlevel
-		 *
-		 * @return mixed
-		 * @since 6.0.3
-		 */
-		public function getCompressionLevel() {
-			$this->setCrypto();
-
-			return $this->CRYPTO->getCompressionLevel();
-		}
-
-		/**
-		 * Force the use of SimpleXML before XML/Serializer
-		 *
-		 * @param bool $enforceSimpleXml
-		 *
-		 * @since 6.0.3
-		 */
-		public function setXmlSimple( $enforceSimpleXml = true ) {
-			$this->ENFORCE_SIMPLEXML = $enforceSimpleXml;
-		}
-
-		/**
-		 * @return bool
-		 *
-		 * @since 6.0.3
-		 */
-		public function getXmlSimple() {
-			return $this->ENFORCE_SIMPLEXML;
-		}
-
-		/**
-		 * Enforce use of XML/Unserializer before SimpleXML-decoding
-		 *
-		 * @param bool $activationBoolean
-		 *
-		 * @since 6.0.5
-		 */
-		public function setXmlUnSerializer( $activationBoolean = true ) {
-			$this->ENFORCE_SERIALIZER = $activationBoolean;
-		}
-
-		/**
-		 * Figure out if user has enabled overriding default XML parser (SimpleXML => XML/Unserializer)
-		 *
-		 * @return bool
-		 * @since 6.0.5
-		 */
-		public function getXmlUnSerializer() {
-			return $this->ENFORCE_SERIALIZER;
-		}
-
-		/**
-		 * Enable the use of CDATA-fields in XML data
-		 *
-		 * @param bool $activationBoolean
-		 *
-		 * @since 6.0.5
-		 */
-		public function setCdataEnabled( $activationBoolean = true ) {
-			$this->ENFORCE_CDATA = $activationBoolean;
-		}
-
-		/**
-		 * Figure out if user has enabled the use of CDATA in XML data
-		 *
-		 * @return bool
-		 * @since 6.0.5
-		 */
-		public function getCdataEnabled() {
-			return $this->ENFORCE_CDATA;
-		}
-
-		/**
-		 * Figure out whether we can use XML/Unserializer as XML parser or not
-		 *
-		 * @return bool
-		 * @since 6.0.5
-		 */
-		public function getHasXmlSerializer() {
-			$serializerPath = stream_resolve_include_path( 'XML/Unserializer.php' );
-			if ( ! empty( $serializerPath ) ) {
-				return true;
-			}
-
-			return false;
-		}
-
-		/**
-		 * @param bool $soapAttributes
-		 *
-		 * @since 6.0.6
-		 */
-		public function setSoapXml( $soapAttributes = true ) {
-			$this->SOAP_ATTRIBUTES_ENABLED = $soapAttributes;
-			$this->setXmlSimple( true );
-		}
-
-		/**
-		 * @return bool
-		 * @since 6.0.6
-		 */
-		public function getSoapXml() {
-			return $this->SOAP_ATTRIBUTES_ENABLED;
-		}
-
-		/**
-		 * Convert object to a data object (used for repairing __PHP_Incomplete_Class objects)
-		 *
-		 * This function are written to work with WSDL2PHPGenerator, where serialization of some objects sometimes generates, as described, __PHP_Incomplete_Class objects.
-		 * The upgraded version are also supposed to work with protected values.
-		 *
-		 * @param array $objectArray
-		 * @param bool $useJsonFunction
-		 *
-		 * @return object
-		 * @since 6.0.0
-		 */
-		public function arrayObjectToStdClass( $objectArray = array(), $useJsonFunction = false ) {
-			/**
-			 * If json_decode and json_encode exists as function, do it the simple way.
-			 * http://php.net/manual/en/function.json-encode.php
-			 */
-			if ( ( function_exists( 'json_decode' ) && function_exists( 'json_encode' ) ) || $useJsonFunction ) {
-				return json_decode( json_encode( $objectArray ) );
-			}
-			$newArray = array();
-			if ( is_array( $objectArray ) || is_object( $objectArray ) ) {
-				foreach ( $objectArray as $itemKey => $itemValue ) {
-					if ( is_array( $itemValue ) ) {
-						$newArray[ $itemKey ] = (array) $this->arrayObjectToStdClass( $itemValue );
-					} elseif ( is_object( $itemValue ) ) {
-						$newArray[ $itemKey ] = (object) (array) $this->arrayObjectToStdClass( $itemValue );
-					} else {
-						$newArray[ $itemKey ] = $itemValue;
-					}
-				}
-			}
-
-			return $newArray;
-		}
-
-		/**
-		 * Convert objects to arrays
-		 *
-		 * @param $arrObjData
-		 * @param array $arrSkipIndices
-		 *
-		 * @return array
-		 * @since 6.0.0
-		 */
-		public function objectsIntoArray( $arrObjData, $arrSkipIndices = array() ) {
-			$arrData = array();
-			// if input is object, convert into array
-			if ( is_object( $arrObjData ) ) {
-				$arrObjData = get_object_vars( $arrObjData );
-			}
-			if ( is_array( $arrObjData ) ) {
-				foreach ( $arrObjData as $index => $value ) {
-					if ( is_object( $value ) || is_array( $value ) ) {
-						$value = $this->objectsIntoArray( $value, $arrSkipIndices ); // recursive call
-					}
-					if ( @in_array( $index, $arrSkipIndices ) ) {
-						continue;
-					}
-					$arrData[ $index ] = $value;
-				}
-			}
-
-			return $arrData;
-		}
-
-		/**
-		 * @param array $dataArray
-		 * @param SimpleXMLElement $xml
-		 *
-		 * @return mixed
-		 * @since 6.0.3
-		 */
-		private function array_to_xml( $dataArray = array(), $xml ) {
-			foreach ( $dataArray as $key => $value ) {
-				$key = is_numeric( $key ) ? 'item' : $key;
-				if ( is_array( $value ) ) {
-					$this->array_to_xml( $value, $xml->addChild( $key ) );
-				} else {
-					$xml->addChild( $key, $value );
-				}
-			}
-
-			return $xml;
-		}
-
-		/**
-		 * Convert all data to utf8
-		 *
-		 * @param array $dataArray
-		 *
-		 * @return array
-		 * @since 6.0.0
-		 */
-		private function getUtf8( $dataArray = array() ) {
-			$newArray = array();
-			if ( is_array( $dataArray ) ) {
-				foreach ( $dataArray as $p => $v ) {
-					if ( is_array( $v ) || is_object( $v ) ) {
-						$v              = $this->getUtf8( $v );
-						$newArray[ $p ] = $v;
-					} else {
-						$v              = utf8_encode( $v );
-						$newArray[ $p ] = $v;
-					}
-
-				}
-			}
-
-			return $newArray;
-		}
-
-		/**
-		 * @param array $arrayData
-		 *
-		 * @return bool
-		 * @since 6.0.2
-		 */
-		function isAssoc( array $arrayData ) {
-			if ( array() === $arrayData ) {
-				return false;
-			}
-
-			return array_keys( $arrayData ) !== range( 0, count( $arrayData ) - 1 );
-		}
-
-		/**
-		 * @param string $contentString
-		 * @param int $compression
-		 * @param bool $renderAndDie
-		 *
-		 * @return string
-		 * @throws \Exception
-		 * @since 6.0.3
-		 */
-		private function compressString( $contentString = '', $compression = TORNELIB_CRYPTO_TYPES::TYPE_NONE, $renderAndDie = false ) {
-			if ( $compression == TORNELIB_CRYPTO_TYPES::TYPE_GZ ) {
-				$this->setCrypto();
-				$contentString = $this->CRYPTO->base64_gzencode( $contentString );
-			} else if ( $compression == TORNELIB_CRYPTO_TYPES::TYPE_BZ2 ) {
-				$this->setCrypto();
-				$contentString = $this->CRYPTO->base64_bzencode( $contentString );
-			}
-
-			if ( $renderAndDie ) {
-				if ( $compression == TORNELIB_CRYPTO_TYPES::TYPE_GZ ) {
-					$contentString = array( 'gz' => $contentString );
-				} else if ( $compression == TORNELIB_CRYPTO_TYPES::TYPE_BZ2 ) {
-					$contentString = array( 'bz2' => $contentString );
-				}
-			}
-
-			return $contentString;
-		}
-
-		/**
-		 * ServerRenderer: Render JSON data
-		 *
-		 * @param array $contentData
-		 * @param bool $renderAndDie
-		 * @param int $compression
-		 *
-		 * @return string
-		 * @throws \Exception
-		 * @since 6.0.1
-		 */
-		public function renderJson( $contentData = array(), $renderAndDie = false, $compression = TORNELIB_CRYPTO_TYPES::TYPE_NONE ) {
-			$objectArrayEncoded = $this->getUtf8( $this->objectsIntoArray( $contentData ) );
-
-			if ( is_string( $contentData ) ) {
-				$objectArrayEncoded = $this->objectsIntoArray( $this->getFromJson( $contentData ) );
-			}
-
-			$contentRendered = $this->compressString( @json_encode( $objectArrayEncoded, JSON_PRETTY_PRINT ), $compression, $renderAndDie );
-
-			if ( $renderAndDie ) {
-				header( "Content-type: application/json; charset=utf-8" );
-				echo $contentRendered;
-				die;
-			}
-
-			return $contentRendered;
-		}
-
-		/**
-		 * ServerRenderer: PHP serialized
-		 *
-		 * @param array $contentData
-		 * @param bool $renderAndDie
-		 * @param int $compression
-		 *
-		 * @return string
-		 * @throws \Exception
-		 * @since 6.0.1
-		 */
-		public function renderPhpSerialize( $contentData = array(), $renderAndDie = false, $compression = TORNELIB_CRYPTO_TYPES::TYPE_NONE ) {
-			$contentRendered = $this->compressString( serialize( $contentData ), $compression, $renderAndDie );
-
-			if ( $renderAndDie ) {
-				header( "Content-Type: text/plain" );
-				echo $contentRendered;
-				die;
-			}
-
-			return $contentRendered;
-		}
-
-		/**
-		 * @param string $serialInput
-		 *
-		 * @return mixed
-		 * @since 6.0.5
-		 */
-		public function getFromSerializerInternal( $serialInput = '', $assoc = false ) {
-			if ( ! $assoc ) {
-				return @unserialize( $serialInput );
-			} else {
-				return $this->arrayObjectToStdClass( @unserialize( $serialInput ) );
-			}
-		}
-
-		/**
-		 * ServerRenderer: Render yaml data
-		 *
-		 * Install:
-		 *  apt-get install libyaml-dev
-		 *  pecl install yaml
-		 *
-		 * @param array $contentData
-		 * @param bool $renderAndDie
-		 *
-		 * @return string
-		 * @throws \Exception
-		 * @since 6.0.1
-		 */
-		public function renderYaml( $contentData = array(), $renderAndDie = false, $compression = TORNELIB_CRYPTO_TYPES::TYPE_NONE ) {
-			$objectArrayEncoded = $this->getUtf8( $this->objectsIntoArray( $contentData ) );
-			if ( function_exists( 'yaml_emit' ) ) {
-				$contentRendered = $this->compressString( yaml_emit( $objectArrayEncoded ), $compression, $renderAndDie );
-				if ( $renderAndDie ) {
-					header( "Content-Type: text/plain" );
-					echo $contentRendered;
-					die;
-				}
-
-				return $contentRendered;
-			} else {
-				throw new \Exception( "yaml_emit not supported - ask your admin to install the driver", 404 );
-			}
-		}
-
-		/**
-		 * @param array $contentData
-		 * @param bool $renderAndDie
-		 * @param int $compression
-		 *
-		 * @return mixed
-		 * @throws \Exception
-		 * @since 6.0.1
-		 */
-		public function renderXml( $contentData = array(), $renderAndDie = false, $compression = TORNELIB_CRYPTO_TYPES::TYPE_NONE, $initialTagName = 'item', $rootName = 'XMLResponse' ) {
-			$serializerPath = stream_resolve_include_path( 'XML/Serializer.php' );
-			if ( ! empty( $serializerPath ) ) {
-				require_once( 'XML/Serializer.php' );
-			}
-			$objectArrayEncoded = $this->getUtf8( $this->objectsIntoArray( $contentData ) );
-			$options            = array(
-				'indent'         => '    ',
-				'linebreak'      => "\n",
-				'encoding'       => 'UTF-8',
-				'rootName'       => $rootName,
-				'defaultTagName' => $initialTagName
-			);
-			if ( class_exists( 'XML_Serializer' ) && ! $this->ENFORCE_SIMPLEXML ) {
-				$xmlSerializer = new \XML_Serializer( $options );
-				$xmlSerializer->serialize( $objectArrayEncoded );
-				$contentRendered = $xmlSerializer->getSerializedData();
-			} else {
-				// <data></data>
-				if ( $this->SOAP_ATTRIBUTES_ENABLED ) {
-					$soapNs = 'http://schemas.xmlsoap.org/soap/envelope/';
-					$xml    = new \SimpleXMLElement( '<?xml version="1.0"?>' . '<' . $rootName . '></' . $rootName . '>', 0, false, $soapNs, false );
-					$xml->addAttribute( $rootName . ':xmlns', $soapNs );
-					$xml->addAttribute( $rootName . ':xsi', 'http://www.w3.org/2001/XMLSchema-instance' );
-					$xml->addAttribute( $rootName . ':xsd', 'http://www.w3.org/2001/XMLSchema' );
-				} else {
-					$xml = new \SimpleXMLElement( '<?xml version="1.0"?>' . '<' . $rootName . '></' . $rootName . '>' );
-				}
-				$this->array_to_xml( $objectArrayEncoded, $xml );
-				$contentRendered = $xml->asXML();
-			}
-
-			$contentRendered = $this->compressString( $contentRendered, $compression, $renderAndDie );
-
-			if ( $renderAndDie ) {
-				header( "Content-Type: application/xml" );
-				echo $contentRendered;
-				die;
-			}
-
-			return $contentRendered;
-		}
-
-		/**
-		 * @param string $dataIn
-		 *
-		 * @return mixed|string
-		 * @since 6.0.5
-		 */
-		public function getFromJson( $dataIn = '' ) {
-			if ( is_string( $dataIn ) ) {
-				return @json_decode( $dataIn );
-			} else if ( is_object( $dataIn ) ) {
-				return null;
-			} else if ( is_array( $dataIn ) ) {
-				return null;
-			}
-		}
-
-		/**
-		 * Convert XML string into an object or array
-		 *
-		 * @param string $dataIn
-		 * @param bool $normalize Normalize objects (convert to stdClass)
-		 *
-		 * @return \SimpleXMLElement
-		 * @since 6.0.5
-		 */
-		public function getFromXml( $dataIn = '', $normalize = false ) {
-			$dataIn = trim( $dataIn );
-
-			// Run entity checker only if there seems to be no initial tags located in the input string, as this may cause bad loops
-			// for PHP (in older versions this also cause SEGFAULTs)
-			if ( ! preg_match( "/^\</", $dataIn ) && preg_match( "/&\b(.*?)+;(.*)/is", $dataIn ) ) {
-				$dataEntity = trim( html_entity_decode( $dataIn ) );
-				if ( preg_match( "/^\</", $dataEntity ) ) {
-
-					return $this->getFromXml( $dataEntity, $normalize );
-				}
-
-				if ( $this->XML_TRANSLATE_ENTITY_RERUN >= 0 ) {
-					// Fail on too many loops
-					$this->XML_TRANSLATE_ENTITY_RERUN ++;
-					if ( $this->XML_TRANSLATE_ENTITY_RERUN >= 2 ) {
-						return null;
-					}
-
-					return $this->getFromXml( $dataEntity, $normalize );
-				}
-
-				return null;
-			}
-
-			if ( $this->getXmlUnSerializer() && $this->getHasXmlSerializer() ) {
-				if ( is_string( $dataIn ) && preg_match( "/\<(.*?)\>/s", $dataIn ) ) {
-					require_once( 'XML/Unserializer.php' );
-					$xmlSerializer = new \XML_Unserializer();
-					$xmlSerializer->unserialize( $dataIn );
-
-					if ( ! $normalize ) {
-						return $xmlSerializer->getUnserializedData();
-					} else {
-						return $this->arrayObjectToStdClass( $xmlSerializer->getUnserializedData() );
-					}
-				}
-			} else {
-				if ( class_exists( 'SimpleXMLElement' ) ) {
-					if ( is_string( $dataIn ) && preg_match( "/\<(.*?)\>/s", $dataIn ) ) {
-						if ( $this->ENFORCE_CDATA ) {
-							$simpleXML = new \SimpleXMLElement( $dataIn, LIBXML_NOCDATA );
-						} else {
-							$simpleXML = new \SimpleXMLElement( $dataIn );
-						}
-						if ( isset( $simpleXML ) && ( is_object( $simpleXML ) || is_array( $simpleXML ) ) ) {
-							if ( ! $normalize ) {
-								/*								$xmlExtractedPath = $this->extractXmlPath( $simpleXML );
-																if ( ! is_null( $xmlExtractedPath ) && is_object( $xmlExtractedPath ) ) {
-																	return $this->arrayObjectToStdClass($xmlExtractedPath);
-																}*/
-								return $simpleXML;
-							} else {
-								$objectClass = $this->arrayObjectToStdClass( $simpleXML );
-								if ( ! count( (array) $objectClass ) ) {
-									$xmlExtractedPath = $this->extractXmlPath( $simpleXML );
-									if ( ! is_null( $xmlExtractedPath ) ) {
-										if ( is_object( $xmlExtractedPath ) || ( is_array( $xmlExtractedPath ) && count( $xmlExtractedPath ) ) ) {
-											return $xmlExtractedPath;
-										}
-									}
-								}
-
-								return $objectClass;
-							}
-						}
-					}
-				}
-			}
-
-			return null;
-		}
-
-		/**
-		 * Check if there is something more than just an empty object hidden behind a SimpleXMLElement
-		 *
-		 * @param null $simpleXML
-		 *
-		 * @return array|mixed|null
-		 * @since 6.0.8
-		 */
-		private function extractXmlPath( $simpleXML = null ) {
-			$canReturn       = false;
-			$xmlXpath        = null;
-			$xmlPathReturner = null;
-			if ( method_exists( $simpleXML, 'xpath' ) ) {
-				try {
-					$xmlXpath = $simpleXML->xpath( "*/*" );
-				} catch ( \Exception $ignoreErrors ) {
-
-				}
-				if ( is_array( $xmlXpath ) ) {
-					if ( count( $xmlXpath ) == 1 ) {
-						$xmlPathReturner = array_pop( $xmlXpath );
-						$canReturn       = true;
-					} else if ( count( $xmlXpath ) > 1 ) {
-						$xmlPathReturner = $xmlXpath;
-						$canReturn       = true;
-					}
-					if ( isset( $xmlPathReturner->return ) ) {
-						return $this->arrayObjectToStdClass( $xmlPathReturner )->return;
-					}
-				}
-			}
-			if ( $canReturn ) {
-				return $xmlPathReturner;
-			}
-
-			return null;
-		}
-
-		/**
-		 * @param string $yamlString
-		 * @param bool $getAssoc
-		 *
-		 * @return array|mixed|object
-		 * @throws \Exception
-		 * @since 6.0.5
-		 */
-		public function getFromYaml( $yamlString = '', $getAssoc = true ) {
-			if ( function_exists( 'yaml_parse' ) ) {
-				$extractYaml = @yaml_parse( $yamlString );
-				if ( $getAssoc ) {
-					if ( empty( $extractYaml ) ) {
-						return null;
-					}
-
-					return $extractYaml;
-				} else {
-					if ( empty( $extractYaml ) ) {
-						return null;
-					}
-
-					return $this->arrayObjectToStdClass( $extractYaml );
-				}
-			} else {
-				throw new \Exception( "yaml_parse not supported - ask your admin to install the driver", 404 );
-			}
-		}
-
-	}
+if ( ! class_exists('MODULE_IO') && ! class_exists('TorneLIB\MODULE_IO') && defined('TORNELIB_IO_ALLOW_AUTOLOAD') && TORNELIB_IO_ALLOW_AUTOLOAD === true) {
+
+    /**
+     * Class MODULE_IO
+     *
+     * @package TorneLIB
+     */
+    class MODULE_IO
+    {
+
+        /** @var TorneLIB_Crypto $CRYPTO */
+        private $CRYPTO;
+        /** @var bool Enforce usage SimpleXML objects even if XML_Serializer is present */
+        private $ENFORCE_SIMPLEXML = false;
+
+        /** @var bool $ENFORCE_SERIALIZER */
+        private $ENFORCE_SERIALIZER = false;
+
+        /** @var bool $ENFORCE_CDATA */
+        private $ENFORCE_CDATA = false;
+
+        /** @var bool $SOAP_ATTRIBUTES_ENABLED */
+        private $SOAP_ATTRIBUTES_ENABLED = false;
+
+        /** @var int $XML_TRANSLATE_ENTITY_RERUN */
+        private $XML_TRANSLATE_ENTITY_RERUN = 0;
+
+        public function __construct()
+        {
+        }
+
+        function setCrypto()
+        {
+            if (empty($this->CRYPTO)) {
+                $this->CRYPTO = new TorneLIB_Crypto();
+            }
+        }
+
+        /**
+         * Set and override compression level
+         *
+         * @param int $compressionLevel
+         *
+         * @since 6.0.3
+         */
+        function setCompressionLevel($compressionLevel = 9)
+        {
+            $this->setCrypto();
+            $this->CRYPTO->setCompressionLevel($compressionLevel);
+        }
+
+        /**
+         * Get current compressionlevel
+         *
+         * @return mixed
+         * @since 6.0.3
+         */
+        public function getCompressionLevel()
+        {
+            $this->setCrypto();
+
+            return $this->CRYPTO->getCompressionLevel();
+        }
+
+        /**
+         * Force the use of SimpleXML before XML/Serializer
+         *
+         * @param bool $enforceSimpleXml
+         *
+         * @since 6.0.3
+         */
+        public function setXmlSimple($enforceSimpleXml = true)
+        {
+            $this->ENFORCE_SIMPLEXML = $enforceSimpleXml;
+        }
+
+        /**
+         * @return bool
+         *
+         * @since 6.0.3
+         */
+        public function getXmlSimple()
+        {
+            return $this->ENFORCE_SIMPLEXML;
+        }
+
+        /**
+         * Enforce use of XML/Unserializer before SimpleXML-decoding
+         *
+         * @param bool $activationBoolean
+         *
+         * @since 6.0.5
+         */
+        public function setXmlUnSerializer($activationBoolean = true)
+        {
+            $this->ENFORCE_SERIALIZER = $activationBoolean;
+        }
+
+        /**
+         * Figure out if user has enabled overriding default XML parser (SimpleXML => XML/Unserializer)
+         *
+         * @return bool
+         * @since 6.0.5
+         */
+        public function getXmlUnSerializer()
+        {
+            return $this->ENFORCE_SERIALIZER;
+        }
+
+        /**
+         * Enable the use of CDATA-fields in XML data
+         *
+         * @param bool $activationBoolean
+         *
+         * @since 6.0.5
+         */
+        public function setCdataEnabled($activationBoolean = true)
+        {
+            $this->ENFORCE_CDATA = $activationBoolean;
+        }
+
+        /**
+         * Figure out if user has enabled the use of CDATA in XML data
+         *
+         * @return bool
+         * @since 6.0.5
+         */
+        public function getCdataEnabled()
+        {
+            return $this->ENFORCE_CDATA;
+        }
+
+        /**
+         * Figure out whether we can use XML/Unserializer as XML parser or not
+         *
+         * @return bool
+         * @since 6.0.5
+         */
+        public function getHasXmlSerializer()
+        {
+            $serializerPath = stream_resolve_include_path('XML/Unserializer.php');
+            if ( ! empty($serializerPath)) {
+                return true;
+            }
+
+            return false;
+        }
+
+        /**
+         * @param bool $soapAttributes
+         *
+         * @since 6.0.6
+         */
+        public function setSoapXml($soapAttributes = true)
+        {
+            $this->SOAP_ATTRIBUTES_ENABLED = $soapAttributes;
+            $this->setXmlSimple(true);
+        }
+
+        /**
+         * @return bool
+         * @since 6.0.6
+         */
+        public function getSoapXml()
+        {
+            return $this->SOAP_ATTRIBUTES_ENABLED;
+        }
+
+        /**
+         * Convert object to a data object (used for repairing __PHP_Incomplete_Class objects)
+         *
+         * This function are written to work with WSDL2PHPGenerator, where serialization of some objects sometimes generates, as described, __PHP_Incomplete_Class objects.
+         * The upgraded version are also supposed to work with protected values.
+         *
+         * @param array $objectArray
+         * @param bool  $useJsonFunction
+         *
+         * @return object
+         * @since 6.0.0
+         */
+        public function arrayObjectToStdClass($objectArray = array(), $useJsonFunction = false)
+        {
+            /**
+             * If json_decode and json_encode exists as function, do it the simple way.
+             * http://php.net/manual/en/function.json-encode.php
+             */
+            if ((function_exists('json_decode') && function_exists('json_encode')) || $useJsonFunction) {
+                return json_decode(json_encode($objectArray));
+            }
+            $newArray = array();
+            if (is_array($objectArray) || is_object($objectArray)) {
+                foreach ($objectArray as $itemKey => $itemValue) {
+                    if (is_array($itemValue)) {
+                        $newArray[$itemKey] = (array)$this->arrayObjectToStdClass($itemValue);
+                    } elseif (is_object($itemValue)) {
+                        $newArray[$itemKey] = (object)(array)$this->arrayObjectToStdClass($itemValue);
+                    } else {
+                        $newArray[$itemKey] = $itemValue;
+                    }
+                }
+            }
+
+            return $newArray;
+        }
+
+        /**
+         * Convert objects to arrays
+         *
+         * @param       $arrObjData
+         * @param array $arrSkipIndices
+         *
+         * @return array
+         * @since 6.0.0
+         */
+        public function objectsIntoArray($arrObjData, $arrSkipIndices = array())
+        {
+            $arrData = array();
+            // if input is object, convert into array
+            if (is_object($arrObjData)) {
+                $arrObjData = get_object_vars($arrObjData);
+            }
+            if (is_array($arrObjData)) {
+                foreach ($arrObjData as $index => $value) {
+                    if (is_object($value) || is_array($value)) {
+                        $value = $this->objectsIntoArray($value, $arrSkipIndices); // recursive call
+                    }
+                    if (@in_array($index, $arrSkipIndices)) {
+                        continue;
+                    }
+                    $arrData[$index] = $value;
+                }
+            }
+
+            return $arrData;
+        }
+
+        /**
+         * @param array            $dataArray
+         * @param SimpleXMLElement $xml
+         *
+         * @return mixed
+         * @since 6.0.3
+         */
+        private function array_to_xml($dataArray = array(), $xml)
+        {
+            foreach ($dataArray as $key => $value) {
+                $key = is_numeric($key) ? 'item' : $key;
+                if (is_array($value)) {
+                    $this->array_to_xml($value, $xml->addChild($key));
+                } else {
+                    $xml->addChild($key, $value);
+                }
+            }
+
+            return $xml;
+        }
+
+        /**
+         * Convert all data to utf8
+         *
+         * @param array $dataArray
+         *
+         * @return array
+         * @since 6.0.0
+         */
+        private function getUtf8($dataArray = array())
+        {
+            $newArray = array();
+            if (is_array($dataArray)) {
+                foreach ($dataArray as $p => $v) {
+                    if (is_array($v) || is_object($v)) {
+                        $v            = $this->getUtf8($v);
+                        $newArray[$p] = $v;
+                    } else {
+                        $v            = utf8_encode($v);
+                        $newArray[$p] = $v;
+                    }
+
+                }
+            }
+
+            return $newArray;
+        }
+
+        /**
+         * @param array $arrayData
+         *
+         * @return bool
+         * @since 6.0.2
+         */
+        function isAssoc(array $arrayData)
+        {
+            if (array() === $arrayData) {
+                return false;
+            }
+
+            return array_keys($arrayData) !== range(0, count($arrayData) - 1);
+        }
+
+        /**
+         * @param string $contentString
+         * @param int    $compression
+         * @param bool   $renderAndDie
+         *
+         * @return string
+         * @throws \Exception
+         * @since 6.0.3
+         */
+        private function compressString(
+            $contentString = '',
+            $compression = TORNELIB_CRYPTO_TYPES::TYPE_NONE,
+            $renderAndDie = false
+        ) {
+            if ($compression == TORNELIB_CRYPTO_TYPES::TYPE_GZ) {
+                $this->setCrypto();
+                $contentString = $this->CRYPTO->base64_gzencode($contentString);
+            } elseif ($compression == TORNELIB_CRYPTO_TYPES::TYPE_BZ2) {
+                $this->setCrypto();
+                $contentString = $this->CRYPTO->base64_bzencode($contentString);
+            }
+
+            if ($renderAndDie) {
+                if ($compression == TORNELIB_CRYPTO_TYPES::TYPE_GZ) {
+                    $contentString = array('gz' => $contentString);
+                } elseif ($compression == TORNELIB_CRYPTO_TYPES::TYPE_BZ2) {
+                    $contentString = array('bz2' => $contentString);
+                }
+            }
+
+            return $contentString;
+        }
+
+        /**
+         * ServerRenderer: Render JSON data
+         *
+         * @param array $contentData
+         * @param bool  $renderAndDie
+         * @param int   $compression
+         *
+         * @return string
+         * @throws \Exception
+         * @since 6.0.1
+         */
+        public function renderJson(
+            $contentData = array(),
+            $renderAndDie = false,
+            $compression = TORNELIB_CRYPTO_TYPES::TYPE_NONE
+        ) {
+            $objectArrayEncoded = $this->getUtf8($this->objectsIntoArray($contentData));
+
+            if (is_string($contentData)) {
+                $objectArrayEncoded = $this->objectsIntoArray($this->getFromJson($contentData));
+            }
+
+            $contentRendered = $this->compressString(@json_encode($objectArrayEncoded, JSON_PRETTY_PRINT), $compression,
+                $renderAndDie);
+
+            if ($renderAndDie) {
+                header("Content-type: application/json; charset=utf-8");
+                echo $contentRendered;
+                die;
+            }
+
+            return $contentRendered;
+        }
+
+        /**
+         * ServerRenderer: PHP serialized
+         *
+         * @param array $contentData
+         * @param bool  $renderAndDie
+         * @param int   $compression
+         *
+         * @return string
+         * @throws \Exception
+         * @since 6.0.1
+         */
+        public function renderPhpSerialize(
+            $contentData = array(),
+            $renderAndDie = false,
+            $compression = TORNELIB_CRYPTO_TYPES::TYPE_NONE
+        ) {
+            $contentRendered = $this->compressString(serialize($contentData), $compression, $renderAndDie);
+
+            if ($renderAndDie) {
+                header("Content-Type: text/plain");
+                echo $contentRendered;
+                die;
+            }
+
+            return $contentRendered;
+        }
+
+        /**
+         * @param string $serialInput
+         * @param bool   $assoc
+         *
+         * @return mixed
+         * @since 6.0.5
+         */
+        public function getFromSerializerInternal($serialInput = '', $assoc = false)
+        {
+            if ( ! $assoc) {
+                return @unserialize($serialInput);
+            } else {
+                return $this->arrayObjectToStdClass(@unserialize($serialInput));
+            }
+        }
+
+        /**
+         * ServerRenderer: Render yaml data
+         *
+         * Install:
+         *  apt-get install libyaml-dev
+         *  pecl install yaml
+         *
+         * @param array $contentData
+         * @param bool  $renderAndDie
+         * @param int   $compression
+         *
+         * @return string
+         * @throws \Exception
+         * @since 6.0.1
+         */
+        public function renderYaml(
+            $contentData = array(),
+            $renderAndDie = false,
+            $compression = TORNELIB_CRYPTO_TYPES::TYPE_NONE
+        ) {
+            $objectArrayEncoded = $this->getUtf8($this->objectsIntoArray($contentData));
+            if (function_exists('yaml_emit')) {
+                $contentRendered = $this->compressString(yaml_emit($objectArrayEncoded), $compression, $renderAndDie);
+                if ($renderAndDie) {
+                    header("Content-Type: text/plain");
+                    echo $contentRendered;
+                    die;
+                }
+
+                return $contentRendered;
+            } else {
+                throw new \Exception("yaml_emit not supported - ask your admin to install the driver", 404);
+            }
+        }
+
+        /**
+         * @param array  $contentData
+         * @param bool   $renderAndDie
+         * @param int    $compression
+         * @param string $initialTagName
+         * @param string $rootName
+         *
+         * @return mixed
+         * @throws \Exception
+         * @since 6.0.1
+         */
+        public function renderXml(
+            $contentData = array(),
+            $renderAndDie = false,
+            $compression = TORNELIB_CRYPTO_TYPES::TYPE_NONE,
+            $initialTagName = 'item',
+            $rootName = 'XMLResponse'
+        ) {
+            $serializerPath = stream_resolve_include_path('XML/Serializer.php');
+            if ( ! empty($serializerPath)) {
+                /** @noinspection PhpIncludeInspection */
+                require_once('XML/Serializer.php');
+            }
+            $objectArrayEncoded = $this->getUtf8($this->objectsIntoArray($contentData));
+            $options            = array(
+                'indent'         => '    ',
+                'linebreak'      => "\n",
+                'encoding'       => 'UTF-8',
+                'rootName'       => $rootName,
+                'defaultTagName' => $initialTagName
+            );
+            if (class_exists('XML_Serializer') && ! $this->ENFORCE_SIMPLEXML) {
+                $xmlSerializer = new \XML_Serializer($options);
+                $xmlSerializer->serialize($objectArrayEncoded);
+                $contentRendered = $xmlSerializer->getSerializedData();
+            } else {
+                // <data></data>
+                if ($this->SOAP_ATTRIBUTES_ENABLED) {
+                    $soapNs = 'http://schemas.xmlsoap.org/soap/envelope/';
+                    $xml    = new \SimpleXMLElement('<?xml version="1.0"?>' . '<' . $rootName . '></' . $rootName . '>',
+                        0, false, $soapNs, false);
+                    $xml->addAttribute($rootName . ':xmlns', $soapNs);
+                    $xml->addAttribute($rootName . ':xsi', 'http://www.w3.org/2001/XMLSchema-instance');
+                    $xml->addAttribute($rootName . ':xsd', 'http://www.w3.org/2001/XMLSchema');
+                } else {
+                    $xml = new \SimpleXMLElement('<?xml version="1.0"?>' . '<' . $rootName . '></' . $rootName . '>');
+                }
+                $this->array_to_xml($objectArrayEncoded, $xml);
+                $contentRendered = $xml->asXML();
+            }
+
+            $contentRendered = $this->compressString($contentRendered, $compression, $renderAndDie);
+
+            if ($renderAndDie) {
+                header("Content-Type: application/xml");
+                echo $contentRendered;
+                die;
+            }
+
+            return $contentRendered;
+        }
+
+        /**
+         * @param string $dataIn
+         *
+         * @return mixed|string
+         * @since 6.0.5
+         */
+        public function getFromJson($dataIn = '')
+        {
+            if (is_string($dataIn)) {
+                return @json_decode($dataIn);
+            } elseif (is_object($dataIn)) {
+                return null;
+            } elseif (is_array($dataIn)) {
+                return null;
+            } else {
+                // Fail.
+                return null;
+            }
+        }
+
+        /**
+         * Convert XML string into an object or array
+         *
+         * @param string $dataIn
+         * @param bool   $normalize Normalize objects (convert to stdClass)
+         *
+         * @return \SimpleXMLElement
+         * @since 6.0.5
+         */
+        public function getFromXml($dataIn = '', $normalize = false)
+        {
+            set_error_handler( function ( $errNo, $errStr ) {
+                throw new \Exception($errStr, $errNo);
+            }, E_ALL );
+
+            $dataIn = trim($dataIn);
+
+            // Run entity checker only if there seems to be no initial tags located in the input string, as this may cause bad loops
+            // for PHP (in older versions this also cause SEGFAULTs)
+            if ( ! preg_match("/^\</", $dataIn) && preg_match("/&\b(.*?)+;(.*)/is", $dataIn)) {
+                $dataEntity = trim(html_entity_decode($dataIn));
+                if (preg_match("/^\</", $dataEntity)) {
+
+                    restore_error_handler();
+                    return $this->getFromXml($dataEntity, $normalize);
+                }
+
+                if ($this->XML_TRANSLATE_ENTITY_RERUN >= 0) {
+                    // Fail on too many loops
+                    $this->XML_TRANSLATE_ENTITY_RERUN++;
+                    if ($this->XML_TRANSLATE_ENTITY_RERUN >= 2) {
+                        return null;
+                    }
+
+                    restore_error_handler();
+                    return $this->getFromXml($dataEntity, $normalize);
+                }
+
+                return null;
+            }
+
+            if ($this->getXmlUnSerializer() && $this->getHasXmlSerializer()) {
+                if (is_string($dataIn) && preg_match("/\<(.*?)\>/s", $dataIn)) {
+                    /** @noinspection PhpIncludeInspection */
+                    require_once('XML/Unserializer.php');
+                    $xmlSerializer = new \XML_Unserializer();
+                    $xmlSerializer->unserialize($dataIn);
+
+                    if ( ! $normalize) {
+                        restore_error_handler();
+                        return $xmlSerializer->getUnserializedData();
+                    } else {
+                        restore_error_handler();
+                        return $this->arrayObjectToStdClass($xmlSerializer->getUnserializedData());
+                    }
+                }
+            } else {
+                if (class_exists('SimpleXMLElement')) {
+                    if (is_string($dataIn) && preg_match("/\<(.*?)\>/s", $dataIn)) {
+                        if ($this->ENFORCE_CDATA) {
+                            $simpleXML = new \SimpleXMLElement($dataIn, LIBXML_NOCDATA);
+                        } else {
+                            $simpleXML = new \SimpleXMLElement($dataIn);
+                        }
+                        if (isset($simpleXML) && (is_object($simpleXML) || is_array($simpleXML))) {
+                            if ( ! $normalize) {
+                                restore_error_handler();
+                                return $simpleXML;
+                            } else {
+                                $objectClass = $this->arrayObjectToStdClass($simpleXML);
+                                if ( ! count((array)$objectClass)) {
+                                    $xmlExtractedPath = $this->extractXmlPath($simpleXML);
+                                    if ( ! is_null($xmlExtractedPath)) {
+                                        if (is_object($xmlExtractedPath) || (is_array($xmlExtractedPath) && count($xmlExtractedPath))) {
+                                            restore_error_handler();
+                                            return $xmlExtractedPath;
+                                        }
+                                    }
+                                }
+
+                                restore_error_handler();
+                                return $objectClass;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        /**
+         * Check if there is something more than just an empty object hidden behind a SimpleXMLElement
+         *
+         * @param null $simpleXML
+         *
+         * @return array|mixed|null
+         * @since 6.0.8
+         */
+        private function extractXmlPath($simpleXML = null)
+        {
+            $canReturn       = false;
+            $xmlXpath        = null;
+            $xmlPathReturner = null;
+            if (method_exists($simpleXML, 'xpath')) {
+                try {
+                    $xmlXpath = $simpleXML->xpath("*/*");
+                } catch (\Exception $ignoreErrors) {
+
+                }
+                if (is_array($xmlXpath)) {
+                    if (count($xmlXpath) == 1) {
+                        $xmlPathReturner = array_pop($xmlXpath);
+                        $canReturn       = true;
+                    } elseif (count($xmlXpath) > 1) {
+                        $xmlPathReturner = $xmlXpath;
+                        $canReturn       = true;
+                    }
+                    if (isset($xmlPathReturner->return)) {
+                        return $this->arrayObjectToStdClass($xmlPathReturner)->return;
+                    }
+                }
+            }
+            if ($canReturn) {
+                return $xmlPathReturner;
+            }
+
+            return null;
+        }
+
+        /**
+         * @param string $yamlString
+         * @param bool   $getAssoc
+         *
+         * @return array|mixed|object
+         * @throws \Exception
+         * @since 6.0.5
+         */
+        public function getFromYaml($yamlString = '', $getAssoc = true)
+        {
+            if (function_exists('yaml_parse')) {
+                $extractYaml = @yaml_parse($yamlString);
+                if ($getAssoc) {
+                    if (empty($extractYaml)) {
+                        return null;
+                    }
+
+                    return $extractYaml;
+                } else {
+                    if (empty($extractYaml)) {
+                        return null;
+                    }
+
+                    return $this->arrayObjectToStdClass($extractYaml);
+                }
+            } else {
+                throw new \Exception("yaml_parse not supported - ask your admin to install the driver", 404);
+            }
+        }
+
+    }
 }
 
-if ( ! class_exists( 'TorneLIB_IO' ) && ! class_exists( 'Resursbank\RBEcomPHP\TorneLIB_IO' ) ) {
-	class TorneLIB_IO extends MODULE_IO {
-	}
+if ( ! class_exists('TorneLIB_IO') && ! class_exists('TorneLIB\TorneLIB_IO')) {
+    class TorneLIB_IO extends MODULE_IO
+    {
+    }
 }
