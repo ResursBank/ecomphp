@@ -148,6 +148,10 @@ class resursBankTest extends TestCase {
 		try {
 			$this->TEST->getCredentialControl( false );
 		} catch ( \Exception $e ) {
+		    if ($e->getCode() >= 500) {
+		        static::markTestIncomplete("Got internal server error (500) from Resurs Bank. This test usually returns 401 for access denied, but something went wrong this time.");
+		        return;
+            }
 			static::assertTrue( ( $e->getCode() == 401 ) );
 		}
 	}
@@ -330,7 +334,7 @@ class resursBankTest extends TestCase {
 		$response = $this->TEST->ECOM->createPayment( $this->getMethodId() );
 		if ( ! $noAssert ) {
             /** @noinspection PhpUndefinedFieldInspection */
-            static::assertContains( 'BOOKED', $response->bookPaymentStatus );
+            static::assertTrue( $response->bookPaymentStatus == 'BOOKED' || $response->bookPaymentStatus == 'SIGNING' );
 		}
 
 		return $response;
