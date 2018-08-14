@@ -1674,7 +1674,7 @@ if ( ! class_exists( 'MODULE_NETBITS' ) && ! class_exists( 'Resursbank\RBEcomPHP
 				'BIT_64'  => 64,
 				'BIT_128' => 128
 			);
-			if ( count( $bitStructure ) ) {
+			if ( is_array($bitStructure) && count( $bitStructure ) ) {
 				$this->BIT_SETUP = $this->validateBitStructure( $bitStructure );
 			}
 		}
@@ -2206,10 +2206,10 @@ if ( ! class_exists( 'NETCURL_RESPONSETYPE' ) && ! class_exists( 'Resursbank\RBE
 }
 if ( ! class_exists( 'MODULE_NETWORK' ) && ! class_exists( 'Resursbank\RBEcomPHP\MODULE_NETWORK' ) ) {
 	if ( ! defined( 'NETCURL_NETWORK_RELEASE' ) ) {
-		define( 'NETCURL_NETWORK_RELEASE', '6.0.6' );
+		define( 'NETCURL_NETWORK_RELEASE', '6.0.7' );
 	}
 	if ( ! defined( 'NETCURL_NETWORK_MODIFY' ) ) {
-		define( 'NETCURL_NETWORK_MODIFY', '20180325' );
+		define( 'NETCURL_NETWORK_MODIFY', '20180813' );
 	}
 
 	/**
@@ -2298,24 +2298,49 @@ if ( ! class_exists( 'MODULE_NETWORK' ) && ! class_exists( 'Resursbank\RBEcomPHP
 			}
 		}
 
-		/**
-		 * Try to fetch git tags from git URLS
-		 *
-		 * @param string $gitUrl
-		 * @param bool   $cleanNonNumerics Normally you do not want to strip anything. This boolean however, decides if we will include non numerical version data in the returned array
-		 * @param bool   $sanitizeNumerics If we decide to not include non numeric values from the version tag array (by $cleanNonNumerics), the tags will be sanitized in a preg_replace filter that will the keep numerics in the content only (with $cleanNonNumerics set to false, this boolen will have no effect)
-		 *
-		 * @return array
-		 * @throws \Exception
-		 * @since 6.0.4
-		 */
-		public function getGitTagsByUrl( $gitUrl = '', $cleanNonNumerics = false, $sanitizeNumerics = false ) {
+        /**
+         * Uses version_compare with the operators >= (from) and <= (to) to pick up the right version range form a git repository tag list
+         * @param $gitUrl
+         * @param $fromVersionCompare
+         * @param $toVersionCompare
+         * @param bool $cleanNonNumerics
+         * @param bool $sanitizeNumerics
+         * @param bool $keepCredentials
+         * @return array
+         * @throws \Exception
+         */
+		public function getGitTagsByVersion($gitUrl, $fromVersionCompare, $toVersionCompare, $cleanNonNumerics = false, $sanitizeNumerics = false, $keepCredentials = true ) {
+		    $return = array();
+            $versionList = $this->getGitTagsByUrl($gitUrl, $cleanNonNumerics, $sanitizeNumerics, $keepCredentials);
+            if (is_array($versionList) && count($versionList)) {
+                foreach ($versionList as $versionNum) {
+                    if (version_compare($versionNum, $fromVersionCompare, '>=') && version_compare($versionNum, $toVersionCompare, '<=') && !in_array($versionNum, $return)) {
+                        $return[] = $versionNum;
+                    }
+                }
+            }
+            return $return;
+        }
+
+        /**
+         * Try to fetch git tags from git URLS
+         * @param string $gitUrl
+         * @param bool $cleanNonNumerics Normally you do not want to strip anything. This boolean however, decides if we will include non numerical version data in the returned array
+         * @param bool $sanitizeNumerics If we decide to not include non numeric values from the version tag array (by $cleanNonNumerics), the tags will be sanitized in a preg_replace filter that will the keep numerics in the content only (with $cleanNonNumerics set to false, this boolen will have no effect)
+         * @param $keepCredentials
+         * @return array
+         * @throws \Exception
+         * @since 6.0.4
+         */
+		public function getGitTagsByUrl($gitUrl, $cleanNonNumerics = false, $sanitizeNumerics = false, $keepCredentials = true ) {
 			$fetchFail = true;
 			$tagArray  = array();
 			$gitUrl    .= "/info/refs?service=git-upload-pack";
 			// Clean up all user auth data in URL if exists
-			$gitUrl = preg_replace( "/\/\/(.*?)@/", '//', $gitUrl );
-			/** @var $CURL Tornevall_cURL */
+            if (!$keepCredentials) {
+                $gitUrl = preg_replace("/\/\/(.*?)@/", '//', $gitUrl);
+            }
+			/** @var $CURL MODULE_CURL */
 			$CURL = new MODULE_CURL();
 
 			/** @noinspection PhpUnusedLocalVariableInspection */
@@ -2332,14 +2357,14 @@ if ( ! class_exists( 'MODULE_NETWORK' ) && ! class_exists( 'Resursbank\RBEcomPHP
 						$tagList = $tagMatches[1];
 						foreach ( $tagList as $tag ) {
 							if ( ! preg_match( "/\^/", $tag ) ) {
-								if ( $cleanNonNumerics ) {
+								if ( (bool)$cleanNonNumerics ) {
 									$exTag              = explode( ".", $tag );
 									$tagArrayUncombined = array();
 									foreach ( $exTag as $val ) {
 										if ( is_numeric( $val ) ) {
 											$tagArrayUncombined[] = $val;
 										} else {
-											if ( $sanitizeNumerics ) {
+											if ( (bool)$sanitizeNumerics ) {
 												$vNum                 = preg_replace( "/[^0-9$]/is", '', $val );
 												$tagArrayUncombined[] = $vNum;
 											}
@@ -2883,10 +2908,10 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'Resursbank\RBEcomP
 if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MODULE_CURL' ) ) {
 
 	if ( ! defined( 'NETCURL_CURL_RELEASE' ) ) {
-		define( 'NETCURL_CURL_RELEASE', '6.0.22' );
+		define( 'NETCURL_CURL_RELEASE', '6.0.24' );
 	}
 	if ( ! defined( 'NETCURL_CURL_MODIFY' ) ) {
-		define( 'NETCURL_CURL_MODIFY', '20180619' );
+		define( 'NETCURL_CURL_MODIFY', '20180813' );
 	}
 	if ( ! defined( 'NETCURL_CURL_CLIENTNAME' ) ) {
 		define( 'NETCURL_CURL_CLIENTNAME', 'MODULE_CURL' );
@@ -5898,9 +5923,9 @@ if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 		 */
 		private function internal_curl_configure_timeouts() {
 			// Self set timeouts, making sure the timeout set in the public is an integer over 0. Otherwise this falls back to the curldefauls.
-			if ( isset( $this->NETCURL_CURL_TIMEOUT ) && $this->NETCURL_CURL_TIMEOUT > 0 ) {
-				$this->setCurlOptInternal( CURLOPT_CONNECTTIMEOUT, ceil( $this->NETCURL_CURL_TIMEOUT / 2 ) );
-				$this->setCurlOptInternal( CURLOPT_TIMEOUT, ceil( $this->NETCURL_CURL_TIMEOUT ) );
+            if (isset($this->NETCURL_CURL_TIMEOUT) && $this->NETCURL_CURL_TIMEOUT > 0) {
+				$this->setCurlOpt( CURLOPT_CONNECTTIMEOUT, ceil( $this->NETCURL_CURL_TIMEOUT / 2 ) );
+				$this->setCurlOpt( CURLOPT_TIMEOUT, ceil( $this->NETCURL_CURL_TIMEOUT ) );
 			}
 		}
 
@@ -6901,10 +6926,10 @@ if ( ! class_exists( 'MODULE_SOAP' ) && ! class_exists( 'Resursbank\RBEcomPHP\MO
 	}
 }
 if ( ! defined('TORNELIB_CRYPTO_RELEASE')) {
-    define('TORNELIB_CRYPTO_RELEASE', '6.0.16');
+    define('TORNELIB_CRYPTO_RELEASE', '6.0.17');
 }
 if ( ! defined('TORNELIB_CRYPTO_MODIFY')) {
-    define('TORNELIB_CRYPTO_MODIFY', '20180619');
+    define('TORNELIB_CRYPTO_MODIFY', '20180624');
 }
 if ( ! defined('TORNELIB_CRYPTO_CLIENTNAME')) {
     define('TORNELIB_CRYPTO_CLIENTNAME', 'MODULE_CRYPTO');
@@ -7770,7 +7795,7 @@ if ( ! class_exists('MODULE_CRYPTO') && ! class_exists('TorneLIB\MODULE_CRYPTO')
     }
 }
 
-if ( ! class_exists('TORNELIB_CRYPTO_CRYPTOTYPES') && ! class_exists('TorneLIB\TORNELIB_CRYPTO_CRYPTOTYPES')) {
+if ( ! class_exists('TORNELIB_CRYPTO_TYPES') && ! class_exists('TorneLIB\TORNELIB_CRYPTO_TYPES')) {
     abstract class TORNELIB_CRYPTO_TYPES
     {
         const TYPE_NONE = 0;
