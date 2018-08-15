@@ -50,7 +50,7 @@ class curlTest extends TestCase
 
                 return;
             } elseif ($e->getCode() >= 500) {
-                static::markTestSkipped(
+                static::fail(
                     "Got errors (" . $e->getCode() . ") on URL call, can't complete request: " . $e->getMessage()
                 );
             }
@@ -156,7 +156,7 @@ class curlTest extends TestCase
 
                 return;
             } elseif ($errorCode >= 500) {
-                static::markTestSkipped(
+                static::fail(
                     "Got errors (" . $e->getCode() . ") on URL call, can't complete request: " . $e->getMessage()
                 );
             }
@@ -202,7 +202,7 @@ class curlTest extends TestCase
 
                 return;
             } elseif ($errorCode >= 500) {
-                static::markTestSkipped(
+                static::fail(
                     "Got errors (" . $e->getCode() . ") on URL call, can't complete request: " . $e->getMessage()
                 );
             }
@@ -272,7 +272,7 @@ class curlTest extends TestCase
 
                 return;
             } elseif ($errorCode >= 500) {
-                static::markTestSkipped(
+                static::fail(
                     "Got errors (" . $e->getCode() . ") on URL call, can't complete request: " . $e->getMessage()
                 );
             }

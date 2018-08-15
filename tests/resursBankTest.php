@@ -72,17 +72,7 @@ class resursBankTest extends TestCase
     /** @var string Landing page for signings */
     private $signUrl = "https://test.resurs.com/signdummy/index.php?isSigningUrl=1";
 
-    /**
-     * @throws \Exception
-     */
-    function setUp()
-    {
-        $this->API = new ResursBank();
-        $this->API->setDebug(true);
-        $this->TEST = new RESURS_TEST_BRIDGE();
-    }
-
-    function tearDown()
+    public function tearDown()
     {
 
     }
@@ -90,36 +80,36 @@ class resursBankTest extends TestCase
     /**
      * @test
      */
-    function clearStorage()
+    public function clearStorage()
     {
         @unlink(__DIR__ . "/storage/shared.serialize");
         static::assertTrue(!file_exists(__DIR__ . '/storage/shared.serialize'));
     }
-
-    /** @noinspection PhpUnusedPrivateMethodInspection */
 
     /**
      * @test
      * @testdox Tests API credentials and getPaymentMethods. Expected result: Approved connection with a specific number of payment methods
      * @throws \Exception
      */
-    function apiPaymentMethodsWithCredentials()
+    public function apiPaymentMethodsWithCredentials()
     {
         static::assertTrue(count($this->TEST->getCredentialControl()) > 0);
     }
+
+    /** @noinspection PhpUnusedPrivateMethodInspection */
 
     /**
      * @test
      * @testdox EComPHP throws \Exceptions on credential failures
      * @throws \Exception
      */
-    function apiPaymentMethodsWithWrongCredentials()
+    public function apiPaymentMethodsWithWrongCredentials()
     {
         try {
             $this->TEST->getCredentialControl(false);
         } catch (\Exception $e) {
             if ($e->getCode() >= 500) {
-                static::markTestIncomplete("Got internal server error (500) from Resurs Bank. This test usually returns 401 for access denied, but something went wrong this time.");
+                static::fail("Got internal server error (500) from Resurs Bank. This test usually returns 401 for access denied, but something went wrong this time.");
                 return;
             }
             static::assertTrue(($e->getCode() == 401));
@@ -130,7 +120,7 @@ class resursBankTest extends TestCase
      * @test
      * @testdox Testing this suite's capabilities to share data between tests
      */
-    function shareDataOut()
+    public function shareDataOut()
     {
         $this->TEST->share("outShare", 1);
         $keys = $this->TEST->share("thisKey", "thatValue");
@@ -141,7 +131,7 @@ class resursBankTest extends TestCase
      * @test
      * @testdox Testing this suite's capabilites to retreive shared data
      */
-    function shareDataIn()
+    public function shareDataIn()
     {
         $keys = $this->TEST->share("thisKey");
         static::assertTrue(count($keys) > 0 ? true : false);
@@ -151,7 +141,7 @@ class resursBankTest extends TestCase
      * @test
      * @testdox Testing this suite's capability to remove keys from shared data (necessary to reset things)
      */
-    function shareDataRemove()
+    public function shareDataRemove()
     {
         if ($this->TEST->share("outShare")) {
             $this->TEST->unshare("outShare");
@@ -168,7 +158,7 @@ class resursBankTest extends TestCase
      * @testdox getCurlHandle (using getAddress)
      * @throws \Exception
      */
-    function getAddressCurlHandle()
+    public function getAddressCurlHandle()
     {
         if (!class_exists('\SimpleXMLElement')) {
             static::markTestSkipped("SimpleXMLElement missing");
@@ -208,7 +198,7 @@ class resursBankTest extends TestCase
      * @test
      * @testdox Direct test - Test adding orderlines via the library and extract correct data
      */
-    function addOrderLine()
+    public function addOrderLine()
     {
         $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline", 800, 25);
         $orderLines = $this->TEST->ECOM->getOrderLines();
@@ -221,7 +211,7 @@ class resursBankTest extends TestCase
      * @return array
      * @throws \Exception
      */
-    function generateSimpleSimplifiedInvoiceOrder($noAssert = false)
+    public function generateSimpleSimplifiedInvoiceOrder($noAssert = false)
     {
         $customerData = $this->getHappyCustomerData();
         $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline", 800, 25);
@@ -261,7 +251,7 @@ class resursBankTest extends TestCase
      * @return array|mixed|null
      * @throws \Exception
      */
-    function getAddress($noAssert = false)
+    public function getAddress($noAssert = false)
     {
         $happyCustomer = $this->TEST->ECOM->getAddress($this->flowHappyCustomer);
         $this->TEST->share('happyCustomer', $happyCustomer, false);
@@ -278,7 +268,7 @@ class resursBankTest extends TestCase
      * @return mixed
      * @throws \Exception
      */
-    function getMethodId($specificType = 'INVOICE')
+    public function getMethodId($specificType = 'INVOICE')
     {
         $specificMethod = $this->getMethod($specificType);
         if (isset($specificMethod->id)) {
@@ -293,7 +283,7 @@ class resursBankTest extends TestCase
      * @return mixed
      * @throws \Exception
      */
-    function getMethod($specificType = 'INVOICE')
+    public function getMethod($specificType = 'INVOICE')
     {
         $specificMethod = $this->TEST->share('METHOD_' . $specificType);
         if (empty($specificMethod)) {
@@ -309,11 +299,30 @@ class resursBankTest extends TestCase
     }
 
     /**
+     * @test
+     * @testdox Test if getPaymentMethods work and in the same time cache it for future use
+     * @param bool $noAssert
+     * @throws \Exception
+     */
+    public function getPaymentMethods($noAssert = false)
+    {
+        $this->TEST->ECOM->setSimplifiedPsp(true);
+        $paymentMethods = $this->TEST->ECOM->getPaymentMethods();
+        foreach ($paymentMethods as $method) {
+            $this->TEST->share('METHOD_' . $method->specificType, $method, false);
+        }
+        $this->TEST->share('paymentMethods', $paymentMethods, false);
+        if (!$noAssert) {
+            static::assertGreaterThan(1, $paymentMethods);
+        }
+    }
+
+    /**
      * @test Direct test - Extract orderdata from library
      * @testdox
      * @throws \Exception
      */
-    function getOrderData()
+    public function getOrderData()
     {
         $this->TEST->ECOM->setBillingByGetAddress($this->flowHappyCustomer);
         $this->TEST->ECOM->addOrderLine("RDL-1337", "One simple orderline", 800, 25);
@@ -326,7 +335,7 @@ class resursBankTest extends TestCase
      * @testdox Make sure the current version of ECom is not 1.0.0 and getCurrentRelease() says something
      * @throws \Exception
      */
-    function getCurrentReleaseTests()
+    public function getCurrentReleaseTests()
     {
         $currentReleaseShouldNotBeEmpty = $this->TEST->ECOM->getCurrentRelease();  // php 5.5
         static::assertFalse($this->TEST->ECOM->getIsCurrent("1.0.0") && !empty($currentReleaseShouldNotBeEmpty));
@@ -336,7 +345,7 @@ class resursBankTest extends TestCase
      * @test
      * @throws \Exception
      */
-    function getAnnuityMethods()
+    public function getAnnuityMethods()
     {
         $annuityObjectList = $this->TEST->ECOM->getPaymentMethodsByAnnuity();
         $annuityIdList = $this->TEST->ECOM->getPaymentMethodsByAnnuity(true);
@@ -347,7 +356,7 @@ class resursBankTest extends TestCase
      * @test
      * @throws \Exception
      */
-    function findPaymentsXmlBody()
+    public function findPaymentsXmlBody()
     {
         $paymentScanList = $this->TEST->ECOM->findPayments(array('statusSet' => array('IS_DEBITED')), 1, 10, array(
             'ascending' => false,
@@ -364,7 +373,7 @@ class resursBankTest extends TestCase
      * @throws \Exception
      * @throws \Exception
      */
-    function hookExperiment1()
+    public function hookExperiment1()
     {
         if (!function_exists('ecom_event_register')) {
             static::markTestIncomplete('ecomhooks does not exist');
@@ -386,7 +395,7 @@ class resursBankTest extends TestCase
      * @throws \Exception
      * @throws \Exception
      */
-    function hookExperiment2()
+    public function hookExperiment2()
     {
         if (!function_exists('ecom_event_register')) {
             static::markTestIncomplete('ecomhooks does not exist');
@@ -415,7 +424,7 @@ class resursBankTest extends TestCase
      * @testdox Expect arrays regardless of response
      * @throws \Exception
      */
-    function getEmptyCallbacksList()
+    public function getEmptyCallbacksList()
     {
         /**
          * Standard request returns:
@@ -445,7 +454,7 @@ class resursBankTest extends TestCase
      * @testdox The normal way
      * @throws \Exception
      */
-    function getEmptyCallbacksListSecond()
+    public function getEmptyCallbacksListSecond()
     {
         try {
             $this->TEST->ECOM->unregisterEventCallback(255, true);
@@ -459,9 +468,19 @@ class resursBankTest extends TestCase
      * @test
      * @testdox Clean up special test data from share file
      */
-    function finalTest()
+    public function finalTest()
     {
         static::assertTrue($this->TEST->unshare("thisKey"));
+    }
+
+    /**
+     * @throws \Exception
+     */
+    protected function setUp()
+    {
+        $this->API = new ResursBank();
+        $this->API->setDebug(true);
+        $this->TEST = new RESURS_TEST_BRIDGE();
     }
 
     /**
@@ -479,24 +498,5 @@ class resursBankTest extends TestCase
             return $paymentMethods[0];
         }
         return null;
-    }
-
-    /**
-     * @test
-     * @testdox Test if getPaymentMethods work and in the same time cache it for future use
-     * @param bool $noAssert
-     * @throws \Exception
-     */
-    function getPaymentMethods($noAssert = false)
-    {
-        $this->TEST->ECOM->setSimplifiedPsp(true);
-        $paymentMethods = $this->TEST->ECOM->getPaymentMethods();
-        foreach ($paymentMethods as $method) {
-            $this->TEST->share('METHOD_' . $method->specificType, $method, false);
-        }
-        $this->TEST->share('paymentMethods', $paymentMethods, false);
-        if (!$noAssert) {
-            static::assertGreaterThan(1, $paymentMethods);
-        }
     }
 }
