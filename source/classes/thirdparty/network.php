@@ -20,17 +20,17 @@
  * major version too.
  *
  * @package TorneLIB
- * @version 6.0.23
+ * @version 6.0.24RC1
  */
 
 namespace Resursbank\RBEcomPHP;
 
 // Library Release Information
 if ( ! defined( 'NETCURL_RELEASE' ) ) {
-	define( 'NETCURL_RELEASE', '6.0.23' );
+	define( 'NETCURL_RELEASE', '6.0.24RC1' );
 }
 if ( ! defined( 'NETCURL_MODIFY' ) ) {
-	define( 'NETCURL_MODIFY', '20180619' );
+	define( 'NETCURL_MODIFY', '20180813' );
 }
 if ( ! defined( 'TORNELIB_NETCURL_RELEASE' ) ) {
 	// Compatibility constant
@@ -2206,7 +2206,7 @@ if ( ! class_exists( 'NETCURL_RESPONSETYPE' ) && ! class_exists( 'Resursbank\RBE
 }
 if ( ! class_exists( 'MODULE_NETWORK' ) && ! class_exists( 'Resursbank\RBEcomPHP\MODULE_NETWORK' ) ) {
 	if ( ! defined( 'NETCURL_NETWORK_RELEASE' ) ) {
-		define( 'NETCURL_NETWORK_RELEASE', '6.0.7' );
+		define( 'NETCURL_NETWORK_RELEASE', '6.0.7RC1' );
 	}
 	if ( ! defined( 'NETCURL_NETWORK_MODIFY' ) ) {
 		define( 'NETCURL_NETWORK_MODIFY', '20180813' );
@@ -2905,10 +2905,11 @@ if ( ! class_exists( 'TorneLIB_Network' ) && ! class_exists( 'Resursbank\RBEcomP
 		}
 	}
 }
+
 if ( ! class_exists( 'MODULE_CURL' ) && ! class_exists( 'Resursbank\RBEcomPHP\MODULE_CURL' ) ) {
 
 	if ( ! defined( 'NETCURL_CURL_RELEASE' ) ) {
-		define( 'NETCURL_CURL_RELEASE', '6.0.24' );
+		define( 'NETCURL_CURL_RELEASE', '6.0.23RC1' );
 	}
 	if ( ! defined( 'NETCURL_CURL_MODIFY' ) ) {
 		define( 'NETCURL_CURL_MODIFY', '20180813' );
