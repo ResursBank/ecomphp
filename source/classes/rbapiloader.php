@@ -1156,7 +1156,7 @@ class ResursBank {
     public function getIsCurrent($testVersion = '')
     {
         $this->isNetWork();
-        if (is_null($testVersion)) {
+        if (empty($testVersion)) {
             return !$this->NETWORK->getVersionTooOld($this->getVersionNumber(false), $this->gitUrl);
         } else {
             return !$this->NETWORK->getVersionTooOld($testVersion, $this->gitUrl);
