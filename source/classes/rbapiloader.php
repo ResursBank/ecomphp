@@ -1142,24 +1142,26 @@ class ResursBank {
 		}
 	}
 
-	/**
-	 * Returns true if your version of EComPHP is the current (based on git tags)
-	 *
-	 * @param null $testVersion
-	 *
-	 * @return bool
-	 * @since 1.0.26
-	 * @since 1.1.26
-	 * @since 1.2.0
-	 */
-	public function getIsCurrent( $testVersion = null ) {
-		$this->isNetWork();
-		if ( is_null( $testVersion ) ) {
-			return ! $this->NETWORK->getVersionTooOld( $this->getVersionNumber( false ), $this->gitUrl );
-		} else {
-			return ! $this->NETWORK->getVersionTooOld( $testVersion, $this->gitUrl );
-		}
-	}
+    /**
+     * Returns true if your version of EComPHP is the current (based on git tags)
+     *
+     * @param string $testVersion
+     *
+     * @return bool
+     * @throws \Exception
+     * @since 1.0.26
+     * @since 1.1.26
+     * @since 1.2.0
+     */
+    public function getIsCurrent($testVersion = '')
+    {
+        $this->isNetWork();
+        if (is_null($testVersion)) {
+            return !$this->NETWORK->getVersionTooOld($this->getVersionNumber(false), $this->gitUrl);
+        } else {
+            return !$this->NETWORK->getVersionTooOld($testVersion, $this->gitUrl);
+        }
+    }
 
 	/**
 	 * @return mixed
