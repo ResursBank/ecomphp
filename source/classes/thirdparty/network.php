@@ -1988,7 +1988,7 @@ if ( ! class_exists( 'NETCURL_HTTP_OBJECT', NETCURL_NO_CLASS_AUTOLOAD ) && ! cla
 
 	}
 }
-if ( ! class_exists( 'TORNELIB_CURLOBJECT' ) && ! class_exists( 'Resursbank\RBEcomPHP\TORNELIB_CURLOBJECT' ) ) {
+if ( ! class_exists( 'TORNELIB_CURLOBJECT', NETCURL_NO_CLASS_AUTOLOAD ) && ! class_exists( 'Resursbank\RBEcomPHP\TORNELIB_CURLOBJECT', NETCURL_NO_CLASS_AUTOLOAD ) ) {
 	/**
 	 * Class TORNELIB_CURLOBJECT
 	 *
