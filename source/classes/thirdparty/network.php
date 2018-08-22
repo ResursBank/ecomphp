@@ -6940,15 +6940,19 @@ if ( ! class_exists( 'MODULE_SOAP', NETCURL_NO_CLASS_AUTOLOAD ) && ! class_exist
 	}
 }
 if ( ! defined('TORNELIB_CRYPTO_RELEASE')) {
-    define('TORNELIB_CRYPTO_RELEASE', '6.0.17');
+    define('TORNELIB_CRYPTO_RELEASE', '6.0.18');
 }
 if ( ! defined('TORNELIB_CRYPTO_MODIFY')) {
-    define('TORNELIB_CRYPTO_MODIFY', '20180624');
+    define('TORNELIB_CRYPTO_MODIFY', '20180822');
 }
 if ( ! defined('TORNELIB_CRYPTO_CLIENTNAME')) {
     define('TORNELIB_CRYPTO_CLIENTNAME', 'MODULE_CRYPTO');
 }
-
+if (!defined('CRYPTO_SKIP_AUTOLOAD')) {
+    define('CRYPTO_NO_CLASS_AUTOLOAD', false);
+} else {
+    define('CRYPTO_NO_CLASS_AUTOLOAD', true);
+}
 if (defined('TORNELIB_CRYPTO_REQUIRE')) {
     if ( ! defined('TORNELIB_CRYPTO_REQUIRE_OPERATOR')) {
         define('TORNELIB_CRYPTO_REQUIRE_OPERATOR', '==');
@@ -6961,7 +6965,7 @@ if (defined('TORNELIB_CRYPTO_REQUIRE')) {
     }
 }
 
-if ( ! class_exists('MODULE_CRYPTO') && ! class_exists('TorneLIB\MODULE_CRYPTO') && defined('TORNELIB_CRYPTO_ALLOW_AUTOLOAD') && TORNELIB_CRYPTO_ALLOW_AUTOLOAD === true) {
+if ( ! class_exists('MODULE_CRYPTO', CRYPTO_NO_CLASS_AUTOLOAD) && ! class_exists('TorneLIB\MODULE_CRYPTO', CRYPTO_NO_CLASS_AUTOLOAD) && defined('TORNELIB_CRYPTO_ALLOW_AUTOLOAD') && TORNELIB_CRYPTO_ALLOW_AUTOLOAD === true) {
 
     /**
      * Class TorneLIB_Crypto
@@ -7809,7 +7813,7 @@ if ( ! class_exists('MODULE_CRYPTO') && ! class_exists('TorneLIB\MODULE_CRYPTO')
     }
 }
 
-if ( ! class_exists('TORNELIB_CRYPTO_TYPES') && ! class_exists('TorneLIB\TORNELIB_CRYPTO_TYPES')) {
+if ( ! class_exists('TORNELIB_CRYPTO_TYPES', CRYPTO_NO_CLASS_AUTOLOAD) && ! class_exists('TorneLIB\TORNELIB_CRYPTO_TYPES', CRYPTO_NO_CLASS_AUTOLOAD)) {
     abstract class TORNELIB_CRYPTO_TYPES
     {
         const TYPE_NONE = 0;
@@ -7818,21 +7822,25 @@ if ( ! class_exists('TORNELIB_CRYPTO_TYPES') && ! class_exists('TorneLIB\TORNELI
     }
 }
 
-if ( ! class_exists('TorneLIB_Crypto') && ! class_exists('TorneLIB\TorneLIB_Crypto')) {
+if ( ! class_exists('TorneLIB_Crypto', CRYPTO_NO_CLASS_AUTOLOAD) && ! class_exists('TorneLIB\TorneLIB_Crypto', CRYPTO_NO_CLASS_AUTOLOAD)) {
     class TorneLIB_Crypto extends MODULE_CRYPTO
     {
     }
 }
 if ( ! defined('TORNELIB_IO_RELEASE')) {
-    define('TORNELIB_IO_RELEASE', '6.0.12');
+    define('TORNELIB_IO_RELEASE', '6.0.13');
 }
 if ( ! defined('TORNELIB_IO_MODIFY')) {
-    define('TORNELIB_IO_MODIFY', '20180619');
+    define('TORNELIB_IO_MODIFY', '20180822');
 }
 if ( ! defined('TORNELIB_IO_CLIENTNAME')) {
     define('TORNELIB_IO_CLIENTNAME', 'MODULE_IO');
 }
-
+if (!defined('IO_SKIP_AUTOLOAD')) {
+    define('IO_NO_CLASS_AUTOLOAD', false);
+} else {
+    define('IO_NO_CLASS_AUTOLOAD', true);
+}
 if (defined('TORNELIB_IO_REQUIRE')) {
     if ( ! defined('TORNELIB_IO_REQUIRE_OPERATOR')) {
         define('TORNELIB_IO_REQUIRE_OPERATOR', '==');
@@ -7845,7 +7853,7 @@ if (defined('TORNELIB_IO_REQUIRE')) {
     }
 }
 
-if ( ! class_exists('MODULE_IO') && ! class_exists('TorneLIB\MODULE_IO') && defined('TORNELIB_IO_ALLOW_AUTOLOAD') && TORNELIB_IO_ALLOW_AUTOLOAD === true) {
+if ( ! class_exists('MODULE_IO', IO_NO_CLASS_AUTOLOAD) && ! class_exists('TorneLIB\MODULE_IO', IO_NO_CLASS_AUTOLOAD) && defined('TORNELIB_IO_ALLOW_AUTOLOAD') && TORNELIB_IO_ALLOW_AUTOLOAD === true) {
 
     /**
      * Class MODULE_IO
@@ -8320,7 +8328,7 @@ if ( ! class_exists('MODULE_IO') && ! class_exists('TorneLIB\MODULE_IO') && defi
                 'rootName'       => $rootName,
                 'defaultTagName' => $initialTagName
             );
-            if (class_exists('XML_Serializer') && ! $this->ENFORCE_SIMPLEXML) {
+            if (class_exists('XML_Serializer', IO_NO_CLASS_AUTOLOAD) && ! $this->ENFORCE_SIMPLEXML) {
                 $xmlSerializer = new \XML_Serializer($options);
                 $xmlSerializer->serialize($objectArrayEncoded);
                 $contentRendered = $xmlSerializer->getSerializedData();
@@ -8428,7 +8436,7 @@ if ( ! class_exists('MODULE_IO') && ! class_exists('TorneLIB\MODULE_IO') && defi
                     }
                 }
             } else {
-                if (class_exists('SimpleXMLElement')) {
+                if (class_exists('SimpleXMLElement', IO_NO_CLASS_AUTOLOAD)) {
                     if (is_string($dataIn) && preg_match("/\<(.*?)\>/s", $dataIn)) {
                         if ($this->ENFORCE_CDATA) {
                             $simpleXML = new \SimpleXMLElement($dataIn, LIBXML_NOCDATA);
@@ -8534,7 +8542,7 @@ if ( ! class_exists('MODULE_IO') && ! class_exists('TorneLIB\MODULE_IO') && defi
     }
 }
 
-if ( ! class_exists('TorneLIB_IO') && ! class_exists('TorneLIB\TorneLIB_IO')) {
+if ( ! class_exists('TorneLIB_IO', IO_NO_CLASS_AUTOLOAD) && ! class_exists('TorneLIB\TorneLIB_IO', IO_NO_CLASS_AUTOLOAD)) {
     class TorneLIB_IO extends MODULE_IO
     {
     }
