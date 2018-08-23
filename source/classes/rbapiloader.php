@@ -16,13 +16,28 @@
 
 namespace Resursbank\RBEcomPHP;
 
+// This is a global setter but it has to be set before the inclusions.
+if (!defined('ECOM_SKIP_AUTOLOAD')) {
+    define('ECOM_CLASS_EXISTS_AUTOLOAD', true);
+} else {
+    define('ECOM_NO_CLASS_AUTOLOAD', false);
+    if (!defined('NETCURL_SKIP_AUTOLOAD')) {
+        define('NETCURL_SKIP_AUTOLOAD', true);
+    }
+    if (!defined('CRYPTO_SKIP_AUTOLOAD')) {
+        define('CRYPTO_SKIP_AUTOLOAD', true);
+    }
+    if (!defined('IO_SKIP_AUTOLOAD')) {
+        define('IO_SKIP_AUTOLOAD', true);
+    }
+}
+
 if ( ! defined( 'RB_API_PATH' ) ) {
 	define( 'RB_API_PATH', __DIR__ );
 }
 require_once( RB_API_PATH . '/thirdparty/network.php' );
 require_once( RB_API_PATH . '/rbapiloader/ResursTypeClasses.php' );
 require_once( RB_API_PATH . '/rbapiloader/ResursException.php' );
-//if ( file_exists( RB_API_PATH . "/../../vendor/autoload.php" ) ) {	require_once( RB_API_PATH . '/../../vendor/autoload.php' ); }
 if ( file_exists( RB_API_PATH . '/ecomhooks.php' ) ) {
 	require_once( RB_API_PATH . '/ecomhooks.php' );
 }
@@ -39,12 +54,13 @@ if ( ! defined( 'ECOMPHP_VERSION' ) ) {
 	define( 'ECOMPHP_VERSION', '1.1.39' );
 }
 if ( ! defined( 'ECOMPHP_MODIFY_DATE' ) ) {
-	define( 'ECOMPHP_MODIFY_DATE', '20180607' );
+	define( 'ECOMPHP_MODIFY_DATE', '20180822' );
 }
 
 /**
  * Class ResursBank
- * Works with dynamic data arrays. By default, the API-gateway will connect to Resurs Bank test environment, so to use production mode this must be configured at runtime.
+ * Works with dynamic data arrays. By default, the API-gateway will connect to Resurs Bank test environment,
+ * so to use production mode this must be configured at runtime.
  * @package Resursbank\RBEcomPHP
  */
 class ResursBank {
@@ -1325,7 +1341,7 @@ class ResursBank {
 			}
 		}
 
-		if ( class_exists('\Resursbank\RBEcomPHP\MODULE_CURL' ) ) {
+		if ( class_exists('\Resursbank\RBEcomPHP\MODULE_CURL', ECOM_CLASS_EXISTS_AUTOLOAD ) ) {
 
 			$inheritExtendedSoapWarnings = false;
 			if ( is_null( $this->CURL ) ) {
@@ -6563,7 +6579,7 @@ class ResursBank {
 			}
 		}
 		/* Prepare and collect data for a bookpayment - if the flow is simple */
-		if ( ( ! $this->isOmniFlow && ! $this->isHostedFlow ) && ( class_exists( 'Resursbank\RBEcomPHP\resurs_bookPayment' ) || class_exists( 'resurs_bookPayment' ) ) ) {
+		if ( ( ! $this->isOmniFlow && ! $this->isHostedFlow ) && ( class_exists( 'Resursbank\RBEcomPHP\resurs_bookPayment', ECOM_CLASS_EXISTS_AUTOLOAD ) || class_exists( 'resurs_bookPayment', ECOM_CLASS_EXISTS_AUTOLOAD ) ) ) {
 			/* Only run this if it exists, and the plans is to go through simplified flow */
 			$bookPaymentInit = new resurs_bookPayment( $this->_paymentData, $this->_paymentOrderData, $this->_paymentCustomer, $this->_bookedCallbackUrl );
 		} else {
@@ -7174,7 +7190,7 @@ class ResursBank {
 		if ( empty( $this->preferredId ) ) {
 			$this->preferredId = $this->generatePreferredId();
 		}
-		if ( ! is_object( $this->_paymentData ) && ( class_exists( 'Resursbank\RBEcomPHP\resurs_paymentData' ) || class_exists( 'resurs_paymentData' ) ) ) {
+		if ( ! is_object( $this->_paymentData ) && ( class_exists( 'Resursbank\RBEcomPHP\resurs_paymentData', ECOM_CLASS_EXISTS_AUTOLOAD ) || class_exists( 'resurs_paymentData', ECOM_CLASS_EXISTS_AUTOLOAD ) ) ) {
 			$this->_paymentData = new resurs_paymentData( $paymentMethodId );
 		} else {
 			// If there are no wsdl-classes loaded, we should consider a default stdClass as object
@@ -7200,7 +7216,7 @@ class ResursBank {
 	 */
 	public function updateCart( $speclineArray = array() ) {
 		if ( ! $this->isOmniFlow && ! $this->isHostedFlow ) {
-			if ( ! class_exists( 'Resursbank\RBEcomPHP\resurs_specLine' ) && ! class_exists( 'resurs_specLine' ) ) {
+			if ( ! class_exists( 'Resursbank\RBEcomPHP\resurs_specLine', ECOM_CLASS_EXISTS_AUTOLOAD ) && ! class_exists( 'resurs_specLine', ECOM_CLASS_EXISTS_AUTOLOAD ) ) {
 				throw new \Exception( __FUNCTION__ . ": Class specLine does not exist", \RESURS_EXCEPTIONS::UPDATECART_NOCLASS_EXCEPTION );
 			}
 		}
@@ -7256,7 +7272,7 @@ class ResursBank {
              * totalVatAmount
              * totalAmount
              */
-			if ( class_exists( 'Resursbank\RBEcomPHP\resurs_specLine' ) || class_exists( 'resurs_specLine' ) ) {
+			if ( class_exists( 'Resursbank\RBEcomPHP\resurs_specLine', ECOM_CLASS_EXISTS_AUTOLOAD ) || class_exists( 'resurs_specLine', ECOM_CLASS_EXISTS_AUTOLOAD ) ) {
 				$this->_paymentSpeclines[] = new resurs_specLine(
 					$this->_specLineID,
 					$speclineArray['artNo'],
@@ -7289,7 +7305,7 @@ class ResursBank {
 	 */
 	public function updatePaymentSpec( $specLineArray = array() ) {
 		$this->InitializeServices();
-		if ( class_exists( 'Resursbank\RBEcomPHP\resurs_paymentSpec' ) || class_exists( 'resurs_paymentSpec' ) ) {
+		if ( class_exists( 'Resursbank\RBEcomPHP\resurs_paymentSpec', ECOM_CLASS_EXISTS_AUTOLOAD ) || class_exists( 'resurs_paymentSpec', ECOM_CLASS_EXISTS_AUTOLOAD ) ) {
 			$totalAmount    = 0;
 			$totalVatAmount = 0;
 			if ( is_array( $specLineArray ) && count( $specLineArray ) ) {
