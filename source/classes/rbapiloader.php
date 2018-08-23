@@ -17,8 +17,24 @@
 
 namespace Resursbank\RBEcomPHP;
 
+// This is a global setter but it has to be set before the inclusions.
+if (!defined('ECOM_SKIP_AUTOLOAD')) {
+    define('ECOM_CLASS_EXISTS_AUTOLOAD', true);
+} else {
+    define('ECOM_NO_CLASS_AUTOLOAD', false);
+    if (!defined('NETCURL_SKIP_AUTOLOAD')) {
+        define('NETCURL_SKIP_AUTOLOAD', true);
+    }
+    if (!defined('CRYPTO_SKIP_AUTOLOAD')) {
+        define('CRYPTO_SKIP_AUTOLOAD', true);
+    }
+    if (!defined('IO_SKIP_AUTOLOAD')) {
+        define('IO_SKIP_AUTOLOAD', true);
+    }
+}
+
 // Prevent duplicate loading
-if (class_exists('ResursBank') && class_exists('Resursbank\RBEcomPHP\ResursBank')) {
+if (class_exists('ResursBank', ECOM_CLASS_EXISTS_AUTOLOAD) && class_exists('Resursbank\RBEcomPHP\ResursBank', ECOM_CLASS_EXISTS_AUTOLOAD)) {
     return;
 }
 
@@ -585,7 +601,7 @@ class ResursBank
         } else {
             $this->environment = $this->env_prod;
         }
-        if (class_exists('\Resursbank\RBEcomPHP\MODULE_CURL') || class_exists('\TorneLIB\MODULE_CURL')) {
+        if (class_exists('\Resursbank\RBEcomPHP\MODULE_CURL', ECOM_CLASS_EXISTS_AUTOLOAD) || class_exists('\TorneLIB\MODULE_CURL', ECOM_CLASS_EXISTS_AUTOLOAD)) {
             $this->CURL = new MODULE_CURL();
             $this->CURL->setChain(false);
             if ($inheritExtendedSoapWarnings) {
