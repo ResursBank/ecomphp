@@ -175,7 +175,10 @@ class resursBankTest extends TestCase
             $selfParser = new MODULE_IO();
             $byIo = $selfParser->getFromXml($soapLibResponse['body'], true);
             /** @noinspection PhpUndefinedFieldInspection */
-            static::assertTrue(($byIo->fullName == $this->flowHappyCustomerName ? true : false) && ($soapLibResponse['parsed']->fullName == $this->flowHappyCustomerName ? true : false));
+            static::assertTrue((
+                $byIo->fullName == $this->flowHappyCustomerName ? true : false) &&
+                ($soapLibResponse['parsed']->fullName == $this->flowHappyCustomerName ? true : false
+                ));
 
             return;
         }
@@ -191,7 +194,10 @@ class resursBankTest extends TestCase
 
         /** @noinspection PhpUndefinedFieldInspection */
         /** @noinspection PhpUndefinedFieldInspection */
-        static::assertTrue($byIo->fullName == $this->flowHappyCustomerName && $byHandle->fullName == $this->flowHappyCustomerName);
+        static::assertTrue(
+            $byIo->fullName == $this->flowHappyCustomerName &&
+            $byHandle->fullName == $this->flowHappyCustomerName
+        );
     }
 
     /**
@@ -239,7 +245,7 @@ class resursBankTest extends TestCase
         $this->TEST->ECOM->setBillingByGetAddress($customerData);
         $this->TEST->ECOM->setCustomer("198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL");
         $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
-        $response = $this->TEST->ECOM->createPayment($this->getMethodId('PSPCARD'));
+        $response = $this->TEST->ECOM->createPayment($this->getMethodId('PAYMENT_PROVIDER'));
         // In a perfect world, a booked payment for PSP should generate SIGNING as the payment occurs
         // externally.
         static::assertTrue($response->bookPaymentStatus == 'SIGNING');
@@ -259,7 +265,7 @@ class resursBankTest extends TestCase
         $this->TEST->ECOM->setCustomer(null, "0808080808", "0707070707", "test@test.com", "NATURAL");
         $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline", 800, 25);
         $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
-        $response = $this->TEST->ECOM->createPayment($this->getMethodId('PSPCARD'));
+        $response = $this->TEST->ECOM->createPayment($this->getMethodId('PAYMENT_PROVIDER'));
         static::assertTrue($response->bookPaymentStatus == 'SIGNING');
         return $response;
     }
@@ -317,22 +323,25 @@ class resursBankTest extends TestCase
     /**
      * Get a method that suites our needs of type, with the help from getPaymentMethods
      * @param string $specificType
+     * @param string $customerType
      * @return mixed
      * @throws \Exception
      */
-    public function getMethod($specificType = 'INVOICE')
+    public function getMethod($specificType = 'INVOICE', $customerType = 'NATURAL')
     {
-        $specificMethod = $this->TEST->share('METHOD_' . $specificType);
-        if (empty($specificMethod)) {
-            $this->getPaymentMethods(false);
-            $specificMethod = $this->TEST->share('METHOD_' . $specificType);
+        $return = null;
+        $this->getPaymentMethods(false);
+        $methodGroup = array_pop($this->TEST->share('paymentMethods'));
+        foreach ($methodGroup as $curMethod) {
+            if (($curMethod->specificType === $specificType || $curMethod->type === $specificType) && in_array($customerType,
+                    (array)$curMethod->customerType)) {
+                $this->TEST->share('METHOD_' . $specificType);
+                $return = $curMethod;
+                break;
+            }
         }
 
-        if (isset($specificMethod[0])) {
-            return $specificMethod[0];
-        }
-
-        return $specificMethod;
+        return $return;
     }
 
     /**
@@ -343,12 +352,17 @@ class resursBankTest extends TestCase
      */
     public function getPaymentMethods($noAssert = false)
     {
-        $this->TEST->ECOM->setSimplifiedPsp(true);
-        $paymentMethods = $this->TEST->ECOM->getPaymentMethods(array(), true);
-        foreach ($paymentMethods as $method) {
-            $this->TEST->share('METHOD_' . $method->id, $method, false);
+        $methodList = $this->TEST->share('paymentMethods');
+        if (is_array($methodList) && !count($methodList) || !is_array($methodList)) {
+            $this->TEST->ECOM->setSimplifiedPsp(true);
+            $paymentMethods = $this->TEST->ECOM->getPaymentMethods(array(), true);
+            foreach ($paymentMethods as $method) {
+                $this->TEST->share('METHOD_' . $method->id, $method, false);
+            }
+            $this->TEST->share('paymentMethods', $paymentMethods, false);
+        } else {
+            $paymentMethods = is_array($methodList) ? array_pop($methodList) : $methodList;
         }
-        $this->TEST->share('paymentMethods', $paymentMethods, false);
         if (!$noAssert) {
             static::assertGreaterThan(1, $paymentMethods);
         }
@@ -444,7 +458,7 @@ class resursBankTest extends TestCase
         $errorCode = 0;
         $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline", 800, 25);
         $this->TEST->ECOM->setBillingByGetAddress($customerData);
-        $this->TEST->ECOM->setCustomer("198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL");
+        $this->TEST->ECOM->setCustomer(null, "0808080808", "0707070707", "test@test.com", "NATURAL");
         $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
         try {
             $myPayLoad = $this->TEST->ECOM->getPayload();
@@ -453,7 +467,7 @@ class resursBankTest extends TestCase
             $errorCode = $e->getCode();
         }
 
-        static::assertTrue(isset($myPayLoad['add_a_problem_into_payload']) && !isset($myPayLoad['signing']) && $errorCode == 3);
+        static::assertTrue(isset($myPayLoad['add_a_problem_into_payload']) && !isset($myPayLoad['signing']) && (int)$errorCode > 0);
     }
 
     /**
