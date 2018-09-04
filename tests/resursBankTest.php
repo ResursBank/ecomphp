@@ -228,6 +228,43 @@ class resursBankTest extends TestCase
     }
 
     /**
+     * @test Using PSP during simplified flow (with government id / SSN)
+     * @return array
+     * @throws \Exception
+     */
+    public function generateSimpleSimplifiedPspResponse()
+    {
+        $customerData = $this->getHappyCustomerData();
+        $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline", 800, 25);
+        $this->TEST->ECOM->setBillingByGetAddress($customerData);
+        $this->TEST->ECOM->setCustomer("198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL");
+        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+        $response = $this->TEST->ECOM->createPayment($this->getMethodId('PSPCARD'));
+        // In a perfect world, a booked payment for PSP should generate SIGNING as the payment occurs
+        // externally.
+        static::assertTrue($response->bookPaymentStatus == 'SIGNING');
+        return $response;
+    }
+
+    /**
+     * @test Using PSP during simplified flow (without government id / SSN)
+     * @return array
+     * @throws \Exception
+     */
+    public function generateSimpleSimplifiedPspWithouGovernmentIdCompatibility()
+    {
+        // TODO: setCustomer should not be necessary
+        $customerData = $this->getHappyCustomerData();
+        $this->TEST->ECOM->setBillingByGetAddress($customerData);
+        $this->TEST->ECOM->setCustomer(null, "0808080808", "0707070707", "test@test.com", "NATURAL");
+        $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline", 800, 25);
+        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+        $response = $this->TEST->ECOM->createPayment($this->getMethodId('PSPCARD'));
+        static::assertTrue($response->bookPaymentStatus == 'SIGNING');
+        return $response;
+    }
+
+    /**
      * @return null
      * @throws \Exception
      */
@@ -307,9 +344,9 @@ class resursBankTest extends TestCase
     public function getPaymentMethods($noAssert = false)
     {
         $this->TEST->ECOM->setSimplifiedPsp(true);
-        $paymentMethods = $this->TEST->ECOM->getPaymentMethods();
+        $paymentMethods = $this->TEST->ECOM->getPaymentMethods(array(), true);
         foreach ($paymentMethods as $method) {
-            $this->TEST->share('METHOD_' . $method->specificType, $method, false);
+            $this->TEST->share('METHOD_' . $method->id, $method, false);
         }
         $this->TEST->share('paymentMethods', $paymentMethods, false);
         if (!$noAssert) {
