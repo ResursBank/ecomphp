@@ -288,11 +288,11 @@ class RESURS_DEPRECATED_FLOW {
                 // Prevent arrays to go through here and crash something
                 if ( ! is_array( $customerType ) ) {
                     /** @noinspection PhpUndefinedFieldInspection */
-                    if (isset( $templateRules[ strtoupper( $customerType ) ] ) && isset( $templateRules[ strtoupper( $customerType ) ]['fields'][ strtoupper( $paymentMethodName->specificType ) ] ) ) {
+                    if (isset($templateRules[strtoupper($customerType)]) && (isset($templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName->specificType)]) || isset($templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName->type)]))) {
                         /** @noinspection PhpUndefinedFieldInspection */
-                        $returnedRuleArray = $templateRules[ strtoupper( $customerType ) ]['fields'][ strtoupper( $paymentMethodName->specificType ) ];
+                        $returnedRuleArray = $templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName->specificType)];
                         if ($paymentMethodName->type === 'PAYMENT_PROVIDER') {
-                            $returnedRuleArray = $templateRules[ strtoupper( $customerType ) ]['fields'][ strtoupper( $paymentMethodName->type ) ];
+                            $returnedRuleArray = $templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName->type)];
                         }
                     }
                 }
@@ -301,7 +301,7 @@ class RESURS_DEPRECATED_FLOW {
                  * This should probably not happen and the developers should probably also stick to objects as above.
                  */
                 if ( is_array( $paymentMethodName ) && count( $paymentMethodName ) ) {
-                    if ( isset( $templateRules[ strtoupper( $customerType ) ] ) && isset( $templateRules[ strtoupper( $customerType ) ]['fields'][ strtoupper( $paymentMethodName['specificType'] ) ] ) ) {
+                    if (isset($templateRules[strtoupper($customerType)]) && (isset($templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName['specificType'])]) || isset($templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName['type'])]))) {
                         $returnedRuleArray = $templateRules[ strtoupper( $customerType ) ]['fields'][ strtoupper( $paymentMethodName['specificType'] ) ];
                         if ($paymentMethodName['type'] === 'PAYMENT_PROVIDER') {
                             $returnedRuleArray = $templateRules[ strtoupper( $customerType ) ]['fields'][ strtoupper( $paymentMethodName['type'] ) ];
