@@ -20,7 +20,7 @@ namespace Resursbank\RBEcomPHP;
 if (!defined('ECOM_SKIP_AUTOLOAD')) {
     define('ECOM_CLASS_EXISTS_AUTOLOAD', true);
 } else {
-    define('ECOM_NO_CLASS_AUTOLOAD', false);
+    define('ECOM_CLASS_EXISTS_AUTOLOAD', false);
     if (!defined('NETCURL_SKIP_AUTOLOAD')) {
         define('NETCURL_SKIP_AUTOLOAD', true);
     }
