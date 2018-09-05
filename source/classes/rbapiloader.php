@@ -54,7 +54,7 @@ if ( ! defined( 'ECOMPHP_VERSION' ) ) {
 	define( 'ECOMPHP_VERSION', '1.1.39' );
 }
 if ( ! defined( 'ECOMPHP_MODIFY_DATE' ) ) {
-	define( 'ECOMPHP_MODIFY_DATE', '20180822' );
+	define( 'ECOMPHP_MODIFY_DATE', '20180905' );
 }
 
 /**
@@ -203,6 +203,9 @@ class ResursBank {
 	private $paymentMethodsIsStrictPsp = false;
 	/** @var bool Setting this to true should help developers have their payment method ids returned in a consistent format */
 	private $paymentMethodIdSanitizing = false;
+    /** @var bool This setting is true if a flow is about to run through a PSP method */
+    private $paymentMethodIsPsp = false;
+
 	/**
 	 * If a choice of payment method are discovered during the flow, this is set here
 	 * @var $desiredPaymentMethod
@@ -2589,6 +2592,9 @@ class ResursBank {
 					if ( isset( $objectDetails->userErrorMessage ) ) {
 						$errorTypeDescription = isset( $objectDetails->errorTypeDescription ) ? "[" . $objectDetails->errorTypeDescription . "] " : "";
 						$exceptionMessage     = $errorTypeDescription . $objectDetails->userErrorMessage;
+                        if (isset($previousException->faultstring)) {
+                            $exceptionMessage .= ' (' . $previousException->getMessage() . ') ';
+                        }
 						$fixableByYou         = isset( $objectDetails->fixableByYou ) ? $objectDetails->fixableByYou : null;
 						if ( $fixableByYou == "false" ) {
 							$fixableByYou = " (Not fixable by you)";
@@ -2820,36 +2826,38 @@ class ResursBank {
 
 	}
 
-	/**
-	 * List payment methods
-	 *
-	 * Retrieves detailed information on the payment methods available to the representative. Parameters (customerType, language and purchaseAmount) are optional.
-	 * @link https://test.resurs.com/docs/display/ecom/Get+Payment+Methods
-	 *
-	 * @param array $parameters
-	 *
-	 * @return mixed
-	 * @throws \Exception
-	 * @since 1.0.0
-	 * @since 1.1.0
-	 */
-	public function getPaymentMethods( $parameters = array() ) {
-		$this->InitializeServices();
+    /**
+     * List payment methods
+     *
+     * Retrieves detailed information on the payment methods available to the representative. Parameters (customerType,
+     * language and purchaseAmount) are optional.
+     *
+     * @param array $parameters
+     * @param bool $getAllMethods Manually configured psp-overrider
+     * @return mixed
+     * @throws \Exception
+     * @since 1.0.0
+     * @since 1.1.0
+     * @link  https://test.resurs.com/docs/display/ecom/Get+Payment+Methods
+     */
+    public function getPaymentMethods($parameters = array(), $getAllMethods = false)
+    {
+        $this->InitializeServices();
 
-		$paymentMethods = $this->postService( "getPaymentMethods", array(
-			'customerType'   => isset( $parameters['customerType'] ) ? $parameters['customerType'] : null,
-			'language'       => isset( $parameters['language'] ) ? $parameters['language'] : null,
-			'purchaseAmount' => isset( $parameters['purchaseAmount'] ) ? $parameters['purchaseAmount'] : null
-		) );
-		// Make sure this method always returns an array even if it is only one method. Ecommerce will, in case of only one available method
-		// return an object instead of an array.
-		if ( is_object( $paymentMethods ) ) {
-			$paymentMethods = array( $paymentMethods );
-		}
-		$realPaymentMethods = $this->sanitizePaymentMethods( $paymentMethods );
+        $paymentMethods = $this->postService("getPaymentMethods", array(
+            'customerType'   => isset($parameters['customerType']) ? $parameters['customerType'] : null,
+            'language'       => isset($parameters['language']) ? $parameters['language'] : null,
+            'purchaseAmount' => isset($parameters['purchaseAmount']) ? $parameters['purchaseAmount'] : null
+        ));
+        // Make sure this method always returns an array even if it is only one method. Ecommerce will, in case of only one available method
+        // return an object instead of an array.
+        if (is_object($paymentMethods)) {
+            $paymentMethods = array($paymentMethods);
+        }
+        $realPaymentMethods = $this->sanitizePaymentMethods($paymentMethods, $getAllMethods);
 
-		return $realPaymentMethods;
-	}
+        return $realPaymentMethods;
+    }
 
 	/**
 	 * Get list of payment methods (payment method objects), that support annuity factors
@@ -2893,39 +2901,41 @@ class ResursBank {
 	 * @since 1.1.24
 	 * @since 1.2.0
 	 */
-	public function sanitizePaymentMethods( $paymentMethods = array() ) {
-		$realPaymentMethods = array();
-		$paymentSevice      = $this->getPreferredPaymentFlowService();
-		if ( is_array( $paymentMethods ) && count( $paymentMethods ) ) {
-			foreach ( $paymentMethods as $paymentMethodIndex => $paymentMethodData ) {
-				$type      = $paymentMethodData->type;
-				$addMethod = true;
+    public function sanitizePaymentMethods($paymentMethods = array(), $getAllMethods = false)
+    {
+        $realPaymentMethods = array();
+        $paymentSevice      = $this->getPreferredPaymentFlowService();
+        if (is_array($paymentMethods) && count($paymentMethods)) {
+            foreach ($paymentMethods as $paymentMethodIndex => $paymentMethodData) {
+                $type      = $paymentMethodData->type;
+                $addMethod = true;
 
-				if ( $this->paymentMethodIdSanitizing && isset( $paymentMethods[ $paymentMethodIndex ]->id ) ) {
-					$paymentMethods[ $paymentMethodIndex ]->id = preg_replace( "/[^a-z0-9$]/i", '', $paymentMethods[ $paymentMethodIndex ]->id );
-				}
+                if ($this->paymentMethodIdSanitizing && isset($paymentMethods[$paymentMethodIndex]->id)) {
+                    $paymentMethods[$paymentMethodIndex]->id = preg_replace("/[^a-z0-9$]/i", '',
+                        $paymentMethods[$paymentMethodIndex]->id);
+                }
 
-				if ( $this->paymentMethodsIsStrictPsp ) {
-					if ( $type == "PAYMENT_PROVIDER" ) {
-						$addMethod = false;
-					}
-				} else if ( $paymentSevice != RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT ) {
-					if ( $type == "PAYMENT_PROVIDER" ) {
-						$addMethod = false;
-					}
-					if ( $this->paymentMethodsHasPsp ) {
-						$addMethod = true;
-					}
-				}
+                if (!$getAllMethods && $this->paymentMethodsIsStrictPsp) {
+                    if ($type == "PAYMENT_PROVIDER") {
+                        $addMethod = false;
+                    }
+                } elseif ($paymentSevice != RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT) {
+                    if (!$getAllMethods && $type == "PAYMENT_PROVIDER") {
+                        $addMethod = false;
+                    }
+                    if ($getAllMethods || $this->paymentMethodsHasPsp) {
+                        $addMethod = true;
+                    }
+                }
 
-				if ( $addMethod ) {
-					$realPaymentMethods[] = $paymentMethodData;
-				}
-			}
-		}
+                if ($addMethod) {
+                    $realPaymentMethods[] = $paymentMethodData;
+                }
+            }
+        }
 
-		return $realPaymentMethods;
-	}
+        return $realPaymentMethods;
+    }
 
 	/**
 	 * Setting this to true should help developers have their payment method ids returned in a consistent format (a-z, 0-9, will be the only accepted characters)
@@ -3272,19 +3282,20 @@ class ResursBank {
 	 * @since 1.0.0
 	 * @since 1.1.0
 	 */
-	public function getPaymentMethodSpecific( $specificMethodName = '' ) {
-		$methods     = $this->getPaymentMethods();
-		$methodArray = array();
-		if ( is_array( $methods ) ) {
-			foreach ( $methods as $objectMethod ) {
-				if ( isset( $objectMethod->id ) && strtolower( $objectMethod->id ) == strtolower( $specificMethodName ) ) {
-					$methodArray = $objectMethod;
-				}
-			}
-		}
+    public function getPaymentMethodSpecific($specificMethodName = '')
+    {
+        $methods     = $this->getPaymentMethods(array(), true);
+        $methodArray = array();
+        if (is_array($methods)) {
+            foreach ($methods as $objectMethod) {
+                if (isset($objectMethod->id) && strtolower($objectMethod->id) === strtolower($specificMethodName)) {
+                    $methodArray = $objectMethod;
+                }
+            }
+        }
 
-		return $methodArray;
-	}
+        return $methodArray;
+    }
 
 	/**
 	 * @param  string $paymentId The current paymentId
@@ -5316,33 +5327,41 @@ class ResursBank {
 	 * @since 1.1.2
 	 * @return array
 	 */
-	public function createPayment( $payment_id_or_method = '', $payload = array() ) {
-		if ( ! $this->hasServicesInitialization ) {
-			$this->InitializeServices();
-		}
-		$myFlow = $this->getPreferredPaymentFlowService();
-		try {
-			if ( $myFlow !== RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT ) {
-				$this->desiredPaymentMethod = $payment_id_or_method;
-				$paymentMethodInfo          = $this->getPaymentMethodSpecific( $payment_id_or_method );
-				if ( isset( $paymentMethodInfo->id ) ) {
-					$this->PaymentMethod = $paymentMethodInfo;
-				}
-			}
-		} catch ( \Exception $e ) {
+    public function createPayment($payment_id_or_method = '', $payload = array())
+    {
+        if ( ! $this->hasServicesInitialization) {
+            $this->InitializeServices();
+        }
+        $myFlow = $this->getPreferredPaymentFlowService();
+        try {
+            if ($myFlow !== RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT) {
+                $this->desiredPaymentMethod = $payment_id_or_method;
+                $paymentMethodInfo          = $this->getPaymentMethodSpecific($payment_id_or_method);
+                if (isset($paymentMethodInfo->type) && $paymentMethodInfo->type === 'PAYMENT_PROVIDER') {
+                    $this->paymentMethodIsPsp = true;
+                }
+                if (isset($paymentMethodInfo->id)) {
+                    $this->PaymentMethod = $paymentMethodInfo;
+                }
+            }
+        } catch (\Exception $e) {
 
-		}
-		$this->preparePayload( $payment_id_or_method, $payload );
-		if ( $this->forceExecute ) {
-			$this->createPaymentExecuteCommand = $payment_id_or_method;
+        }
+        $this->preparePayload($payment_id_or_method, $payload);
+        if ($this->paymentMethodIsPsp) {
+            $this->clearPspCustomerPayload();
+        }
 
-			return array( 'status' => 'delayed' );
-		} else {
-			$bookPaymentResult = $this->createPaymentExecute( $payment_id_or_method, $this->Payload );
-		}
+        if ($this->forceExecute) {
+            $this->createPaymentExecuteCommand = $payment_id_or_method;
 
-		return $bookPaymentResult;
-	}
+            return array('status' => 'delayed');
+        } else {
+            $bookPaymentResult = $this->createPaymentExecute($payment_id_or_method);
+        }
+
+        return $bookPaymentResult;
+    }
 
 	/**
 	 * @param string $payment_id_or_method
@@ -6327,6 +6346,15 @@ class ResursBank {
 	}
 
 	//// PAYLOAD HANDLER!
+
+    /**
+     * Clean up payload fields that should not be there if method is PSP and payload is half empty
+     */
+    private function clearPspCustomerPayload() {
+        if (isset($this->Payload['customer']['governmentId']) && empty($this->Payload['customer']['governmentId'])) {
+            unset($this->Payload['customer']['governmentId']);
+        }
+    }
 
 	/**
 	 * Compile user defined payload with payload that may have been pre-set by other calls
