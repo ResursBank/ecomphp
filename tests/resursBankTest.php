@@ -307,6 +307,7 @@ class resursBankTest extends TestCase
 
     /**
      * Get the payment method ID from the internal getMethod()
+     *
      * @param string $specificType
      * @return mixed
      * @throws \Exception
@@ -321,7 +322,8 @@ class resursBankTest extends TestCase
     }
 
     /**
-     * Get a method that suites our needs of type, with the help from getPaymentMethods
+     * Get a method that suites our needs of TYPE or SPECIFIC TYPE (not method ID), with the help from getPaymentMethods
+     *
      * @param string $specificType
      * @param string $customerType
      * @return mixed
