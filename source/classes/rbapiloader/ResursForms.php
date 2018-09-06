@@ -4,15 +4,24 @@ namespace Resursbank\RBEcomPHP;
 
 /**
  * Class RESURS_DEPRECATED_FLOW Thing with relation to Resurs Bank deprecated flow
- *
- * WARNING: Use this class at your own risk as it contains glitches!
+ * WARNING: Use this class at your own risk as it may contain glitches. Maintenance is only done
+ * when really necessary.
  *
  * @package Resursbank\RBEcomPHP
  */
-class RESURS_DEPRECATED_FLOW {
+class RESURS_DEPRECATED_FLOW
+{
     private $formTemplateRuleArray;
     private $templateFieldsByMethodResponse;
 
+    /**
+     * Defines if we are allowed to skip government id validation. Payment provider methods
+     * normally does this when running in simplified mode. In other cases, validation will be
+     * handled by Resurs Bank and this setting shoudl not be affected by this
+     *
+     * @var bool $canSkipGovernmentIdValidation
+     */
+    private $canSkipGovernmentIdValidation = false;
 
     /**
      * Override formTemplateFieldsetRules in case of important needs or unexpected changes
@@ -24,7 +33,8 @@ class RESURS_DEPRECATED_FLOW {
      * @return array
      * @deprecated Build your own integration
      */
-    public function setFormTemplateRules( $customerType, $methodType, $fieldArray ) {
+    public function setFormTemplateRules($customerType, $methodType, $fieldArray)
+    {
         $this->formTemplateRuleArray = array(
             $customerType => array(
                 'fields' => array(
@@ -42,18 +52,23 @@ class RESURS_DEPRECATED_FLOW {
      * @return array
      * @deprecated Build your own integration
      */
-    public function getFormTemplateRules() {
+    public function getFormTemplateRules()
+    {
         $formTemplateRules = array(
             'NATURAL' => array(
                 'fields' => array(
-                    'INVOICE'          => array(
+                    'INVOICE' => array(
                         'applicant-government-id',
                         'applicant-telephone-number',
                         'applicant-mobile-number',
                         'applicant-email-address'
                     ),
-                    'CARD'             => array( 'applicant-government-id', 'card-number' ),
+                    'CARD' => array(
+                        'applicant-government-id',
+                        'card-number'
+                    ),
                     'PAYMENT_PROVIDER' => array(
+                        'applicant-government-id',
                         'applicant-telephone-number',
                         'applicant-mobile-number',
                         'applicant-email-address'
@@ -64,7 +79,7 @@ class RESURS_DEPRECATED_FLOW {
                         'applicant-mobile-number',
                         'applicant-email-address'
                     ),
-                    'PART_PAYMENT'     => array(
+                    'PART_PAYMENT' => array(
                         'applicant-government-id',
                         'applicant-telephone-number',
                         'applicant-mobile-number',
@@ -72,7 +87,7 @@ class RESURS_DEPRECATED_FLOW {
                     )
                 )
             ),
-            'LEGAL'   => array(
+            'LEGAL' => array(
                 'fields' => array(
                     'INVOICE' => array(
                         'applicant-government-id',
@@ -90,82 +105,81 @@ class RESURS_DEPRECATED_FLOW {
                 'applicant-full-name',
                 'contact-government-id'
             ),
-            'regexp'  => array(
+            'regexp' => array(
                 'SE' => array(
                     'NATURAL' => array(
-                        'applicant-government-id'    => '^(18\d{2}|19\d{2}|20\d{2}|\d{2})(0[1-9]|1[0-2])([0][1-9]|[1-2][0-9]|3[0-1])(\-|\+)?([\d]{4})$',
+                        'applicant-government-id' => '^(18\d{2}|19\d{2}|20\d{2}|\d{2})(0[1-9]|1[0-2])([0][1-9]|[1-2][0-9]|3[0-1])(\-|\+)?([\d]{4})$',
                         'applicant-telephone-number' => '^(0|\+46|0046)[ |-]?(200|20|70|73|76|74|[1-9][0-9]{0,2})([ |-]?[0-9]){5,8}$',
-                        'applicant-mobile-number'    => '^(0|\+46|0046)[ |-]?(200|20|70|73|76|74|[1-9][0-9]{0,2})([ |-]?[0-9]){5,8}$',
-                        'applicant-email-address'    => '^[A-Za-z0-9!#%&\'*+/=?^_`~-]+(\.[A-Za-z0-9!#%&\'*+/=?^_`~-]+)*@([A-Za-z0-9]+)(([\.\-]?[a-zA-Z0-9]+)*)\.([A-Za-z]{2,})$',
-                        'card-number'                => '^([1-9][0-9]{3}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4})$'
+                        'applicant-mobile-number' => '^(0|\+46|0046)[ |-]?(200|20|70|73|76|74|[1-9][0-9]{0,2})([ |-]?[0-9]){5,8}$',
+                        'applicant-email-address' => '^[A-Za-z0-9!#%&\'*+/=?^_`~-]+(\.[A-Za-z0-9!#%&\'*+/=?^_`~-]+)*@([A-Za-z0-9]+)(([\.\-]?[a-zA-Z0-9]+)*)\.([A-Za-z]{2,})$',
+                        'card-number' => '^([1-9][0-9]{3}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4})$'
                     ),
-                    'LEGAL'   => array(
-                        'applicant-government-id'    => '^(16\d{2}|18\d{2}|19\d{2}|20\d{2}|\d{2})(\d{2})(\d{2})(\-|\+)?([\d]{4})$',
+                    'LEGAL' => array(
+                        'applicant-government-id' => '^(16\d{2}|18\d{2}|19\d{2}|20\d{2}|\d{2})(\d{2})(\d{2})(\-|\+)?([\d]{4})$',
                         'applicant-telephone-number' => '^(0|\+46|0046)[ |-]?(200|20|70|73|76|74|[1-9][0-9]{0,2})([ |-]?[0-9]){5,8}$',
-                        'applicant-mobile-number'    => '^(0|\+46|0046)[ |-]?(200|20|70|73|76|74|[1-9][0-9]{0,2})([ |-]?[0-9]){5,8}$',
-                        'applicant-email-address'    => '^[A-Za-z0-9!#%&\'*+/=?^_`~-]+(\.[A-Za-z0-9!#%&\'*+/=?^_`~-]+)*@([A-Za-z0-9]+)(([\.\-]?[a-zA-Z0-9]+)*)\.([A-Za-z]{2,})$',
-                        'card-number'                => '^([1-9][0-9]{3}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4})$'
+                        'applicant-mobile-number' => '^(0|\+46|0046)[ |-]?(200|20|70|73|76|74|[1-9][0-9]{0,2})([ |-]?[0-9]){5,8}$',
+                        'applicant-email-address' => '^[A-Za-z0-9!#%&\'*+/=?^_`~-]+(\.[A-Za-z0-9!#%&\'*+/=?^_`~-]+)*@([A-Za-z0-9]+)(([\.\-]?[a-zA-Z0-9]+)*)\.([A-Za-z]{2,})$',
+                        'card-number' => '^([1-9][0-9]{3}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4})$'
                     )
                 ),
                 'DK' => array(
                     'NATURAL' => array(
-                        'applicant-government-id'    => '^((3[0-1])|([1-2][0-9])|(0[1-9]))((1[0-2])|(0[1-9]))(\d{2})(\-)?([\d]{4})$',
+                        'applicant-government-id' => '^((3[0-1])|([1-2][0-9])|(0[1-9]))((1[0-2])|(0[1-9]))(\d{2})(\-)?([\d]{4})$',
                         'applicant-telephone-number' => '^(\+45|0045|)?[ |-]?[2-9]([ |-]?[0-9]){7,7}$',
-                        'applicant-mobile-number'    => '^(\+45|0045|)?[ |-]?[2-9]([ |-]?[0-9]){7,7}$',
-                        'applicant-email-address'    => '^[A-Za-z0-9!#%&\'*+/=?^_`~-]+(\.[A-Za-z0-9!#%&\'*+/=?^_`~-]+)*@([A-Za-z0-9]+)(([\.\-]?[a-zA-Z0-9]+)*)\.([A-Za-z]{2,})$',
-                        'card-number'                => '^([1-9][0-9]{3}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4})$'
+                        'applicant-mobile-number' => '^(\+45|0045|)?[ |-]?[2-9]([ |-]?[0-9]){7,7}$',
+                        'applicant-email-address' => '^[A-Za-z0-9!#%&\'*+/=?^_`~-]+(\.[A-Za-z0-9!#%&\'*+/=?^_`~-]+)*@([A-Za-z0-9]+)(([\.\-]?[a-zA-Z0-9]+)*)\.([A-Za-z]{2,})$',
+                        'card-number' => '^([1-9][0-9]{3}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4})$'
                     ),
-                    'LEGAL'   => array(
-                        'applicant-government-id'    => null,
+                    'LEGAL' => array(
+                        'applicant-government-id' => null,
                         'applicant-telephone-number' => '^(\+45|0045|)?[ |-]?[2-9]([ |-]?[0-9]){7,7}$',
-                        'applicant-mobile-number'    => '^(\+45|0045|)?[ |-]?[2-9]([ |-]?[0-9]){7,7}$',
-                        'applicant-email-address'    => '^[A-Za-z0-9!#%&\'*+/=?^_`~-]+(\.[A-Za-z0-9!#%&\'*+/=?^_`~-]+)*@([A-Za-z0-9]+)(([\.\-]?[a-zA-Z0-9]+)*)\.([A-Za-z]{2,})$',
-                        'card-number'                => '^([1-9][0-9]{3}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4})$'
+                        'applicant-mobile-number' => '^(\+45|0045|)?[ |-]?[2-9]([ |-]?[0-9]){7,7}$',
+                        'applicant-email-address' => '^[A-Za-z0-9!#%&\'*+/=?^_`~-]+(\.[A-Za-z0-9!#%&\'*+/=?^_`~-]+)*@([A-Za-z0-9]+)(([\.\-]?[a-zA-Z0-9]+)*)\.([A-Za-z]{2,})$',
+                        'card-number' => '^([1-9][0-9]{3}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4})$'
                     )
                 ),
                 'NO' => array(
                     'NATURAL' => array(
-                        'applicant-government-id'    => '^([0][1-9]|[1-2][0-9]|3[0-1])(0[1-9]|1[0-2])(\d{2})(\-)?([\d]{5})$',
+                        'applicant-government-id' => '^([0][1-9]|[1-2][0-9]|3[0-1])(0[1-9]|1[0-2])(\d{2})(\-)?([\d]{5})$',
                         'applicant-telephone-number' => '^(\+47|0047|)?[ |-]?[2-9]([ |-]?[0-9]){7,7}$',
-                        'applicant-mobile-number'    => '^(\+47|0047|)?[ |-]?[2-9]([ |-]?[0-9]){7,7}$',
-                        'applicant-email-address'    => '^[A-Za-z0-9!#%&\'*+/=?^_`~-]+(\.[A-Za-z0-9!#%&\'*+/=?^_`~-]+)*@([A-Za-z0-9]+)(([\.\-]?[a-zA-Z0-9]+)*)\.([A-Za-z]{2,})$',
-                        'card-number'                => '^([1-9][0-9]{3}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4})$'
+                        'applicant-mobile-number' => '^(\+47|0047|)?[ |-]?[2-9]([ |-]?[0-9]){7,7}$',
+                        'applicant-email-address' => '^[A-Za-z0-9!#%&\'*+/=?^_`~-]+(\.[A-Za-z0-9!#%&\'*+/=?^_`~-]+)*@([A-Za-z0-9]+)(([\.\-]?[a-zA-Z0-9]+)*)\.([A-Za-z]{2,})$',
+                        'card-number' => '^([1-9][0-9]{3}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4})$'
                     ),
-                    'LEGAL'   => array(
-                        'applicant-government-id'    => '^([89]([ |-]?[0-9]){8})$',
+                    'LEGAL' => array(
+                        'applicant-government-id' => '^([89]([ |-]?[0-9]){8})$',
                         'applicant-telephone-number' => '^(\+47|0047|)?[ |-]?[2-9]([ |-]?[0-9]){7,7}$',
-                        'applicant-mobile-number'    => '^(\+47|0047|)?[ |-]?[2-9]([ |-]?[0-9]){7,7}$',
-                        'applicant-email-address'    => '^[A-Za-z0-9!#%&\'*+/=?^_`~-]+(\.[A-Za-z0-9!#%&\'*+/=?^_`~-]+)*@([A-Za-z0-9]+)(([\.\-]?[a-zA-Z0-9]+)*)\.([A-Za-z]{2,})$',
-                        'card-number'                => '^([1-9][0-9]{3}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4})$'
+                        'applicant-mobile-number' => '^(\+47|0047|)?[ |-]?[2-9]([ |-]?[0-9]){7,7}$',
+                        'applicant-email-address' => '^[A-Za-z0-9!#%&\'*+/=?^_`~-]+(\.[A-Za-z0-9!#%&\'*+/=?^_`~-]+)*@([A-Za-z0-9]+)(([\.\-]?[a-zA-Z0-9]+)*)\.([A-Za-z]{2,})$',
+                        'card-number' => '^([1-9][0-9]{3}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4})$'
                     )
                 ),
                 'FI' => array(
                     'NATURAL' => array(
-                        'applicant-government-id'    => '^([\d]{6})[\+\-A]([\d]{3})([0123456789ABCDEFHJKLMNPRSTUVWXY])$',
+                        'applicant-government-id' => '^([\d]{6})[\+\-A]([\d]{3})([0123456789ABCDEFHJKLMNPRSTUVWXY])$',
                         'applicant-telephone-number' => '^((\+358|00358|0)[-| ]?(1[1-9]|[2-9]|[1][0][1-9]|201|2021|[2][0][2][4-9]|[2][0][3-8]|29|[3][0][1-9]|71|73|[7][5][0][0][3-9]|[7][5][3][0][3-9]|[7][5][3][2][3-9]|[7][5][7][5][3-9]|[7][5][9][8][3-9]|[5][0][0-9]{0,2}|[4][0-9]{1,3})([-| ]?[0-9]){3,10})?$',
-                        'applicant-mobile-number'    => '^((\+358|00358|0)[-| ]?(1[1-9]|[2-9]|[1][0][1-9]|201|2021|[2][0][2][4-9]|[2][0][3-8]|29|[3][0][1-9]|71|73|[7][5][0][0][3-9]|[7][5][3][0][3-9]|[7][5][3][2][3-9]|[7][5][7][5][3-9]|[7][5][9][8][3-9]|[5][0][0-9]{0,2}|[4][0-9]{1,3})([-| ]?[0-9]){3,10})?$',
-                        'applicant-email-address'    => '^[A-Za-z0-9!#%&\'*+/=?^_`~-]+(\.[A-Za-z0-9!#%&\'*+/=?^_`~-]+)*@([A-Za-z0-9]+)(([\.\-]?[a-zA-Z0-9]+)*)\.([A-Za-z]{2,})$',
-                        'card-number'                => '^([1-9][0-9]{3}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4})$'
+                        'applicant-mobile-number' => '^((\+358|00358|0)[-| ]?(1[1-9]|[2-9]|[1][0][1-9]|201|2021|[2][0][2][4-9]|[2][0][3-8]|29|[3][0][1-9]|71|73|[7][5][0][0][3-9]|[7][5][3][0][3-9]|[7][5][3][2][3-9]|[7][5][7][5][3-9]|[7][5][9][8][3-9]|[5][0][0-9]{0,2}|[4][0-9]{1,3})([-| ]?[0-9]){3,10})?$',
+                        'applicant-email-address' => '^[A-Za-z0-9!#%&\'*+/=?^_`~-]+(\.[A-Za-z0-9!#%&\'*+/=?^_`~-]+)*@([A-Za-z0-9]+)(([\.\-]?[a-zA-Z0-9]+)*)\.([A-Za-z]{2,})$',
+                        'card-number' => '^([1-9][0-9]{3}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4})$'
                     ),
-                    'LEGAL'   => array(
-                        'applicant-government-id'    => '^((\d{7})(\-)?\d)$',
+                    'LEGAL' => array(
+                        'applicant-government-id' => '^((\d{7})(\-)?\d)$',
                         'applicant-telephone-number' => '^((\+358|00358|0)[-| ]?(1[1-9]|[2-9]|[1][0][1-9]|201|2021|[2][0][2][4-9]|[2][0][3-8]|29|[3][0][1-9]|71|73|[7][5][0][0][3-9]|[7][5][3][0][3-9]|[7][5][3][2][3-9]|[7][5][7][5][3-9]|[7][5][9][8][3-9]|[5][0][0-9]{0,2}|[4][0-9]{1,3})([-| ]?[0-9]){3,10})?$',
-                        'applicant-mobile-number'    => '^((\+358|00358|0)[-| ]?(1[1-9]|[2-9]|[1][0][1-9]|201|2021|[2][0][2][4-9]|[2][0][3-8]|29|[3][0][1-9]|71|73|[7][5][0][0][3-9]|[7][5][3][0][3-9]|[7][5][3][2][3-9]|[7][5][7][5][3-9]|[7][5][9][8][3-9]|[5][0][0-9]{0,2}|[4][0-9]{1,3})([-| ]?[0-9]){3,10})?$',
-                        'applicant-email-address'    => '^[A-Za-z0-9!#%&\'*+/=?^_`~-]+(\.[A-Za-z0-9!#%&\'*+/=?^_`~-]+)*@([A-Za-z0-9]+)(([\.\-]?[a-zA-Z0-9]+)*)\.([A-Za-z]{2,})$',
-                        'card-number'                => '^([1-9][0-9]{3}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4})$'
+                        'applicant-mobile-number' => '^((\+358|00358|0)[-| ]?(1[1-9]|[2-9]|[1][0][1-9]|201|2021|[2][0][2][4-9]|[2][0][3-8]|29|[3][0][1-9]|71|73|[7][5][0][0][3-9]|[7][5][3][0][3-9]|[7][5][3][2][3-9]|[7][5][7][5][3-9]|[7][5][9][8][3-9]|[5][0][0-9]{0,2}|[4][0-9]{1,3})([-| ]?[0-9]){3,10})?$',
+                        'applicant-email-address' => '^[A-Za-z0-9!#%&\'*+/=?^_`~-]+(\.[A-Za-z0-9!#%&\'*+/=?^_`~-]+)*@([A-Za-z0-9]+)(([\.\-]?[a-zA-Z0-9]+)*)\.([A-Za-z]{2,})$',
+                        'card-number' => '^([1-9][0-9]{3}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4}[ ]{0,1}[0-9]{4})$'
                     )
                 ),
             )
         );
-        if ( isset( $this->formTemplateRuleArray ) && is_array( $this->formTemplateRuleArray ) && count( $this->formTemplateRuleArray ) ) {
-            foreach ( $this->formTemplateRuleArray as $cType => $cArray ) {
-                $formTemplateRules[ $cType ] = $cArray;
+        if (isset($this->formTemplateRuleArray) && is_array($this->formTemplateRuleArray) && count($this->formTemplateRuleArray)) {
+            foreach ($this->formTemplateRuleArray as $cType => $cArray) {
+                $formTemplateRules[$cType] = $cArray;
             }
         }
 
         return $formTemplateRules;
     }
-
 
     /**
      * Get regular expression ruleset for a specific payment formfield
@@ -181,36 +195,39 @@ class RESURS_DEPRECATED_FLOW {
      * @throws \Exception
      * @deprecated Build your own integration
      */
-    public function getRegEx( $formFieldName = '', $countryCode, $customerType ) {
+    public function getRegEx($formFieldName = '', $countryCode, $customerType)
+    {
         //$returnRegEx = array();
 
         /** @noinspection PhpDeprecationInspection */
         $templateRule = $this->getFormTemplateRules();
-        $returnRegEx  = $templateRule['regexp'];
+        $returnRegEx = $templateRule['regexp'];
 
-        if ( empty( $countryCode ) ) {
-            throw new \Exception( __FUNCTION__ . ": Country code is missing in getRegEx-request for form fields", \RESURS_EXCEPTIONS::REGEX_COUNTRYCODE_MISSING );
+        if (empty($countryCode)) {
+            throw new \Exception(__FUNCTION__ . ": Country code is missing in getRegEx-request for form fields",
+                \RESURS_EXCEPTIONS::REGEX_COUNTRYCODE_MISSING);
         }
-        if ( empty( $customerType ) ) {
-            throw new \Exception( __FUNCTION__ . ": Customer type is missing in getRegEx-request for form fields", \RESURS_EXCEPTIONS::REGEX_CUSTOMERTYPE_MISSING );
+        if (empty($customerType)) {
+            throw new \Exception(__FUNCTION__ . ": Customer type is missing in getRegEx-request for form fields",
+                \RESURS_EXCEPTIONS::REGEX_CUSTOMERTYPE_MISSING);
         }
 
-        if ( ! empty( $countryCode ) && isset( $returnRegEx[ strtoupper( $countryCode ) ] ) ) {
-            $returnRegEx = $returnRegEx[ strtoupper( $countryCode ) ];
-            if ( ! empty( $customerType ) ) {
-                if ( ! is_array( $customerType ) ) {
-                    if ( isset( $returnRegEx[ strtoupper( $customerType ) ] ) ) {
-                        $returnRegEx = $returnRegEx[ strtoupper( $customerType ) ];
-                        if ( isset( $returnRegEx[ strtolower( $formFieldName ) ] ) ) {
-                            $returnRegEx = $returnRegEx[ strtolower( $formFieldName ) ];
+        if (!empty($countryCode) && isset($returnRegEx[strtoupper($countryCode)])) {
+            $returnRegEx = $returnRegEx[strtoupper($countryCode)];
+            if (!empty($customerType)) {
+                if (!is_array($customerType)) {
+                    if (isset($returnRegEx[strtoupper($customerType)])) {
+                        $returnRegEx = $returnRegEx[strtoupper($customerType)];
+                        if (isset($returnRegEx[strtolower($formFieldName)])) {
+                            $returnRegEx = $returnRegEx[strtolower($formFieldName)];
                         }
                     }
                 } else {
-                    foreach ( $customerType as $cType ) {
-                        if ( isset( $returnRegEx[ strtoupper( $cType ) ] ) ) {
-                            $returnRegEx = $returnRegEx[ strtoupper( $cType ) ];
-                            if ( isset( $returnRegEx[ strtolower( $formFieldName ) ] ) ) {
-                                $returnRegEx = $returnRegEx[ strtolower( $formFieldName ) ];
+                    foreach ($customerType as $cType) {
+                        if (isset($returnRegEx[strtoupper($cType)])) {
+                            $returnRegEx = $returnRegEx[strtoupper($cType)];
+                            if (isset($returnRegEx[strtolower($formFieldName)])) {
+                                $returnRegEx = $returnRegEx[strtolower($formFieldName)];
                             }
                         }
                     }
@@ -234,12 +251,13 @@ class RESURS_DEPRECATED_FLOW {
      * @throws \Exception
      * @deprecated Build your own integration
      */
-    public function canHideFormField( $formField = "", $canThrow = false ) {
+    public function canHideFormField($formField = "", $canThrow = false)
+    {
         //$canHideSet = false;
 
-        if ( is_array( $this->templateFieldsByMethodResponse ) && count( $this->templateFieldsByMethodResponse ) && isset( $this->templateFieldsByMethodResponse['fields'] ) && isset( $this->templateFieldsByMethodResponse['display'] ) ) {
+        if (is_array($this->templateFieldsByMethodResponse) && count($this->templateFieldsByMethodResponse) && isset($this->templateFieldsByMethodResponse['fields']) && isset($this->templateFieldsByMethodResponse['display'])) {
             $currentDisplay = $this->templateFieldsByMethodResponse['display'];
-            if ( in_array( $formField, $currentDisplay ) ) {
+            if (in_array($formField, $currentDisplay)) {
                 $canHideSet = false;
             } else {
                 $canHideSet = true;
@@ -249,8 +267,9 @@ class RESURS_DEPRECATED_FLOW {
             $canHideSet = false;
         }
 
-        if ( $canThrow && ! $canHideSet ) {
-            throw new \Exception( __FUNCTION__ . ": templateFieldsByMethodResponse is empty. You have to run getTemplateFieldsByMethodType first", \RESURS_EXCEPTIONS::FORMFIELD_CANHIDE_EXCEPTION );
+        if ($canThrow && !$canHideSet) {
+            throw new \Exception(__FUNCTION__ . ": templateFieldsByMethodResponse is empty. You have to run getTemplateFieldsByMethodType first",
+                \RESURS_EXCEPTIONS::FORMFIELD_CANHIDE_EXCEPTION);
         }
 
         return $canHideSet;
@@ -277,51 +296,68 @@ class RESURS_DEPRECATED_FLOW {
      * @return array
      * @deprecated Build your own integration
      */
-    public function getTemplateFieldsByMethodType( $paymentMethodName = "", $customerType = "", $specificType = "" ) {
+    public function getTemplateFieldsByMethodType($paymentMethodName = "", $customerType = "", $specificType = "")
+    {
         /** @noinspection PhpDeprecationInspection */
-        $templateRules     = $this->getFormTemplateRules();
+        $templateRules = $this->getFormTemplateRules();
         //$returnedRules     = array();
         $returnedRuleArray = array();
         /* If the client is requesting a getPaymentMethod-object we'll try to handle that information instead (but not if it is empty) */
-        if ( is_object( $paymentMethodName ) || is_array( $paymentMethodName ) ) {
-            if ( is_object( $paymentMethodName ) ) {
+        if (is_object($paymentMethodName) || is_array($paymentMethodName)) {
+            if (is_object($paymentMethodName)) {
                 // Prevent arrays to go through here and crash something
-                if ( ! is_array( $customerType ) ) {
+                if (!is_array($customerType)) {
                     /** @noinspection PhpUndefinedFieldInspection */
                     if (isset($templateRules[strtoupper($customerType)]) && (isset($templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName->specificType)]) || isset($templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName->type)]))) {
                         /** @noinspection PhpUndefinedFieldInspection */
                         $returnedRuleArray = $templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName->specificType)];
                         if ($paymentMethodName->type === 'PAYMENT_PROVIDER') {
+                            $this->canSkipGovernmentIdValidation = true;
                             $returnedRuleArray = $templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName->type)];
                         }
                     }
                 }
-            } else if ( is_array( $paymentMethodName ) ) {
-                /*
-                 * This should probably not happen and the developers should probably also stick to objects as above.
-                 */
-                if ( is_array( $paymentMethodName ) && count( $paymentMethodName ) ) {
-                    if (isset($templateRules[strtoupper($customerType)]) && (isset($templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName['specificType'])]) || isset($templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName['type'])]))) {
-                        $returnedRuleArray = $templateRules[ strtoupper( $customerType ) ]['fields'][ strtoupper( $paymentMethodName['specificType'] ) ];
-                        if ($paymentMethodName['type'] === 'PAYMENT_PROVIDER') {
-                            $returnedRuleArray = $templateRules[ strtoupper( $customerType ) ]['fields'][ strtoupper( $paymentMethodName['type'] ) ];
+            } else {
+                if (is_array($paymentMethodName)) {
+                    /*
+                     * This should probably not happen and the developers should probably also stick to objects as above.
+                     */
+                    if (is_array($paymentMethodName) && count($paymentMethodName)) {
+                        if (isset($templateRules[strtoupper($customerType)]) && (isset($templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName['specificType'])]) || isset($templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName['type'])]))) {
+                            $returnedRuleArray = $templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName['specificType'])];
+                            if ($paymentMethodName['type'] === 'PAYMENT_PROVIDER') {
+                                $this->canSkipGovernmentIdValidation = true;
+                                $returnedRuleArray = $templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName['type'])];
+                            }
                         }
                     }
                 }
             }
         } else {
-            if ( isset( $templateRules[ strtoupper( $customerType ) ] ) && isset( $templateRules[ strtoupper( $customerType ) ]['fields'][ strtoupper( $paymentMethodName ) ] ) ) {
-                $returnedRuleArray = $templateRules[ strtoupper( $customerType ) ]['fields'][ strtoupper( $specificType ) ];
+            if (isset($templateRules[strtoupper($customerType)]) && isset($templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName)])) {
+                $returnedRuleArray = $templateRules[strtoupper($customerType)]['fields'][strtoupper($specificType)];
             }
         }
-        $returnedRules                        = array(
-            'fields'  => $returnedRuleArray,
+        $returnedRules = array(
+            'fields' => $returnedRuleArray,
             'display' => $templateRules['display'],
-            'regexp'  => $templateRules['regexp']
+            'regexp' => $templateRules['regexp']
         );
         $this->templateFieldsByMethodResponse = $returnedRules;
 
         return $returnedRules;
+    }
+
+    /**
+     * Defines if we are allowed to skip government id validation. Payment provider methods
+     * normally does this when running in simplified mode. In other cases, validation will be
+     * handled by Resurs Bank and this setting shoudl not be affected by this
+     *
+     * @return bool
+     */
+    public function getCanSkipGovernmentIdValidation()
+    {
+        return $this->canSkipGovernmentIdValidation;
     }
 
     /**
@@ -333,9 +369,10 @@ class RESURS_DEPRECATED_FLOW {
      * @throws \Exception
      * @deprecated Build your own integration
      */
-    public function getTemplateFieldsByMethod( $paymentMethodName = "" ) {
+    public function getTemplateFieldsByMethod($paymentMethodName = "")
+    {
         /** @noinspection PhpDeprecationInspection */
-        return $this->getTemplateFieldsByMethodType( $this->getPaymentMethodSpecific( $paymentMethodName ) );
+        return $this->getTemplateFieldsByMethodType($this->getPaymentMethodSpecific($paymentMethodName));
     }
 
     /**
@@ -347,8 +384,9 @@ class RESURS_DEPRECATED_FLOW {
      * @throws \Exception
      * @deprecated Build your own integration
      */
-    public function getFormFieldsByMethod( $paymentMethodName = "" ) {
+    public function getFormFieldsByMethod($paymentMethodName = "")
+    {
         /** @noinspection PhpDeprecationInspection */
-        return $this->getTemplateFieldsByMethod( $paymentMethodName );
+        return $this->getTemplateFieldsByMethod($paymentMethodName);
     }
 }
