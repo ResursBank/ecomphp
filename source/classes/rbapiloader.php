@@ -2463,6 +2463,28 @@ class ResursBank
     }
 
     /**
+     * @param string $paymentId
+     * @return null
+     * @throws Exception
+     * @since 1.3.13
+     * @since 1.1.40
+     * @since 1.0.40
+     */
+    public function getPaymentByRest($paymentId = '')
+    {
+        try {
+            return $this->CURL->getParsed($this->CURL->doGet($this->getCheckoutUrl() . "/checkout/payments/" . $paymentId));
+        } catch (\Exception $e) {
+            // Get internal exceptions before http responses
+            $exceptionTestBody = @json_decode($this->CURL->getBody());
+            if (isset($exceptionTestBody->errorCode) && isset($exceptionTestBody->description)) {
+                throw new Exception($exceptionTestBody->description, $exceptionTestBody->errorCode, $e);
+            }
+            throw new Exception($e->getMessage(), $e->getCode(), $e);
+        }
+    }
+
+    /**
      * getPayment - Retrieves detailed information about a payment
      *
      * As of 1.3.13, SOAP has higher priority than REST. This might be a breaking change, since
@@ -2493,20 +2515,12 @@ class ResursBank
          *
          * @since 1.3.13
          */
-        if (!$this->isFlag('GET_PAYMENT_BY_REST') && !$useSoap) {
-            return $this->getPaymentBySoap($paymentId);
+
+        if ($this->isFlag('GET_PAYMENT_BY_REST')) {
+            return $this->getPaymentByRest($paymentId);
         }
 
-        try {
-            return $this->CURL->getParsed($this->CURL->doGet($this->getCheckoutUrl() . "/checkout/payments/" . $paymentId));
-        } catch (\Exception $e) {
-            // Get internal exceptions before http responses
-            $exceptionTestBody = @json_decode($this->CURL->getBody());
-            if (isset($exceptionTestBody->errorCode) && isset($exceptionTestBody->description)) {
-                throw new Exception($exceptionTestBody->description, $exceptionTestBody->errorCode, $e);
-            }
-            throw new Exception($e->getMessage(), $e->getCode(), $e);
-        }
+        return $this->getPaymentBySoap($paymentId);
     }
 
     /**
