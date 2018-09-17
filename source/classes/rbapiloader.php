@@ -207,6 +207,8 @@ class ResursBank
     private $paymentMethodIdSanitizing = false;
     /** @var bool This setting is true if a flow is about to run through a PSP method */
     private $paymentMethodIsPsp = false;
+    /** @var bool Defines if there is a SoapClient available */
+    private $SOAP_AVAILABLE = false;
 
     /**
      * If a choice of payment method are discovered during the flow, this is set here
@@ -832,6 +834,10 @@ class ResursBank
 
         if (!is_null($debug) && is_bool($debug)) {
             $this->debug = $debug;
+        }
+
+        if ($this->hasSoap()) {
+            $this->SOAP_AVAILABLE = true;
         }
 
         $this->checkoutShopUrl = $this->hasHttps(true) . "://" . $theHost;
@@ -3254,7 +3260,7 @@ class ResursBank
      *
      * @return array|mixed|null
      * @throws \Exception
-     * @link https://test.resurs.com/docs/x/moEW getPayment() documentation
+     * @link  https://test.resurs.com/docs/x/moEW getPayment() documentation
      * @since 1.0.31
      * @since 1.1.31
      * @since 1.2.4
@@ -3266,13 +3272,76 @@ class ResursBank
     }
 
     /**
-     * getPayment - Retrieves detailed information about a payment (rewritten to primarily use rest instead of SOAP, to get more soap independence)
+     * @param string $paymentId
+     * @return null
+     * @throws Exception
+     * @since 1.3.13
+     * @since 1.1.40
+     * @since 1.0.40
+     */
+    public function getPaymentByRest($paymentId = '')
+    {
+        try {
+            return $this->CURL->getParsed($this->CURL->doGet($this->getCheckoutUrl() . "/checkout/payments/" . $paymentId));
+        } catch (\Exception $e) {
+            // Get internal exceptions before http responses
+            $exceptionTestBody = @json_decode($this->CURL->getBody());
+            if (isset($exceptionTestBody->errorCode) && isset($exceptionTestBody->description)) {
+                throw new Exception($exceptionTestBody->description, $exceptionTestBody->errorCode, $e);
+            }
+            throw new Exception($e->getMessage(), $e->getCode(), $e);
+        }
+    }
+
+    /**
+     * @return string
+     */
+    public function getDisabledClasses() {
+        $disabledFunctions        = @ini_get( 'disable_classes' );
+        $disabledArray            = array_map( "trim", explode( ",", $disabledFunctions ) );
+        $this->FUNCTIONS_DISABLED = is_array( $disabledArray ) ? $disabledArray : array();
+
+        return $this->FUNCTIONS_DISABLED;
+    }
+
+    /**
+     * @return bool
+     * @since 1.3.13
+     */
+    public function hasSoap()
+    {
+        $return = false;
+
+        if (class_exists('SoapClient', ECOM_NO_CLASS_AUTOLOAD)) {
+            $return = true;
+        }
+
+        if (in_array('SoapCient', $this->getDisabledClasses())) {
+            $return = false;
+        }
+
+        /** @var $defConstants PHP 5.3 compliant defined constants list */
+        $defConstants = get_defined_constants();
+        foreach ($defConstants as $constant => $value) {
+            if (preg_match("/^soap_/i", $constant)) {
+                $return = true;
+            }
+        }
+        return $return;
+    }
+
+    /**
+     * getPayment - Retrieves detailed information about a payment
+     *
+     * As of 1.3.13, SOAP has higher priority than REST. This might be a breaking change, since
+     * there will from now in (again) be a dependency of SoapClient. The flag GET_PAYMENT_BY_REST is
+     * obsolete and has no longer any effect.
      *
      * @param string $paymentId
-     * @param bool $useSoap
+     * @param bool $useSoap (Default: true since 1.3.13)
      *
      * @return array|mixed|null
-     * @throws \Exception
+     * @throws \Exception 3/REST=>Order does not exist, 8/SOAP=>Reference does not exist, 404 is thrown when errors could not be fetched
      * @since 1.0.1
      * @since 1.1.1
      * @since 1.0.31 Refactored from this version
@@ -3280,22 +3349,38 @@ class ResursBank
      * @since 1.2.4 Refactored from this version
      * @since 1.3.4 Refactored from this version
      */
-    public function getPayment($paymentId = '', $useSoap = false)
+    public function getPayment($paymentId = '', $useSoap = true)
     {
         $this->InitializeServices();
-        if ($this->isFlag('GET_PAYMENT_BY_SOAP') || $useSoap) {
-            return $this->getPaymentBySoap($paymentId);
+
+        /**
+         * As REST based exceptions is more unsafe than the SOAP responses we use the SOAP as default method to get
+         * the payment data. REST throws a 404 exception with an extended body with errors when a payment does not
+         * exist. This behaviour is partially only half safe, since we don't know from moment to moment when this
+         * error body is present.
+         *
+         * @since 1.3.13
+         */
+        if ($this->isFlag('GET_PAYMENT_BY_REST') || !$this->SOAP_AVAILABLE) {
+            // This will ALWAYS run if SOAP is unavailable
+            try {
+                return $this->getPaymentByRest($paymentId);
+            } catch (Exception $e) {
+                // 3 = The order does not exist, default REST error.
+                // If we for some reason get 404 errors here, the error should be retrown as 3.
+                // If we for some unknown reason get 500+ errors, we can almost be sure that something else went wrong.
+                if ($e->getCode() === 404) {
+                    throw new Exception($e->getMessage(), 3, $e);
+                }
+                throw $e;
+            }
         }
 
         try {
-            return $this->CURL->getParsedResponse($this->CURL->doGet($this->getCheckoutUrl() . "/checkout/payments/" . $paymentId));
-        } catch (\Exception $e) {
-            // Get internal exceptions before http responses
-            $exceptionTestBody = @json_decode($this->CURL->getResponseBody());
-            if (isset($exceptionTestBody->errorCode) && isset($exceptionTestBody->description)) {
-                throw new Exception($exceptionTestBody->description, $exceptionTestBody->errorCode, $e);
-            }
-            throw new Exception($e->getMessage(), $e->getCode(), $e);
+            return $this->getPaymentBySoap($paymentId);
+        } catch (Exception $e) {
+            // 8 = REFERENCED_DATA_DONT_EXISTS
+            throw $e;
         }
     }
 
