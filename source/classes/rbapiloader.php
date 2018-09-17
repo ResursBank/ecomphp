@@ -3303,6 +3303,8 @@ class ResursBank
     }
 
     /**
+     * Partially tells EComPHP whether SOAP can be used or not, when dependencies requires this.
+     *
      * @return bool
      * @since 1.3.13
      */
@@ -3314,10 +3316,6 @@ class ResursBank
             $return = true;
         }
 
-        if (in_array('SoapCient', $this->getDisabledClasses())) {
-            $return = false;
-        }
-
         /** @var $defConstants PHP 5.3 compliant defined constants list */
         $defConstants = get_defined_constants();
         foreach ($defConstants as $constant => $value) {
@@ -3325,6 +3323,11 @@ class ResursBank
                 $return = true;
             }
         }
+
+        if (in_array('SoapClient', $this->getDisabledClasses())) {
+            $return = false;
+        }
+
         return $return;
     }
 
