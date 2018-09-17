@@ -119,6 +119,8 @@ class ResursBank
     private $paymentMethodIdSanitizing = false;
     /** @var bool This setting is true if a flow is about to run through a PSP method */
     private $paymentMethodIsPsp = false;
+    /** @var bool Defines if there is a SoapClient available */
+    private $SOAP_AVAILABLE = false;
 
     /**
      * If a choice of payment method are discovered during the flow, this is set here
@@ -415,6 +417,10 @@ class ResursBank
 
         if ( ! is_null($debug) && is_bool($debug)) {
             $this->debug = $debug;
+        }
+
+        if ($this->hasSoap()) {
+            $this->SOAP_AVAILABLE = true;
         }
 
         $this->checkoutShopUrl           = $this->hasHttps(true) . "://" . $theHost;
@@ -2485,6 +2491,43 @@ class ResursBank
     }
 
     /**
+     * @return string
+     */
+    public function getDisabledClasses() {
+        $disabledFunctions        = @ini_get( 'disable_classes' );
+        $disabledArray            = array_map( "trim", explode( ",", $disabledFunctions ) );
+        $this->FUNCTIONS_DISABLED = is_array( $disabledArray ) ? $disabledArray : array();
+
+        return $this->FUNCTIONS_DISABLED;
+    }
+
+    /**
+     * @return bool
+     * @since 1.3.13
+     */
+    public function hasSoap()
+    {
+        $return = false;
+
+        if (class_exists('SoapClient', ECOM_NO_CLASS_AUTOLOAD)) {
+            $return = true;
+        }
+
+        if (in_array('SoapCient', $this->getDisabledClasses())) {
+            $return = false;
+        }
+
+        /** @var $defConstants PHP 5.3 compliant defined constants list */
+        $defConstants = get_defined_constants();
+        foreach ($defConstants as $constant => $value) {
+            if (preg_match("/^soap_/i", $constant)) {
+                $return = true;
+            }
+        }
+        return $return;
+    }
+
+    /**
      * getPayment - Retrieves detailed information about a payment
      *
      * As of 1.3.13, SOAP has higher priority than REST. This might be a breaking change, since
@@ -2495,7 +2538,7 @@ class ResursBank
      * @param bool $useSoap (Default: true since 1.3.13)
      *
      * @return array|mixed|null
-     * @throws \Exception
+     * @throws \Exception 3/REST=>Order does not exist, 8/SOAP=>Reference does not exist, 404 is thrown when errors could not be fetched
      * @since 1.0.1
      * @since 1.1.1
      * @since 1.0.31 Refactored from this version
@@ -2515,12 +2558,27 @@ class ResursBank
          *
          * @since 1.3.13
          */
-
-        if ($this->isFlag('GET_PAYMENT_BY_REST')) {
-            return $this->getPaymentByRest($paymentId);
+        if ($this->isFlag('GET_PAYMENT_BY_REST') || !$this->SOAP_AVAILABLE) {
+            // This will ALWAYS run if SOAP is unavailable
+            try {
+                return $this->getPaymentByRest($paymentId);
+            } catch (Exception $e) {
+                // 3 = The order does not exist, default REST error.
+                // If we for some reason get 404 errors here, the error should be retrown as 3.
+                // If we for some unknown reason get 500+ errors, we can almost be sure that something else went wrong.
+                if ($e->getCode() === 404) {
+                    throw new Exception($e->getMessage(), 3, $e);
+                }
+                throw $e;
+            }
         }
 
-        return $this->getPaymentBySoap($paymentId);
+        try {
+            return $this->getPaymentBySoap($paymentId);
+        } catch (Exception $e) {
+            // 8 = REFERENCED_DATA_DONT_EXISTS
+            throw $e;
+        }
     }
 
     /**

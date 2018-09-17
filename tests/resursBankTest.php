@@ -574,6 +574,18 @@ class resursBankTest extends TestCase
 
     /**
      * @test
+     */
+    public function getPaymentUnexistentSoap() {
+        try {
+            $this->TEST->ECOM->getPayment('FAIL_HERE');
+        } catch (\Exception $e) {
+            // This should NEVER throw anything else than 3 (REST) or 8 (SOAP)
+            static::assertTrue($e->getCode() === 3 || $e->getCode() === 8);
+        }
+    }
+
+    /**
+     * @test
      * @testdox Clean up special test data from share file
      */
     public function finalTest()
