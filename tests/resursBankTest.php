@@ -78,6 +78,16 @@ class resursBankTest extends TestCase
     }
 
     /**
+     * @throws \Exception
+     */
+    protected function setUp()
+    {
+        $this->API = new ResursBank();
+        $this->API->setDebug(true);
+        $this->TEST = new RESURS_TEST_BRIDGE();
+    }
+
+    /**
      * @test
      */
     public function clearStorage()
@@ -518,25 +528,6 @@ class resursBankTest extends TestCase
     }
 
     /**
-     * @test
-     * @testdox Clean up special test data from share file
-     */
-    public function finalTest()
-    {
-        static::assertTrue($this->TEST->unshare("thisKey"));
-    }
-
-    /**
-     * @throws \Exception
-     */
-    protected function setUp()
-    {
-        $this->API = new ResursBank();
-        $this->API->setDebug(true);
-        $this->TEST = new RESURS_TEST_BRIDGE();
-    }
-
-    /**
      * @return null
      * @throws \Exception
      */
@@ -551,5 +542,54 @@ class resursBankTest extends TestCase
             return $paymentMethods[0];
         }
         return null;
+    }
+
+    /**
+     * @test
+     */
+    public function getPaymentWrong() {
+        try {
+            $this->TEST->ECOM->getPayment("FAIL_HERE");
+        } catch (\Exception $e) {
+            $code = (int)$e->getCode();
+            // Code 3 = REST, Code 8 = SOAP (180914)
+            static::assertTrue($code === 8 || $code === 404);
+        }
+    }
+
+    /**
+     * @test
+     */
+    public function getPaymentWrongRest() {
+        try {
+            $this->TEST->ECOM->setFlag('GET_PAYMENT_BY_REST');
+            $this->TEST->ECOM->getPayment('FAIL_HERE');
+        } catch (\Exception $e) {
+            $code = (int)$e->getCode();
+            // Code 3 = REST, Code 8 = SOAP (180914)
+            static::assertTrue($code === 3 || $code === 404);
+        }
+        $this->TEST->ECOM->deleteFlag('GET_PAYMENT_BY_REST');
+    }
+
+    /**
+     * @test
+     */
+    public function getPaymentUnexistentSoap() {
+        try {
+            $this->TEST->ECOM->getPayment('FAIL_HERE');
+        } catch (\Exception $e) {
+            // This should NEVER throw anything else than 3 (REST) or 8 (SOAP)
+            static::assertTrue($e->getCode() === 3 || $e->getCode() === 8);
+        }
+    }
+
+    /**
+     * @test
+     * @testdox Clean up special test data from share file
+     */
+    public function finalTest()
+    {
+        static::assertTrue($this->TEST->unshare("thisKey"));
     }
 }
