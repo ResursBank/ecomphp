@@ -48,6 +48,7 @@ use Resursbank\RBEcomPHP\MODULE_NETWORK;
 use Resursbank\RBEcomPHP\MODULE_CRYPTO;
 use Resursbank\RBEcomPHP\MODULE_NETBITS;
 use Resursbank\RBEcomPHP\MODULE_IO;
+use \Exception;
 
 // Globals starts here
 if (!defined('ECOMPHP_VERSION')) {
@@ -971,7 +972,7 @@ class ResursBank
             $streamWrappers = array();
         }
         if (!in_array('https', array_map("strtolower", $streamWrappers))) {
-            throw new \Exception(__FUNCTION__ . ": HTTPS wrapper can not be found",
+            throw new Exception(__FUNCTION__ . ": HTTPS wrapper can not be found",
                 \RESURS_EXCEPTIONS::SSL_WRAPPER_MISSING);
         }
     }
@@ -1075,7 +1076,7 @@ class ResursBank
             }
             return $this->CURL;
         } else {
-            throw new \Exception("Can't return handle. The module is in wrong state (non-debug mode)", 403);
+            throw new Exception("Can't return handle. The module is in wrong state (non-debug mode)", 403);
         }
     }
 
@@ -1096,7 +1097,7 @@ class ResursBank
         if ($this->debug) {
             $this->CURL = $newCurlHandle;
         } else {
-            throw new \Exception("Can't return handle. The module is in wrong state (non-debug mode)", 403);
+            throw new Exception("Can't return handle. The module is in wrong state (non-debug mode)", 403);
         }
     }
 
@@ -1144,7 +1145,7 @@ class ResursBank
         if ($this->debug && $this->current_environment == RESURS_ENVIRONMENTS::ENVIRONMENT_TEST) {
             $this->curlSslDisable = true;
         } else {
-            throw new \Exception("Can't set SSL validation in relaxed mode. Debug mode is disabled and/or test environment are not set",
+            throw new Exception("Can't set SSL validation in relaxed mode. Debug mode is disabled and/or test environment are not set",
                 403);
         }
     }
@@ -1383,7 +1384,7 @@ class ResursBank
                 }
             } catch (\Exception $e) {
                 /** Adds the $currentService to the message, to show which service that failed */
-                throw new \Exception(__FUNCTION__ . ": " . $e->getMessage() . "\nStuck on service: " . $currentService,
+                throw new Exception(__FUNCTION__ . ": " . $e->getMessage() . "\nStuck on service: " . $currentService,
                     \RESURS_EXCEPTIONS::WSDL_APILOAD_EXCEPTION, $e);
             }
         }
@@ -1489,7 +1490,7 @@ class ResursBank
 
             return true;
         }
-        throw new \Exception("Flags can not be empty", 500);
+        throw new Exception("Flags can not be empty", 500);
     }
 
     /**
@@ -1670,7 +1671,7 @@ class ResursBank
                     $returnObject = $this->shopFlowService->$func($instance);
                 }
             } catch (\Exception $e) {
-                throw new \Exception(__FUNCTION__ . "/" . $func . "/" . $classfunc . ": " . $e->getMessage(),
+                throw new Exception(__FUNCTION__ . "/" . $func . "/" . $classfunc . ": " . $e->getMessage(),
                     \RESURS_EXCEPTIONS::WSDL_PASSTHROUGH_EXCEPTION);
             }
         }
@@ -2177,7 +2178,7 @@ class ResursBank
         try {
             $ResursResponse = $this->CURL->getParsed($this->CURL->doGet($this->getCheckoutUrl() . "/callbacks"));
         } catch (\Exception $restException) {
-            throw new \Exception($restException->getMessage(), $restException->getCode());
+            throw new Exception($restException->getMessage(), $restException->getCode());
         }
         if ($ReturnAsArray) {
             $ResursResponseArray = array();
@@ -2282,10 +2283,10 @@ class ResursBank
         if (is_array($this->validateExternalUrl) && count($this->validateExternalUrl)) {
             $isValidAddress = $this->validateExternalAddress();
             if ($isValidAddress == RESURS_CALLBACK_REACHABILITY::IS_NOT_REACHABLE) {
-                throw new \Exception("Reachability Response: Your site might not be available to our callbacks");
+                throw new Exception("Reachability Response: Your site might not be available to our callbacks");
             } else {
                 if ($isValidAddress == RESURS_CALLBACK_REACHABILITY::IS_REACHABLE_WITH_PROBLEMS) {
-                    throw new \Exception("Reachability Response: Your site is availble from the outide. However, problems occured during tests, that indicates that your site is not available to our callbacks");
+                    throw new Exception("Reachability Response: Your site is availble from the outide. However, problems occured during tests, that indicates that your site is not available to our callbacks");
                 }
             }
         }
@@ -2295,7 +2296,7 @@ class ResursBank
         // DEFAULT SETUP
         $renderCallback['eventType'] = $this->getCallbackTypeString($callbackType);
         if (empty($renderCallback['eventType'])) {
-            throw new \Exception(__FUNCTION__ . ": The callback type you are trying to register is not supported by EComPHP",
+            throw new Exception(__FUNCTION__ . ": The callback type you are trying to register is not supported by EComPHP",
                 \RESURS_EXCEPTIONS::CALLBACK_TYPE_UNSUPPORTED);
         }
         $renderCallback['uriTemplate'] = $callbackUriTemplate;
@@ -2329,7 +2330,7 @@ class ResursBank
             $renderCallback['digestConfiguration']['digestSalt'] = $this->digestKey['eventType'];
         }
         if (empty($renderCallback['digestConfiguration']['digestSalt'])) {
-            throw new \Exception("Can not continue without a digest salt key",
+            throw new Exception("Can not continue without a digest salt key",
                 \RESURS_EXCEPTIONS::CALLBACK_SALTDIGEST_MISSING);
         }
         ////// DIGEST CONFIGURATION FINISH
@@ -2362,7 +2363,7 @@ class ResursBank
             return true;
         }
 
-        throw new \Exception("setRegisterCallbackException ($code): Could not register callback event " . $renderCallback['eventType'] . ' (service: ' . $registerBy . ')',
+        throw new Exception("setRegisterCallbackException ($code): Could not register callback event " . $renderCallback['eventType'] . ' (service: ' . $registerBy . ')',
             $code);
     }
 
@@ -2735,7 +2736,7 @@ class ResursBank
                     $exceptionCode = \RESURS_EXCEPTIONS::UNKOWN_SOAP_EXCEPTION_CODE_ZERO;
                 }
                 // Cast internal soap errors into a new, since the exception code is lost
-                throw new \Exception($exceptionMessage, $exceptionCode, $serviceRequestException);
+                throw new Exception($exceptionMessage, $exceptionCode, $serviceRequestException);
             }
             $ParsedResponse = $Service->getParsedResponse($RequestService);
             $ResponseCode = $Service->getResponseCode();
@@ -3292,9 +3293,9 @@ class ResursBank
             // Get internal exceptions before http responses
             $exceptionTestBody = @json_decode($this->CURL->getResponseBody());
             if (isset($exceptionTestBody->errorCode) && isset($exceptionTestBody->description)) {
-                throw new \Exception($exceptionTestBody->description, $exceptionTestBody->errorCode, $e);
+                throw new Exception($exceptionTestBody->description, $exceptionTestBody->errorCode, $e);
             }
-            throw new \Exception($e->getMessage(), $e->getCode(), $e);
+            throw new Exception($e->getMessage(), $e->getCode(), $e);
         }
     }
 
@@ -3313,7 +3314,7 @@ class ResursBank
             if (is_object($paymentId)) {
                 $payment = $paymentId;
             } else {
-                throw new \Exception("getMetaDataException: PaymentID is neither and id nor object", 500);
+                throw new Exception("getMetaDataException: PaymentID is neither and id nor object", 500);
             }
         }
         if (isset($payment) && isset($payment->metaData)) {
@@ -3469,7 +3470,7 @@ class ResursBank
     public function updatePaymentReference($paymentId, $to)
     {
         if (empty($paymentId) || empty($to)) {
-            throw new \Exception("Payment id and to must be set");
+            throw new Exception("Payment id and to must be set");
         }
         $this->InitializeServices();
         $url = $this->getCheckoutUrl() . '/checkout/payments/' . $paymentId . '/updatePaymentReference';
@@ -3479,7 +3480,7 @@ class ResursBank
             return true;
         }
         if ($ResponseCode >= 400) {
-            throw new \Exception("Payment reference could not be updated", $ResponseCode);
+            throw new Exception("Payment reference could not be updated", $ResponseCode);
         }
 
         return false;
@@ -3529,10 +3530,10 @@ class ResursBank
     public function addMetaData($paymentId = '', $metaDataKey = '', $metaDataValue = '')
     {
         if (empty($paymentId)) {
-            throw new \Exception("Payment id is not set");
+            throw new Exception("Payment id is not set");
         }
         if (empty($metaDataKey) || empty($metaDataValue)) {
-            throw new \Exception("Can't have empty meta information");
+            throw new Exception("Can't have empty meta information");
         }
 
         $customErrorMessage = "";
@@ -3542,7 +3543,7 @@ class ResursBank
             $customErrorMessage = $e->getMessage();
         }
         if (!isset($checkPayment->id) && !empty($customErrorMessage)) {
-            throw new \Exception($customErrorMessage);
+            throw new Exception($customErrorMessage);
         }
         $metaDataArray = array(
             'paymentId' => $paymentId,
@@ -3794,9 +3795,9 @@ class ResursBank
                 $ParsedResponse = $WebResponse->response->isAvailableResponse;
             } else {
                 if (isset($WebResponse->errors) && !empty($WebResponse->errors->faultstring)) {
-                    throw new \Exception($WebResponse->errors->faultstring, $WebResponse->errors->code);
+                    throw new Exception($WebResponse->errors->faultstring, $WebResponse->errors->code);
                 } else {
-                    throw new \Exception("No response returned from API", 500);
+                    throw new Exception("No response returned from API", 500);
                 }
             }
             if (isset($ParsedResponse->{$base64url}) && isset($ParsedResponse->{$base64url}->exceptiondata->errorcode) && !empty($ParsedResponse->{$base64url}->exceptiondata->errorcode)) {
@@ -4409,7 +4410,7 @@ class ResursBank
         if (is_array($jsonData) || is_object($jsonData)) {
             $jsonData = json_encode($jsonData);
             if (json_last_error()) {
-                throw new \Exception(__FUNCTION__ . ": " . json_last_error_msg(), json_last_error());
+                throw new Exception(__FUNCTION__ . ": " . json_last_error_msg(), json_last_error());
             }
         }
 
@@ -4455,28 +4456,28 @@ class ResursBank
                     if (isset($ResursResponse->status)) {
                         $useResponseCode = $ResursResponse->status;
                     }
-                    throw new \Exception($ResursResponse->error, $useResponseCode);
+                    throw new Exception($ResursResponse->error, $useResponseCode);
                 }
                 /*
                  * Must handle ecommerce errors too.
                  */
                 if (isset($ResursResponse->errorCode)) {
                     if ($ResursResponse->errorCode > 0) {
-                        throw new \Exception(isset($ResursResponse->description) && !empty($ResursResponse->description) ? $ResursResponse->description : "Unknown error in " . __FUNCTION__,
+                        throw new Exception(isset($ResursResponse->description) && !empty($ResursResponse->description) ? $ResursResponse->description : "Unknown error in " . __FUNCTION__,
                             $ResursResponse->errorCode);
                     } else {
                         if ($curlCode >= 500) {
                             /*
                          * If there are any internal server errors returned, the errorCode tend to be unset (0) and therefore not trigged. In this case, as the server won't do anything good anyway, we should throw an exception
                          */
-                            throw new \Exception(isset($ResursResponse->description) && !empty($ResursResponse->description) ? $ResursResponse->description : "Unknown error in " . __FUNCTION__,
+                            throw new Exception(isset($ResursResponse->description) && !empty($ResursResponse->description) ? $ResursResponse->description : "Unknown error in " . __FUNCTION__,
                                 $ResursResponse->errorCode);
                         }
                     }
                 }
             } else {
                 $theBody = $this->CURL->getResponseBody($CurlLibResponse);
-                throw new \Exception(!empty($theBody) ? $theBody : "Unknown error from server in " . __FUNCTION__,
+                throw new Exception(!empty($theBody) ? $theBody : "Unknown error from server in " . __FUNCTION__,
                     $curlCode);
             }
         } else {
@@ -4838,11 +4839,11 @@ class ResursBank
         $returnRegEx = $templateRule['regexp'];
 
         if (empty($countryCode)) {
-            throw new \Exception(__FUNCTION__ . ": Country code is missing in getRegEx-request for form fields",
+            throw new Exception(__FUNCTION__ . ": Country code is missing in getRegEx-request for form fields",
                 \RESURS_EXCEPTIONS::REGEX_COUNTRYCODE_MISSING);
         }
         if (empty($customerType)) {
-            throw new \Exception(__FUNCTION__ . ": Customer type is missing in getRegEx-request for form fields",
+            throw new Exception(__FUNCTION__ . ": Customer type is missing in getRegEx-request for form fields",
                 \RESURS_EXCEPTIONS::REGEX_CUSTOMERTYPE_MISSING);
         }
 
@@ -4903,7 +4904,7 @@ class ResursBank
         }
 
         if ($canThrow && !$canHideSet) {
-            throw new \Exception(__FUNCTION__ . ": templateFieldsByMethodResponse is empty. You have to run getTemplateFieldsByMethodType first",
+            throw new Exception(__FUNCTION__ . ": templateFieldsByMethodResponse is empty. You have to run getTemplateFieldsByMethodType first",
                 \RESURS_EXCEPTIONS::FORMFIELD_CANHIDE_EXCEPTION);
         }
 
@@ -5031,7 +5032,7 @@ class ResursBank
     {
         if (version_compare(PHP_VERSION, '5.3.0', "<")) {
             if (!$this->allowObsoletePHP) {
-                throw new \Exception(__FUNCTION__ . ": PHP 5.3 or later are required for this module to work. If you feel safe with running this with an older version, you can use the function setObsoletePhp()",
+                throw new Exception(__FUNCTION__ . ": PHP 5.3 or later are required for this module to work. If you feel safe with running this with an older version, you can use the function setObsoletePhp()",
                     500);
             }
         }
@@ -5145,7 +5146,7 @@ class ResursBank
                 return $this->objectsIntoArray($this->getPaymentMethods());
             }
         }
-        throw new \Exception(__FUNCTION__ . ": Can not fetch payment methods from cache. You must enable internal caching first.",
+        throw new Exception(__FUNCTION__ . ": Can not fetch payment methods from cache. You must enable internal caching first.",
             \RESURS_EXCEPTIONS::PAYMENT_METHODS_CACHE_DISABLED);
     }
 
@@ -5186,7 +5187,7 @@ class ResursBank
                 return $this->objectsIntoArray($this->getAnnuityFactors($paymentMethod));
             }
         } else {
-            throw new \Exception(__FUNCTION__ . ": Can not fetch annuity factors from cache. You must enable internal caching first.",
+            throw new Exception(__FUNCTION__ . ": Can not fetch annuity factors from cache. You must enable internal caching first.",
                 \RESURS_EXCEPTIONS::ANNUITY_FACTORS_CACHE_DISABLED);
         }
     }
@@ -5214,7 +5215,7 @@ class ResursBank
                 $firstMethod = array_pop($methodsAvailable);
                 $paymentMethodId = isset($firstMethod->id) ? $firstMethod->id : null;
                 if (empty($paymentMethodId)) {
-                    throw new \Exception(__FUNCTION__ . ": getAnnuityFactorsException  No available payment method",
+                    throw new Exception(__FUNCTION__ . ": getAnnuityFactorsException  No available payment method",
                         \RESURS_EXCEPTIONS::ANNUITY_FACTORS_METHOD_UNAVAILABLE);
                 }
             }
@@ -5671,7 +5672,7 @@ class ResursBank
             $timeDiff = time() - $lastPaymentExecute;
             if ($timeDiff <= $maxTime) {
                 if ($this->isFlag('PREVENT_EXEC_FLOOD_EXCEPTIONS')) {
-                    throw new \Exception("You are running createPayemnt too fast",
+                    throw new Exception("You are running createPayemnt too fast",
                         \RESURS_EXCEPTIONS::CREATEPAYMENT_TOO_FAST);
                 }
 
@@ -5680,7 +5681,7 @@ class ResursBank
             $this->setSessionVar('lastPaymentExecute', time());
         }
         if (trim(strtolower($this->username)) == "exshop") {
-            throw new \Exception("The use of exshop is no longer supported", \RESURS_EXCEPTIONS::EXSHOP_PROHIBITED);
+            throw new Exception("The use of exshop is no longer supported", \RESURS_EXCEPTIONS::EXSHOP_PROHIBITED);
         }
         $error = array();
         $myFlow = $this->getPreferredPaymentFlowService();
@@ -5720,7 +5721,7 @@ class ResursBank
                         if (isset($parsedResponse->message)) {
                             $error[] = $parsedResponse->message;
                         }
-                        throw new \Exception(implode("\n", $error), $responseCode);
+                        throw new Exception(implode("\n", $error), $responseCode);
                     }
                 } catch (\Exception $e) {
                     $this->handlePostErrors($e);
@@ -5747,9 +5748,9 @@ class ResursBank
                                 $error[] = $parsedResponse->message;
                             }
                             $responseCode = $this->CURL->getResponseCode($hostedResponse);
-                            throw new \Exception(implode("\n", $error), $responseCode);
+                            throw new Exception(implode("\n", $error), $responseCode);
                         }
-                        throw new \Exception("Could not parse location of hosted flow (missing)", 404);
+                        throw new Exception("Could not parse location of hosted flow (missing)", 404);
                     } catch (\Exception $e) {
                         $this->handlePostErrors($e);
                     }
@@ -5757,7 +5758,7 @@ class ResursBank
             }
         }
 
-        throw new \Exception(__FUNCTION__ . "exception: Flow unmatched during execution", 500);
+        throw new Exception(__FUNCTION__ . "exception: Flow unmatched during execution", 500);
     }
 
     /**
@@ -5778,17 +5779,17 @@ class ResursBank
             $bodyErrTest = json_decode($bodyTest);
             if (is_object($bodyErrTest)) {
                 if (isset($bodyErrTest->message) && isset($bodyErrTest->status)) {
-                    throw new \Exception($bodyErrTest->message, $bodyErrTest->status);
+                    throw new Exception($bodyErrTest->message, $bodyErrTest->status);
                 } else {
                     if (isset($bodyErrTest->description)) {
-                        throw new \Exception($bodyErrTest->description,
+                        throw new Exception($bodyErrTest->description,
                             isset($bodyErrTest->errorCode) ? $bodyErrTest->errorCode : 500);
                     }
                 }
             }
         }
         if (method_exists($e, 'getMessage')) {
-            throw new \Exception($e->getMessage(), $e->getCode(), $e);
+            throw new Exception($e->getMessage(), $e->getCode(), $e);
         }
     }
 
@@ -5879,7 +5880,7 @@ class ResursBank
         $this->metaDataHashEncrypted = $encryptEnable;
         if ($encryptEnable) {
             if (is_null($encryptIv) || is_null($encryptKey)) {
-                throw new \Exception("To encrypt your metadata, you'll need to set up encryption keys");
+                throw new Exception("To encrypt your metadata, you'll need to set up encryption keys");
             }
             $this->metaDataIv = $encryptIv;
             $this->metaDataKey = $encryptKey;
@@ -5924,7 +5925,7 @@ class ResursBank
         if (!empty($this->createPaymentExecuteCommand)) {
             return $this->createPaymentExecute($this->createPaymentExecuteCommand, $this->Payload);
         } else {
-            throw new \Exception("createPaymentDelay() must used before you use this function", 403);
+            throw new Exception("createPaymentDelay() must used before you use this function", 403);
         }
     }
 
@@ -6003,13 +6004,13 @@ class ResursBank
         }
         if ($this->enforceService === RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT) {
             if (empty($payment_id_or_method) && empty($this->preferredId)) {
-                throw new \Exception("A payment method or payment id must be defined",
+                throw new Exception("A payment method or payment id must be defined",
                     \RESURS_EXCEPTIONS::CREATEPAYMENT_NO_ID_SET);
             }
             $payment_id_or_method = $this->preferredId;
         }
         if (!count($this->Payload)) {
-            throw new \Exception("No payload are set for this payment", \RESURS_EXCEPTIONS::BOOKPAYMENT_NO_BOOKDATA);
+            throw new Exception("No payload are set for this payment", \RESURS_EXCEPTIONS::BOOKPAYMENT_NO_BOOKDATA);
         }
 
         // Obsolete way to handle multidimensional specrows
@@ -6681,7 +6682,7 @@ class ResursBank
             $this->Payload['customer']['type'] = !empty($customerType) && (strtolower($customerType) == "natural" || strtolower($customerType) == "legal") ? strtoupper($customerType) : "NATURAL";
         } else {
             // We don't guess on customer types
-            throw new \Exception("No customer type has been set. Use NATURAL or LEGAL to proceed",
+            throw new Exception("No customer type has been set. Use NATURAL or LEGAL to proceed",
                 \RESURS_EXCEPTIONS::BOOK_CUSTOMERTYPE_MISSING);
         }
         if (!empty($contactgovernmentId)) {
@@ -6907,7 +6908,7 @@ class ResursBank
             if (is_array($this->bookData) && count($this->bookData)) {
                 $bookData = $this->bookData;
             } else {
-                throw new \Exception(__FUNCTION__ . ": There is no bookData available for the booking",
+                throw new Exception(__FUNCTION__ . ": There is no bookData available for the booking",
                     \RESURS_EXCEPTIONS::BOOKPAYMENT_NO_BOOKDATA);
             }
         }
@@ -7027,7 +7028,7 @@ class ResursBank
 			 * throw an execption here.
 			 */
             if (!$this->isOmniFlow && !$this->isHostedFlow) {
-                throw new \Exception(__FUNCTION__ . ": bookPaymentClass not found, and this is neither an omni nor hosted flow",
+                throw new Exception(__FUNCTION__ . ": bookPaymentClass not found, and this is neither an omni nor hosted flow",
                     \RESURS_EXCEPTIONS::BOOKPAYMENT_NO_BOOKPAYMENT_CLASS);
             }
         }
@@ -7078,11 +7079,11 @@ class ResursBank
                     $this->omniFrame = $preOmni->html;
                 }
             } catch (\Exception $omniFrameException) {
-                throw new \Exception(__FUNCTION__ . "/prepareOmniFrame: " . $omniFrameException->getMessage(),
+                throw new Exception(__FUNCTION__ . "/prepareOmniFrame: " . $omniFrameException->getMessage(),
                     $omniFrameException->getCode());
             }
             if (isset($this->omniFrame->faultCode)) {
-                throw new \Exception(__FUNCTION__ . "/prepareOmniFrame-bookPaymentOmniFrame: " . (isset($this->omniFrame->description) ? $this->omniFrame->description : "Unknown error received from Resurs Bank OmniAPI"),
+                throw new Exception(__FUNCTION__ . "/prepareOmniFrame-bookPaymentOmniFrame: " . (isset($this->omniFrame->description) ? $this->omniFrame->description : "Unknown error received from Resurs Bank OmniAPI"),
                     $this->omniFrame->faultCode);
             }
 
@@ -7095,12 +7096,12 @@ class ResursBank
                 $hostedResult = $this->bookPaymentHosted($paymentMethodId, $bookData, $getReturnedObjectAsStd,
                     $keepReturnObject);
             } catch (\Exception $hostedException) {
-                throw new \Exception(__FUNCTION__ . ": " . $hostedException->getMessage(), $hostedException->getCode());
+                throw new Exception(__FUNCTION__ . ": " . $hostedException->getMessage(), $hostedException->getCode());
             }
             if (isset($hostedResult->location)) {
                 return $hostedResult->location;
             } else {
-                throw new \Exception(__FUNCTION__ . "/bookPaymentHosted: Can not find location in hosted flow", 404);
+                throw new Exception(__FUNCTION__ . "/bookPaymentHosted: Can not find location in hosted flow", 404);
             }
         }
         /* If this request was not about an omni flow, let's continue prepare the signing data */
@@ -7111,9 +7112,9 @@ class ResursBank
             $bookPaymentResult = $this->simplifiedShopFlowService->bookPayment($bookPaymentInit);
         } catch (\Exception $bookPaymentException) {
             if (isset($bookPaymentException->faultstring)) {
-                throw new \Exception($bookPaymentException->faultstring, 500);
+                throw new Exception($bookPaymentException->faultstring, 500);
             }
-            throw new \Exception(__FUNCTION__ . ": " . $bookPaymentException->getMessage(),
+            throw new Exception(__FUNCTION__ . ": " . $bookPaymentException->getMessage(),
                 $bookPaymentException->getCode());
         }
         if ($getReturnedObjectAsStd) {
@@ -7126,7 +7127,7 @@ class ResursBank
                     return $this->getDataObject($bookPaymentResult);
                 }
             } else {
-                throw new \Exception(__FUNCTION__ . ": bookPaymentResult does not contain a return object", 500);
+                throw new Exception(__FUNCTION__ . ": bookPaymentResult does not contain a return object", 500);
             }
         }
 
@@ -7242,7 +7243,7 @@ class ResursBank
             $this->env_omni_current = $this->env_omni_prod;
         }
         if (empty($orderReference) && !isset($bookData['orderReference'])) {
-            throw new \Exception(__FUNCTION__ . ": You must proved omnicheckout with a orderReference", 500);
+            throw new Exception(__FUNCTION__ . ": You must proved omnicheckout with a orderReference", 500);
         }
         if (empty($orderReference) && isset($bookData['orderReference'])) {
             $orderReference = $bookData['orderReference'];
@@ -7252,7 +7253,7 @@ class ResursBank
         }
         if ($omniCallType == RESURS_CHECKOUT_CALL_TYPES::METHOD_CALLBACK) {
             $omniSubPath = "/callbacks/";
-            throw new \Exception(__FUNCTION__ . ": METHOD_CALLBACK for OmniCheckout is not yet implemented");
+            throw new Exception(__FUNCTION__ . ": METHOD_CALLBACK for OmniCheckout is not yet implemented");
         }
         $omniReferenceUrl = $this->env_omni_current . $omniSubPath;
         try {
@@ -7262,10 +7263,10 @@ class ResursBank
             // Compatibility fixed for PHP 5.3
             if (!empty($omniErrorResult)) {
                 $omniErrNo = $this->omniErrNo($this->simpleWebEngine);
-                throw new \Exception(__FUNCTION__ . ": " . $omniErrorResult, $omniErrNo);
+                throw new Exception(__FUNCTION__ . ": " . $omniErrorResult, $omniErrNo);
             }
         } catch (\Exception $jsonException) {
-            throw new \Exception(__FUNCTION__ . ": " . $jsonException->getMessage(), $jsonException->getCode());
+            throw new Exception(__FUNCTION__ . ": " . $jsonException->getMessage(), $jsonException->getCode());
         }
 
         return $this->simpleWebEngine['parsed'];
@@ -7360,7 +7361,7 @@ class ResursBank
         if (!empty($this->ocShopScript)) {
             return trim($this->ocShopScript);
         }
-        throw new \Exception(__FUNCTION__ . "exception: could not fetch th ocShopScript from iframe");
+        throw new Exception(__FUNCTION__ . "exception: could not fetch th ocShopScript from iframe");
     }
 
     /**
@@ -7508,7 +7509,7 @@ class ResursBank
     public function updateCheckoutOrderLines($paymentId = '', $orderLines = array())
     {
         if (empty($paymentId)) {
-            throw new \Exception("Payment id not set");
+            throw new Exception("Payment id not set");
         }
         if (!$this->hasServicesInitialization) {
             $this->InitializeServices();
@@ -7537,7 +7538,7 @@ class ResursBank
             array('orderLines' => $sanitizedOutputOrderLines), NETCURL_POST_DATATYPES::DATATYPE_JSON);
         $updateOrderLinesResponseCode = $this->CURL->getResponseCode($updateOrderLinesResponse);
         if ($updateOrderLinesResponseCode >= 400) {
-            throw new \Exception("Could not update order lines", $updateOrderLinesResponseCode);
+            throw new Exception("Could not update order lines", $updateOrderLinesResponseCode);
         }
         if ($updateOrderLinesResponseCode >= 200 && $updateOrderLinesResponseCode < 300) {
             return true;
@@ -7617,7 +7618,7 @@ class ResursBank
         // Compatibility fixed for PHP 5.3
         if (!empty($hostedErrorResult)) {
             $hostedErrNo = $this->hostedErrNo($this->simpleWebEngine);
-            throw new \Exception(__FUNCTION__ . ": " . $hostedErrorResult, $hostedErrNo);
+            throw new Exception(__FUNCTION__ . ": " . $hostedErrorResult, $hostedErrNo);
         }
 
         return $this->simpleWebEngine['parsed'];
@@ -7709,7 +7710,7 @@ class ResursBank
         if (!$this->isOmniFlow && !$this->isHostedFlow) {
             if (!class_exists('Resursbank\RBEcomPHP\resurs_specLine',
                     ECOM_CLASS_EXISTS_AUTOLOAD) && !class_exists('resurs_specLine', ECOM_CLASS_EXISTS_AUTOLOAD)) {
-                throw new \Exception(__FUNCTION__ . ": Class specLine does not exist",
+                throw new Exception(__FUNCTION__ . ": Class specLine does not exist",
                     \RESURS_EXCEPTIONS::UPDATECART_NOCLASS_EXCEPTION);
             }
         }
@@ -7929,7 +7930,7 @@ class ResursBank
             }
         }
         if (!empty($this->cardDataCardNumber) && !empty($this->cardDataUseAmount)) {
-            throw new \Exception(__FUNCTION__ . ": Card number and amount can not be set at the same time",
+            throw new Exception(__FUNCTION__ . ": Card number and amount can not be set at the same time",
                 \RESURS_EXCEPTIONS::UPDATECARD_DOUBLE_DATA_EXCEPTION);
         }
 
@@ -8587,7 +8588,7 @@ class ResursBank
 
                 return $this->paymentFinalize($paymentId, $customPayloadItemList, true);
             }
-            throw new \Exception($finalizationException->getMessage(), $finalizationException->getCode(),
+            throw new Exception($finalizationException->getMessage(), $finalizationException->getCode(),
                 $finalizationException);
         }
 
@@ -8627,7 +8628,7 @@ class ResursBank
 
                 return $this->paymentFinalize($paymentId, $customPayloadItemList, true);
             }
-            throw new \Exception($annulException->getMessage(), $annulException->getCode(), $annulException);
+            throw new Exception($annulException->getMessage(), $annulException->getCode(), $annulException);
         }
 
         return false;
@@ -8666,7 +8667,7 @@ class ResursBank
 
                 return $this->paymentFinalize($paymentId, $customPayloadItemList, true);
             }
-            throw new \Exception($creditException->getMessage(), $creditException->getCode(), $creditException);
+            throw new Exception($creditException->getMessage(), $creditException->getCode(), $creditException);
         }
 
         return false;
@@ -8944,7 +8945,7 @@ class ResursBank
             if (is_object($paymentIdOrPaymentObject)) {
                 $paymentData = $paymentIdOrPaymentObject;
             } else {
-                throw new \Exception("Payment data object or id is not valid", 500);
+                throw new Exception("Payment data object or id is not valid", 500);
             }
         }
 
