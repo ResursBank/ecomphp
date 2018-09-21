@@ -3320,7 +3320,7 @@ class ResursBank
     {
         $return = false;
 
-        if (class_exists('SoapClient', ECOM_NO_CLASS_AUTOLOAD)) {
+        if (class_exists('SoapClient', ECOM_CLASS_EXISTS_AUTOLOAD)) {
             $return = true;
         }
 
