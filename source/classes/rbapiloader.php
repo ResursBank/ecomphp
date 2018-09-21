@@ -5370,7 +5370,7 @@ class ResursBank {
 			$timeDiff           = time() - $lastPaymentExecute;
 			if ( $timeDiff <= $maxTime ) {
 				if ( $this->isFlag( 'PREVENT_EXEC_FLOOD_EXCEPTIONS' ) ) {
-					throw new \Exception( "You are running createPayemnt too fast", \RESURS_EXCEPTIONS::CREATEPAYMENT_TOO_FAST );
+					throw new \Exception( "You are running createPayment too fast", \RESURS_EXCEPTIONS::CREATEPAYMENT_TOO_FAST );
 				}
 
 				return false;
