@@ -3,7 +3,6 @@
 /**
  * Resurs Bank Passthrough API - A pretty silent ShopFlowSimplifier for Resurs Bank.
  * Compatible with simplifiedFlow, hostedFlow and Resurs Checkout.
- * Pipelines.
  *
  * @package RBEcomPHP
  * @author  Resurs Bank Ecommerce
@@ -65,7 +64,8 @@ if (!defined('ECOMPHP_MODIFY_DATE')) {
 /**
  * Class ResursBank
  *
- * The API-gateway will connect to Resurs Bank test environment, so to use production mode this must be configured at runtime. This secures that you, during development, won't destroy anything in production.
+ * By default Test environment are set. To switch over to production, you explicitly need to tell EComPHP to do
+ * this. This a security setup so testings won't be sent into production by mistake.
  *
  * @package Resursbank\RBEcomPHP
  */
