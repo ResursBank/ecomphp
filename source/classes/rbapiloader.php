@@ -1121,8 +1121,7 @@ class ResursBank
      *
      * @param null $url
      * @param string $expectedHttpAcceptCode What response code from the web server we expect when we are successful
-     * @param string $expectedHttpErrorCode What response code from the web server we expect when we (normally) fails
-     *                                       on digest failures
+     * @param string $expectedHttpErrorCode What response code from the web server we expect when we (normally) fails on digest failures
      */
     public function setValidateExternalCallbackUrl(
         $url = null,
@@ -1413,10 +1412,6 @@ class ResursBank
      * object will be empty. Developer note: Changing this behaviour so all event types is always returned even if they
      * don't exist (meaning ecomphp fills in what's missing) might break plugins that is already in production.
      *
-     * The callback list will return only existing eventTypes, so if no event types exists, the returned array or
-     * object will be empty. Developer note: Changing this behaviour so all event types is always returned even if they
-     * don't exist (meaning ecomphp fills in what's missing) might break plugins that is already in production.
-     *
      * @param bool $ReturnAsArray
      *
      * @return array
@@ -1430,7 +1425,6 @@ class ResursBank
         $this->InitializeServices();
         try {
             $callbackResponse = $this->CURL->getParsed($this->CURL->doGet($this->getCheckoutUrl() . "/callbacks"));
-            //$callbacksBody    = trim( $this->CURL->getBody() );
             if (!empty($callbackResponse)) {
                 $ResursResponse = $this->CURL->getParsed();
             }
@@ -1629,8 +1623,7 @@ class ResursBank
      * Simplifies removal of callbacks even when they does not exist at first.
      *
      * @param int $callbackType
-     * @param bool $isMultiple Supports bitmasked unregistration of callbacks (setting callbackType 255 and this value
-     *                         to true, will register all callbacks in one call)
+     * @param bool $isMultiple Supports bitmasked unregistration of callbacks (setting callbackType 255 and this value to true, will register all callbacks in one call)
      *
      * @return array|bool
      * @throws \Exception
@@ -1770,8 +1763,8 @@ class ResursBank
      *
      * @param int $flowType
      *
-     * @since      1.0.0
-     * @since      1.1.0
+     * @since 1.0.0
+     * @since 1.1.0
      * @deprecated 1.0.26 Use setPreferredPaymentFlowService
      * @deprecated 1.1.26 Use setPreferredPaymentFlowService
      */
@@ -1784,8 +1777,8 @@ class ResursBank
      * Return the current set "preferred payment service" (hosted, checkout, simplified)
      *
      * @return RESURS_FLOW_TYPES
-     * @since      1.0.0
-     * @since      1.1.0
+     * @since 1.0.0
+     * @since 1.1.0
      * @deprecated 1.0.26 Use getPreferredPaymentFlowService
      * @deprecated 1.1.26 Use getPreferredPaymentFlowService
      */
@@ -1983,8 +1976,7 @@ class ResursBank
     /**
      * Get next invoice number - and initialize if not set.
      *
-     * @param bool $initInvoice Allow to set a new invoice number if not set (if not set, this is set to 1 if
-     *                                 nothing else is set)
+     * @param bool $initInvoice Allow to set a new invoice number if not set (if not set, this is set to 1 if nothing else is set)
      * @param int $firstInvoiceNumber Initializes invoice number sequence with this value if not set and requested
      *
      * @return int Returns If 0, the set up might have failed
@@ -2396,7 +2388,7 @@ class ResursBank
      * @throws \Exception
      * @since 1.0.1
      * @since 1.1.1
-     * @link  https://test.resurs.com/docs/x/JQBH getAnnuityFactors() documentation
+     * @link https://test.resurs.com/docs/x/JQBH getAnnuityFactors() documentation
      */
     public function getAnnuityFactors($paymentMethodId = '')
     {
@@ -2674,7 +2666,7 @@ class ResursBank
      *
      * @return array|mixed|null
      * @throws \Exception
-     * @link  https://test.resurs.com/docs/x/loEW
+     * @link https://test.resurs.com/docs/x/loEW
      * @since 1.0.1
      * @since 1.1.1
      */
@@ -2883,8 +2875,7 @@ class ResursBank
      * @param array|string $paymentMethodID If paymentMethodID is set as string, we'll try to look up the links
      * @param string $URL
      *
-     * @return array|string Returns an array if the whole method are requested, returns a string if the URL is already
-     *                      prepared as last parameter in
+     * @return array|string Returns an array if the whole method are requested, returns a string if the URL is already prepared as last parameter in
      * @throws \Exception
      * @since 1.0.0
      * @since 1.1.0
@@ -2960,7 +2951,7 @@ class ResursBank
      *
      * @return string
      * @throws \Exception
-     * @link  https://test.resurs.com/docs/x/_QBV
+     * @link https://test.resurs.com/docs/x/_QBV
      * @since 1.0.0
      * @since 1.1.0
      */
@@ -3161,9 +3152,9 @@ class ResursBank
     }
 
     /**
-     * Convert objects to array data
+     * Convert objects to array data - recursive function when casting is not enough
      *
-     * @param       $arrObjData
+     * @param $arrObjData
      * @param array $arrSkipIndices
      *
      * @return array
@@ -3401,8 +3392,8 @@ class ResursBank
      * Parameters are case insensitive.
      *
      * @param string $formFieldName
-     * @param        $countryCode
-     * @param        $customerType
+     * @param $countryCode
+     * @param $customerType
      *
      * @return array
      * @throws \Exception
@@ -3452,7 +3443,7 @@ class ResursBank
      * regular expressions that is used to validate that the fields is correctly filled in. This function partially
      * emulates that flow, so the only thing a integrating developer needs to take care of is the html code itself.
      *
-     * @link       https://test.resurs.com/docs/x/s4A0 Regular expressions
+     * @link https://test.resurs.com/docs/x/s4A0 Regular expressions
      *
      * @param string|array $paymentMethodName
      * @param string $customerType
@@ -3518,9 +3509,7 @@ class ResursBank
     /**
      * Generates a unique "preferredId" (term from simplified and referes to orderReference) out of a datestamp
      *
-     * @param int $maxLength The maximum recommended length of a preferred id is currently 25. The order numbers may
-     *                          be shorter (the minimum length is 14, but in that case only the timestamp will be
-     *                          returned)
+     * @param int $maxLength The maximum recommended length of a preferred id is currently 25. The order numbers may be shorter (the minimum length is 14, but in that case only the timestamp will be returned)
      * @param string $prefix Prefix to prepend at unique id level
      * @param bool $dualUniq Be paranoid and sha1-encrypt the first random uniq id first.
      * @param bool $force Force a new payment id
@@ -3769,8 +3758,7 @@ class ResursBank
      * setPreferredPaymentFlowService() instead. If no preferred are set, we will fall back to the simplified flow.
      *
      * @param string $payment_id_or_method For ResursCheckout the payment id are preferred before the payment method
-     * @param array $payload If there are any extra (or full) payload for the chosen payment, it should
-     *                                     be placed here
+     * @param array $payload If there are any extra (or full) payload for the chosen payment, it should be placed here
      *
      * @throws \Exception
      * @since 1.0.2
@@ -3820,7 +3808,7 @@ class ResursBank
      * @throws \Exception
      * @since 1.0.2
      * @since 1.1.2
-     * @todo  SPLIT!
+     * @todo SPLIT!
      */
     private function createPaymentExecute($payment_id_or_method = '')
     {
@@ -4540,9 +4528,8 @@ class ResursBank
      * Enable execute()-mode on data passed through createPayment()
      *
      * @param bool $enableExecute
-     *
-     * @since      1.0.3
-     * @since      1.1.3
+     * @since 1.0.3
+     * @since 1.1.3
      * @deprecated Use createPaymentDelay() (making life easier on debugging stage)
      */
     public function setRequiredExecute($enableExecute = false)
@@ -4559,7 +4546,6 @@ class ResursBank
      * payment do for example a getPayload() to see how it looks before completion.
      *
      * @param bool $enableManualExecution
-     *
      * @since 1.0.38
      * @since 1.1.38
      * @since 1.3.11
@@ -4637,7 +4623,7 @@ class ResursBank
     /**
      * Inject a payload with given array, object or string (defaults to array)
      *
-     * @param       $ArrayKey
+     * @param $ArrayKey
      * @param array $ArrayValue
      *
      * @since 1.0.2
@@ -4659,7 +4645,7 @@ class ResursBank
      * Generate a Payload for customer address, depending on a received getAddress()-object
      *
      * @param string $addressKey
-     * @param        $addressData
+     * @param $addressData
      *
      * @since 1.0.2
      * @since 1.1.2
@@ -4847,9 +4833,7 @@ class ResursBank
      * @param string $successUrl Successful payment redirect url
      * @param string $failUrl Payment failures redirect url
      * @param bool $forceSigning Always require signing during payment
-     * @param string $backUrl Backurl (optional, for hosted flow) if anything else than failUrl (backUrl is used
-     *                             when customers are clicking "back" rather than failing)
-     *
+     * @param string $backUrl Backurl (optional, for hosted flow) if anything else than failUrl (backUrl is used when customers are clicking "back" rather than failing)
      * @throws \Exception
      * @since 1.0.6
      * @since 1.1.6
@@ -4897,7 +4881,6 @@ class ResursBank
      *
      * @param array $userDefinedPayload
      * @param bool $replacePayload Allow replacements of old payload data
-     *
      * @throws \Exception
      * @since 1.0.2
      * @since 1.1.2
@@ -5239,8 +5222,7 @@ class ResursBank
     /**
      * Find out if a payment is creditable
      *
-     * @param array $paymentArrayOrPaymentId The current payment if already requested. If this variable is sent as a
-     *                                       string, the function will first make a getPayment automatically.
+     * @param array $paymentArrayOrPaymentId The current payment if already requested. If this variable is sent as astring, the function will first make a getPayment automatically.
      *
      * @return bool
      * @throws \Exception
@@ -5259,8 +5241,7 @@ class ResursBank
     /**
      * Find out if a payment is debitable
      *
-     * @param array $paymentArrayOrPaymentId The current payment if already requested. If this variable is sent as a
-     *                                       string, the function will first make a getPayment automatically.
+     * @param array $paymentArrayOrPaymentId The current payment if already requested. If this variable is sent as a string, the function will first make a getPayment automatically.
      *
      * @return bool
      * @throws \Exception
@@ -5449,7 +5430,6 @@ class ResursBank
      *
      * @param string $paymentIdOrPaymentObjectData
      * @param int $renderType RESURS_AFTERSHOP_RENDER_TYPES as unique type or bitmask
-     *
      * @return array
      * @throws \Exception
      */
@@ -5758,7 +5738,7 @@ class ResursBank
      *
      * Make sure that you are running this with try-catches in cases where failures may occur.
      *
-     * @param       $paymentId
+     * @param $paymentId
      * @param array $customPayloadItemList
      * @param bool $runOnce Only run this once, throw second time
      *
@@ -5812,7 +5792,7 @@ class ResursBank
      *
      * Make sure that you are running this with try-catches in cases where failures may occur.
      *
-     * @param       $paymentId
+     * @param $paymentId
      * @param array $customPayloadItemList
      * @param bool $runOnce Only run this once, throw second time
      *
@@ -5865,7 +5845,7 @@ class ResursBank
      *
      * Make sure that you are running this with try-catches in cases where failures may occur.
      *
-     * @param       $paymentId
+     * @param $paymentId
      * @param array $customPayloadItemList
      * @param bool $runOnce Only run this once, throw second time
      *
@@ -5919,7 +5899,7 @@ class ResursBank
      * This function cancels a full order depending on the order content. Payloads MAY be customized but on your own
      * risk!
      *
-     * @param       $paymentId
+     * @param $paymentId
      * @param array $customPayloadItemList
      *
      * @return bool
@@ -6009,7 +5989,7 @@ class ResursBank
      * Add an additional orderline to a payment
      *
      * With setLoggedInUser() you can also set up a user identification for the createdBy-parameter sent with the
-     * additional debig. If not set, EComPHP will use the merchant credentials.
+     * additional debig. If not set, EComPHP paymentCancel($paymentId = "", $customPayloadItemListwill use the merchant credentials.
      *
      * @param string $paymentId
      *
@@ -6064,10 +6044,10 @@ class ResursBank
             return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED;
         }
         if ($this->getIsAnnulled($paymentData) && !$this->getIsCredited($paymentData) && $resursTotalAmount == 0) {
-            return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_CANCELLED;
+            return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_ANNULLED; // ANNULLED / CANCELLED
         }
         if ($this->getIsCredited($paymentData) && $resursTotalAmount == 0) {
-            return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_REFUND;
+            return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_CREDITED; // CREDITED / REFUND
         }
 
         // Return generic
@@ -6078,11 +6058,8 @@ class ResursBank
      * Return "best practice"-order statuses for a payment.
      *
      * @param string $paymentIdOrPaymentObject
-     * @param int $byCallbackEvent If this variable is set, controls are also being made,
-     *                                                     compared to what happened on a callback event
-     * @param array|string $callbackEventDataArrayOrString On for example AUTOMATIC_FRAUD_CONTROL, a result based on
-     *                                                     THAWED or FROZEN are received, which you should add here
-     *
+     * @param int $byCallbackEvent If this variable is set, controls are also being made, compared to what happened on a callback event
+     * @param array|string $callbackEventDataArrayOrString On for example AUTOMATIC_FRAUD_CONTROL, a result based on THAWED or FROZEN are received, which you should add here
      * @return int
      * @throws \Exception
      * @since 1.0.26
