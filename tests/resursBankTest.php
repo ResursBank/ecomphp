@@ -45,6 +45,10 @@ if (file_exists("/etc/ecomphp.json")) {
     }
 }
 
+/**
+ * Class resursBankTest
+ * @package Resursbank\RBEcomPHP
+ */
 class resursBankTest extends TestCase
 {
     /**
@@ -54,7 +58,6 @@ class resursBankTest extends TestCase
 
     /** @var RESURS_TEST_BRIDGE $TEST Used for standard tests and simpler flow setup */
     protected $TEST;
-    /** @noinspection PhpUnusedPrivateFieldInspection */
 
     /** @noinspection PhpUnusedPrivateFieldInspection */
     /** @var string Username to web services */
@@ -71,11 +74,6 @@ class resursBankTest extends TestCase
 
     /** @var string Landing page for signings */
     private $signUrl = "https://test.resurs.com/signdummy/index.php?isSigningUrl=1";
-
-    public function tearDown()
-    {
-
-    }
 
     /**
      * @throws \Exception
@@ -105,8 +103,6 @@ class resursBankTest extends TestCase
     {
         static::assertTrue(count($this->TEST->getCredentialControl()) > 0);
     }
-
-    /** @noinspection PhpUnusedPrivateMethodInspection */
 
     /**
      * @test
@@ -202,7 +198,6 @@ class resursBankTest extends TestCase
         $byIo = $selfParser->getFromXml($lastCurlHandle->getBody(), true);
         $byHandle = $lastCurlHandle->getParsed();
 
-        /** @noinspection PhpUndefinedFieldInspection */
         /** @noinspection PhpUndefinedFieldInspection */
         static::assertTrue(
             $byIo->fullName == $this->flowHappyCustomerName &&
@@ -343,7 +338,8 @@ class resursBankTest extends TestCase
     {
         $return = null;
         $this->getPaymentMethods(false);
-        $methodGroup = array_pop($this->TEST->share('paymentMethods'));
+        $prePop = $this->TEST->share('paymentMethods');
+        $methodGroup = array_pop($prePop);
         foreach ($methodGroup as $curMethod) {
             if (($curMethod->specificType === $specificType || $curMethod->type === $specificType) && in_array($customerType,
                     (array)$curMethod->customerType)) {
@@ -547,7 +543,8 @@ class resursBankTest extends TestCase
     /**
      * @test
      */
-    public function getPaymentWrong() {
+    public function getPaymentWrong()
+    {
         try {
             $this->TEST->ECOM->getPayment("FAIL_HERE");
         } catch (\Exception $e) {
@@ -560,7 +557,8 @@ class resursBankTest extends TestCase
     /**
      * @test
      */
-    public function getPaymentWrongRest() {
+    public function getPaymentWrongRest()
+    {
         try {
             $this->TEST->ECOM->setFlag('GET_PAYMENT_BY_REST');
             $this->TEST->ECOM->getPayment('FAIL_HERE');
@@ -575,7 +573,8 @@ class resursBankTest extends TestCase
     /**
      * @test
      */
-    public function getPaymentUnexistentSoap() {
+    public function getPaymentUnexistentSoap()
+    {
         try {
             $this->TEST->ECOM->getPayment('FAIL_HERE');
         } catch (\Exception $e) {
