@@ -46,25 +46,43 @@ abstract class RESURS_CHECKOUT_CALL_TYPES {
 }
 
 /**
- * Class RESURS_CALLBACK_TYPES
+ * Class RESURS_CALLBACK_TYPES Bitmask based types so that more than one type can be chosen in one call
+ *
  * @since 1.0.26
  * @since 1.1.26
  * @since 1.2.0
  * @link https://test.resurs.com/docs/x/LAAF
  */
 abstract class RESURS_CALLBACK_TYPES {
+	const NOT_SET = 0;
+	const UNFREEZE = 1;
+	const ANNULMENT = 2;
+	const AUTOMATIC_FRAUD_CONTROL = 4;
+	const FINALIZATION = 8;
+	const TEST = 16;
+	const UPDATE = 32;
+	const BOOKED = 64;
+
+	/** @deprecated Use NOT_SET */
 	const CALLBACK_TYPE_NOT_SET = 0;
+    /** @deprecated Use UNFREEZE */
 	const CALLBACK_TYPE_UNFREEZE = 1;
+    /** @deprecated Use ANNULMENT */
 	const CALLBACK_TYPE_ANNULMENT = 2;
+    /** @deprecated Use AUTOMATIC_FRAUD_CONTROL */
 	const CALLBACK_TYPE_AUTOMATIC_FRAUD_CONTROL = 4;
+    /** @deprecated Use FINALIZATION */
 	const CALLBACK_TYPE_FINALIZATION = 8;
+    /** @deprecated Use TEST */
 	const CALLBACK_TYPE_TEST = 16;
+    /** @deprecated Use UPDATE */
 	const CALLBACK_TYPE_UPDATE = 32;
+    /** @deprecated Use BOOKED */
 	const CALLBACK_TYPE_BOOKED = 64;
 }
 
 /**
- * Class RESURS_AFTERSHOP_RENDER_TYPES
+ * Class RESURS_AFTERSHOP_RENDER_TYPES Bitmask based types so that more than one type can be chosen in one call
  * @since 1.0.26
  * @since 1.1.26
  * @since 1.2.0
@@ -198,7 +216,8 @@ abstract class ResursCheckoutCallTypes extends RESURS_CHECKOUT_CALL_TYPES {
 }
 
 /**
- * Class ResursCallbackTypes Callbacks that can be registered with Resurs Bank.
+ * Class ResursCallbackTypes Callbacks that can be registered with Resurs Bank. Do not use this.
+ *
  * @since 1.0.0
  * @deprecated RESURS_CALLBACK_TYPES
  */
