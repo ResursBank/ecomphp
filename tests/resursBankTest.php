@@ -343,7 +343,8 @@ class resursBankTest extends TestCase
     {
         $return = null;
         $this->getPaymentMethods(false);
-        $methodGroup = array_pop($this->TEST->share('paymentMethods'));
+        $prePop = $this->TEST->share('paymentMethods');
+        $methodGroup = array_pop($prePop);
         foreach ($methodGroup as $curMethod) {
             if (($curMethod->specificType === $specificType || $curMethod->type === $specificType) && in_array($customerType,
                     (array)$curMethod->customerType)) {
