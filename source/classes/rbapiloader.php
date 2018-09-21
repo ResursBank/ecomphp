@@ -2436,12 +2436,13 @@ class ResursBank
      */
     public function getAnnuityPriceByDuration($totalAmount, $paymentMethodIdOrFactorObject, $duration)
     {
+        $return = 0;
         $durationFactor = $this->getAnnuityFactorByDuration($paymentMethodIdOrFactorObject, $duration);
         if ($durationFactor > 0) {
-            return round($durationFactor * $totalAmount);
+            $return = round($durationFactor * $totalAmount);
         }
 
-        return 0;
+        return $return;
     }
 
     /**
