@@ -58,7 +58,6 @@ class resursBankTest extends TestCase
 
     /** @var RESURS_TEST_BRIDGE $TEST Used for standard tests and simpler flow setup */
     protected $TEST;
-    /** @noinspection PhpUnusedPrivateFieldInspection */
 
     /** @noinspection PhpUnusedPrivateFieldInspection */
     /** @var string Username to web services */
@@ -75,11 +74,6 @@ class resursBankTest extends TestCase
 
     /** @var string Landing page for signings */
     private $signUrl = "https://test.resurs.com/signdummy/index.php?isSigningUrl=1";
-
-    public function tearDown()
-    {
-
-    }
 
     /**
      * @throws \Exception
@@ -109,8 +103,6 @@ class resursBankTest extends TestCase
     {
         static::assertTrue(count($this->TEST->getCredentialControl()) > 0);
     }
-
-    /** @noinspection PhpUnusedPrivateMethodInspection */
 
     /**
      * @test
@@ -206,7 +198,6 @@ class resursBankTest extends TestCase
         $byIo = $selfParser->getFromXml($lastCurlHandle->getBody(), true);
         $byHandle = $lastCurlHandle->getParsed();
 
-        /** @noinspection PhpUndefinedFieldInspection */
         /** @noinspection PhpUndefinedFieldInspection */
         static::assertTrue(
             $byIo->fullName == $this->flowHappyCustomerName &&
