@@ -4,44 +4,54 @@ namespace Resursbank\RBEcomPHP;
 
 /**
  * Class RESURS_DEPRECATED_FLOW Thing with relation to Resurs Bank deprecated flow
- *
- * WARNING: Use this class at your own risk as it contains glitches!
+ * WARNING: Use this class at your own risk as it may contain glitches. Maintenance is only done
+ * when really necessary.
  *
  * @package Resursbank\RBEcomPHP
  */
-class RESURS_DEPRECATED_FLOW {
+class RESURS_DEPRECATED_FLOW
+{
     private $formTemplateRuleArray;
     private $templateFieldsByMethodResponse;
 
+    /**
+     * Defines if we are allowed to skip government id validation. Payment provider methods
+     * normally does this when running in simplified mode. In other cases, validation will be
+     * handled by Resurs Bank and this setting shoudl not be affected by this
+     *
+     * @var bool $canSkipGovernmentIdValidation
+     */
+    private $canSkipGovernmentIdValidation = false;
 
     /**
-	 * Override formTemplateFieldsetRules in case of important needs or unexpected changes
-	 *
-	 * @param $customerType
-	 * @param $methodType
-	 * @param $fieldArray
-	 *
-	 * @return array
-	 * @deprecated Build your own integration
-	 */
-	public function setFormTemplateRules( $customerType, $methodType, $fieldArray ) {
-		$this->formTemplateRuleArray = array(
-			$customerType => array(
-				'fields' => array(
-					$methodType => $fieldArray
-				)
-			)
-		);
+     * Override formTemplateFieldsetRules in case of important needs or unexpected changes
+     *
+     * @param $customerType
+     * @param $methodType
+     * @param $fieldArray
+     *
+     * @return array
+     * @deprecated Build your own integration
+     */
+    public function setFormTemplateRules($customerType, $methodType, $fieldArray)
+    {
+        $this->formTemplateRuleArray = array(
+            $customerType => array(
+                'fields' => array(
+                    $methodType => $fieldArray
+                )
+            )
+        );
 
-		return $this->formTemplateRuleArray;
-	}
+        return $this->formTemplateRuleArray;
+    }
 
-	/**
-	 * Retrieve html-form rules for each payment method type, including regular expressions for the form fields, to validate against.
-	 *
-	 * @return array
-	 * @deprecated Build your own integration
-	 */
+    /**
+     * Retrieve html-form rules for each payment method type, including regular expressions for the form fields, to validate against.
+     *
+     * @return array
+     * @deprecated Build your own integration
+     */
     public function getFormTemplateRules()
     {
         $formTemplateRules = array(
@@ -85,7 +95,15 @@ class RESURS_DEPRECATED_FLOW {
                         'applicant-mobile-number',
                         'applicant-email-address',
                         'applicant-full-name',
-                        'contact-government-id'
+                        'contact-government-id',
+                    ),
+                    'PAYMENT_PROVIDER' => array(
+                        'applicant-government-id',
+                        'applicant-telephone-number',
+                        'applicant-mobile-number',
+                        'applicant-email-address',
+                        'applicant-full-name',
+                        'contact-government-id',
                     ),
                 )
             ),
@@ -93,7 +111,7 @@ class RESURS_DEPRECATED_FLOW {
                 'applicant-government-id',
                 'card-number',
                 'applicant-full-name',
-                'contact-government-id'
+                'contact-government-id',
             ),
             'regexp' => array(
                 'SE' => array(
@@ -171,119 +189,123 @@ class RESURS_DEPRECATED_FLOW {
         return $formTemplateRules;
     }
 
-
-	/**
-	 * Get regular expression ruleset for a specific payment formfield
-	 *
-	 * If no form field name are given, all the fields are returned for a specific payment method.
-	 * Parameters are case insensitive.
-	 *
-	 * @param string $formFieldName
-	 * @param $countryCode
-	 * @param $customerType
-	 *
-	 * @return array
-	 * @throws \Exception
-	 * @deprecated Build your own integration
-	 */
-	public function getRegEx( $formFieldName = '', $countryCode, $customerType ) {
-		//$returnRegEx = array();
+    /**
+     * Get regular expression ruleset for a specific payment formfield
+     *
+     * If no form field name are given, all the fields are returned for a specific payment method.
+     * Parameters are case insensitive.
+     *
+     * @param string $formFieldName
+     * @param $countryCode
+     * @param $customerType
+     *
+     * @return array
+     * @throws \Exception
+     * @deprecated Build your own integration
+     */
+    public function getRegEx($formFieldName = '', $countryCode, $customerType)
+    {
+        //$returnRegEx = array();
 
         /** @noinspection PhpDeprecationInspection */
         $templateRule = $this->getFormTemplateRules();
-		$returnRegEx  = $templateRule['regexp'];
+        $returnRegEx = $templateRule['regexp'];
 
-		if ( empty( $countryCode ) ) {
-			throw new \Exception( __FUNCTION__ . ": Country code is missing in getRegEx-request for form fields", \RESURS_EXCEPTIONS::REGEX_COUNTRYCODE_MISSING );
-		}
-		if ( empty( $customerType ) ) {
-			throw new \Exception( __FUNCTION__ . ": Customer type is missing in getRegEx-request for form fields", \RESURS_EXCEPTIONS::REGEX_CUSTOMERTYPE_MISSING );
-		}
+        if (empty($countryCode)) {
+            throw new \Exception(__FUNCTION__ . ": Country code is missing in getRegEx-request for form fields",
+                \RESURS_EXCEPTIONS::REGEX_COUNTRYCODE_MISSING);
+        }
+        if (empty($customerType)) {
+            throw new \Exception(__FUNCTION__ . ": Customer type is missing in getRegEx-request for form fields",
+                \RESURS_EXCEPTIONS::REGEX_CUSTOMERTYPE_MISSING);
+        }
 
-		if ( ! empty( $countryCode ) && isset( $returnRegEx[ strtoupper( $countryCode ) ] ) ) {
-			$returnRegEx = $returnRegEx[ strtoupper( $countryCode ) ];
-			if ( ! empty( $customerType ) ) {
-				if ( ! is_array( $customerType ) ) {
-					if ( isset( $returnRegEx[ strtoupper( $customerType ) ] ) ) {
-						$returnRegEx = $returnRegEx[ strtoupper( $customerType ) ];
-						if ( isset( $returnRegEx[ strtolower( $formFieldName ) ] ) ) {
-							$returnRegEx = $returnRegEx[ strtolower( $formFieldName ) ];
-						}
-					}
-				} else {
-					foreach ( $customerType as $cType ) {
-						if ( isset( $returnRegEx[ strtoupper( $cType ) ] ) ) {
-							$returnRegEx = $returnRegEx[ strtoupper( $cType ) ];
-							if ( isset( $returnRegEx[ strtolower( $formFieldName ) ] ) ) {
-								$returnRegEx = $returnRegEx[ strtolower( $formFieldName ) ];
-							}
-						}
-					}
-				}
-			}
-		}
+        if (!empty($countryCode) && isset($returnRegEx[strtoupper($countryCode)])) {
+            $returnRegEx = $returnRegEx[strtoupper($countryCode)];
+            if (!empty($customerType)) {
+                if (!is_array($customerType)) {
+                    if (isset($returnRegEx[strtoupper($customerType)])) {
+                        $returnRegEx = $returnRegEx[strtoupper($customerType)];
+                        if (isset($returnRegEx[strtolower($formFieldName)])) {
+                            $returnRegEx = $returnRegEx[strtolower($formFieldName)];
+                        }
+                    }
+                } else {
+                    foreach ($customerType as $cType) {
+                        if (isset($returnRegEx[strtoupper($cType)])) {
+                            $returnRegEx = $returnRegEx[strtoupper($cType)];
+                            if (isset($returnRegEx[strtolower($formFieldName)])) {
+                                $returnRegEx = $returnRegEx[strtolower($formFieldName)];
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
-		return $returnRegEx;
-	}
+        return $returnRegEx;
+    }
 
-	/**
-	 * Returns a true/false for a specific form field value depending on the response created by getTemplateFieldsByMethodType.
-	 *
-	 * This function is a part of Resurs Bank streamline support and actually defines the recommended value whether the field should try propagate it's data from the current store values or not.
-	 * Doing this, you may be able to hide form fields that already exists in the store, so the customer does not need to enter the values twice.
-	 *
-	 * @param string $formField The field you want to test
-	 * @param bool $canThrow Make the function throw an exception instead of silently return false if getTemplateFieldsByMethodType has not been run yet
-	 *
-	 * @return bool Returns false if you should NOT hide the field
-	 * @throws \Exception
-	 * @deprecated Build your own integration
-	 */
-	public function canHideFormField( $formField = "", $canThrow = false ) {
-		//$canHideSet = false;
-
-		if ( is_array( $this->templateFieldsByMethodResponse ) && count( $this->templateFieldsByMethodResponse ) && isset( $this->templateFieldsByMethodResponse['fields'] ) && isset( $this->templateFieldsByMethodResponse['display'] ) ) {
-			$currentDisplay = $this->templateFieldsByMethodResponse['display'];
-			if ( in_array( $formField, $currentDisplay ) ) {
-				$canHideSet = false;
-			} else {
-				$canHideSet = true;
-			}
-		} else {
-			/* Make sure that we don't hide things that does not exists in our configuration */
-			$canHideSet = false;
-		}
-
-		if ( $canThrow && ! $canHideSet ) {
-			throw new \Exception( __FUNCTION__ . ": templateFieldsByMethodResponse is empty. You have to run getTemplateFieldsByMethodType first", \RESURS_EXCEPTIONS::FORMFIELD_CANHIDE_EXCEPTION );
-		}
-
-		return $canHideSet;
-	}
-
-
-	/**
-	 * Get field set rules for web-forms
-	 *
-	 * $paymentMethodType can be both a string or a object. If it is a object, the function will handle the incoming data as it is the complete payment method
-	 * configuration (meaning, data may be cached). In this case, it will take care of the types in the method itself. If it is a string, it will handle the data
-	 * as the configuration has already been solved out.
-	 *
-	 * When building forms for a webshop, a specific number of fields are required to show on screen. This function brings the right fields automatically.
-	 * The deprecated flow generates form fields and returns them to the shop owner platform, with the form fields that is required for the placing an order.
-	 * It also returns a bunch of regular expressions that is used to validate that the fields is correctly filled in. This function partially emulates that flow,
-	 * so the only thing a integrating developer needs to take care of is the html code itself.
-	 * @link https://test.resurs.com/docs/x/s4A0 Regular expressions
-	 *
-	 * @param string|array $paymentMethodName
-	 * @param string $customerType
-	 * @param string $specificType
-	 *
-	 * @return array
-	 * @deprecated Use this if you don't want to think by yourself but on your own risk
-	 */
-    public function getTemplateFieldsByMethodType($paymentMethodName = "", $customerType = "", $specificType = "")
+    /**
+     * Returns a true/false for a specific form field value depending on the response created by getTemplateFieldsByMethodType.
+     *
+     * This function is a part of Resurs Bank streamline support and actually defines the recommended value whether the field should try propagate it's data from the current store values or not.
+     * Doing this, you may be able to hide form fields that already exists in the store, so the customer does not need to enter the values twice.
+     *
+     * @param string $formField The field you want to test
+     * @param bool $canThrow Make the function throw an exception instead of silently return false if getTemplateFieldsByMethodType has not been run yet
+     *
+     * @return bool Returns false if you should NOT hide the field
+     * @throws \Exception
+     * @deprecated Build your own integration
+     */
+    public function canHideFormField($formField = "", $canThrow = false)
     {
+        if (is_array($this->templateFieldsByMethodResponse) && count($this->templateFieldsByMethodResponse) && isset($this->templateFieldsByMethodResponse['fields']) && isset($this->templateFieldsByMethodResponse['display'])) {
+            $currentDisplay = $this->templateFieldsByMethodResponse['display'];
+            if (in_array($formField, $currentDisplay)) {
+                $canHideSet = false;
+            } else {
+                $canHideSet = true;
+            }
+        } else {
+            /* Make sure that we don't hide things that does not exists in our configuration */
+            $canHideSet = false;
+        }
+
+        if ($canThrow && !$canHideSet) {
+            throw new \Exception(__FUNCTION__ . ": templateFieldsByMethodResponse is empty. You have to run getTemplateFieldsByMethodType first",
+                \RESURS_EXCEPTIONS::FORMFIELD_CANHIDE_EXCEPTION);
+        }
+
+        return $canHideSet;
+    }
+
+    /**
+     * Get field set rules for web-forms
+     *
+     * $paymentMethodType can be both a string or a object. If it is a object, the function will handle the incoming data as it is the complete payment method
+     * configuration (meaning, data may be cached). In this case, it will take care of the types in the method itself. If it is a string, it will handle the data
+     * as the configuration has already been solved out.
+     *
+     * When building forms for a webshop, a specific number of fields are required to show on screen. This function brings the right fields automatically.
+     * The deprecated flow generates form fields and returns them to the shop owner platform, with the form fields that is required for the placing an order.
+     * It also returns a bunch of regular expressions that is used to validate that the fields is correctly filled in. This function partially emulates that flow,
+     * so the only thing a integrating developer needs to take care of is the html code itself.
+     * @link https://test.resurs.com/docs/x/s4A0 Regular expressions
+     *
+     * @param string|array $paymentMethodName
+     * @param string $customerType
+     * @param string $specificType
+     *
+     * @return array
+     * @deprecated Use this if you don't want to think by yourself but on your own risk
+     */
+    public function getTemplateFieldsByMethodType(
+        $paymentMethodName = "",
+        $customerType = "",
+        $specificType = ""
+    ) {
         /** @noinspection PhpDeprecationInspection */
         $templateRules = $this->getFormTemplateRules();
         //$returnedRules     = array();
@@ -344,33 +366,48 @@ class RESURS_DEPRECATED_FLOW {
         return $returnedRules;
     }
 
-	/**
-	 * Get template fields by a specific payment method. This function retrieves the payment method in real time.
-	 *
-	 * @param string $paymentMethodName
-	 *
-	 * @return array
-	 * @throws \Exception
-	 * @deprecated Build your own integration
-	 */
-	public function getTemplateFieldsByMethod( $paymentMethodName = "" ) {
+    /**
+     * Defines if we are allowed to skip government id validation. Payment provider methods
+     * normally does this when running in simplified mode. In other cases, validation will be
+     * handled by Resurs Bank and this setting shoudl not be affected by this
+     *
+     * @return bool
+     */
+    public function getCanSkipGovernmentIdValidation()
+    {
+        return $this->canSkipGovernmentIdValidation;
+    }
+
+    /**
+     * Get template fields by a specific payment method. This function retrieves the payment method in real time.
+     *
+     * @param string $paymentMethodName
+     *
+     * @return array
+     * @throws \Exception
+     * @deprecated Build your own integration
+     */
+    public function getTemplateFieldsByMethod(
+        $paymentMethodName = ""
+    ) {
         /** @noinspection PhpDeprecationInspection */
-        return $this->getTemplateFieldsByMethodType( $this->getPaymentMethodSpecific( $paymentMethodName ) );
-	}
+        return $this->getTemplateFieldsByMethodType($this->getPaymentMethodSpecific($paymentMethodName));
+    }
 
-	/**
-	 * Get form fields by a specific payment method. This function retrieves the payment method in real time.
-	 *
-	 * @param string $paymentMethodName
-	 *
-	 * @return array
-	 * @throws \Exception
-	 * @deprecated Build your own integration
-	 */
-	public function getFormFieldsByMethod( $paymentMethodName = "" ) {
+    /**
+     * Get form fields by a specific payment method. This function retrieves the payment method in real time.
+     *
+     * @param string $paymentMethodName
+     *
+     * @return array
+     * @throws \Exception
+     * @deprecated Build your own integration
+     */
+    public function getFormFieldsByMethod(
+        $paymentMethodName = ""
+    ) {
         /** @noinspection PhpDeprecationInspection */
-        return $this->getTemplateFieldsByMethod( $paymentMethodName );
-	}
-
-
+        return $this->getTemplateFieldsByMethod($paymentMethodName);
+    }
 }
+
