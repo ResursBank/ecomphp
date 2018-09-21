@@ -45,6 +45,10 @@ if (file_exists("/etc/ecomphp.json")) {
     }
 }
 
+/**
+ * Class resursBankTest
+ * @package Resursbank\RBEcomPHP
+ */
 class resursBankTest extends TestCase
 {
     /**
@@ -548,7 +552,8 @@ class resursBankTest extends TestCase
     /**
      * @test
      */
-    public function getPaymentWrong() {
+    public function getPaymentWrong()
+    {
         try {
             $this->TEST->ECOM->getPayment("FAIL_HERE");
         } catch (\Exception $e) {
@@ -561,7 +566,8 @@ class resursBankTest extends TestCase
     /**
      * @test
      */
-    public function getPaymentWrongRest() {
+    public function getPaymentWrongRest()
+    {
         try {
             $this->TEST->ECOM->setFlag('GET_PAYMENT_BY_REST');
             $this->TEST->ECOM->getPayment('FAIL_HERE');
@@ -576,7 +582,8 @@ class resursBankTest extends TestCase
     /**
      * @test
      */
-    public function getPaymentUnexistentSoap() {
+    public function getPaymentUnexistentSoap()
+    {
         try {
             $this->TEST->ECOM->getPayment('FAIL_HERE');
         } catch (\Exception $e) {
