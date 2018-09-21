@@ -21,7 +21,7 @@ namespace Resursbank\RBEcomPHP;
 if (!defined('ECOM_SKIP_AUTOLOAD')) {
     define('ECOM_CLASS_EXISTS_AUTOLOAD', true);
 } else {
-    define('ECOM_NO_CLASS_AUTOLOAD', false);
+    define('ECOM_CLASS_EXISTS_AUTOLOAD', false);
     if (!defined('NETCURL_SKIP_AUTOLOAD')) {
         define('NETCURL_SKIP_AUTOLOAD', true);
     }
@@ -2511,7 +2511,7 @@ class ResursBank
     {
         $return = false;
 
-        if (class_exists('SoapClient', ECOM_NO_CLASS_AUTOLOAD)) {
+        if (class_exists('SoapClient', ECOM_CLASS_EXISTS_AUTOLOAD)) {
             $return = true;
         }
 
