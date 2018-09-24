@@ -5819,7 +5819,7 @@ class ResursBank
             if ($annulException->getCode() == 29 && !$this->isFlag('SKIP_AFTERSHOP_INVOICE_CONTROL') && !$runOnce) {
                 $this->getNextInvoiceNumberByDebits(5);
 
-                return $this->paymentFinalize($paymentId, $customPayloadItemList, true);
+                return $this->paymentAnnul($paymentId, $customPayloadItemList, true);
             }
             throw new Exception($annulException->getMessage(), $annulException->getCode(), $annulException);
         }
@@ -5872,7 +5872,7 @@ class ResursBank
             if ($creditException->getCode() == 29 && !$this->isFlag('SKIP_AFTERSHOP_INVOICE_CONTROL') && !$runOnce) {
                 $this->getNextInvoiceNumberByDebits(5);
 
-                return $this->paymentFinalize($paymentId, $customPayloadItemList, true);
+                return $this->paymentCredit($paymentId, $customPayloadItemList, true);
             }
             throw new Exception($creditException->getMessage(), $creditException->getCode(), $creditException);
         }
