@@ -6159,7 +6159,6 @@ class ResursBank
         return false;
     }
 
-
     ///// CODE OBSOLETION AREA
     /// Everything beneath this section belongs to EComPHP 1.0+1.1 deprecations only.
     /// The intention is to make it easier to maintain updated code from v1.3 and leave
