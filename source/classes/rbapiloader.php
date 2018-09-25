@@ -1229,37 +1229,35 @@ class ResursBank
      * Convert callback types to string names
      *
      * @param int $callbackType
-     *
      * @return null|string
      */
-    private function getCallbackTypeString($callbackType = RESURS_CALLBACK_TYPES::CALLBACK_TYPE_NOT_SET)
+    private function getCallbackTypeString($callbackType = RESURS_CALLBACK_TYPES::NOT_SET)
     {
-        if ($callbackType == RESURS_CALLBACK_TYPES::CALLBACK_TYPE_NOT_SET) {
-            return null;
+        $return = null;
+
+        if ($callbackType == RESURS_CALLBACK_TYPES::ANNULMENT) {
+            $return = "ANNULMENT";
         }
-        if ($callbackType == RESURS_CALLBACK_TYPES::CALLBACK_TYPE_ANNULMENT) {
-            return "ANNULMENT";
+        if ($callbackType == RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL) {
+            $return = "AUTOMATIC_FRAUD_CONTROL";
         }
-        if ($callbackType == RESURS_CALLBACK_TYPES::CALLBACK_TYPE_AUTOMATIC_FRAUD_CONTROL) {
-            return "AUTOMATIC_FRAUD_CONTROL";
+        if ($callbackType == RESURS_CALLBACK_TYPES::FINALIZATION) {
+            $return = "FINALIZATION";
         }
-        if ($callbackType == RESURS_CALLBACK_TYPES::CALLBACK_TYPE_FINALIZATION) {
-            return "FINALIZATION";
+        if ($callbackType == RESURS_CALLBACK_TYPES::TEST) {
+            $return = "TEST";
         }
-        if ($callbackType == RESURS_CALLBACK_TYPES::CALLBACK_TYPE_TEST) {
-            return "TEST";
+        if ($callbackType == RESURS_CALLBACK_TYPES::UNFREEZE) {
+            $return = "UNFREEZE";
         }
-        if ($callbackType == RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UNFREEZE) {
-            return "UNFREEZE";
+        if ($callbackType == RESURS_CALLBACK_TYPES::UPDATE) {
+            $return = "UPDATE";
         }
-        if ($callbackType == RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UPDATE) {
-            return "UPDATE";
-        }
-        if ($callbackType == RESURS_CALLBACK_TYPES::CALLBACK_TYPE_BOOKED) {
-            return "BOOKED";
+        if ($callbackType == RESURS_CALLBACK_TYPES::BOOKED) {
+            $return = "BOOKED";
         }
 
-        return null;
+        return $return;
     }
 
     /**
@@ -1269,29 +1267,31 @@ class ResursBank
      */
     public function getCallbackTypeByString($callbackTypeString = "")
     {
+        $return = RESURS_CALLBACK_TYPES::NOT_SET;
+
         if (strtoupper($callbackTypeString) == "ANNULMENT") {
-            return RESURS_CALLBACK_TYPES::CALLBACK_TYPE_ANNULMENT;
+            $return = RESURS_CALLBACK_TYPES::ANNULMENT;
         }
         if (strtoupper($callbackTypeString) == "UPDATE") {
-            return RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UPDATE;
+            $return = RESURS_CALLBACK_TYPES::UPDATE;
         }
         if (strtoupper($callbackTypeString) == "TEST") {
-            return RESURS_CALLBACK_TYPES::CALLBACK_TYPE_TEST;
+            $return = RESURS_CALLBACK_TYPES::TEST;
         }
         if (strtoupper($callbackTypeString) == "FINALIZATION") {
-            return RESURS_CALLBACK_TYPES::CALLBACK_TYPE_FINALIZATION;
+            $return = RESURS_CALLBACK_TYPES::FINALIZATION;
         }
         if (strtoupper($callbackTypeString) == "AUTOMATIC_FRAUD_CONTROL") {
-            return RESURS_CALLBACK_TYPES::CALLBACK_TYPE_AUTOMATIC_FRAUD_CONTROL;
+            $return = RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL;
         }
         if (strtoupper($callbackTypeString) == "UNFREEZE") {
-            return RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UNFREEZE;
+            $return = RESURS_CALLBACK_TYPES::UNFREEZE;
         }
         if (strtoupper($callbackTypeString) == "BOOKED") {
-            return RESURS_CALLBACK_TYPES::CALLBACK_TYPE_BOOKED;
+            $return = RESURS_CALLBACK_TYPES::BOOKED;
         }
 
-        return RESURS_CALLBACK_TYPES::CALLBACK_TYPE_NOT_SET;
+        return $return;
     }
 
     /**
@@ -1301,31 +1301,33 @@ class ResursBank
      *
      * @return array
      */
-    private function getCallbackTypeParameters($callbackType = RESURS_CALLBACK_TYPES::CALLBACK_TYPE_NOT_SET)
+    private function getCallbackTypeParameters($callbackType = RESURS_CALLBACK_TYPES::NOT_SET)
     {
-        if ($callbackType == RESURS_CALLBACK_TYPES::CALLBACK_TYPE_ANNULMENT) {
-            return array('paymentId');
+        $return = array();
+
+        if ($callbackType == RESURS_CALLBACK_TYPES::ANNULMENT) {
+            $return = array('paymentId');
         }
-        if ($callbackType == RESURS_CALLBACK_TYPES::CALLBACK_TYPE_AUTOMATIC_FRAUD_CONTROL) {
-            return array('paymentId', 'result');
+        if ($callbackType == RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL) {
+            $return = array('paymentId', 'result');
         }
-        if ($callbackType == RESURS_CALLBACK_TYPES::CALLBACK_TYPE_FINALIZATION) {
-            return array('paymentId');
+        if ($callbackType == RESURS_CALLBACK_TYPES::FINALIZATION) {
+            $return = array('paymentId');
         }
-        if ($callbackType == RESURS_CALLBACK_TYPES::CALLBACK_TYPE_TEST) {
-            return array('param1', 'param2', 'param3', 'param4', 'param5');
+        if ($callbackType == RESURS_CALLBACK_TYPES::TEST) {
+            $return = array('param1', 'param2', 'param3', 'param4', 'param5');
         }
-        if ($callbackType == RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UNFREEZE) {
-            return array('paymentId');
+        if ($callbackType == RESURS_CALLBACK_TYPES::UNFREEZE) {
+            $return = array('paymentId');
         }
-        if ($callbackType == RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UPDATE) {
-            return array('paymentId');
+        if ($callbackType == RESURS_CALLBACK_TYPES::UPDATE) {
+            $return = array('paymentId');
         }
-        if ($callbackType == RESURS_CALLBACK_TYPES::CALLBACK_TYPE_BOOKED) {
-            return array('paymentId');
+        if ($callbackType == RESURS_CALLBACK_TYPES::BOOKED) {
+            $return = array('paymentId');
         }
 
-        return array();
+        return $return;
     }
 
     /**
@@ -1340,7 +1342,7 @@ class ResursBank
      */
     public function setCallbackDigest(
         $digestSaltString = '',
-        $callbackType = RESURS_CALLBACK_TYPES::CALLBACK_TYPE_NOT_SET
+        $callbackType = RESURS_CALLBACK_TYPES::NOT_SET
     ) {
         return $this->setCallbackDigestSalt($digestSaltString, $callbackType);
     }
@@ -1357,7 +1359,7 @@ class ResursBank
      */
     public function setCallbackDigestSalt(
         $digestSaltString = '',
-        $callbackType = RESURS_CALLBACK_TYPES::CALLBACK_TYPE_NOT_SET
+        $callbackType = RESURS_CALLBACK_TYPES::NOT_SET
     ) {
         // Make sure the digestSaltString is never empty
         if (!empty($digestSaltString)) {
@@ -1365,8 +1367,8 @@ class ResursBank
         } else {
             $currentDigest = $this->getSaltKey(4, 10);
         }
-        if ($callbackType !== RESURS_CALLBACK_TYPES::CALLBACK_TYPE_NOT_SET) {
-            $callbackTypeString = $this->getCallbackTypeString(!is_null($callbackType) ? $callbackType : RESURS_CALLBACK_TYPES::CALLBACK_TYPE_NOT_SET);
+        if ($callbackType !== RESURS_CALLBACK_TYPES::NOT_SET) {
+            $callbackTypeString = $this->getCallbackTypeString(!is_null($callbackType) ? $callbackType : RESURS_CALLBACK_TYPES::NOT_SET);
             $this->digestKey[$callbackTypeString] = $currentDigest;
         } else {
             $this->globalDigestKey = $currentDigest;
@@ -1413,7 +1415,7 @@ class ResursBank
             }
             // Redmine #78124 workaround
             if (!isset($ResursResponseArray['UPDATE'])) {
-                $updateResponse = $this->getRegisteredEventCallback(RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UPDATE);
+                $updateResponse = $this->getRegisteredEventCallback(RESURS_CALLBACK_TYPES::UPDATE);
                 if (is_object($updateResponse) && isset($updateResponse->uriTemplate)) {
                     $ResursResponseArray['UPDATE'] = $updateResponse->uriTemplate;
                 }
@@ -1430,7 +1432,7 @@ class ResursBank
             }
         }
         if (!$hasUpdate) {
-            $updateResponse = $this->getRegisteredEventCallback(RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UPDATE);
+            $updateResponse = $this->getRegisteredEventCallback(RESURS_CALLBACK_TYPES::UPDATE);
             if (isset($updateResponse->uriTemplate) && !empty($updateResponse->uriTemplate)) {
                 if (!isset($updateResponse->eventType)) {
                     $updateResponse->eventType = "UPDATE";
@@ -1450,7 +1452,7 @@ class ResursBank
      * @return mixed
      * @throws \Exception
      */
-    public function getRegisteredEventCallback($callbackType = RESURS_CALLBACK_TYPES::CALLBACK_TYPE_NOT_SET)
+    public function getRegisteredEventCallback($callbackType = RESURS_CALLBACK_TYPES::NOT_SET)
     {
         $this->InitializeServices();
         $fetchThisCallback = $this->getCallbackTypeString($callbackType);
@@ -1498,7 +1500,7 @@ class ResursBank
      * @since 1.1.1
      */
     public function setRegisterCallback(
-        $callbackType = RESURS_CALLBACK_TYPES::CALLBACK_TYPE_NOT_SET,
+        $callbackType = RESURS_CALLBACK_TYPES::NOT_SET,
         $callbackUriTemplate = "",
         $digestData = array(),
         $basicAuthUserName = null,
@@ -1557,7 +1559,7 @@ class ResursBank
                 \RESURS_EXCEPTIONS::CALLBACK_SALTDIGEST_MISSING);
         }
         ////// DIGEST CONFIGURATION FINISH
-        if ($this->registerCallbacksViaRest && $callbackType !== RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UPDATE) {
+        if ($this->registerCallbacksViaRest && $callbackType !== RESURS_CALLBACK_TYPES::UPDATE) {
             $registerBy = 'rest';
             $serviceUrl = $this->getCheckoutUrl() . "/callbacks";
             $renderCallbackUrl = $serviceUrl . "/" . $renderCallback['eventType'];
@@ -1602,20 +1604,20 @@ class ResursBank
      * @since 1.1.1
      */
     public function unregisterEventCallback(
-        $callbackType = RESURS_CALLBACK_TYPES::CALLBACK_TYPE_NOT_SET,
+        $callbackType = RESURS_CALLBACK_TYPES::NOT_SET,
         $isMultiple = false
     ) {
         if ($isMultiple) {
             $this->BIT = new MODULE_NETBITS();
             $this->BIT->setBitStructure(
                 array(
-                    'UNFREEZE' => RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UNFREEZE,
-                    'ANNULMENT' => RESURS_CALLBACK_TYPES::CALLBACK_TYPE_ANNULMENT,
-                    'AUTOMATIC_FRAUD_CONTROL' => RESURS_CALLBACK_TYPES::CALLBACK_TYPE_AUTOMATIC_FRAUD_CONTROL,
-                    'FINALIZATION' => RESURS_CALLBACK_TYPES::CALLBACK_TYPE_FINALIZATION,
-                    'TEST' => RESURS_CALLBACK_TYPES::CALLBACK_TYPE_TEST,
-                    'UPDATE' => RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UPDATE,
-                    'BOOKED' => RESURS_CALLBACK_TYPES::CALLBACK_TYPE_BOOKED,
+                    'UNFREEZE' => RESURS_CALLBACK_TYPES::UNFREEZE,
+                    'ANNULMENT' => RESURS_CALLBACK_TYPES::ANNULMENT,
+                    'AUTOMATIC_FRAUD_CONTROL' => RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL,
+                    'FINALIZATION' => RESURS_CALLBACK_TYPES::FINALIZATION,
+                    'TEST' => RESURS_CALLBACK_TYPES::TEST,
+                    'UPDATE' => RESURS_CALLBACK_TYPES::UPDATE,
+                    'BOOKED' => RESURS_CALLBACK_TYPES::BOOKED,
                 )
             );
             $callbackTypes = $this->BIT->getBitArray($callbackType);
@@ -5790,7 +5792,7 @@ class ResursBank
             if ($annulException->getCode() == 29 && !$this->isFlag('SKIP_AFTERSHOP_INVOICE_CONTROL') && !$runOnce) {
                 $this->getNextInvoiceNumberByDebits(5);
 
-                return $this->paymentFinalize($paymentId, $customPayloadItemList, true);
+                return $this->paymentAnnul($paymentId, $customPayloadItemList, true);
             }
             throw new Exception($annulException->getMessage(), $annulException->getCode(), $annulException);
         }
@@ -5843,7 +5845,7 @@ class ResursBank
             if ($creditException->getCode() == 29 && !$this->isFlag('SKIP_AFTERSHOP_INVOICE_CONTROL') && !$runOnce) {
                 $this->getNextInvoiceNumberByDebits(5);
 
-                return $this->paymentFinalize($paymentId, $customPayloadItemList, true);
+                return $this->paymentCredit($paymentId, $customPayloadItemList, true);
             }
             throw new Exception($creditException->getMessage(), $creditException->getCode(), $creditException);
         }
@@ -6040,7 +6042,7 @@ class ResursBank
      */
     public function getOrderStatusByPayment(
         $paymentIdOrPaymentObject = '',
-        $byCallbackEvent = RESURS_CALLBACK_TYPES::CALLBACK_TYPE_NOT_SET,
+        $byCallbackEvent = RESURS_CALLBACK_TYPES::NOT_SET,
         $callbackEventDataArrayOrString = array()
     ) {
 
@@ -6057,11 +6059,11 @@ class ResursBank
 
         // Analyzed during a callback event, which have higher priority than a regular control
         switch ($byCallbackEvent) {
-            case RESURS_CALLBACK_TYPES::CALLBACK_TYPE_NOT_SET:
+            case RESURS_CALLBACK_TYPES::NOT_SET:
                 break;
-            case RESURS_CALLBACK_TYPES::CALLBACK_TYPE_ANNULMENT:
+            case RESURS_CALLBACK_TYPES::ANNULMENT:
                 return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_ANNULLED;
-            case RESURS_CALLBACK_TYPES::CALLBACK_TYPE_AUTOMATIC_FRAUD_CONTROL:
+            case RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL:
                 if (is_string($callbackEventDataArrayOrString)) {
                     // Thawed means not frozen
                     if ($callbackEventDataArrayOrString == "THAWED") {
@@ -6070,7 +6072,7 @@ class ResursBank
                 }
 
                 return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING;
-            case RESURS_CALLBACK_TYPES::CALLBACK_TYPE_BOOKED:
+            case RESURS_CALLBACK_TYPES::BOOKED:
                 // Frozen set, but not true OR frozen not set at all - Go processing
                 if (isset($paymentData->frozen) && $paymentData->frozen) {
                     return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING;
@@ -6079,13 +6081,14 @@ class ResursBank
                 // the order by statuses if this order is not frozen
                 return $this->getOrderStatusByPaymentStatuses($paymentData);
                 break;
-            case RESURS_CALLBACK_TYPES::CALLBACK_TYPE_FINALIZATION:
+            case RESURS_CALLBACK_TYPES::FINALIZATION:
                 return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED;
-            case RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UNFREEZE:
+            case RESURS_CALLBACK_TYPES::UNFREEZE:
                 return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PROCESSING;
-            case RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UPDATE:
+            case RESURS_CALLBACK_TYPES::UPDATE:
                 return $this->getOrderStatusByPaymentStatuses($paymentData);
-            default:    // RESURS_CALLBACK_TYPES::CALLBACK_TYPE_NOT_SET
+            default:
+                // NOT_SET
                 break;
         }
 
