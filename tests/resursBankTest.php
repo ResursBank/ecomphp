@@ -25,6 +25,7 @@ if (file_exists(__DIR__ . "/../vendor/autoload.php")) {
 use PHPUnit\Framework\TestCase;
 use TorneLIB\MODULE_CURL;
 use TorneLIB\MODULE_IO;
+use TorneLIB\MODULE_NETBITS;
 use TorneLIB\MODULE_SOAP;
 
 // curl wrapper, extended network handling functions etc
@@ -506,6 +507,21 @@ class resursBankTest extends TestCase
         $callbacks = $this->TEST->ECOM->getCallBacksByRest(true);
         static::assertTrue(is_array($callbacks) && !count($callbacks) ? true : false);
 
+    }
+
+    /**
+     * @test
+     */
+    public function bitMaskControl()
+    {
+        static::assertTrue(
+            (255 & RESURS_CALLBACK_TYPES::FINALIZATION) ? true : false &&
+            (8 & RESURS_CALLBACK_TYPES::FINALIZATION) ? true : false &&
+            (24 & RESURS_CALLBACK_TYPES::TEST) ? true : false &&
+            (12 & RESURS_CALLBACK_TYPES::FINALIZATION && RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL) ? true : false &&
+            (56 & RESURS_CALLBACK_TYPES::FINALIZATION && RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL) ? true : false &&
+                (RESURS_CALLBACK_TYPES::FINALIZATION | RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL | RESURS_CALLBACK_TYPES::TEST) === 28
+        );
     }
 
     /**
