@@ -34,10 +34,12 @@ if (!defined('ECOM_SKIP_AUTOLOAD')) {
 if (!defined('RB_API_PATH')) {
     define('RB_API_PATH', __DIR__);
 }
+
 require_once(RB_API_PATH . '/thirdparty/network.php');
+require_once(RB_API_PATH . '/rbapiloader/ResursForms.php');
+require_once(RB_API_PATH . '/rbapiloader/Resursbank/Obsolete/Functions.php');
 require_once(RB_API_PATH . '/rbapiloader/ResursTypeClasses.php');
 require_once(RB_API_PATH . '/rbapiloader/ResursException.php');
-//if ( file_exists( RB_API_PATH . '/../../vendor/autoload.php' ) ) {	require_once( RB_API_PATH . '/../../vendor/autoload.php' ); }
 if (file_exists(RB_API_PATH . '/ecomhooks.php')) {
     require_once(RB_API_PATH . '/ecomhooks.php');
 }
@@ -50,10 +52,10 @@ use Resursbank\RBEcomPHP\MODULE_NETBITS;
 
 // Globals starts here
 if (!defined('ECOMPHP_VERSION')) {
-    define('ECOMPHP_VERSION', '1.0.39');
+    define('ECOMPHP_VERSION', '1.0.40');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20180907');
+    define('ECOMPHP_MODIFY_DATE', '20180921');
 }
 
 /**
