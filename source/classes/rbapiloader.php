@@ -2840,6 +2840,11 @@ class ResursBank
     }
 
     /**
+     * Adds metaData to a payment (before creation)
+     *
+     * Note that addMetaData adds metaData to a payment AFTER creation. This method occurs DURING a bookPayment
+     * rather than after it has been booked.
+     *
      * @param $key
      * @param $value
      * @since 1.0.40
