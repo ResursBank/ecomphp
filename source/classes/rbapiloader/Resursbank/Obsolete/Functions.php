@@ -2,6 +2,11 @@
 
 namespace Resursbank\RBEcomPHP;
 
+if (class_exists('Resursbank_Obsolete_Functions', ECOM_CLASS_EXISTS_AUTOLOAD) && class_exists('Resursbank\RBEcomPHP\Resursbank_Obsolete_Functions',
+        ECOM_CLASS_EXISTS_AUTOLOAD)) {
+    return;
+}
+
 /**
  * Class Resursbank_Obsolete_Functions Functions that is obsolete and should no longer be used
  *
