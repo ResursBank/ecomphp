@@ -8,6 +8,7 @@ if (file_exists(__DIR__ . "/../vendor/autoload.php")) {
 
 ini_set('memory_limit', -1);
 use PHPUnit\Framework\TestCase;
+use Resursbank\RBEcomPHP\ResursBank;
 
 class Resursbank_Obsolete_FunctionsTest extends TestCase
 {
@@ -15,7 +16,7 @@ class Resursbank_Obsolete_FunctionsTest extends TestCase
 
     function setUp()
     {
-        $this->ECOM_BASE = new Resursbank\RBEcomPHP\ResursBank();
+        $this->ECOM_BASE = new ResursBank();
     }
 
     /**
