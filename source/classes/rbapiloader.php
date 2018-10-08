@@ -58,7 +58,7 @@ if (!defined('ECOMPHP_VERSION')) {
     define('ECOMPHP_VERSION', '1.1.40');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20181005');
+    define('ECOMPHP_MODIFY_DATE', '20181008');
 }
 
 /**
@@ -2840,6 +2840,32 @@ class ResursBank
         }
 
         return false;
+    }
+
+    /**
+     * Adds metaData to a payment (before creation)
+     *
+     * Note that addMetaData adds metaData to a payment AFTER creation. This method occurs DURING a bookPayment
+     * rather than after it has been booked.
+     *
+     * @param $key
+     * @param $value
+     * @since 1.0.40
+     * @since 1.1.40
+     * @since 1.3.13
+     */
+    public function setMetaData($key, $value)
+    {
+        if (!isset($this->Payload['metaData'])) {
+            $this->Payload['metaData'] = array();
+        }
+        if (!empty($key)) {
+            if ($this->getPreferredPaymentFlowService() !== RESURS_FLOW_TYPES::HOSTED_FLOW) {
+                $this->Payload['metaData'][] = array('key' => $key, 'value' => $value);
+            } else {
+                $this->Payload['metaData'][] = array($key => $value);
+            }
+        }
     }
 
     /**
