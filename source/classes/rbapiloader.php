@@ -58,7 +58,7 @@ if (!defined('ECOMPHP_VERSION')) {
     define('ECOMPHP_VERSION', '1.3.13');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20180921');
+    define('ECOMPHP_MODIFY_DATE', '20181008');
 }
 
 /**
