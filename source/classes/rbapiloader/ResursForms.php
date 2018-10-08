@@ -95,7 +95,15 @@ class RESURS_DEPRECATED_FLOW
                         'applicant-mobile-number',
                         'applicant-email-address',
                         'applicant-full-name',
-                        'contact-government-id'
+                        'contact-government-id',
+                    ),
+                    'PAYMENT_PROVIDER' => array(
+                        'applicant-government-id',
+                        'applicant-telephone-number',
+                        'applicant-mobile-number',
+                        'applicant-email-address',
+                        'applicant-full-name',
+                        'contact-government-id',
                     ),
                 )
             ),
@@ -103,7 +111,7 @@ class RESURS_DEPRECATED_FLOW
                 'applicant-government-id',
                 'card-number',
                 'applicant-full-name',
-                'contact-government-id'
+                'contact-government-id',
             ),
             'regexp' => array(
                 'SE' => array(
@@ -253,8 +261,6 @@ class RESURS_DEPRECATED_FLOW
      */
     public function canHideFormField($formField = "", $canThrow = false)
     {
-        //$canHideSet = false;
-
         if (is_array($this->templateFieldsByMethodResponse) && count($this->templateFieldsByMethodResponse) && isset($this->templateFieldsByMethodResponse['fields']) && isset($this->templateFieldsByMethodResponse['display'])) {
             $currentDisplay = $this->templateFieldsByMethodResponse['display'];
             if (in_array($formField, $currentDisplay)) {
@@ -275,7 +281,6 @@ class RESURS_DEPRECATED_FLOW
         return $canHideSet;
     }
 
-
     /**
      * Get field set rules for web-forms
      *
@@ -294,10 +299,13 @@ class RESURS_DEPRECATED_FLOW
      * @param string $specificType
      *
      * @return array
-     * @deprecated Build your own integration
+     * @deprecated Use this if you don't want to think by yourself but on your own risk
      */
-    public function getTemplateFieldsByMethodType($paymentMethodName = "", $customerType = "", $specificType = "")
-    {
+    public function getTemplateFieldsByMethodType(
+        $paymentMethodName = "",
+        $customerType = "",
+        $specificType = ""
+    ) {
         /** @noinspection PhpDeprecationInspection */
         $templateRules = $this->getFormTemplateRules();
         //$returnedRules     = array();
@@ -309,8 +317,12 @@ class RESURS_DEPRECATED_FLOW
                 if (!is_array($customerType)) {
                     /** @noinspection PhpUndefinedFieldInspection */
                     if (isset($templateRules[strtoupper($customerType)]) && (isset($templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName->specificType)]) || isset($templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName->type)]))) {
-                        /** @noinspection PhpUndefinedFieldInspection */
-                        $returnedRuleArray = $templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName->specificType)];
+                        if (isset($templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName->specificType)])) {
+                            /** @noinspection PhpUndefinedFieldInspection */
+                            $returnedRuleArray = $templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName->specificType)];
+                        } else {
+                            $returnedRuleArray = $templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName->type)];
+                        }
                         if ($paymentMethodName->type === 'PAYMENT_PROVIDER') {
                             $this->canSkipGovernmentIdValidation = true;
                             $returnedRuleArray = $templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName->type)];
@@ -324,7 +336,13 @@ class RESURS_DEPRECATED_FLOW
                      */
                     if (is_array($paymentMethodName) && count($paymentMethodName)) {
                         if (isset($templateRules[strtoupper($customerType)]) && (isset($templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName['specificType'])]) || isset($templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName['type'])]))) {
-                            $returnedRuleArray = $templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName['specificType'])];
+                            if (isset($templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName['specificType'])])) {
+                                /** @noinspection PhpUndefinedFieldInspection */
+                                $returnedRuleArray = $templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName['specificType'])];
+                            } else {
+                                $returnedRuleArray = $templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName['type'])];
+                            }
+
                             if ($paymentMethodName['type'] === 'PAYMENT_PROVIDER') {
                                 $this->canSkipGovernmentIdValidation = true;
                                 $returnedRuleArray = $templateRules[strtoupper($customerType)]['fields'][strtoupper($paymentMethodName['type'])];
@@ -369,8 +387,9 @@ class RESURS_DEPRECATED_FLOW
      * @throws \Exception
      * @deprecated Build your own integration
      */
-    public function getTemplateFieldsByMethod($paymentMethodName = "")
-    {
+    public function getTemplateFieldsByMethod(
+        $paymentMethodName = ""
+    ) {
         /** @noinspection PhpDeprecationInspection */
         return $this->getTemplateFieldsByMethodType($this->getPaymentMethodSpecific($paymentMethodName));
     }
@@ -384,9 +403,11 @@ class RESURS_DEPRECATED_FLOW
      * @throws \Exception
      * @deprecated Build your own integration
      */
-    public function getFormFieldsByMethod($paymentMethodName = "")
-    {
+    public function getFormFieldsByMethod(
+        $paymentMethodName = ""
+    ) {
         /** @noinspection PhpDeprecationInspection */
         return $this->getTemplateFieldsByMethod($paymentMethodName);
     }
 }
+
