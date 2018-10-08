@@ -90,19 +90,34 @@ abstract class RESURS_EXCEPTIONS
     const CREATEPAYMENT_TOO_FAST = 7009;
 }
 
-class RESURS_EXCEPTION_CLASS extends \Exception {
+
+/**
+ * Class RESURS_EXCEPTION_CLASS
+ * @deprecated Not in use
+ */
+class RESURS_EXCEPTION_CLASS extends \Exception
+{
     private $fromFunction = null;
-    public function __construct($message = 'Unknown exception', $code = 0, $fromFunction = '', \Exception $previous = null) {
+
+    public function __construct(
+        $message = 'Unknown exception',
+        $code = 0,
+        $fromFunction = '',
+        \Exception $previous = null
+    ) {
         $this->fromFunction = $fromFunction;
         parent::__construct($message, $code, $previous);
     }
-    public function __toString() {
+
+    public function __toString()
+    {
         if (null === $this->fromFunction) {
             return "RBEcomPHP Exception: [{$this->code}]: {$this->message}";
         } else {
             return "RBEcomPHP {$this->fromFunction}Exception {$this->code}: {$this->message}";
         }
     }
+
     public function getFromFunction()
     {
         if (empty($this->fromFunction)) {
@@ -116,10 +131,14 @@ class RESURS_EXCEPTION_CLASS extends \Exception {
  * Class ResursExceptions
  * @deprecated Use RESURS_EXCEPTIONS
  */
-abstract class ResursExceptions extends RESURS_EXCEPTIONS {}
+abstract class ResursExceptions extends RESURS_EXCEPTIONS
+{
+}
 
 /**
  * Class ResursException
  * @deprecated Use RESURS_EXCEPTION_CLASS
  */
-class ResursException extends RESURS_EXCEPTION_CLASS {}
+class ResursException extends RESURS_EXCEPTION_CLASS
+{
+}
