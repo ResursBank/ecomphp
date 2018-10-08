@@ -164,6 +164,9 @@ class ResursBank
     /** @var bool Future functionality to backtrace customer ip address to something else than REMOTE_ADDR (if proxified) */
     private $preferCustomerProxy = false;
 
+    /** @var bool Indicates if there was deprecated calls in progress during the use of ECom */
+    private $hasDeprecatedCall = false;
+
     ///// Communication
     /**
      * Primary class for handling all HTTP calls
@@ -6183,5 +6186,35 @@ class ResursBank
         }
 
         return false;
+    }
+
+    /**
+     * v1.1 method compatibility
+     *
+     * @param null $func
+     * @param array $args
+     * @return mixed
+     * @throws Exception
+     */
+    public function __call($func = null, $args = array())
+    {
+        if (class_exists(
+                'Resursbank_Obsolete_Functions',
+                ECOM_CLASS_EXISTS_AUTOLOAD) ||
+            class_exists(
+                '\Resursbank\RBEcomPHP\Resursbank_Obsolete_Functions', ECOM_CLASS_EXISTS_AUTOLOAD
+            )
+        ) {
+            $obsoleteCaller = new Resursbank_Obsolete_Functions($this);
+            if (method_exists($obsoleteCaller, $func)) {
+                $this->hasDeprecatedCall = true;
+                return call_user_func_array(array($obsoleteCaller, $func), $args);
+            }
+        }
+        throw new \Exception(
+            'Method (' .
+            $func .
+            ') not found in ECom Library, neither in the current release nor in the deprecation library',
+            501); // 501 NOT IMPLEMENTED
     }
 }
