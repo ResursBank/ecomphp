@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Class ResursExceptions Exception handling for EComPHP
+ * Class RESURS_EXCEPTIONS
  */
 abstract class RESURS_EXCEPTIONS
 {

@@ -1,5 +1,7 @@
 <?php
 
+namespace Resursbank\RBEcomPHP;
+
 if (file_exists(__DIR__ . "/../vendor/autoload.php")) {
     require_once(__DIR__ . '/../vendor/autoload.php');
 } else {
@@ -8,7 +10,7 @@ if (file_exists(__DIR__ . "/../vendor/autoload.php")) {
 
 ini_set('memory_limit', -1);
 use PHPUnit\Framework\TestCase;
-use Resursbank\RBEcomPHP\ResursBank;
+use \Exception;
 
 class Resursbank_Obsolete_FunctionsTest extends TestCase
 {

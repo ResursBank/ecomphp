@@ -40,9 +40,9 @@ if (file_exists("/etc/ecomphp.json")) {
 }
 
 /**
- * Class resursBankTest: Primary test client
+ * Class ResursBankTest
  */
-class ResursBankTest extends TestCase
+class ecomDeprecatedManual extends TestCase
 {
     private $failUrl;
     private $successUrl;
@@ -329,6 +329,8 @@ class ResursBankTest extends TestCase
         $usePhoneNumber     = "0101010101";
         $bookStatus         = null;
 
+        $bookId = null;
+
         if ( ! count($this->availableMethods) || empty($this->username)) {
             static::markTestSkipped('No payment methods are available');
         }
@@ -363,12 +365,10 @@ class ResursBankTest extends TestCase
         }
         if (isset($useMethodList['card']) && $setMethod == $useMethodList['card']) {
             $useGovId = $this->cardGovId;
-            //$this->rb->prepareCardData( $this->cardNumber, false );
             $this->rb->setCardData($this->cardNumber);
         }
         if (isset($useMethodList['card_new']) && $setMethod == $useMethodList['card_new']) {
             $useGovId = $this->cardGovId;
-            //$this->rb->prepareCardData( null, true );
             $this->rb->setCardData();
         }
         $bookData['paymentData']['waitForFraudControl'] = $this->waitForFraudControl;
@@ -379,9 +379,12 @@ class ResursBankTest extends TestCase
             'forceSigning' => $forceSigning
         );
 
-        if ($paymentServiceSet !== RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT) {
+        $this->rb->setMetaData('metaKeyTestTime', time());
+        $this->rb->setMetaData('metaKeyTestMicroTime', microtime(true));
+
+        if ($paymentServiceSet !== RESURS_FLOW_TYPES::RESURS_CHECKOUT) {
             $res = $this->rb->createPayment($setMethod, $bookData);
-            if ($paymentServiceSet == RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW) {
+            if ($paymentServiceSet == RESURS_FLOW_TYPES::HOSTED_FLOW) {
                 $domainInfo = $this->NETWORK->getUrlDomain($res);
                 if (preg_match("/^http/i", $domainInfo[1])) {
                     $hostedContent = $this->CURL->getBody($this->CURL->doGet($res));
@@ -390,7 +393,8 @@ class ResursBankTest extends TestCase
                 }
             }
         } else {
-            $res = $this->rb->createPayment($this->rb->getPreferredPaymentId(), $bookData);
+            $bookId = $this->rb->getPreferredPaymentId();
+            $res = $this->rb->createPayment($bookId, $bookData);
         }
 
         /*
@@ -400,11 +404,12 @@ class ResursBankTest extends TestCase
             $bookStatus = $res->bookPaymentStatus;
         }
 
-        if ($paymentServiceSet == RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT) {
+        if ($paymentServiceSet == RESURS_FLOW_TYPES::RESURS_CHECKOUT) {
             return $res;
         }
 
         if ($bookStatus == "SIGNING") {
+            $bookId = $res->paymentId;
             /* Pick up the signing url */
             /** @noinspection PhpUndefinedFieldInspection */
             $signUrl = $res->signingUrl;
@@ -436,8 +441,12 @@ class ResursBankTest extends TestCase
                 $getSuccessContent = $this->CURL->getParsed($getPostCurlObject);
             }
             if (isset($getSuccessContent->_GET->success)) {
+
+                // Make sure the test books the signed payment
+                $bookRes = $this->rb->bookSignedPayment($bookId);
+
                 /** @noinspection PhpUndefinedFieldInspection */
-                if ($getSuccessContent->_GET->success == "true") {
+                if ($getSuccessContent->_GET->success == "true" && (int)$bookRes->approvedAmount > 0) {
                     if ($signSuccess) {
                         return true;
                     } else {
@@ -738,7 +747,7 @@ class ResursBankTest extends TestCase
         if ($this->ignoreBookingTests) {
             static::markTestSkipped();
         }
-        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW);
+        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::HOSTED_FLOW);
         $bookResult = $this->doBookPayment($this->availableMethods['invoice_natural'], true, false, true);
         // Can't do bookings yet, since this is a forwarder. We would like to emulate browser clicking here, to complete the order.
         static::assertTrue(strlen($bookResult) > 1024);
@@ -1061,7 +1070,7 @@ class ResursBankTest extends TestCase
         if ($this->ignoreBookingTests) {
             static::markTestSkipped();
         }
-        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT);
+        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
         $newReferenceId = $this->rb->getPreferredPaymentId();
         $bookResult     = $this->doBookPayment($newReferenceId, true, false, true);
         if (is_string($bookResult) && preg_match("/iframe src/i", $bookResult)) {
@@ -1116,7 +1125,7 @@ class ResursBankTest extends TestCase
      */
     public function testCheckoutAsFromDocs()
     {
-        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT);
+        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
         $iframePaymentReference = $this->rb->getPreferredPaymentId(30, "CREATE-");
         $this->rb->addOrderLine(
             "HORSE",
@@ -1650,7 +1659,7 @@ class ResursBankTest extends TestCase
      */
     function testSetCustomerNatural()
     {
-        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT);
+        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RES);
         $ReturnedPayload = $this->rb->setBillingByGetAddress($this->govIdNatural);
         static::assertEquals($this->govIdNatural, $ReturnedPayload['customer']['governmentId']);
     }
@@ -1660,7 +1669,7 @@ class ResursBankTest extends TestCase
      */
     function testSetCustomerLegal()
     {
-        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT);
+        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
         $ReturnedPayload = $this->rb->setBillingByGetAddress($this->govIdLegalCivic, "LEGAL");
         static::assertTrue($ReturnedPayload['customer']['governmentId'] == $this->govIdLegalCivic && $ReturnedPayload['customer']['address']['fullName'] == $this->govIdLegalFullname);
     }
@@ -1759,7 +1768,7 @@ class ResursBankTest extends TestCase
     function testCreatePaymentPayloadSimplified()
     {
         try {
-            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW);
+            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
             $this->rb->setBillingByGetAddress("198305147715");
             //$this->rb->setBillingAddress("Anders Andersson", "Anders", "Andersson", "Hamngatan 2", null, "Ingestans", "12345", "SE");
             $this->rb->setCustomer("198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL");
@@ -1816,7 +1825,7 @@ class ResursBankTest extends TestCase
     function testCreatePaymentPayloadOwnPayLoadIpManipulation1()
     {
         try {
-            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW);
+            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
             $this->rb->setBillingByGetAddress("198305147715");
             //$this->rb->setBillingAddress("Anders Andersson", "Anders", "Andersson", "Hamngatan 2", null, "Ingestans", "12345", "SE");
             $this->rb->setCustomer("198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL");
@@ -1857,7 +1866,7 @@ class ResursBankTest extends TestCase
     function testCreatePaymentPayloadOwnPayLoadIpManipulation2()
     {
         try {
-            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW);
+            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
             $this->rb->setBillingByGetAddress("198305147715");
             //$this->rb->setBillingAddress("Anders Andersson", "Anders", "Andersson", "Hamngatan 2", null, "Ingestans", "12345", "SE");
             $this->rb->setCustomer("198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL");
@@ -1898,7 +1907,7 @@ class ResursBankTest extends TestCase
     function testCreatePaymentPayloadOwnPayLoadSpoofedIpFrozenWithFraudControl()
     {
         try {
-            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW);
+            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
             $this->rb->setBillingByGetAddress("198305147715");
             //$this->rb->setBillingAddress("Anders Andersson", "Anders", "Andersson", "Hamngatan 2", null, "Ingestans", "12345", "SE");
             $this->rb->setCustomer("198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL");
@@ -1942,7 +1951,7 @@ class ResursBankTest extends TestCase
     function testCreatePaymentPayloadForcedSigningSimplified()
     {
         try {
-            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW);
+            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
             $this->rb->setBillingByGetAddress("198305147715");
             $this->rb->setCustomer(null, "0808080808", "0707070707", "test@test.com", "NATURAL");
             $this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null,
@@ -1978,7 +1987,7 @@ class ResursBankTest extends TestCase
     {
         $signData = array();
         try {
-            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW);
+            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
             $this->rb->setBillingByGetAddress("198305147715");
             $this->rb->setCustomer(null, "0808080808", "0707070707", "test@test.com", "NATURAL");
             $this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null,
@@ -2021,7 +2030,7 @@ class ResursBankTest extends TestCase
     function testCreatePaymentPayloadForcedSigningReUseMockFailSimplified()
     {
         try {
-            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW);
+            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
             $this->rb->setBillingByGetAddress("198305147715");
             $this->rb->setCustomer(null, "0808080808", "0707070707", "test@test.com", "NATURAL");
             $this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null,
@@ -2061,7 +2070,7 @@ class ResursBankTest extends TestCase
 		try {
 			///// card_new
 
-			$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW );
+			$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::SIMPLIFIED_FLOW );
 			$this->rb->setBillingByGetAddress( "198305147715" );
 			$this->rb->setCustomer( null, "0808080808", "0707070707", "test@test.com", "NATURAL" );
 			$this->addRandomOrderLine( "Art " . rand( 1024, 2048 ), "Beskrivning " . rand( 2048, 4096 ), "0.80", 25, null, 10 );
@@ -2097,7 +2106,7 @@ class ResursBankTest extends TestCase
     function testCreatePaymentPayloadUseExecuteSimplified()
     {
         try {
-            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW);
+            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
             $this->rb->setBillingByGetAddress("198305147715");
             $this->rb->setCustomer(null, "0808080808", "0707070707", "test@test.com", "NATURAL");
             $this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null,
@@ -2131,7 +2140,7 @@ class ResursBankTest extends TestCase
     function testCreatePaymentPayloadUseExecuteResursCheckout()
     {
         try {
-            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT);
+            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
             $this->rb->setBillingByGetAddress("198305147715");
             $this->rb->setCustomer(null, "0808080808", "0707070707", "test@test.com", "NATURAL");
             $this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25,
@@ -2189,7 +2198,7 @@ class ResursBankTest extends TestCase
         $govId = '198305147715'
     ) {
         $Payment = null;
-        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW);
+        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
         $this->rb->setBillingByGetAddress($govId);
         $this->rb->setCustomer($govId, "0808080808", "0707070707", "test@test.com", "NATURAL");
         if ($orderLines > 0) {
@@ -2281,7 +2290,7 @@ class ResursBankTest extends TestCase
     {
         $paymentId = $this->getPaymentIdFromOrderByClientChoice();
         $this->rb->annulPayment($paymentId);
-        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT);
+        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
         $this->rb->addOrderLine("myExtraOrderLine-1", "One orderline added with additionalDebitOfPayment", 100, 25);
         $this->rb->addOrderLine("myExtraOrderLine-2", "One orderline added with additionalDebitOfPayment", 200, 25);
         static::assertTrue($this->rb->setAdditionalDebitOfPayment($paymentId));
@@ -2329,6 +2338,7 @@ class ResursBankTest extends TestCase
         } catch (\Exception $e) {
             // Exceptions that comes from this part of the system does not seem to generate any exception code.
             static::assertTrue($e->getCode() == 500 || $e->getCode() == \RESURS_EXCEPTIONS::UNKOWN_SOAP_EXCEPTION_CODE_ZERO);
+
             return;
         }
         static::fail("Test " . __FUNCTION__ . " got no proper assertion. This test SHOULD receive an exception from ecommerce (since negative values should not be allowed) but that never occured.");
@@ -3150,7 +3160,7 @@ class ResursBankTest extends TestCase
      */
     public function testHostedCountryCode()
     {
-        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW);
+        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::HOSTED_FLOW);
         $this->rb->setBillingAddress(
             "Given Name",
             "Given",
@@ -3183,7 +3193,7 @@ class ResursBankTest extends TestCase
         try {
             $this->rb->paymentFinalize($paymentId);
             static::assertTrue($this->rb->getOrderStatusByPayment($paymentId,
-                    RESURS_CALLBACK_TYPES::CALLBACK_TYPE_FINALIZATION) === RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED);
+                    RESURS_CALLBACK_TYPES::FINALIZATION) === RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED);
         } catch (\Exception $e) {
             if ($e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID) {
                 if ( ! defined('SKIP_TEST')) {
@@ -3207,7 +3217,7 @@ class ResursBankTest extends TestCase
         $paymentId = $this->getPaymentIdFromOrderByClientChoice(1, 1, 1000, 2000);
         //$this->rb->paymentFinalize( $paymentId );
         static::assertTrue($this->rb->getOrderStatusByPayment($paymentId,
-                RESURS_CALLBACK_TYPES::CALLBACK_TYPE_FINALIZATION) === RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED);
+                RESURS_CALLBACK_TYPES::FINALIZATION) === RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED);
     }
 
     /**
@@ -3222,7 +3232,7 @@ class ResursBankTest extends TestCase
         try {
             $this->rb->paymentAnnul($paymentId);
             static::assertTrue($this->rb->getOrderStatusByPayment($paymentId,
-                    RESURS_CALLBACK_TYPES::CALLBACK_TYPE_ANNULMENT) === RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_ANNULLED);
+                    RESURS_CALLBACK_TYPES::ANNULMENT) === RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_ANNULLED);
         } catch (\Exception $e) {
             if ($e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID) {
                 if ( ! defined('SKIP_TEST')) {
@@ -3243,7 +3253,7 @@ class ResursBankTest extends TestCase
         // Unfreeze after 10m
         $paymentId = $this->getPaymentIdFromOrderByClientChoice(1, 1, 1000, 2000, '198101010000');
         static::assertTrue($this->rb->getOrderStatusByPayment($paymentId,
-                RESURS_CALLBACK_TYPES::CALLBACK_TYPE_BOOKED) == RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING);
+                RESURS_CALLBACK_TYPES::BOOKED) == RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING);
     }
 
     /**
@@ -3253,7 +3263,7 @@ class ResursBankTest extends TestCase
     {
         $paymentId = $this->getPaymentIdFromOrderByClientChoice(1, 1, 1000, 2000, '198305147715');
         static::assertTrue($this->rb->getOrderStatusByPayment($paymentId,
-                RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UNFREEZE) == RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PROCESSING);
+                RESURS_CALLBACK_TYPES::UNFREEZE) == RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PROCESSING);
     }
 
     /**
@@ -3263,7 +3273,7 @@ class ResursBankTest extends TestCase
     {
         $paymentId = $this->getPaymentIdFromOrderByClientChoice(1, 1, 1000, 2000, '198305147715');
         static::assertTrue($this->rb->getOrderStatusByPayment($paymentId,
-                RESURS_CALLBACK_TYPES::CALLBACK_TYPE_AUTOMATIC_FRAUD_CONTROL,
+                RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL,
                 'THAWED') == RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PROCESSING);
     }
 
@@ -3274,7 +3284,7 @@ class ResursBankTest extends TestCase
     {
         $paymentId = $this->getPaymentIdFromOrderByClientChoice(1, 1, 1000, 2000, '198209123705');
         static::assertTrue($this->rb->getOrderStatusByPayment($paymentId,
-                RESURS_CALLBACK_TYPES::CALLBACK_TYPE_AUTOMATIC_FRAUD_CONTROL,
+                RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL,
                 'FROZEN') == RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING);
     }
 
@@ -3298,7 +3308,7 @@ class ResursBankTest extends TestCase
      */
     public function testHostedThreeFlags()
     {
-        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW);
+        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::HOSTED_FLOW);
         $this->rb->setBillingAddress(
             "Given Name",
             "Given",
@@ -3325,7 +3335,7 @@ class ResursBankTest extends TestCase
      */
     public function testSimplifiedThreeFlags()
     {
-        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW);
+        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
         $this->rb->setBillingAddress(
             "Given Name",
             "Given",

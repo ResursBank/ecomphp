@@ -25,6 +25,7 @@ use Resursbank\RBEcomPHP\MODULE_CURL;
 use Resursbank\RBEcomPHP\MODULE_IO;
 use Resursbank\RBEcomPHP\RESURS_TEST_BRIDGE;
 use Resursbank\RBEcomPHP\ResursBank;
+use Resursbank\RBEcomPHP\RESURS_CALLBACK_TYPES;
 
 // Global test configuration section starts here
 require_once(__DIR__ . "/classes/ResursBankTestClass.php");

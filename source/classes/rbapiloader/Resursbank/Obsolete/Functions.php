@@ -436,7 +436,7 @@ class Resursbank_Obsolete_Functions
     private $configurationCacheTimeout = 3600;
 
 
-    
+
 
 
 
@@ -1141,7 +1141,7 @@ class Resursbank_Obsolete_Functions
             return $CurlLibResponse;
         }
     }
-    
+
     /////////////////////////// OUTDATED SSL METHODS
 
     /**
@@ -1941,4 +1941,3 @@ class Resursbank_Obsolete_Functions
 
 
 }
-
