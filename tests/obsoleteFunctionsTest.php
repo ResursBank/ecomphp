@@ -9,7 +9,7 @@ if (file_exists(__DIR__ . "/../vendor/autoload.php")) {
 ini_set('memory_limit', -1);
 use PHPUnit\Framework\TestCase;
 
-class Resursbank_Obsolete_FunctionsTest extends PHPUnit_Framework_TestCase
+class Resursbank_Obsolete_FunctionsTest extends TestCase
 {
     private $ECOM_BASE;
 
