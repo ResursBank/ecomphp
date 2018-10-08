@@ -1,7 +1,5 @@
 <?php
 
-use Resursbank\RBEcomPHP\Resursbank_Obsolete_Functions;
-
 if (file_exists(__DIR__ . "/../vendor/autoload.php")) {
     require_once(__DIR__ . '/../vendor/autoload.php');
 } else {
