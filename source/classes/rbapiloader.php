@@ -7,7 +7,7 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.1
- * @version 1.1.39
+ * @version 1.1.40
  * @deprecated Maintenance version only - Use composer based package v1.3 or higher if possible
  * @link https://test.resurs.com/docs/x/BACt Migration from 1.0/1.1 to 1.3 documentation
  * @link https://test.resurs.com/docs/x/TYNM Get started with EComPHP
@@ -58,7 +58,7 @@ if (!defined('ECOMPHP_VERSION')) {
     define('ECOMPHP_VERSION', '1.1.40');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20180921');
+    define('ECOMPHP_MODIFY_DATE', '20181005');
 }
 
 /**
@@ -163,6 +163,9 @@ class ResursBank
     private $hasServicesInitialization = false;
     /** @var bool Future functionality to backtrace customer ip address to something else than REMOTE_ADDR (if proxified) */
     private $preferCustomerProxy = false;
+
+    /** @var bool Indicates if there was deprecated calls in progress during the use of ECom */
+    private $hasDeprecatedCall = false;
 
     ///// Communication
     /**
@@ -6185,14 +6188,8 @@ class ResursBank
         return false;
     }
 
-
-    ///// FROM THS SECTION RESIDES ONLY METHOD CALLS THAT'S MOVED TO ANOTHER CLASS
-
     /**
-     * Unused methods are called via the Resursbank_Obsolete_Functions class.
-     *
-     * WARNING: [Deprecated] Methods are used as is and is unsupported!
-     *
+     * v1.1 method compatibility
      *
      * @param null $func
      * @param array $args
@@ -6201,13 +6198,23 @@ class ResursBank
      */
     public function __call($func = null, $args = array())
     {
-        $obsoleteCaller = new Resursbank_Obsolete_Functions($this);
-
-        if (method_exists($obsoleteCaller, $func)) {
-            return call_user_func_array(array($obsoleteCaller, $func), $args);
-        } else {
-            throw new \Exception('Method ('.$func.') not found in ECom, neither in the current release nor in the deprecation library', 400);
+        if (class_exists(
+                'Resursbank_Obsolete_Functions',
+                ECOM_CLASS_EXISTS_AUTOLOAD) ||
+            class_exists(
+                '\Resursbank\RBEcomPHP\Resursbank_Obsolete_Functions', ECOM_CLASS_EXISTS_AUTOLOAD
+            )
+        ) {
+            $obsoleteCaller = new Resursbank_Obsolete_Functions($this);
+            if (method_exists($obsoleteCaller, $func)) {
+                $this->hasDeprecatedCall = true;
+                return call_user_func_array(array($obsoleteCaller, $func), $args);
+            }
         }
-
+        throw new \Exception(
+            'Method (' .
+            $func .
+            ') not found in ECom Library, neither in the current release nor in the deprecation library',
+            501); // 501 NOT IMPLEMENTED
     }
 }

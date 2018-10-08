@@ -8,6 +8,9 @@ if (file_exists(__DIR__ . "/../vendor/autoload.php")) {
     require_once('../source/classes/rbapiloader.php');
 }
 
+ini_set('memory_limit', -1);
+use PHPUnit\Framework\TestCase;
+
 class Resursbank_Obsolete_FunctionsTest extends PHPUnit_Framework_TestCase
 {
     private $ECOM_BASE;
@@ -33,7 +36,7 @@ class Resursbank_Obsolete_FunctionsTest extends PHPUnit_Framework_TestCase
         try {
             $this->ECOM_BASE->fail_here();
         } catch (Exception $e) {
-            static::assertTrue($e->getCode() === 400);
+            static::assertTrue($e->getCode() === 501);
         }
     }
 
