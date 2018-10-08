@@ -8,7 +8,7 @@
  * @author  Resurs Bank Ecommerce
  *          /home/thorne/dev/Resurs/ecomphp/1.1/source/classes/rbapiloader.php<ecommerce.support@resurs.se>
  * @branch  1.3
- * @version 1.3.12
+ * @version 1.3.13
  * @link    https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link    https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @license Apache License
@@ -2840,6 +2840,32 @@ class ResursBank
         }
 
         return false;
+    }
+
+    /**
+     * Adds metaData to a payment (before creation)
+     *
+     * Note that addMetaData adds metaData to a payment AFTER creation. This method occurs DURING a bookPayment
+     * rather than after it has been booked.
+     *
+     * @param $key
+     * @param $value
+     * @since 1.0.40
+     * @since 1.1.40
+     * @since 1.3.13
+     */
+    public function setMetaData($key, $value)
+    {
+        if (!isset($this->Payload['metaData'])) {
+            $this->Payload['metaData'] = array();
+        }
+        if (!empty($key)) {
+            if ($this->getPreferredPaymentFlowService() !== RESURS_FLOW_TYPES::HOSTED_FLOW) {
+                $this->Payload['metaData'][] = array('key' => $key, 'value' => $value);
+            } else {
+                $this->Payload['metaData'][] = array($key => $value);
+            }
+        }
     }
 
     /**
