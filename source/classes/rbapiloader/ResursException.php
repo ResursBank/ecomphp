@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Class ResursExceptions Exception handling for EComPHP
+ * Class RESURS_EXCEPTIONS
  */
 abstract class RESURS_EXCEPTIONS
 {
@@ -90,6 +90,11 @@ abstract class RESURS_EXCEPTIONS
     const CREATEPAYMENT_TOO_FAST = 7009;
 }
 
+
+/**
+ * Class RESURS_EXCEPTION_CLASS
+ * @deprecated Not in use
+ */
 class RESURS_EXCEPTION_CLASS extends \Exception
 {
     private $fromFunction = null;
