@@ -46,9 +46,9 @@ if (file_exists("/etc/ecomphp.json")) {
 }
 
 /**
- * Class resursBankTest: Primary test client
+ * Class ResursBankTest
  */
-class ResursBankTest extends TestCase
+class ecomDeprecatedManual extends TestCase
 {
     private $failUrl;
     private $successUrl;
