@@ -306,7 +306,8 @@ class resursBankTest extends TestCase
         $happyCustomer = $this->TEST->ECOM->getAddress($this->flowHappyCustomer);
         $this->TEST->share('happyCustomer', $happyCustomer, false);
         if (!$noAssert) {
-            static::assertContains($this->flowHappyCustomerName, $happyCustomer->fullName);
+            // Call to undefined function mb_strpos() with assertContains in PHP 7.3
+            static::assertTrue(preg_match('/'.$this->flowHappyCustomerName.'/i', $happyCustomer->fullName)?true:false);
         }
 
         return $happyCustomer;
