@@ -56,7 +56,7 @@ use TorneLIB\NETCURL_POST_DATATYPES;
 
 // Globals starts here
 if (!defined('ECOMPHP_VERSION')) {
-    define('ECOMPHP_VERSION', '1.3.14');
+    define('ECOMPHP_VERSION', '1.3.13');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
     define('ECOMPHP_MODIFY_DATE', '20181011');
