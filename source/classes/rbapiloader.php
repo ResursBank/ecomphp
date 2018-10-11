@@ -56,7 +56,7 @@ if (!defined('ECOMPHP_VERSION')) {
     define('ECOMPHP_VERSION', '1.0.40');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20181008');
+    define('ECOMPHP_MODIFY_DATE', '20181011');
 }
 
 /**
@@ -390,6 +390,17 @@ class ResursBank
     /** @var null When using clearOcShop(), the Resurs Checkout tailing script (resizer) will be stored here */
     private $ocShopScript = null;
 
+    /** @var array Payment method types (from getPaymentMethods) that probably is automatically debiting as soon as transfers been made */
+    private $autoDebitableTypes = array();
+
+    /** @var bool Discover payments that probably has been automatically debited - default is active */
+    private $autoDebitableTypesActive = true;
+
+    /**
+     * When instant finalization is used, we normally cache information about the chosen payment method to not overload stuff with calls
+     * @var object
+     */
+    private $autoDebitablePaymentMethod;
 
     /////////// INITIALIZERS
 
@@ -424,6 +435,11 @@ class ResursBank
         if ($this->hasSoap()) {
             $this->SOAP_AVAILABLE = true;
         }
+
+        // We automatically add all methods that for sure will FINALIZE payments before shipping has been made.
+        // As of oct 2018 it is only SWISH that is known for this behaviour. This may change in future, however
+        // this can manually be pushed into ECom by using the setAutoDebitableType().
+        $this->setAutoDebitableType('SWISH');
 
         $this->checkoutShopUrl = $this->hasHttps(true) . "://" . $theHost;
         $this->soapOptions['cache_wsdl'] = (defined('WSDL_CACHE_BOTH') ? WSDL_CACHE_BOTH : true);
@@ -2713,22 +2729,30 @@ class ResursBank
     }
 
     /**
-     * Fetch one specific payment method only, from Resurs Bank
+     * Fetch one specific payment method only, from Resurs Bank.
      *
-     * @param string $specificMethodName
+     * As of v1.3.41 this method also accept getPayment()-objects as long as it contains a totalAmount and the used
+     * paymentMethodId. In that case, it will extract the name from the payment and use it to fetch the used payment
+     * method.
      *
+     * @param string $specificMethodId Payment method id or a getPayment()-object
      * @return array If not found, array will be empty
      * @throws \Exception
      * @since 1.0.0
      * @since 1.1.0
+     * @since 1.3.0
      */
-    public function getPaymentMethodSpecific($specificMethodName = '')
+    public function getPaymentMethodSpecific($specificMethodId = '')
     {
+        if (is_object($specificMethodId) && isset($specificMethodId->totalAmount) && isset($specificMethodId->paymentMethodId)) {
+            $specificMethodId = $specificMethodId->paymentMethodId;
+        }
+
         $methods = $this->getPaymentMethods(array(), true);
         $methodArray = array();
         if (is_array($methods)) {
             foreach ($methods as $objectMethod) {
-                if (isset($objectMethod->id) && strtolower($objectMethod->id) === strtolower($specificMethodName)) {
+                if (isset($objectMethod->id) && strtolower($objectMethod->id) === strtolower($specificMethodId)) {
                     $methodArray = $objectMethod;
                 }
             }
@@ -6053,35 +6077,50 @@ class ResursBank
 
     /**
      * Generic orderstatus content information that checks payment statuses instead of callback input and decides what
-     * happened to the payment
+     * has happened to the payment.
+     *
+     * Second argument can be passed (if necessary) to this method as a performance saver (= to avoid making an extra
+     * getPaymentMethods during this process when checking instant finalizations).
      *
      * @param array $paymentData
-     *
+     * @param null $paymentMethodObject A single getPaymentMethods() payment object in stdClass-format should pass here (cached)
      * @return int
      * @throws \Exception
      * @since 1.0.26
      * @since 1.1.26
      * @since 1.2.0
      */
-    private function getOrderStatusByPaymentStatuses($paymentData = array())
+    private function getOrderStatusByPaymentStatuses($paymentData = array(), $paymentMethodObject = null)
     {
+        $return = RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET;
+
         /** @noinspection PhpUndefinedFieldInspection */
         $resursTotalAmount = $paymentData->totalAmount;
         if ($this->canDebit($paymentData)) {
-            return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PROCESSING;
+            $return = RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PROCESSING;
         }
+
         if (!$this->canDebit($paymentData) && $this->getIsDebited($paymentData) && $resursTotalAmount > 0) {
-            return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED;
+            // If payment is flagged debitable, also make sure that the "instant finalization"-flag is present on this
+            // payment if necessary, so that we can indicate for developers that is has both been debited and probably
+            // instantly (based on the payment method).
+            $return = (RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED |
+                $this->getInstantFinalizationStatus($paymentData, $paymentMethodObject)
+            );
         }
+
         if ($this->getIsAnnulled($paymentData) && !$this->getIsCredited($paymentData) && $resursTotalAmount == 0) {
-            return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_ANNULLED; // ANNULLED / CANCELLED
+            // ANNULLED or CANCELLED is the same for us
+            $return = RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_ANNULLED;
         }
+
         if ($this->getIsCredited($paymentData) && $resursTotalAmount == 0) {
-            return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_CREDITED; // CREDITED / REFUND
+            // CREDITED or REFUND is the same for us
+            $return = RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_CREDITED;
         }
 
         // Return generic
-        return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET;
+        return $return;
     }
 
     /**
@@ -6090,8 +6129,9 @@ class ResursBank
      * @param string $paymentIdOrPaymentObject
      * @param int $byCallbackEvent If this variable is set, controls are also being made, compared to what happened on a callback event
      * @param array|string $callbackEventDataArrayOrString On for example AUTOMATIC_FRAUD_CONTROL, a result based on THAWED or FROZEN are received, which you should add here
+     * @param null $paymentMethodObject
      * @return int
-     * @throws \Exception
+     * @throws Exception
      * @since 1.0.26
      * @since 1.1.26
      * @since 1.2.0
@@ -6099,7 +6139,8 @@ class ResursBank
     public function getOrderStatusByPayment(
         $paymentIdOrPaymentObject = '',
         $byCallbackEvent = RESURS_CALLBACK_TYPES::NOT_SET,
-        $callbackEventDataArrayOrString = array()
+        $callbackEventDataArrayOrString = array(),
+        $paymentMethodObject = null
     ) {
 
         if (is_string($paymentIdOrPaymentObject)) {
@@ -6138,7 +6179,7 @@ class ResursBank
                 return $this->getOrderStatusByPaymentStatuses($paymentData);
                 break;
             case RESURS_CALLBACK_TYPES::FINALIZATION:
-                return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED;
+                return (RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED | $this->getInstantFinalizationStatus($paymentData, $paymentMethodObject));
             case RESURS_CALLBACK_TYPES::UNFREEZE:
                 return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PROCESSING;
             case RESURS_CALLBACK_TYPES::UPDATE:
@@ -6148,7 +6189,7 @@ class ResursBank
                 break;
         }
 
-        // case RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UPDATE
+        // If nothing was hit in the above check, use the suggested pre analyze status.
         $returnThisAfterAll = $preAnalyzePayment;
 
         return $returnThisAfterAll;
@@ -6170,7 +6211,10 @@ class ResursBank
                 return "pending";
             case RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PROCESSING;
                 return "processing";
-            case RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED;
+            case $returnCode & RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED | RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_AUTOMATICALLY_DEBITED;
+                // Return completed by default here, regardless of what actually has happened to the order
+                // to maintain compatibility. If the payment has been finalized instantly, it is not here you'd
+                // like to use another status. It's in your own code.
                 return "completed";
             case RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_ANNULLED;
                 return "annul";
@@ -6211,6 +6255,131 @@ class ResursBank
 
         return false;
     }
+
+    /**
+     * Get, if exists, the status code for automatically debited on matching payments.
+     * Can be used "out of the box" if you know how.
+     *
+     * This method only returns the current status code for automatically finalized payments, if the payment method
+     * is matched with an "instant finalization"-type (like SWISH). If not, PAYMENT_STATUS_COULD_NOT_BE_SET (0) will
+     * be used, which also (if you so wish) matches with false. If this method returns false, you might consider
+     * the payment not instantly finalized.
+     *
+     * To save performance (= to avoid making getPaymentMethods during this process), you can pass over a cache stored
+     * payment method object to this method (it has to contain information about type and specificType). For testing
+     * purposes (or production environments where payment methods are stored locally) you might find this useful.
+     *
+     * @param array $paymentData
+     * @param null $paymentMethodObject A single getPaymentMethods() payment object in stdClass-format should pass here (cached)
+     * @return int
+     * @throws Exception
+     * @since 1.0.41
+     * @since 1.1.41
+     * @since 1.3.14
+     */
+    public function getInstantFinalizationStatus($paymentData=array(), $paymentMethodObject = null) {
+        $return = RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET;
+
+        // Make this cached on reruns so we don't have to fetch information twice if there's chained procedures.
+        if (!is_object($this->autoDebitablePaymentMethod)) {
+            if (is_object($paymentMethodObject)) {
+                $this->autoDebitablePaymentMethod = $paymentMethodObject;
+            }
+            $this->autoDebitablePaymentMethod = $this->getPaymentMethodSpecific($paymentData);
+        }
+
+        // Check if feature is enabled, the type contains PAYMENT_PROVIDER and the specificType matches a payment
+        // provider that tend to finalize payments instantly after orders has been created.
+        if ($this->getAutoDebitableTypeState() && $this->autoDebitablePaymentMethod->type === 'PAYMENT_PROVIDER' && $this->isAutoDebitableType($this->autoDebitablePaymentMethod->specificType)) {
+            $return = RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_AUTOMATICALLY_DEBITED;
+        }
+
+        return $return;
+    }
+
+    /**
+     * Prepare automatically debitable payment method types (Internal function to set up destroyed (if) arrays for types
+     * @since 1.0.41
+     * @since 1.1.41
+     * @since 1.3.14
+     */
+    private function prepareAutoDebitableTypes() {
+        if (!is_array($this->autoDebitableTypes)) {
+            $this->autoDebitableTypes = array();
+        }
+    }
+
+    /**
+     * Returns true if the payment method type tend to auto debit themselves.
+     *
+     * @param string $type
+     * @return bool
+     * @since 1.0.41
+     * @since 1.1.41
+     * @since 1.3.14
+     */
+    public function isAutoDebitableType($type = '') {
+        $return = false;
+
+        $this->prepareAutoDebitableTypes();
+        if (in_array($type, $this->autoDebitableTypes)) {
+            return true;
+        }
+
+        return $return;
+    }
+
+    /**
+     * Add new payment method type that should consider automatically debited before shipping
+     *
+     * @param string $type Example SWISH
+     * @since 1.0.41
+     * @since 1.1.41
+     * @since 1.3.14
+     */
+    public function setAutoDebitableType($type='') {
+        $this->prepareAutoDebitableTypes();
+        if (!empty($type) && !in_array($type, $this->autoDebitableTypes)) {
+            $this->autoDebitableTypes[] = $type;
+        }
+    }
+
+    /**
+     * Get the current list of auto debitable types
+     *
+     * @return array
+     * @since 1.0.41
+     * @since 1.1.41
+     * @since 1.3.14
+     */
+    public function getAutoDebitableTypes() {
+        $this->prepareAutoDebitableTypes();
+        return $this->autoDebitableTypes;
+    }
+
+    /**
+     * Returns true if the auto discovery of automatically debited payments is active
+     * @return bool
+     * @since 1.0.41
+     * @since 1.1.41
+     * @since 1.3.14
+     */
+    public function getAutoDebitableTypeState() {
+        return $this->autoDebitableTypesActive;
+    }
+
+    /**
+     * Activates or disables the auto debited payments discovery. Default enables this function.
+     *
+     * @param bool $activation
+     * @since 1.0.41
+     * @since 1.1.41
+     * @since 1.3.14
+     */
+    public function setAutoDebitableTypes($activation = true) {
+        $this->autoDebitableTypesActive = $activation;
+    }
+
 
     /**
      * v1.1 method compatibility
