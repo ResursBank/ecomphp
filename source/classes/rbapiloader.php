@@ -84,28 +84,16 @@ class ResursBank
     ////////// Public variables
 
     ///// Debugging, helpers and development
-    /**
-     * Debug mode on or off
-     * @var bool
-     */
+    /** @var bool Activation of debug mode */
     private $debug = false;
 
     ///// Environment and API
-    /**
-     * Current targeted environment - default is always test, as we don't like that mistakes are going production
-     * @var int
-     */
+    /** @var int Current targeted environment - default is always test, as we don't like that mistakes are going production */
     public $current_environment = self::ENVIRONMENT_TEST;
-    /**
-     * The username used with the webservices
-     * @var string
-     */
-    public $username;
-    /**
-     * The password used with the webservices
-     * @var string
-     */
-    public $password;
+    /** @var null The username used with the webservices */
+    public $username = null;
+    /** @var null The password used with the webservices */
+    public $password = null;
 
     /// Web Services (WSDL) available in case of needs to call services directly
 
@@ -117,42 +105,23 @@ class ResursBank
     private $wsdlServices = array();
 
     ///// Shop related
-    /**
-     * Always append amount data and ending urls (cost examples)
-     * @var bool
-     */
+    /** @var bool Always append amount data and ending urls (cost examples) */
     public $alwaysAppendPriceLast = false;
-    /**
-     * Customer id used at afterShopFlow
-     * @var string
-     */
+    /** @var bool If set to true, EComPHP will ignore totalVatAmounts in specrows, and recalculate the rows by itself */
+    public $bookPaymentInternalCalculate = true;
+    /** @var int How many decimals to use with round */
+    public $bookPaymentRoundDecimals = 2;
+    /** @var string Customer id used at afterShopFlow */
     private $customerId = "";
-    /**
-     * If the merchant has PSP methods available in the simplified and hosted flow where it is normally not supported,
-     * this should be set to true via setSimplifiedPsp(true)
-     * @var bool
-     */
+    /** @var bool If the merchant has PSP methods available in the simplified and hosted flow where it is normally not supported, this should be set to true via setSimplifiedPsp(true) */
     private $paymentMethodsHasPsp = false;
-    /**
-     * If the strict control of payment methods vs PSP is set, we will never show any payment method that is based on
-     * PAYMENT_PROVIDER - this might be good to use in mixed environments
-     * @var bool
-     */
+    /** @var bool If the strict control of payment methods vs PSP is set, we will never show any payment method that is based on PAYMENT_PROVIDER - this might be good to use in mixed environments */
     private $paymentMethodsIsStrictPsp = false;
-    /**
-     * Setting this to true should help developers have their payment method ids returned in a consistent format
-     * @var bool
-     */
+    /** @var bool Setting this to true should help developers have their payment method ids returned in a consistent format */
     private $paymentMethodIdSanitizing = false;
-    /**
-     * This setting is true if a flow is about to run through a PSP method
-     * @var bool
-     */
+    /** @var bool This setting is true if a flow is about to run through a PSP method */
     private $paymentMethodIsPsp = false;
-    /**
-     * Defines if there is a SoapClient available
-     * @var bool
-     */
+    /** @var bool Defines if there is a SoapClient available */
     private $SOAP_AVAILABLE = false;
 
     /**
@@ -165,78 +134,38 @@ class ResursBank
      */
     private $desiredPaymentMethod;
 
-    /**
-     * Enable the possibility to push over User-Agent from customer into header (debugging related)
-     * @var bool
-     */
+    /** @var bool Enable the possibility to push over User-Agent from customer into header (debugging related) */
     private $customerUserAgentPush = false;
 
     ////////// Private variables
     ///// Client Specific Settings
-    /**
-     * The version of this gateway
-     * @var string
-     */
+    /** @var string The version of this gateway */
     private $version = ECOMPHP_VERSION;
-    /**
-     * Identify current version release
-     * @var string
-     */
+    /** @var string Identify current version release (as long as we are located in v1.0.0beta this is necessary */
     private $lastUpdate = ECOMPHP_MODIFY_DATE;
-    /**
-     * EComPHP GIT Repo URL
-     * @var string
-     */
+    /** @var string URL to git storage */
     private $gitUrl = "https://bitbucket.org/resursbankplugins/resurs-ecomphp";
-    /**
-     * @var string
-     */
+    /** @var string This. */
     private $clientName = "EComPHP";
-    /**
-     * Replacing $clientName on usage of setClientName
-     * @var string
-     */
+    /** @var string Replacing $clientName on usage of setClientNAme */
     private $realClientName = "EComPHP";
 
-    /**
-     * $metaDataHashEnabled When enabled, ECom uses Resurs metadata to add a sha1-encoded hash string,
-     * based on parts of the payload to secure the data transport (unfinished)
-     * @var bool
-     */
+    /** @var bool $metaDataHashEnabled When enabled, ECom uses Resurs metadata to add a sha1-encoded hash string, based on parts of the payload to secure the data transport */
     private $metaDataHashEnabled = false;
-    /**
-     * $metaDataHashEncrypted When enabled, ECom will try to pack and encrypt metadata strings instead of
-     * hashing it (unfinished)
-     * @var bool
-     */
+    /** @var bool $metaDataHashEncrypted When enabled, ECom will try to pack and encrypt metadata strings instead of hashing it */
     private $metaDataHashEncrypted = false;
-    /**
-     * Encryption AES IV
-     * @var string
-     */
-    private $metaDataIv;
-    /**
-     * Encryption AES Key
-     * @var null
-     */
-    private $metaDataKey;
+    /** @var string $metaDataIv For encryption */
+    private $metaDataIv = null;
+    /** @var string $metaDataKey For encryption */
+    private $metaDataKey = null;
 
     ///// Package related
-    /**
-     * Has the necessary services been initialized yet?
-     * @var bool
-     */
+    /** @var bool Internal "handshake" control that defines if the module has been initiated or not */
     private $hasServicesInitialization = false;
-    /**
-     * Future functionality to backtrace customer ip address to something else than REMOTE_ADDR (if proxified)
-     * @var bool
-     */
+    /** @var bool Future functionality to backtrace customer ip address to something else than REMOTE_ADDR (if proxified) */
     private $preferCustomerProxy = false;
 
-    /**
-     * Indicates if there was deprecated calls in progress during the use of ECom
-     * @var bool
-     */
+    /** @var bool Indicates if there was deprecated calls in progress during the use of ECom */
     private $hasDeprecatedCall = false;
 
     ///// Communication
@@ -248,10 +177,6 @@ class ResursBank
      * @since 1.1.1
      */
     private $CURL;
-    /**
-     * Handles created during in one http call are collected here
-     * @var array
-     */
     private $CURL_HANDLE_COLLECTOR = array();
     /**
      * Info and statistics from the CURL-client
@@ -260,30 +185,24 @@ class ResursBank
      */
     private $curlStats = array();
     /**
-     * Class for handling Network related checks
-     * @var MODULE_NETWORK
+     * @var MODULE_NETWORK Class for handling Network related checks
      * @since 1.0.1
      * @since 1.1.1
      */
     private $NETWORK;
     /**
-     * Another way to handle bitmasks (might be deprecated in future releases)
-     * @var MODULE_NETBITS
+     * @var MODULE_NETBITS Class for handling bitmasks
      */
     private $BIT;
     /**
-     * Class for handling data encoding/encryption
-     * @var MODULE_CRYPTO
+     * @var MODULE_CRYPTO Class for handling data encoding/encryption
      * @since 1.0.13
      * @since 1.1.13
      * @since 1.2.0
      */
     private $T_CRYPTO;
 
-    /**
-     * Deprecated flow class (for forms etc)
-     * @var RESURS_DEPRECATED_FLOW
-     */
+    /** @var RESURS_DEPRECATED_FLOW $E_DEPRECATED */
     private $E_DEPRECATED;
 
     /**
@@ -295,7 +214,6 @@ class ResursBank
      */
     private $Payload = array();
     /**
-     * Historical payload collection
      * @var array
      * @since 1.0.31
      * @since 1.1.31
@@ -304,7 +222,9 @@ class ResursBank
      */
     private $PayloadHistory = array();
     /**
-     * If there is a chosen payment method, the information about it (received from Resurs Ecommerce) will be stored here
+     * If there is a chosen payment method, the information about it (received from Resurs Ecommerce) will be stored
+     * here
+     *
      * @var array $PaymentMethod
      * @since 1.0.13
      * @since 1.1.13
@@ -313,6 +233,7 @@ class ResursBank
     private $PaymentMethod;
     /**
      * Payment spec (orderlines)
+     *
      * @var array
      * @since 1.0.2
      * @since 1.1.2
@@ -320,97 +241,42 @@ class ResursBank
     private $SpecLines = array();
 
     /// Environment URLs
-    /**
-     * Chosen environment
-     * @var string
-     */
-    private $environment;
-    /**
-     * Default test URL
-     * @var string
-     */
+    /** @var null The chosen environment */
+    private $environment = null;
+    /** @var string Default URL to test environment */
     private $env_test = "https://test.resurs.com/ecommerce-test/ws/V4/";
-    /**
-     * Default production URL
-     * @var string
-     */
+    /** @var string Default URL to production environment */
     private $env_prod = "https://ecommerce.resurs.com/ws/V4/";
-    /**
-     * Default test URL for hosted flow
-     * @var string
-     */
+    /** @var string Default URL to hostedflow test */
     private $env_hosted_test = "https://test.resurs.com/ecommerce-test/hostedflow/back-channel";
-    /**
-     * Default production URL for hosted flow
-     * @var string
-     */
+    /** @var string Default URL to hosted flow production */
     private $env_hosted_prod = "https://ecommerce-hosted.resurs.com/back-channel";
-    /**
-     * Default test URL for Resurs Checkout
-     * @var string
-     */
+    /** @var string Default URL to omnicheckout test */
     private $env_omni_test = "https://omnitest.resurs.com";
-    /**
-     * Default production URL for Resurs Checkout
-     * @var string
-     */
+    /** @var string Default URL to omnicheckout production */
     private $env_omni_prod = "https://checkout.resurs.com";
-    /**
-     * Default test URL for Resurs Checkout POS
-     * @var string
-     */
+    /** @var string Default URL to omnicheckout test */
     private $env_omni_pos_test = "https://postest.resurs.com";
-    /**
-     * Default production URL for Resurs Checkout POS
-     * @var string
-     */
+    /** @var string Default URL to omnicheckout production */
     private $env_omni_pos_prod = "https://poscheckout.resurs.com";
-    /**
-     * Defines if environment will point at Resurs Checkout POS or not and in that case return the URL for the POS.
-     * Set up with setPos() and retrieve the state with getPos()
-     * @var bool
-     */
+    /** @var bool Defined if the environment will point at Resurs Checkout POS */
     private $env_omni_pos = false;
-    /**
-     * Country of choice
-     * @var
-     */
+    /** @var string Country of choice */
     private $envCountry;
-    /**
-     * ShopUrl to use with Resurs Checkout
-     * @var string
-     */
+    /** @var string ShopUrl to use with the checkout */
     private $checkoutShopUrl = "";
-    /**
-     * Set to true via setValidateCheckoutShopUrl() if you require validation of a proper shopUrl
-     * @var bool
-     */
+    /** @var bool Set to true via setValidateCheckoutShopUrl() if you require validation of a proper shopUrl */
     private $validateCheckoutShopUrl = false;
-    /**
-     * Default current environment. Always set to test (security reasons)
-     * @var bool
-     */
+    /** @var int Default current environment. Always set to test (security reasons) */
     private $current_environment_updated = false;
-    /**
-     * Store ID
-     * @var string
-     */
+    /** @var string $storeId */
     private $storeId;
-    /**
-     * EcomPHP session, use for saving data in $_SESSION for EComPHP
-     * @var
-     */
+    /** @var $ecomSession */
     private $ecomSession;
 
-    /**
-     * EComPHP User-Agent identifier
-     * @var string
-     */
+    /** @var string How EcomPHP should identify with the web services */
     private $myUserAgent = null;
-    /**
-     * Internal configurable flags
-     * @var array
-     */
+    /** @var array Internally set flags */
     private $internalFlags = array();
 
     /**
@@ -449,17 +315,9 @@ class ResursBank
         'setInvoiceSequence' => 'ConfigurationService'
     );
 
-    /**
-     * Validating URLs are made through a third party API and is disabled by default.
-     * Used for checking reachability of an URL in tests.
-     * @var string
-     */
+    /** @var string Validating URLs are made through a third party API and is disabled by default (Used for checking reachability of an URL) */
     private $externalApiAddress = "https://api.tornevall.net/3.0/";
-    /**
-     * An array that defines an url to test and which response codes (OK-200, and
-     * errors when for example a digest fails) from the webserver that is expected
-     * @var array
-     */
+    /** @var array An array that defines an url to test and which response codes (OK-200, and errors when for example a digest fails) from the webserver that is expected */
     private $validateExternalUrl = null;
 
     /** @var string $createPaymentExecuteCommand Prepared variable for execution */
@@ -474,16 +332,12 @@ class ResursBank
      */
     private $skipCallbackValidation = true;
 
-    /**
-     * The choice of using rest instead of a soapclient when registering callbacks
-     * @var bool
-     */
+    /** @var bool The choice of using rest instead of a soapclient when registering callbacks */
     private $registerCallbacksViaRest = true;
 
     /// SOAP and WSDL
     /**
-     * Standard SOAP interface configurables.
-     * @var array
+     * @var array Standard options for the SOAP-interface.
      */
     var $soapOptions = array(
         'exceptions' => 1,
@@ -492,120 +346,57 @@ class ResursBank
         'password' => '',
         'trace' => 1
     );
-    /**
-     * Don't want to use SSL verifiers in curl mode
-     * @var bool
-     */
-    private $curlSslValidationDisable = false;
+    private $curlSslDisable = false;
 
     ///// ShopRelated
     /// Customizable
-    /**
-     * Eventually a logged in user on the platform using EComPHP (used in aftershopFlow)
-     * @var string
-     */
+    /** @var string Eventually a logged in user on the platform using EComPHP (used in aftershopFlow) */
     private $loggedInuser = "";
-    /**
-     * Get Cost of Purchase Custom HTML - Before html code received from webservices
-     * @var string
-     */
-    private $getcost_html_before = '';
-    /**
-     * Get Cost of Purchase Custom HTML - AFter html code received from webservices
-     * @var string
-     */
-    private $getcost_html_after = '';
+    /** @var null Get Cost of Purchase Custom HTML - Before html code received from webservices */
+    private $getcost_html_before;
+    /** @var null Get Cost of Purchase Custom HTML - AFter html code received from webservices */
+    private $getcost_html_after;
 
     /// Callback handling
-    /**
-     * Callback related variables
-     * @var array
-     */
+    /** @var array Callback related variables */
     private $digestKey = array();
-    /**
-     * Globally set digestive key
-     * @var string
-     */
+    /** @var string Globally set digestive key */
     private $globalDigestKey = "";
 
     /// Shopflow
-    /**
-     * Defines whether we have detected a hosted flow request or not
-     * @var bool
-     */
+    /** @var bool Defines wheter we have detected a hosted flow request or not */
     private $isHostedFlow = false;
-    /**
-     * Defines whether we have detected a ResursCheckout flow request or not
-     * @var bool
-     */
+    /** @var bool Defines wheter we have detected a ResursCheckout flow request or not */
     private $isOmniFlow = false;
-    /**
-     * The preferred payment order reference, set in a shopflow. Reachable through getPreferredPaymentId()
-     * @var string
-     */
+    /** @var null The preferred payment order reference, set in a shopflow. Reachable through getPreferredPaymentId() */
     private $preferredId = null;
-    /**
-     * @var
-     */
     private $paymentSessionId;
-    /**
-     * List of available payment method names (for use with getPaymentMethodNames())
-     * @var array
-     */
+    /** @var array List of available payment method names (for use with getPaymentMethodNames()) */
     private $paymentMethodNames = array();
-    /**
-     * Defines if the checkout should honor the customer field array
-     * @var bool
-     */
+    /** @var bool Defines if the checkout should honor the customer field array */
     private $checkoutCustomerFieldSupport = false;
 
     /// AfterShop Flow
-    /**
-     * Preferred transaction id for aftershop
-     * @var string
-     */
+    /** @var string Preferred transaction id for aftershop */
     private $afterShopPreferredTransactionId = "";
-    /**
-     * Order id for aftershop
-     * @var string
-     */
+    /** @var string Order id for aftershop */
     private $afterShopOrderId = "";
-    /**
-     * Invoice id (Optional) for aftershop
-     * @var string
-     */
+    /** @var string Invoice id (Optional) for aftershop */
     private $afterShopInvoiceId = "";
-    /**
-     * Invoice external reference for aftershop
-     * @var string
-     */
+    /** @var string Invoice external reference for aftershop */
     private $afterShopInvoiceExtRef = "";
 
-    /**
-     * Default unit measure. "st" or styck for Sweden. If your plugin is not used for Sweden,
-     * use the proper unit for your country.
-     * @var string
-     */
+    /** @var string Default unit measure. "st" or styck for Sweden. If your plugin is not used for Sweden, use the proper unit for your country. */
     private $defaultUnitMeasure = "st";
 
     /// Resurs Checkout
-    /**
-     * When using clearOcShop(), the Resurs Checkout tailing script (resizer) will be stored here
-     * @var
-     */
-    private $ocShopScript;
+    /** @var null When using clearOcShop(), the Resurs Checkout tailing script (resizer) will be stored here */
+    private $ocShopScript = null;
 
-    /**
-     * Payment method types (from getPaymentMethods) that probably is automatically debiting as
-     * soon as transfers been made
-     * @var array
-     */
+    /** @var array Payment method types (from getPaymentMethods) that probably is automatically debiting as soon as transfers been made */
     private $autoDebitableTypes = array();
 
-    /**
-     * Discover payments that probably has been automatically debited - default is active
-     * @var bool
-     */
+    /** @var bool Discover payments that probably has been automatically debited - default is active */
     private $autoDebitableTypesActive = true;
 
     /**
@@ -805,7 +596,7 @@ class ResursBank
     }
 
     /**
-     * Everything that communicates with Resurs Bank should go here, whether is is web services or curl/json data. The
+     * Everything that communicates with Resurs Bank should go here, wheter is is web services or curl/json data. The
      * former name of this function is InitializeWsdl, but since we are handling nonWsdl-calls differently, but still
      * needs some kind of compatibility in dirty code structures, everything needs to be done from here. For now. In
      * future version, this is probably deprecated too, as it is an obsolete way of getting things done as Resurs Bank
@@ -1004,7 +795,7 @@ class ResursBank
     {
         $this->InitializeServices();
         if ($this->debug && $this->current_environment == RESURS_ENVIRONMENTS::ENVIRONMENT_TEST) {
-            $this->curlSslValidationDisable = true;
+            $this->curlSslDisable = true;
         } else {
             throw new Exception("Can't set SSL validation in relaxed mode. Debug mode is disabled and/or test environment are not set",
                 403);
@@ -1016,9 +807,9 @@ class ResursBank
      * @since 1.1.23
      * @since 1.2.0
      */
-    public function getSslValidation()
+    private function getSslValidation()
     {
-        return $this->curlSslValidationDisable;
+        return $this->curlSslDisable;
     }
 
     /**
@@ -2964,8 +2755,9 @@ class ResursBank
         $methodArray = array();
         if (is_array($methods)) {
             foreach ($methods as $objectMethod) {
-                if (isset($objectMethod->id) && strtolower($objectMethod->id) === strtolower($specificMethodId)) {
+                if (isset($objectMethod->id) && !empty($specificMethodId) && strtolower($objectMethod->id) === strtolower($specificMethodId)) {
                     $methodArray = $objectMethod;
+                    break;
                 }
             }
         }
@@ -5701,30 +5493,30 @@ class ResursBank
      */
     public function sanitizeAfterShopSpec(
         $paymentIdOrPaymentObjectData = '',
-        $renderType = RESURS_AFTERSHOP_RENDER_TYPES::NONE
+        $renderType = RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_NO_CHOICE
     ) {
         $returnSpecObject = null;
 
         $this->BIT->setBitStructure(
             array(
-                'FINALIZE' => RESURS_AFTERSHOP_RENDER_TYPES::FINALIZE,
-                'CREDIT' => RESURS_AFTERSHOP_RENDER_TYPES::CREDIT,
-                'ANNUL' => RESURS_AFTERSHOP_RENDER_TYPES::ANNUL,
-                'AUTHORIZE' => RESURS_AFTERSHOP_RENDER_TYPES::AUTHORIZE,
+                'FINALIZE' => RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_FINALIZE,
+                'CREDIT' => RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_CREDIT,
+                'ANNUL' => RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_ANNUL,
+                'AUTHORIZE' => RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_AUTHORIZE,
             )
         );
 
         // Get payment spec bulked
         $paymentIdOrPaymentObject = $this->getPaymentSpecByStatus($paymentIdOrPaymentObjectData);
 
-        if ($this->BIT->isBit(RESURS_AFTERSHOP_RENDER_TYPES::FINALIZE, $renderType)) {
+        if ($this->BIT->isBit(RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_FINALIZE, $renderType)) {
             $returnSpecObject = $this->removeFromArray($paymentIdOrPaymentObject['AUTHORIZE'],
                 array_merge($paymentIdOrPaymentObject['DEBIT'], $paymentIdOrPaymentObject['ANNUL'],
                     $paymentIdOrPaymentObject['CREDIT']));
-        } elseif ($this->BIT->isBit(RESURS_AFTERSHOP_RENDER_TYPES::CREDIT, $renderType)) {
+        } elseif ($this->BIT->isBit(RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_CREDIT, $renderType)) {
             $returnSpecObject = $this->removeFromArray($paymentIdOrPaymentObject['DEBIT'],
                 array_merge($paymentIdOrPaymentObject['ANNUL'], $paymentIdOrPaymentObject['CREDIT']));
-        } elseif ($this->BIT->isBit(RESURS_AFTERSHOP_RENDER_TYPES::ANNUL, $renderType)) {
+        } elseif ($this->BIT->isBit(RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_ANNUL, $renderType)) {
             $returnSpecObject = $this->removeFromArray($paymentIdOrPaymentObject['AUTHORIZE'],
                 array_merge($paymentIdOrPaymentObject['DEBIT'], $paymentIdOrPaymentObject['ANNUL'],
                     $paymentIdOrPaymentObject['CREDIT']));
@@ -5911,7 +5703,7 @@ class ResursBank
     private function getAfterShopObjectByPayload(
         $paymentId = "",
         $customPayloadItemList = array(),
-        $payloadType = RESURS_AFTERSHOP_RENDER_TYPES::NONE
+        $payloadType = RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_NO_CHOICE
     ) {
         $finalAfterShopSpec = array(
             'paymentId' => $paymentId
@@ -5941,7 +5733,7 @@ class ResursBank
         $actualEcommerceOrderSpec = $this->sanitizeAfterShopSpec($storedPayment, $payloadType);
 
         $finalAfterShopSpec['createdBy'] = $this->getCreatedBy();
-        $this->renderPaymentSpec(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
+        $this->renderPaymentSpec(RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW);
 
         try {
             // Try to fetch internal order data.
@@ -5960,7 +5752,7 @@ class ResursBank
             //$this->SpecLines += $this->objectsIntoArray($customPayloadItemList);
             $this->SpecLines = $this->objectsIntoArray($customPayloadItemList);
         }
-        $this->renderPaymentSpec(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
+        $this->renderPaymentSpec(RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW);
         $orderDataArray = $this->getOrderData();
 
         if (isset($orderDataArray['specLines'])) {
@@ -5979,7 +5771,7 @@ class ResursBank
      */
     public function paymentFinalizeTest()
     {
-        if (defined('TEST_OVERRIDE_AFTERSHOP_PAYLOAD') && $this->current_environment == RESURS_ENVIRONMENTS::TEST) {
+        if (defined('TEST_OVERRIDE_AFTERSHOP_PAYLOAD') && $this->current_environment == RESURS_ENVIRONMENTS::ENVIRONMENT_TEST) {
             $this->postService("finalizePayment", unserialize(TEST_OVERRIDE_AFTERSHOP_PAYLOAD));
         }
     }
@@ -6016,8 +5808,23 @@ class ResursBank
      */
     public function paymentFinalize($paymentId = "", $customPayloadItemList = array(), $runOnce = false)
     {
-        $afterShopObject = $this->getAfterShopObjectByPayload($paymentId, $customPayloadItemList,
-            RESURS_AFTERSHOP_RENDER_TYPES::FINALIZE);
+        try {
+            $afterShopObject = $this->getAfterShopObjectByPayload($paymentId, $customPayloadItemList,
+                RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_FINALIZE);
+        } catch (Exception $afterShopObjectException) {
+            // Check if payment is based on instant finalization and return true, as it was really finalized
+            // if someone goes this way. getAutoDebitableTypeState() also makes sure that the function for doing
+            // this is enabled, if someone decides to skip it.
+            if ($this->getAutoDebitableTypeState() && $afterShopObjectException->getCode() === \RESURS_EXCEPTIONS::BOOKPAYMENT_NO_BOOKDATA) {
+                // If there is no data to finalize after the rendering, we need to look at the payment itself also
+                // to be sure that this is not a payment type that is auto finalizing.
+                $testPayment = $this->getPayment($paymentId);
+                if ($this->getInstantFinalizationStatus($testPayment) & RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_AUTOMATICALLY_DEBITED) {
+                    return true;
+                }
+            }
+            throw $afterShopObjectException;
+        }
         $this->aftershopPrepareMetaData($paymentId);
         try {
             $afterShopResponseCode = $this->postService("finalizePayment", $afterShopObject, true);
@@ -6071,7 +5878,7 @@ class ResursBank
     public function paymentAnnul($paymentId = "", $customPayloadItemList = array(), $runOnce = false)
     {
         $afterShopObject = $this->getAfterShopObjectByPayload($paymentId, $customPayloadItemList,
-            RESURS_AFTERSHOP_RENDER_TYPES::ANNUL);
+            RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_ANNUL);
         $this->aftershopPrepareMetaData($paymentId);
         try {
             $afterShopResponseCode = $this->postService("annulPayment", $afterShopObject, true);
@@ -6124,7 +5931,7 @@ class ResursBank
     public function paymentCredit($paymentId = "", $customPayloadItemList = array(), $runOnce = false)
     {
         $afterShopObject = $this->getAfterShopObjectByPayload($paymentId, $customPayloadItemList,
-            RESURS_AFTERSHOP_RENDER_TYPES::CREDIT);
+            RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_CREDIT);
         $this->aftershopPrepareMetaData($paymentId);
         try {
             $afterShopResponseCode = $this->postService("creditPayment", $afterShopObject, true);
@@ -6182,14 +5989,14 @@ class ResursBank
         $currentPaymentSpec = $this->getPaymentSpecByStatus($currentPayment);
 
         // Sanitized paymentspec based on what to CREDIT
-        $creditObject = $this->sanitizeAfterShopSpec($currentPayment, RESURS_AFTERSHOP_RENDER_TYPES::CREDIT);
+        $creditObject = $this->sanitizeAfterShopSpec($currentPayment, RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_CREDIT);
         // Sanitized paymentspec based on what to ANNUL
-        $annulObject = $this->sanitizeAfterShopSpec($currentPayment, RESURS_AFTERSHOP_RENDER_TYPES::ANNUL);
+        $annulObject = $this->sanitizeAfterShopSpec($currentPayment, RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_ANNUL);
 
         if (is_array($customPayloadItemList) && count($customPayloadItemList)) {
             $this->SpecLines = array_merge($this->SpecLines, $customPayloadItemList);
         }
-        $this->renderPaymentSpec(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
+        $this->renderPaymentSpec(RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW);
 
         $this->aftershopPrepareMetaData($paymentId);
         try {
@@ -6207,13 +6014,11 @@ class ResursBank
                     array_merge($currentPaymentSpec['DEBIT'], $currentPaymentSpec['ANNUL'],
                         $currentPaymentSpec['CREDIT']));
 
-                // Clean up selected rows from the credit element and keep those rows than still can be credited and
-                // matches the orderRow-request
+                // Clean up selected rows from the credit element and keep those rows than still can be credited and matches the orderRow-request
                 $newCreditObject = $this->objectsIntoArray($this->removeFromArray($validatedCreditObject,
                     $currentOrderLines, true));
 
-                // Clean up selected rows from the credit element and keep those rows than still can be annulled and
-                // matches the orderRow-request
+                // Clean up selected rows from the credit element and keep those rows than still can be annulled and matches the orderRow-request
                 $newAnnulObject = $this->objectsIntoArray($this->removeFromArray($validatedAnnulmentObject,
                     $currentOrderLines, true));
 
@@ -6272,7 +6077,7 @@ class ResursBank
         if (!empty($this->loggedInuser)) {
             $createdBy = $this->loggedInuser;
         }
-        $this->renderPaymentSpec(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
+        $this->renderPaymentSpec(RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW);
         $additionalDataArray = array(
             'paymentId' => $paymentId,
             'paymentSpec' => $this->Payload['orderData'],
@@ -6388,15 +6193,12 @@ class ResursBank
                 if (isset($paymentData->frozen) && $paymentData->frozen) {
                     return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING;
                 }
-                // Running in synchronous mode (finalizeIfBooked) might disturb the normal way to handle the booked
-                // callback, so we'll continue checking the order by statuses if this order is not frozen
+                // Running in synchronous mode (finalizeIfBooked) might disturb the normal way to handle the booked callback, so we'll continue checking
+                // the order by statuses if this order is not frozen
                 return $this->getOrderStatusByPaymentStatuses($paymentData);
                 break;
             case RESURS_CALLBACK_TYPES::FINALIZATION:
-                return (
-                    RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED |
-                    $this->getInstantFinalizationStatus($paymentData, $paymentMethodObject)
-                );
+                return (RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED | $this->getInstantFinalizationStatus($paymentData, $paymentMethodObject));
             case RESURS_CALLBACK_TYPES::UNFREEZE:
                 return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PROCESSING;
             case RESURS_CALLBACK_TYPES::UPDATE:
@@ -6507,9 +6309,7 @@ class ResursBank
 
         // Check if feature is enabled, the type contains PAYMENT_PROVIDER and the specificType matches a payment
         // provider that tend to finalize payments instantly after orders has been created.
-        if ($this->getAutoDebitableTypeState() && $this->autoDebitablePaymentMethod->type === 'PAYMENT_PROVIDER' &&
-            $this->isAutoDebitableType($this->autoDebitablePaymentMethod->specificType)
-        ) {
+        if ($this->getAutoDebitableTypeState() && $this->autoDebitablePaymentMethod->type === 'PAYMENT_PROVIDER' && $this->isAutoDebitableType($this->autoDebitablePaymentMethod->specificType)) {
             $return = RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_AUTOMATICALLY_DEBITED;
         }
 
