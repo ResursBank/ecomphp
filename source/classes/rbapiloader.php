@@ -6021,16 +6021,9 @@ class ResursBank
             $afterShopObject = $this->getAfterShopObjectByPayload($paymentId, $customPayloadItemList,
                 RESURS_AFTERSHOP_RENDER_TYPES::FINALIZE);
         } catch (Exception $afterShopObjectException) {
-            // Check if payment is based on instant finalization and return true, as it was really finalized
-            // if someone goes this way. getAutoDebitableTypeState() also makes sure that the function for doing
-            // this is enabled, if someone decides to skip it.
-            if ($this->getAutoDebitableTypeState() && $afterShopObjectException->getCode() === RESURS_EXCEPTIONS::BOOKPAYMENT_NO_BOOKDATA) {
-                // If there is no data to finalize after the rendering, we need to look at the payment itself also
-                // to be sure that this is not a payment type that is auto finalizing.
-                $testPayment = $this->getPayment($paymentId);
-                if ($this->getInstantFinalizationStatus($testPayment) & RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_AUTOMATICALLY_DEBITED) {
-                    return true;
-                }
+            // No rows to finalize? Check if this was auto debited by internal rules, or throw back error.
+            if ($afterShopObjectException->getCode() === \RESURS_EXCEPTIONS::BOOKPAYMENT_NO_BOOKDATA && $this->getOrderStatusByPayment($paymentId) & RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_AUTOMATICALLY_DEBITED) {
+                return true;
             }
             throw $afterShopObjectException;
         }
