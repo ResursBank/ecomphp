@@ -2964,8 +2964,9 @@ class ResursBank
         $methodArray = array();
         if (is_array($methods)) {
             foreach ($methods as $objectMethod) {
-                if (isset($objectMethod->id) && strtolower($objectMethod->id) === strtolower($specificMethodId)) {
+                if (isset($objectMethod->id) && !empty($specificMethodId) && strtolower($objectMethod->id) === strtolower($specificMethodId)) {
                     $methodArray = $objectMethod;
+                    break;
                 }
             }
         }
@@ -6016,8 +6017,23 @@ class ResursBank
      */
     public function paymentFinalize($paymentId = "", $customPayloadItemList = array(), $runOnce = false)
     {
-        $afterShopObject = $this->getAfterShopObjectByPayload($paymentId, $customPayloadItemList,
-            RESURS_AFTERSHOP_RENDER_TYPES::FINALIZE);
+        try {
+            $afterShopObject = $this->getAfterShopObjectByPayload($paymentId, $customPayloadItemList,
+                RESURS_AFTERSHOP_RENDER_TYPES::FINALIZE);
+        } catch (Exception $afterShopObjectException) {
+            // Check if payment is based on instant finalization and return true, as it was really finalized
+            // if someone goes this way. getAutoDebitableTypeState() also makes sure that the function for doing
+            // this is enabled, if someone decides to skip it.
+            if ($this->getAutoDebitableTypeState() && $afterShopObjectException->getCode() === RESURS_EXCEPTIONS::BOOKPAYMENT_NO_BOOKDATA) {
+                // If there is no data to finalize after the rendering, we need to look at the payment itself also
+                // to be sure that this is not a payment type that is auto finalizing.
+                $testPayment = $this->getPayment($paymentId);
+                if ($this->getInstantFinalizationStatus($testPayment) & RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_AUTOMATICALLY_DEBITED) {
+                    return true;
+                }
+            }
+            throw $afterShopObjectException;
+        }
         $this->aftershopPrepareMetaData($paymentId);
         try {
             $afterShopResponseCode = $this->postService("finalizePayment", $afterShopObject, true);
