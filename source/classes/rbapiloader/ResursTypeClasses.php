@@ -204,6 +204,7 @@ abstract class RESURS_PAYMENT_STATUS_RETURNCODES
     const PAYMENT_ANNULLED = 8;
     const PAYMENT_CREDITED = 16;
     const PAYMENT_AUTOMATICALLY_DEBITED = 32;
+    const PAYMENT_MANUAL_INSPECTION = 64;   // When an order by some reason gets stuck in manual inspections
 
     /** @deprecated Fallback status only, use PAYMENT_ANNULLED */
     const PAYMENT_CANCELLED = 8;
