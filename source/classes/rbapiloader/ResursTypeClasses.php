@@ -19,6 +19,9 @@ abstract class RESURS_FLOW_TYPES
     /** @var int You lazy? */
     const RCO = 3;
 
+    /** @var int Absolutely minimalistic flow with data necessary to render anything at all (and matching data) */
+    const MINIMALISTIC = 98;
+
     /** @deprecated Redundant name */
     const FLOW_NOT_SET = 0;
     /** @deprecated Redundant name */
@@ -28,7 +31,7 @@ abstract class RESURS_FLOW_TYPES
     /** @deprecated Redundant name */
     const FLOW_RESURS_CHECKOUT = 3;
 
-    /** @var int METHOD_MINIMALISTIC Minimalistic orderLine specification, with data necessary for matching */
+    /** @deprecated Redundant name */
     const FLOW_MINIMALISTIC = 98;
 }
 
