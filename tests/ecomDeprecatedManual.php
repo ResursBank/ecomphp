@@ -414,7 +414,7 @@ class ecomDeprecatedManual extends TestCase
             return $res;
         }
 
-        if ($bookStatus == "SIGNING") {
+        if ($bookStatus == 'SIGNING') {
             $bookId = $res->paymentId;
             /* Pick up the signing url */
             /** @noinspection PhpUndefinedFieldInspection */
@@ -2468,10 +2468,13 @@ class ecomDeprecatedManual extends TestCase
      */
     function testAfterShopSanitizer()
     {
+        $expect = 2;        // When the above works, we expect 2
         $paymentId         = $this->getPaymentIdFromOrderByClientChoice(2);
-        $sanitizedShopSpec = $this->rb->sanitizeAfterShopSpec($paymentId,
-            RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_FINALIZE);
-        static::assertCount(2, $sanitizedShopSpec);
+        $saneFinalize = $this->rb->sanitizeAfterShopSpec($paymentId, RESURS_AFTERSHOP_RENDER_TYPES::FINALIZE);
+        //$paymentId = '145000153';
+        //$saneAnnul = $this->rb->sanitizeAfterShopSpec($paymentId, RESURS_AFTERSHOP_RENDER_TYPES::ANNUL);
+        //$saneFinalAnnul = $this->rb->sanitizeAfterShopSpec($paymentId, (RESURS_AFTERSHOP_RENDER_TYPES::ANNUL | RESURS_AFTERSHOP_RENDER_TYPES::FINALIZE));
+        static::assertCount($expect, $saneFinalize);
     }
 
     /**
@@ -2968,10 +2971,8 @@ class ecomDeprecatedManual extends TestCase
 
         }
 
-
-        //$this->resetConnection();
         $remainArray = $this->rb->sanitizeAfterShopSpec($paymentId,
-            (RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_ANNUL + RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_CREDIT));
+            (RESURS_AFTERSHOP_RENDER_TYPES::ANNUL + RESURS_AFTERSHOP_RENDER_TYPES::CREDIT));
         static::assertCount(2, $remainArray);
     }
 
