@@ -219,6 +219,15 @@ class resursBankTest extends TestCase
 
     /**
      * @test
+     * @throws \Exception
+     */
+    public function findPaymentByGovd() {
+        $payments = $this->TEST->ECOM->findPayments(array('governmentId'=>'8305147715'));
+        static::assertTrue(is_array($payments) && count($payments));
+    }
+
+    /**
+     * @test
      * @param bool $noAssert
      * @return array
      * @throws \Exception
