@@ -221,8 +221,9 @@ class resursBankTest extends TestCase
      * @test
      * @throws \Exception
      */
-    public function findPaymentByGovd() {
-        $payments = $this->TEST->ECOM->findPayments(array('governmentId'=>'8305147715'));
+    public function findPaymentByGovd()
+    {
+        $payments = $this->TEST->ECOM->findPayments(array('governmentId' => '8305147715'));
         static::assertTrue(is_array($payments) && count($payments));
     }
 
@@ -316,7 +317,8 @@ class resursBankTest extends TestCase
         $this->TEST->share('happyCustomer', $happyCustomer, false);
         if (!$noAssert) {
             // Call to undefined function mb_strpos() with assertContains in PHP 7.3
-            static::assertTrue(preg_match('/'.$this->flowHappyCustomerName.'/i', $happyCustomer->fullName)?true:false);
+            static::assertTrue(preg_match('/' . $this->flowHappyCustomerName . '/i',
+                $happyCustomer->fullName) ? true : false);
         }
 
         return $happyCustomer;
@@ -492,6 +494,67 @@ class resursBankTest extends TestCase
 
     /**
      * @test
+     *
+     * How to use this in a store environment like RCO:
+     *   - During interceptor mode, store the getOrderLineHash in a _SESSION variable.
+     *   - When interceptor handle is sent over to backend in store, run getOrderLineHash again.
+     *   - Match the old stored _SESSION variable with the new getOrderLineHash-response.
+     *   - If they mismatch, the cart has been updated while still in the checkout.
+     *
+     * @throws \Exception
+     */
+    public function hashedSpecLines()
+    {
+        $customerData = $this->getHappyCustomerData();
+        $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline, red", 800, 25);
+        $this->TEST->ECOM->addOrderLine("Product-1337", "Second simple orderline, blue", 900, 25);
+        $this->TEST->ECOM->addOrderLine("Product-1338", "Third simple orderline", 1000, 25, 'st', 'ORDER_LINE', 3);
+        $this->TEST->ECOM->addOrderLine("Product-1339", "Our fee", 45, 25, 'st', 'FEE', 3);
+        $this->TEST->ECOM->setBillingByGetAddress($customerData);
+        $this->TEST->ECOM->setCustomer(null, "0808080808", "0707070707", "test@test.com", "NATURAL");
+        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+        $orderLineHash = $this->TEST->ECOM->getOrderLineHash();
+        $this->TEST->ECOM->addOrderLine(
+            "Hacked Product",
+            "Article added after first orderline hash",
+            1000,
+            25,
+            'st',
+            'ORDER_LINE',
+            3
+        );
+        $newOrderLineHash = $this->TEST->ECOM->getOrderLineHash();
+        static::assertTrue($orderLineHash !== $newOrderLineHash);
+    }
+
+    /**
+     * Test iframe payment content.
+     *
+     * If and when ecommerce will fix this, you should be able to pick up the orderdata from
+     * a prepared iframe.
+     *
+     * @test
+     * @throws \Exception
+     */
+    public function getPreparedIframeOrder()
+    {
+        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
+        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+        $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline, red", 800, 25);
+        $this->TEST->ECOM->addOrderLine("Product-1337", "Second simple orderline, blue", 900, 25);
+        $hasErrors = false;
+        try {
+            $paymentId = sha1(microtime(true));
+            $iframeData = $this->TEST->ECOM->createPayment($paymentId);
+            $getPayment = $this->TEST->ECOM->getPaymentByRest($paymentId, true);
+        } catch (\Exception $e) {
+            $hasErrors = true;
+        }
+        static::assertTrue($hasErrors);
+    }
+
+    /**
+     * @test
      * @testdox Expect arrays regardless of response
      * @throws \Exception
      */
@@ -517,7 +580,6 @@ class resursBankTest extends TestCase
         }
         $callbacks = $this->TEST->ECOM->getCallBacksByRest(true);
         static::assertTrue(is_array($callbacks) && !count($callbacks) ? true : false);
-
     }
 
     /**
