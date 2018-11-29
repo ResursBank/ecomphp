@@ -1,4 +1,4 @@
-<?php /** @noinspection PhpUsageOfSilenceOperatorInspection */
+<?php
 
 /**
  * Resurs Bank Passthrough API - A pretty silent ShopFlowSimplifier for Resurs Bank.
@@ -13,6 +13,7 @@
  * @link    https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @link    https://test.resurs.com/docs/x/KAH1 EComPHP: Bitmasking features
  * @license Apache License
+ * @noinspection PhpUsageOfSilenceOperatorInspection
  */
 
 namespace Resursbank\RBEcomPHP;
@@ -61,7 +62,7 @@ if (!defined('ECOMPHP_VERSION')) {
     define('ECOMPHP_VERSION', '1.3.14');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20181128');
+    define('ECOMPHP_MODIFY_DATE', '20181129');
 }
 
 /**
