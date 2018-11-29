@@ -1,4 +1,4 @@
-<?php /** @noinspection PhpUsageOfSilenceOperatorInspection */
+<?php
 
 /**
  * Resurs Bank Passthrough API - A pretty silent ShopFlowSimplifier for Resurs Bank.
@@ -8,11 +8,12 @@
  * @author  Resurs Bank Ecommerce
  *          /home/thorne/dev/Resurs/ecomphp/1.1/source/classes/rbapiloader.php<ecommerce.support@resurs.se>
  * @branch  1.3
- * @version 1.3.13
+ * @version 1.3.14
  * @link    https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link    https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @link    https://test.resurs.com/docs/x/KAH1 EComPHP: Bitmasking features
  * @license Apache License
+ * @noinspection PhpUsageOfSilenceOperatorInspection
  */
 
 namespace Resursbank\RBEcomPHP;
@@ -58,10 +59,10 @@ use TorneLIB\NETCURL_POST_DATATYPES;
 
 // Globals starts here
 if (!defined('ECOMPHP_VERSION')) {
-    define('ECOMPHP_VERSION', '1.3.13');
+    define('ECOMPHP_VERSION', '1.3.14');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20181024');
+    define('ECOMPHP_MODIFY_DATE', '20181129');
 }
 
 /**
@@ -1252,7 +1253,7 @@ class ResursBank
     public function isFlag($flagKey = '')
     {
         if ($this->hasFlag($flagKey)) {
-            return ($this->getFlag($flagKey) == 1 || $this->getFlag($flagKey) == true ? true : false);
+            return ((bool)$this->getFlag($flagKey) ? true : false);
         }
 
         return false;
@@ -2776,7 +2777,8 @@ class ResursBank
 
     /**
      * @param string $paymentId
-     * @return null
+     * @param bool $putified
+     * @return \stdClass
      * @throws Exception
      * @since 1.3.13
      * @since 1.1.40
@@ -2789,6 +2791,7 @@ class ResursBank
             return $this->CURL->getParsed(
                 $this->CURL->doGet($this->getCheckoutUrl() . "/checkout/payments/" . $paymentId)
             );
+
         } catch (\Exception $e) {
             // Get internal exceptions before http responses
             $exceptionTestBody = @json_decode($this->CURL->getBody());
@@ -4048,7 +4051,7 @@ class ResursBank
         $duplicateArticle = false;
         foreach ($this->SpecLines as $specIndex => $specRow) {
             if ($specRow['artNo'] == $articleNumberOrId && $specRow['unitAmountWithoutVat'] == $unitAmountWithoutVat) {
-                $duplicateArticle = false;
+                $duplicateArticle = true;
                 $this->SpecLines[$specIndex]['quantity'] += $quantity;
             }
         }
@@ -4102,7 +4105,13 @@ class ResursBank
                     $this->SpecLines[$specIndex]['id'] = ($specIndex) + 1;
                 }
                 if ($myFlow === RESURS_FLOW_TYPES::HOSTED_FLOW || $myFlow === RESURS_FLOW_TYPES::SIMPLIFIED_FLOW) {
+                    if ($this->isFlag('ALWAYS_RENDER_TOTALS') && isset($specRow['totalVatAmount'])) {
+                        // Always recalculate amounts regardless of duplication
+                        unset($specRow['totalVatAmount']);
+                    }
                     if (!isset($specRow['totalVatAmount'])) {
+                        // Always recalculate amounts by its quantity in case there has been changes like
+                        // duplicate articles during orderline handling.
                         $this->SpecLines[$specIndex]['totalVatAmount'] = (
                                 $specRow['unitAmountWithoutVat'] * $specRow['vatPct'] / 100
                             ) * $specRow['quantity'];
@@ -4260,9 +4269,9 @@ class ResursBank
             if (isset($paymentMethodInfo) && is_object($paymentMethodInfo)) {
                 if (
                     isset($paymentMethodInfo->specificType) &&
-                    $paymentMethodInfo->specificType == "CARD" ||
-                    $paymentMethodInfo->specificType == "NEWCARD" ||
-                    $paymentMethodInfo->specificType == "REVOLVING_CREDIT"
+                    $paymentMethodInfo->specificType === 'CARD' ||
+                    $paymentMethodInfo->specificType === 'NEWCARD' ||
+                    $paymentMethodInfo->specificType === 'REVOLVING_CREDIT'
                 ) {
                     $this->validateCardData($paymentMethodInfo->specificType);
                 }
@@ -4376,97 +4385,23 @@ class ResursBank
     }
 
     /**
-     * @param int $hashLevel
-     *
-     * @throws \Exception
+     * @return string
      */
-    public function addMetaDataHash($hashLevel = RESURS_METAHASH_TYPES::HASH_ORDERLINES)
-    {
-        if (!$this->metaDataHashEnabled) {
-            return;
-        }
+    public function getOrderLineHash() {
+        $returnHashed = '';
+        $orderLines = $this->sanitizePaymentSpec($this->getOrderLines(), RESURS_FLOW_TYPES::MINIMALISTIC);
 
-        /** @var string $dataHash Output string */
-        $dataHash = null;
-        /** @var array $customerData */
-        $customerData = array();
-        /** @var array $hashes Data to hash or encrypt */
-        $hashes = array();
-
-        // Set up the kind of data that can be hashed
-        $this->BIT->setBitStructure(array(
-            'ORDERLINES' => RESURS_METAHASH_TYPES::HASH_ORDERLINES,
-            'CUSTOMER' => RESURS_METAHASH_TYPES::HASH_CUSTOMER
-        ));
-
-        // Fetch the payload and pick up data that can be used in the hashing
-        $payload = $this->getPayload();
-        if (isset($payload['orderData'])) {
-            unset($payload['orderData']);
-        }
-        if (isset($payload['customer'])) {
-            $customerData = $payload['customer'];
-        }
-
-        // Sanitize the orderlines with the simplest content available (The "minimalisticflow" gives us artNo,
-        // description, price, quantiy)
-        $orderData = $this->sanitizePaymentSpec($this->getOrderLines(), RESURS_FLOW_TYPES::MINIMALISTIC);
-        if ($this->BIT->isBit(RESURS_METAHASH_TYPES::HASH_ORDERLINES, $hashLevel)) {
-            $hashes['orderLines'] = $orderData;
-        }
-        if ($this->BIT->isBit(RESURS_METAHASH_TYPES::HASH_CUSTOMER, $hashLevel)) {
-            $hashes['customer'] = $customerData;
-        }
-
-        if (!$this->metaDataHashEncrypted) {
-            $dataHash = sha1(json_encode($hashes));
-        } else {
-            $dataHash = $this->T_CRYPTO->aesEncrypt(json_encode($hashes), true);
-        }
-
-        if (!isset($this->Payload['metaData'])) {
-            $this->Payload['metaData'] = array();
-        }
-        $this->Payload['metaData'][] = array(
-            'key' => 'ecomHash',
-            'value' => $dataHash
-        );
-    }
-
-    /**
-     * @param bool $enable
-     * @param bool $encryptEnable Requires RIJNDAEL/AES Encryption enabled
-     * @param null $encryptIv
-     * @param null $encryptKey
-     *
-     * @throws \Exception
-     */
-    public function setMetaDataHash($enable = true, $encryptEnable = false, $encryptIv = null, $encryptKey = null)
-    {
-        $this->metaDataHashEnabled = $enable;
-        $this->metaDataHashEncrypted = $encryptEnable;
-        if ($encryptEnable) {
-            if (is_null($encryptIv) || is_null($encryptKey)) {
-                throw new Exception("To encrypt your metadata, you'll need to set up encryption keys");
+        if (is_array($orderLines)) {
+            $hashifiedString = '';
+            foreach ($orderLines as $idx => $minimalisticArray) {
+                $hashifiedString .= sha1($idx . ':' . implode("|", $minimalisticArray));
             }
-            $this->metaDataIv = $encryptIv;
-            $this->metaDataKey = $encryptKey;
-            $this->T_CRYPTO->setAesIv($this->metaDataIv);
-            $this->T_CRYPTO->setAesKey($this->metaDataKey);
+            // This string has salted itself based on orderline content
+            $returnHashed = sha1($hashifiedString);
         }
-    }
 
-    /**
-     * @return bool
-     */
-    public function getMetaDataHash()
-    {
-        return $this->metaDataHashEnabled;
-    }
-
-    public function getMetaDataVerify()
-    {
-        // TODO: Coming soon
+        // Empty string means fail
+        return $returnHashed;
     }
 
     /**
@@ -4929,7 +4864,7 @@ class ResursBank
             $hasMeasure = false;
             foreach ($specLines as $specIndex => $specArray) {
                 foreach ($specArray as $key => $value) {
-                    if (strtolower($key) == "unitmeasure" && empty($value)) {
+                    if (strtolower($key) === 'unitmeasure' && empty($value)) {
                         $hasMeasure = true;
                         $specArray[$key] = $this->defaultUnitMeasure;
                     }
@@ -4938,7 +4873,7 @@ class ResursBank
                     }
                 }
                 // Add unit measure if missing
-                if (!$hasMeasure && $myFlow != RESURS_FLOW_TYPES::MINIMALISTIC) {
+                if (!$hasMeasure && $myFlow !== RESURS_FLOW_TYPES::MINIMALISTIC) {
                     $specArray['unitMeasure'] = $this->defaultUnitMeasure;
                 }
                 $specLines[$specIndex] = $specArray;
