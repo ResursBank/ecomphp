@@ -528,15 +528,14 @@ class resursBankTest extends TestCase
     }
 
     /**
-     * Test iframe payment content.
+     * Test iframe payment content (currently disabled)
      *
      * If and when ecommerce will fix this, you should be able to pick up the orderdata from
      * a prepared iframe.
      *
-     * @test
      * @throws \Exception
      */
-    public function getPreparedIframeOrder()
+    /*public function getPreparedIframeOrder()
     {
         $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
         $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
@@ -551,7 +550,7 @@ class resursBankTest extends TestCase
             $hasErrors = true;
         }
         static::assertTrue($hasErrors);
-    }
+    }*/
 
     /**
      * @test
