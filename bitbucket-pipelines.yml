@@ -1,3 +1,4 @@
+# PHP 7.0 has no docker image, so it's skipped.
 # Guides: https://confluence.atlassian.com/x/e8YWN for more examples.
 #          - apt-add-repository ppa:sergey-dryabzhinsky/php53
 #          - apt-add-repository ppa:sergey-dryabzhinsky/packages
@@ -36,7 +37,7 @@ pipelines:
         caches:
           - composer
         script:
-          - apt-get update && apt-get install -y unzip php-soap libxml2-dev git
+          - apt-get update && apt-get install -y unzip php7.0-soap libxml2-dev git
           - docker-php-ext-install soap
           - docker-php-ext-enable soap
           - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
