@@ -673,6 +673,31 @@ class resursBankTest extends TestCase
     }
 
     /**
+     * For the future edition of EC where __get is a helper.
+     *
+     * @test
+     */
+    /*public function newGet()
+    {
+        try {
+            $failable = $this->TEST->ECOM->nonExistent && $this->TEST->ECOM['nonExistent'] ? true : false;
+        } catch (\Exception $e) {
+            $failable = true;
+        }
+
+        try {
+            $protectedVariable = $this->TEST->ECOM->version;
+        } catch (\Exception $e) {
+            $protectedVariable = true;
+        }
+
+        $reachableVariable = $this->TEST->ECOM->current_environment;
+        $unsetButReachableVariable = $this->TEST->ECOM->test;
+
+        static::assertTrue($failable && $protectedVariable && $reachableVariable === 1 && $unsetButReachableVariable);
+    }*/
+
+    /**
      * @test
      * @testdox Clean up special test data from share file
      */

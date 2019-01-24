@@ -6827,6 +6827,37 @@ class ResursBank
         $this->autoDebitableTypesActive = $activation;
     }
 
+    /**
+     * Magic function that will help us clean up unnecessary content. Future prepared.
+     *
+     * @param $name
+     * @return mixed
+     * @throws Exception
+     */
+    /*function __get($name)
+    {
+        $requestedVariableProperties = get_class_vars(__CLASS__);
+
+        switch ($name) {
+            case 'test';
+                $return = true;
+                break;
+
+            default:
+                if (isset($this->$name)) {
+
+                    if (!isset($requestedVariableProperties->$name)) {
+                        throw new \Exception(sprintf('Requested variable is not reachable: "%s"', $name), 400);
+                    }
+                    $return = $this->$name;
+                } else {
+                    throw new \Exception(sprintf('Requested variable is not defined: "%s"', $name));
+                }
+
+        }
+
+        return $return;
+    }*/
 
     /**
      * v1.1 method compatibility
