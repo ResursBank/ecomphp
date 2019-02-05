@@ -59,10 +59,10 @@ use TorneLIB\NETCURL_POST_DATATYPES;
 
 // Globals starts here
 if (!defined('ECOMPHP_VERSION')) {
-    define('ECOMPHP_VERSION', '1.3.14');
+    define('ECOMPHP_VERSION', '1.3.15');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20181129');
+    define('ECOMPHP_MODIFY_DATE', '20190205');
 }
 
 /**
@@ -6804,6 +6804,8 @@ class ResursBank
 
     /**
      * Returns true if the auto discovery of automatically debited payments is active
+     *
+     *
      * @return bool
      * @since 1.0.41
      * @since 1.1.41

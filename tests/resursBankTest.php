@@ -15,10 +15,14 @@
 
 namespace Resursbank\RBEcomPHP;
 
-if (file_exists(__DIR__ . "/../vendor/autoload.php")) {
+if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
     require_once(__DIR__ . '/../vendor/autoload.php');
 } else {
     require_once('../source/classes/rbapiloader.php');
+}
+
+if (file_exists(__DIR__ . '/webdriver.php')) {
+    require_once(__DIR__ . '/webdriver.php');
 }
 
 // Resurs Bank usages
@@ -57,6 +61,9 @@ class resursBankTest extends TestCase
      */
     protected $API;
 
+    /** @var \RESURS_WEBDRIVER */
+    protected $WEBDRIVER;
+
     /** @var RESURS_TEST_BRIDGE $TEST Used for standard tests and simpler flow setup */
     protected $TEST;
 
@@ -77,6 +84,15 @@ class resursBankTest extends TestCase
     private $signUrl = "https://test.resurs.com/signdummy/index.php?isSigningUrl=1";
 
     /**
+     * Exact match of selenium driver we're running with tests.
+     *
+     * Add to composer: "facebook/webdriver": "dev-master"
+     *
+     * @var string
+     */
+    protected $webdriverFile = 'selenium.jar';
+
+    /**
      * @throws \Exception
      */
     protected function setUp()
@@ -84,6 +100,10 @@ class resursBankTest extends TestCase
         $this->API = new ResursBank();
         $this->API->setDebug(true);
         $this->TEST = new RESURS_TEST_BRIDGE();
+        $this->WEBDRIVER = new \RESURS_WEBDRIVER();
+        if (!empty($this->webdriverFile) && file_exists(__DIR__ . '/' . $this->webdriverFile)) {
+            $this->WEBDRIVER->init();
+        }
     }
 
     /**
@@ -528,31 +548,6 @@ class resursBankTest extends TestCase
     }
 
     /**
-     * Test iframe payment content (currently disabled)
-     *
-     * If and when ecommerce will fix this, you should be able to pick up the orderdata from
-     * a prepared iframe.
-     *
-     * @throws \Exception
-     */
-    /*public function getPreparedIframeOrder()
-    {
-        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
-        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
-        $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline, red", 800, 25);
-        $this->TEST->ECOM->addOrderLine("Product-1337", "Second simple orderline, blue", 900, 25);
-        $hasErrors = false;
-        try {
-            $paymentId = sha1(microtime(true));
-            $iframeData = $this->TEST->ECOM->createPayment($paymentId);
-            $getPayment = $this->TEST->ECOM->getPaymentByRest($paymentId, true);
-        } catch (\Exception $e) {
-            $hasErrors = true;
-        }
-        static::assertTrue($hasErrors);
-    }*/
-
-    /**
      * @test
      * @testdox Expect arrays regardless of response
      * @throws \Exception
@@ -696,6 +691,36 @@ class resursBankTest extends TestCase
 
         static::assertTrue($failable && $protectedVariable && $reachableVariable === 1 && $unsetButReachableVariable);
     }*/
+
+    /**
+     * Special test case where we just create an iframe and then sending updatePaymentReferences via API to see
+     * if any errors are traceable
+     *
+     * @test
+     */
+    public function updatePaymentReferencePartUpdateCheckErrors()
+    {
+        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
+        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+        $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline, red", 800, 25);
+        $this->TEST->ECOM->addOrderLine("Product-1337", "Second simple orderline, blue", 900, 25);
+        $hasErrors = false;
+        try {
+            $paymentId = sha1(microtime(true));
+            $newPaymentId = 'PROPER_' . $paymentId;
+            $iframeData = $this->TEST->ECOM->createPayment($paymentId);
+            $this->TEST->ECOM->updatePaymentReference($paymentId, $newPaymentId);
+
+            if ($this->WEBDRIVER->isActive()) {
+                //$this->WEBDRIVER->getElementByWait('flopsan');
+            }
+            echo $iframeData;
+        } catch (\Exception $e) {
+            $hasErrors = true;
+        }
+
+        static::assertTrue(!$hasErrors);
+    }
 
     /**
      * @test
