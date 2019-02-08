@@ -29,7 +29,6 @@ if (file_exists(__DIR__ . '/webdriver.php')) {
 use PHPUnit\Framework\TestCase;
 use TorneLIB\MODULE_CURL;
 use TorneLIB\MODULE_IO;
-use TorneLIB\MODULE_NETBITS;
 use TorneLIB\MODULE_SOAP;
 
 // curl wrapper, extended network handling functions etc
@@ -90,7 +89,7 @@ class resursBankTest extends TestCase
      *
      * @var string
      */
-    protected $webdriverFile = 'selenium.jar';
+    //protected $webdriverFile = 'selenium.jar';
 
     /**
      * @throws \Exception
@@ -713,6 +712,9 @@ class resursBankTest extends TestCase
 
             if ($this->WEBDRIVER->isActive()) {
                 //$this->WEBDRIVER->getElementByWait('flopsan');
+                $src = preg_replace('/(.*)iframe src=\"(.*?)\"(.*)$/', '$2', $iframeData);
+                $this->WEBDRIVER->REMOTE->get($src);
+                $this->WEBDRIVER->waitForElementAndSetData('input_pnr_number', '830547715');
             }
             echo $iframeData;
         } catch (\Exception $e) {

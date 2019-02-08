@@ -7,7 +7,9 @@
     "ext-soap": "*",
     "ext-curl": "*",
     "tornevall/tornelib-php-crypto": "^6.0",
-    "tornevall/tornelib-php-netcurl": "^6.0"
+    "tornevall/tornelib-php-netcurl": "^6.0",
+    "facebook/webdriver": "^1.5",
+    "phpunit/phpunit": "^7.5"
   },
   "authors": [
     {

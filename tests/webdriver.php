@@ -2,19 +2,29 @@
 
 require_once('../vendor/autoload.php');
 
+use Facebook\WebDriver\Chrome\ChromeOptions;
+use Facebook\WebDriver\Remote\DesiredCapabilities;
+use Facebook\WebDriver\Remote\RemoteWebDriver;
+
 /**
  * Class RESURS_WEBDRIVER WebDriver Helper functions
  */
 class RESURS_WEBDRIVER
 {
-    /** @var $webDriver WebDriver */
+    /** @var \Facebook\WebDriver\WebDriver */
     public $REMOTE;
     private $HEADLESS;
     private $BROWSER_BINARY;
     private $CAPABILITIES;
     private $initialized = false;
 
-    function __construct($capabilities = null, $HEADLESS = false, $browserBinary = '/usr/bin/google-chrome')
+    /**
+     * RESURS_WEBDRIVER constructor.
+     * @param null $capabilities
+     * @param bool $HEADLESS
+     * @param string $browserBinary
+     */
+    public function __construct($capabilities = null, $HEADLESS = false, $browserBinary = '/usr/bin/google-chrome')
     {
         $this->HEADLESS = $HEADLESS;
         $this->BROWSER_BINARY = $browserBinary;
@@ -26,6 +36,8 @@ class RESURS_WEBDRIVER
      */
     public function init()
     {
+        $host = 'http://127.0.0.1:4444/wd/hub';
+
         if (is_null($this->CAPABILITIES)) {
             $options = new ChromeOptions();
             $optionsArray = array(
@@ -35,14 +47,14 @@ class RESURS_WEBDRIVER
             if ($this->HEADLESS) {
                 $optionsArray[] = '--headless';
             }
-            // Hopefully what's needed to run headless chrome testing
             $options->setBinary($this->BROWSER_BINARY);
             $options->addArguments($optionsArray);
             $capabilities = DesiredCapabilities::chrome();
             $capabilities->setCapability(ChromeOptions::CAPABILITY, $options);
+            $this->CAPABILITIES = $capabilities;
         }
-        $host = 'http://127.0.0.1:4444/wd/hub';
-        $this->REMOTE = RemoteWebDriver::create($host, $this->CAPABILITIES, 5000);
+
+        $this->REMOTE = RemoteWebDriver::create($host, $this->CAPABILITIES);
         $this->initialized = true;
         return $this->initialized;
     }
@@ -53,15 +65,14 @@ class RESURS_WEBDRIVER
         while ($elementNotVisible) {
             try {
                 if ($by == "id") {
-                    $this->REMOTE->findElement(\WebDriverBy::id($elementId))->sendKeys($elementData);
+                    $this->REMOTE->findElement(\Facebook\WebDriver\WebDriverBy::id($elementId))->sendKeys($elementData);
                 } elseif ($by == "xpath") {
-                    $this->REMOTE->findElement(\WebDriverBy::xpath($elementId))->sendKeys($elementData);
+                    $this->REMOTE->findElement(\Facebook\WebDriver\WebDriverBy::xpath($elementId))->sendKeys($elementData);
                 } elseif ($by == "class") {
-                    $this->REMOTE->findElement(\WebDriverBy::className($elementId))->sendKeys($elementData);
+                    $this->REMOTE->findElement(\Facebook\WebDriver\WebDriverBy::className($elementId))->sendKeys($elementData);
                 }
                 break;
             } catch (\Exception $elementException) {
-
             }
         }
     }
