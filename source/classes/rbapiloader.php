@@ -4058,7 +4058,6 @@ class ResursBank
         if (!$duplicateArticle) {
             $this->SpecLines[] = array(
                 'artNo' => $articleNumberOrId,
-                'description' => $description,
                 'quantity' => $quantity,
                 'unitMeasure' => $unitMeasure,
                 'unitAmountWithoutVat' => $unitAmountWithoutVat,

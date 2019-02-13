@@ -68,10 +68,12 @@ class resursBankTest extends TestCase
 
     /** @noinspection PhpUnusedPrivateFieldInspection */
     /** @var string Username to web services */
-    private $username = "ecomphpPipelineTest";
+    //private $username = "ecomphpPipelineTest";
+    private $username = "atest";
     /** @noinspection PhpUnusedPrivateFieldInspection */
     /** @var string Password to web services */
-    private $password = "4Em4r5ZQ98x3891D6C19L96TQ72HsisD";
+    //private $password = "4Em4r5ZQ98x3891D6C19L96TQ72HsisD";
+    private $password = "atest";
 
     private $flowHappyCustomer = "8305147715";
     private $flowHappyCustomerName = "Vincent Williamsson Alexandersson";
@@ -701,14 +703,18 @@ class resursBankTest extends TestCase
     {
         $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
         $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
-        $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline, red", 800, 25);
-        $this->TEST->ECOM->addOrderLine("Product-1337", "Second simple orderline, blue", 900, 25);
+        $this->TEST->ECOM->addOrderLine("Product-1337", "", 800, 25);
+        //$this->TEST->ECOM->addOrderLine("Product-1337", "", 900, 25);
         $hasErrors = false;
         try {
-            $paymentId = sha1(microtime(true));
+            $paymentId = "nodesc_" . sha1(microtime(true));
             $newPaymentId = 'PROPER_' . $paymentId;
             $iframeData = $this->TEST->ECOM->createPayment($paymentId);
-            $this->TEST->ECOM->updatePaymentReference($paymentId, $newPaymentId);
+            echo $paymentId . "\n";
+            echo $iframeData;
+
+            die;
+            //$this->TEST->ECOM->updatePaymentReference($paymentId, $newPaymentId);
 
             if ($this->WEBDRIVER->isActive()) {
                 //$this->WEBDRIVER->getElementByWait('flopsan');
