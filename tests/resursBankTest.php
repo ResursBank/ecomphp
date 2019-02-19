@@ -480,6 +480,7 @@ class resursBankTest extends TestCase
         $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
         $myPayLoad = $this->TEST->ECOM->getPayload();
         static::assertTrue(isset($myPayLoad['storeId']) && $myPayLoad['storeId'] >= 0);
+        ecom_event_unregister('update_store_id');
     }
 
     /**
@@ -509,6 +510,7 @@ class resursBankTest extends TestCase
         }
 
         static::assertTrue(isset($myPayLoad['add_a_problem_into_payload']) && !isset($myPayLoad['signing']) && (int)$errorCode > 0);
+        ecom_event_unregister('update_payload');
     }
 
     /**
@@ -706,8 +708,8 @@ class resursBankTest extends TestCase
         $hasErrors = false;
         try {
             $paymentId = "nodesc_" . sha1(microtime(true));
-            $newPaymentId = 'PROPER_' . $paymentId;
-            $iframeData = $this->TEST->ECOM->createPayment($paymentId);
+            //$newPaymentId = 'PROPER_' . $paymentId;
+            $this->TEST->ECOM->createPayment($paymentId);
         } catch (\Exception $e) {
             $hasErrors = true;
         }
@@ -715,6 +717,7 @@ class resursBankTest extends TestCase
         // Current expectation: Removing description totally from an order still renders
         // the iframe, even if the order won't be handlable.
         static::assertFalse($hasErrors);
+        ecom_event_unregister('ecom_article_data');
     }
 
     /**
