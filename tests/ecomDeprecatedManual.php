@@ -46,7 +46,9 @@ if (file_exists("/etc/ecomphp.json")) {
 }
 
 /**
- * Class ResursBankTest
+ * Class ecomDeprecatedManual
+ *
+ * Resurs Bank API Gateway, PHPUnit Test Client
  */
 class ecomDeprecatedManual extends TestCase
 {
@@ -54,12 +56,8 @@ class ecomDeprecatedManual extends TestCase
     private $successUrl;
 
     /**
-     * Resurs Bank API Gateway, PHPUnit Test Client
-     *
-     * @subpackage EcomPHPClient
-     * @throws \Exception
+     * @throws Exception
      */
-
     public function setUp()
     {
         $this->globalInitialize();
@@ -69,6 +67,10 @@ class ecomDeprecatedManual extends TestCase
     {
     }
 
+    /**
+     * @param string $skipKey
+     * @return bool
+     */
     private function isSkip($skipKey = '')
     {
         if (defined('SKIP_TEST')) {

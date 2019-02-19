@@ -94,7 +94,7 @@ class resursBankTest extends TestCase
     /**
      * @throws \Exception
      */
-    protected function setUp()
+    public function setUp()
     {
         $this->API = new ResursBank();
         $this->API->setDebug(true);
