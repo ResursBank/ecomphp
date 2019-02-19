@@ -4058,6 +4058,7 @@ class ResursBank
         if (!$duplicateArticle) {
             $this->SpecLines[] = array(
                 'artNo' => $articleNumberOrId,
+                'description' => $description,
                 'quantity' => $quantity,
                 'unitMeasure' => $unitMeasure,
                 'unitAmountWithoutVat' => $unitAmountWithoutVat,
@@ -4386,7 +4387,8 @@ class ResursBank
     /**
      * @return string
      */
-    public function getOrderLineHash() {
+    public function getOrderLineHash()
+    {
         $returnHashed = '';
         $orderLines = $this->sanitizePaymentSpec($this->getOrderLines(), RESURS_FLOW_TYPES::MINIMALISTIC);
 
