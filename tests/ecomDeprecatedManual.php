@@ -61,10 +61,12 @@ class ecomDeprecatedManual extends TestCase
     public function setUp()
     {
         $this->globalInitialize();
+	ecom_event_reset();
     }
 
     public function tearDown()
     {
+	ecom_event_reset();
     }
 
     /**
@@ -102,12 +104,10 @@ class ecomDeprecatedManual extends TestCase
             }
         }
         register_shutdown_function(array($this, 'shutdownSuite'));
-        /* Set up default government id for bookings */
+        // Set up default government id for bookings
         $this->testGovId = $this->govIdNatural;
 
-        /*
-		 * If HTTP_HOST is not set, Resurs Checkout will not run properly, since the iFrame requires a valid internet connection (actually browser vs http server).
-		 */
+        // If HTTP_HOST is not set, Resurs Checkout will not run properly, since the iFrame requires a valid internet connection (actually browser vs http server).
         if ( ! isset($_SERVER['HTTP_HOST'])) {
             $_SERVER['HTTP_HOST'] = "localhost";
         }

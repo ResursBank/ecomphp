@@ -7,7 +7,6 @@ if (!is_array($ecomEvents)) {
 }
 
 if (!function_exists('ecom_event_register')) {
-
     /**
      * Simple hook generator.
      *
@@ -40,6 +39,13 @@ if (!function_exists('ecom_event_register')) {
         if (!isset($ecomEvents[$eventName])) {
             unset($ecomEvents[$eventName]);
         }
+    }
+
+    /**
+     * Reset to original state.
+     */
+    function ecom_event_reset() {
+        $ecomEvents = array();
     }
 }
 
