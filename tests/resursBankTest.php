@@ -68,12 +68,10 @@ class resursBankTest extends TestCase
 
     /** @noinspection PhpUnusedPrivateFieldInspection */
     /** @var string Username to web services */
-    //private $username = "ecomphpPipelineTest";
-    private $username = "atest";
+    private $username = "ecomphpPipelineTest";
     /** @noinspection PhpUnusedPrivateFieldInspection */
     /** @var string Password to web services */
-    //private $password = "4Em4r5ZQ98x3891D6C19L96TQ72HsisD";
-    private $password = "atest";
+    private $password = "4Em4r5ZQ98x3891D6C19L96TQ72HsisD";
 
     private $flowHappyCustomer = "8305147715";
     private $flowHappyCustomerName = "Vincent Williamsson Alexandersson";
