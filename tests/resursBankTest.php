@@ -699,35 +699,24 @@ class resursBankTest extends TestCase
      *
      * @test
      */
-    public function updatePaymentReferencePartUpdateCheckErrors()
+    public function ordersWithoutDescription()
     {
+        ecom_event_register('ecom_article_data', 'destroy_ecom_article_data');
         $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
         $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
         $this->TEST->ECOM->addOrderLine("Product-1337", "", 800, 25);
-        //$this->TEST->ECOM->addOrderLine("Product-1337", "", 900, 25);
         $hasErrors = false;
         try {
             $paymentId = "nodesc_" . sha1(microtime(true));
             $newPaymentId = 'PROPER_' . $paymentId;
             $iframeData = $this->TEST->ECOM->createPayment($paymentId);
-            echo $paymentId . "\n";
-            echo $iframeData;
-
-            die;
-            //$this->TEST->ECOM->updatePaymentReference($paymentId, $newPaymentId);
-
-            if ($this->WEBDRIVER->isActive()) {
-                //$this->WEBDRIVER->getElementByWait('flopsan');
-                $src = preg_replace('/(.*)iframe src=\"(.*?)\"(.*)$/', '$2', $iframeData);
-                $this->WEBDRIVER->REMOTE->get($src);
-                $this->WEBDRIVER->waitForElementAndSetData('input_pnr_number', '830547715');
-            }
-            echo $iframeData;
         } catch (\Exception $e) {
             $hasErrors = true;
         }
 
-        static::assertTrue(!$hasErrors);
+        // Current expectation: Removing description totally from an order still renders
+        // the iframe, even if the order won't be handlable.
+        static::assertFalse($hasErrors);
     }
 
     /**

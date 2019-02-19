@@ -4056,7 +4056,7 @@ class ResursBank
             }
         }
         if (!$duplicateArticle) {
-            $this->SpecLines[] = array(
+            $specData = array(
                 'artNo' => $articleNumberOrId,
                 'description' => $description,
                 'quantity' => $quantity,
@@ -4065,6 +4065,11 @@ class ResursBank
                 'vatPct' => $vatPct,
                 'type' => !empty($articleType) ? $articleType : ""
             );
+            $newSpecData = $this->event('ecom_article_data', $specData);
+            if (!is_null($newSpecData) && is_array($newSpecData)) {
+                $specData = $newSpecData;
+            }
+            $this->SpecLines[] = $specData;
         }
         $this->renderPaymentSpec();
     }
