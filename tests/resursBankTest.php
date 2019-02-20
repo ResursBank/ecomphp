@@ -54,7 +54,6 @@ class resursBankTest extends TestCase
 
     /** @var RESURS_TEST_BRIDGE $TEST Used for standard tests and simpler flow setup */
     protected $TEST;
-    /** @noinspection PhpUnusedPrivateFieldInspection */
 
     /** @noinspection PhpUnusedPrivateFieldInspection */
     /** @var string Username to web services */
@@ -71,11 +70,6 @@ class resursBankTest extends TestCase
 
     /** @var string Landing page for signings */
     private $signUrl = "https://test.resurs.com/signdummy/index.php?isSigningUrl=1";
-
-    public function tearDown()
-    {
-
-    }
 
     /**
      * @throws \Exception
@@ -105,8 +99,6 @@ class resursBankTest extends TestCase
     {
         static::assertTrue(count($this->TEST->getCredentialControl()) > 0);
     }
-
-    /** @noinspection PhpUnusedPrivateMethodInspection */
 
     /**
      * @test
@@ -203,7 +195,6 @@ class resursBankTest extends TestCase
         $byHandle = $lastCurlHandle->getParsed();
 
         /** @noinspection PhpUndefinedFieldInspection */
-        /** @noinspection PhpUndefinedFieldInspection */
         static::assertTrue(
             $byIo->fullName == $this->flowHappyCustomerName &&
             $byHandle->fullName == $this->flowHappyCustomerName
@@ -234,6 +225,8 @@ class resursBankTest extends TestCase
         $this->TEST->ECOM->setBillingByGetAddress($customerData);
         $this->TEST->ECOM->setCustomer("198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL");
         $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+        $this->TEST->ECOM->setMetaData('metaKeyTestTime', time());
+        $this->TEST->ECOM->setMetaData('metaKeyTestMicroTime', microtime(true));
         $response = $this->TEST->ECOM->createPayment($this->getMethodId());
         if (!$noAssert) {
             /** @noinspection PhpUndefinedFieldInspection */
@@ -269,7 +262,6 @@ class resursBankTest extends TestCase
      */
     public function generateSimpleSimplifiedPspWithouGovernmentIdCompatibility()
     {
-        // TODO: setCustomer should not be necessary
         $customerData = $this->getHappyCustomerData();
         $this->TEST->ECOM->setBillingByGetAddress($customerData);
         $this->TEST->ECOM->setCustomer(null, "0808080808", "0707070707", "test@test.com", "NATURAL");
@@ -515,6 +507,21 @@ class resursBankTest extends TestCase
 
     /**
      * @test
+     */
+    public function bitMaskControl()
+    {
+        static::assertTrue(
+            (255 & RESURS_CALLBACK_TYPES::FINALIZATION) ? true : false &&
+            (8 & RESURS_CALLBACK_TYPES::FINALIZATION) ? true : false &&
+            (24 & RESURS_CALLBACK_TYPES::TEST) ? true : false &&
+            (12 & RESURS_CALLBACK_TYPES::FINALIZATION && RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL) ? true : false &&
+            (56 & RESURS_CALLBACK_TYPES::FINALIZATION && RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL) ? true : false &&
+                (RESURS_CALLBACK_TYPES::FINALIZATION | RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL | RESURS_CALLBACK_TYPES::TEST) === 28
+        );
+    }
+
+    /**
+     * @test
      * @testdox The normal way
      * @throws \Exception
      */
@@ -584,7 +591,8 @@ class resursBankTest extends TestCase
             $this->TEST->ECOM->getPayment('FAIL_HERE');
         } catch (\Exception $e) {
             // This should NEVER throw anything else than 3 (REST) or 8 (SOAP)
-            static::assertTrue($e->getCode() === 3 || $e->getCode() === 8);
+            $code = $e->getCode();
+            static::assertTrue($code === 8);
         }
     }
 
