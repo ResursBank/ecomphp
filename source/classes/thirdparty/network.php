@@ -6939,13 +6939,13 @@ if ( ! class_exists( 'MODULE_SOAP', NETCURL_CLASS_EXISTS_AUTOLOAD ) && ! class_e
 		}
 	}
 }
-if ( ! defined('TORNELIB_CRYPTO_RELEASE')) {
-    define('TORNELIB_CRYPTO_RELEASE', '6.0.19');
+if (!defined('TORNELIB_CRYPTO_RELEASE')) {
+    define('TORNELIB_CRYPTO_RELEASE', '6.0.20');
 }
-if ( ! defined('TORNELIB_CRYPTO_MODIFY')) {
-    define('TORNELIB_CRYPTO_MODIFY', '20180822');
+if (!defined('TORNELIB_CRYPTO_MODIFY')) {
+    define('TORNELIB_CRYPTO_MODIFY', '20190220');
 }
-if ( ! defined('TORNELIB_CRYPTO_CLIENTNAME')) {
+if (!defined('TORNELIB_CRYPTO_CLIENTNAME')) {
     define('TORNELIB_CRYPTO_CLIENTNAME', 'MODULE_CRYPTO');
 }
 if (!defined('CRYPTO_SKIP_AUTOLOAD')) {
@@ -6954,18 +6954,28 @@ if (!defined('CRYPTO_SKIP_AUTOLOAD')) {
     define('CRYPTO_CLASS_EXISTS_AUTOLOAD', false);
 }
 if (defined('TORNELIB_CRYPTO_REQUIRE')) {
-    if ( ! defined('TORNELIB_CRYPTO_REQUIRE_OPERATOR')) {
+    if (!defined('TORNELIB_CRYPTO_REQUIRE_OPERATOR')) {
         define('TORNELIB_CRYPTO_REQUIRE_OPERATOR', '==');
     }
-    define('TORNELIB_CRYPTO_ALLOW_AUTOLOAD', version_compare(TORNELIB_CRYPTO_RELEASE, TORNELIB_CRYPTO_REQUIRE,
-        TORNELIB_CRYPTO_REQUIRE_OPERATOR) ? true : false);
+    define(
+        'TORNELIB_CRYPTO_ALLOW_AUTOLOAD',
+        version_compare(
+            TORNELIB_CRYPTO_RELEASE,
+            TORNELIB_CRYPTO_REQUIRE,
+            TORNELIB_CRYPTO_REQUIRE_OPERATOR
+        ) ? true : false
+    );
 } else {
-    if ( ! defined('TORNELIB_CRYPTO_ALLOW_AUTOLOAD')) {
+    if (!defined('TORNELIB_CRYPTO_ALLOW_AUTOLOAD')) {
         define('TORNELIB_CRYPTO_ALLOW_AUTOLOAD', true);
     }
 }
 
-if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_exists('TorneLIB\MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && defined('TORNELIB_CRYPTO_ALLOW_AUTOLOAD') && TORNELIB_CRYPTO_ALLOW_AUTOLOAD === true) {
+if (!class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) &&
+    !class_exists(
+        'TorneLIB\MODULE_CRYPTO',
+        CRYPTO_CLASS_EXISTS_AUTOLOAD
+    ) && defined('TORNELIB_CRYPTO_ALLOW_AUTOLOAD') && TORNELIB_CRYPTO_ALLOW_AUTOLOAD === true) {
 
     /**
      * Class TorneLIB_Crypto
@@ -6994,7 +7004,7 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
         /**
          * TorneLIB_Crypto constructor.
          */
-        function __construct()
+        public function __construct()
         {
             $this->setAesIv(md5("TorneLIB Default IV - Please Change this"));
             $this->setAesKey(md5("TorneLIB Default KEY - Please Change this"));
@@ -7007,7 +7017,7 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
          *
          * @since 6.0.6
          */
-        function setCompressionLevel($compressionLevel = 9)
+        public function setCompressionLevel($compressionLevel = 9)
         {
             $this->COMPRESSION_LEVEL = $compressionLevel;
         }
@@ -7052,8 +7062,8 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
          * 5 = Full usage and unrestricted $setMax
          * 6 = Complexity uses full charset of 0-255
          *
-         * @param int  $complexity
-         * @param int  $setMax      Max string length to use
+         * @param int $complexity
+         * @param int $setMax Max string length to use
          * @param bool $webFriendly Set to true works best with the less complex strings as it only removes characters that could be mistaken by another character (O,0,1,l,I etc)
          *
          * @return string
@@ -7061,7 +7071,7 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
          */
         function mkpass_deprecated($complexity = 4, $setMax = 8, $webFriendly = false)
         {
-            $returnString       = null;
+            $returnString = null;
             $characterListArray = array(
                 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
                 'abcdefghijklmnopqrstuvwxyz',
@@ -7095,12 +7105,12 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
             if ($setMax > 0) {
                 $max = $setMax;
             }
-            $chars    = array();
+            $chars = array();
             $numchars = array();
             //$equalityPart = ceil( $max / count( $characterListArray ) );
             for ($i = 0; $i < $max; $i++) {
                 $charListId = rand(0, count($characterListArray) - 1);
-                if ( ! isset($numchars[$charListId])) {
+                if (!isset($numchars[$charListId])) {
                     $numchars[$charListId] = 0;
                 }
                 $numchars[$charListId]++;
@@ -7127,11 +7137,11 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
         private function getCharacterListArray($type = 'upper')
         {
             $compiledArray = array(
-                'upper'    => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-                'lower'    => 'abcdefghijklmnopqrstuvwxyz',
-                'numeric'  => '0123456789',
+                'upper' => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+                'lower' => 'abcdefghijklmnopqrstuvwxyz',
+                'numeric' => '0123456789',
                 'specials' => '!@#$%*?',
-                'table'    => ''
+                'table' => ''
             );
             for ($i = 0; $i <= 255; $i++) {
                 $compiledArray['table'] .= chr($i);
@@ -7168,7 +7178,7 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
          * Returns a random character from a selected character list
          *
          * @param array $type
-         * @param bool  $ambigous
+         * @param bool $ambigous
          *
          * @return mixed|string
          * @since 6.0.4
@@ -7178,11 +7188,11 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
             if (is_string($type)) {
                 $type = array($type);
             }
-            $getType         = $type[rand(0, count($type) - 1)];
-            $characterArray  = $this->getCharactersFromList($getType);
+            $getType = $type[rand(0, count($type) - 1)];
+            $characterArray = $this->getCharactersFromList($getType);
             $characterLength = count($characterArray) - 1;
             $chosenCharacter = $characterArray[rand(0, $characterLength)];
-            $ambigousList    = array(
+            $ambigousList = array(
                 '+',
                 '/',
                 '=',
@@ -7204,7 +7214,7 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
         /**
          * Returns a random character based on complexity selection
          *
-         * @param int  $complexity
+         * @param int $complexity
          * @param bool $ambigous
          *
          * @return mixed|string
@@ -7238,9 +7248,9 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
         /**
          * Refactored generator to create a random password or string
          *
-         * @param int  $complexity  1=UPPERCASE, 2=UPPERCASE+lowercase, 3=UPPERCASE+lowercase+numerics, 4=UPPERCASE,lowercase+numerics+specialcharacters, 5/6=Full character set
-         * @param int  $totalLength Length of the string
-         * @param bool $ambigous    Exclude what we see as ambigous characters (this has no effect in complexity > 4)
+         * @param int $complexity 1=UPPERCASE, 2=UPPERCASE+lowercase, 3=UPPERCASE+lowercase+numerics, 4=UPPERCASE,lowercase+numerics+specialcharacters, 5/6=Full character set
+         * @param int $totalLength Length of the string
+         * @param bool $ambigous Exclude what we see as ambigous characters (this has no effect in complexity > 4)
          *
          * @return string
          * @since 6.0.4
@@ -7256,8 +7266,8 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
         }
 
         /**
-         * @param int  $complexity
-         * @param int  $totalLength
+         * @param int $complexity
+         * @param int $totalLength
          * @param bool $ambigous
          *
          * @return string
@@ -7280,7 +7290,7 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
          */
         public function setAesKey($useKey, $noHash = false)
         {
-            if ( ! $noHash) {
+            if (!$noHash) {
                 $this->ENCRYPT_AES_KEY = md5($useKey);
             } else {
                 $this->ENCRYPT_AES_KEY = $useKey;
@@ -7297,7 +7307,7 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
          */
         public function setAesIv($useIv, $noHash = false)
         {
-            if ( ! $noHash) {
+            if (!$noHash) {
                 $this->ENCRYPT_AES_IV = md5($useIv);
             } else {
                 $this->ENCRYPT_AES_IV = $useIv;
@@ -7355,8 +7365,8 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
          * Encrypt content to RIJNDAEL/AES-encryption (Deprecated from PHP 7.1, removed in PHP 7.2)
          *
          * @param string $decryptedContent
-         * @param bool   $asBase64
-         * @param bool   $forceUtf8
+         * @param bool $asBase64
+         * @param bool $forceUtf8
          *
          * @return string
          * @throws \Exception
@@ -7365,14 +7375,14 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
         public function aesEncrypt($decryptedContent = "", $asBase64 = true, $forceUtf8 = true)
         {
 
-            if ( ! $this->USE_MCRYPT) {
+            if (!$this->USE_MCRYPT) {
                 $this->setSslCipher('AES-256-CBC');
 
                 return $this->getEncryptSsl($decryptedContent, $asBase64, $forceUtf8);
             }
 
             $contentData = $decryptedContent;
-            if ( ! function_exists('mcrypt_encrypt')) {
+            if (!function_exists('mcrypt_encrypt')) {
                 throw new \Exception("mcrypt does not exist in this system - it has been deprecated since PHP 7.1");
             }
             if ($this->ENCRYPT_AES_KEY == md5(md5("TorneLIB Default IV - Please Change this")) || $this->ENCRYPT_AES_IV == md5(md5("TorneLIB Default IV - Please Change this"))) {
@@ -7383,7 +7393,7 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
                 $contentData = utf8_encode($decryptedContent);
             }
             /** @noinspection PhpDeprecationInspection */
-            $binEnc      = mcrypt_encrypt(MCRYPT_RIJNDAEL_256, $this->ENCRYPT_AES_KEY, $contentData, MCRYPT_MODE_CBC,
+            $binEnc = mcrypt_encrypt(MCRYPT_RIJNDAEL_256, $this->ENCRYPT_AES_KEY, $contentData, MCRYPT_MODE_CBC,
                 $this->ENCRYPT_AES_IV);
             $baseEncoded = $this->base64url_encode($binEnc);
             if ($asBase64) {
@@ -7405,7 +7415,7 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
             $this->getOpenSslEncrypt();
             if (in_array($cipherConstant, openssl_get_cipher_methods())) {
                 $this->OPENSSL_CIPHER_METHOD = $cipherConstant;
-                $this->OPENSSL_IV_LENGTH     = $this->getIvLength($cipherConstant);
+                $this->OPENSSL_IV_LENGTH = $this->getIvLength($cipherConstant);
 
                 return $cipherConstant;
             }
@@ -7432,7 +7442,7 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
         private function getIvLength($cipherConstant)
         {
             $this->getOpenSslEncrypt();
-            if ( ! empty($cipherConstant)) {
+            if (!empty($cipherConstant)) {
                 return openssl_cipher_iv_length($cipherConstant);
             }
 
@@ -7452,19 +7462,19 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
         public function getCipherTypeByString($encryptedString = "", $decryptedString = "")
         {
             $this->getOpenSslEncrypt();
-            $cipherMethods  = openssl_get_cipher_methods();
+            $cipherMethods = openssl_get_cipher_methods();
             $skippedMethods = array();
-            $originalKey    = $this->ENCRYPT_AES_KEY;
-            $originalIv     = $this->ENCRYPT_AES_IV;
+            $originalKey = $this->ENCRYPT_AES_KEY;
+            $originalIv = $this->ENCRYPT_AES_IV;
             foreach ($cipherMethods as $method) {
-                if ( ! in_array($method, $skippedMethods)) {
+                if (!in_array($method, $skippedMethods)) {
                     //$skippedMethods[] = strtoupper($method);
                     try {
                         $this->ENCRYPT_AES_KEY = $originalKey;
-                        $this->ENCRYPT_AES_IV  = $originalIv;
+                        $this->ENCRYPT_AES_IV = $originalIv;
                         $this->setSslCipher($method);
                         $result = $this->getEncryptSsl($decryptedString);
-                        if ( ! empty($result) && $result == $encryptedString) {
+                        if (!empty($result) && $result == $encryptedString) {
                             return $method;
                         }
                     } catch (\Exception $e) {
@@ -7477,15 +7487,17 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
 
         /**
          * @param string $decryptedContent
-         * @param bool   $asBase64
-         * @param bool   $forceUtf8
+         * @param bool $asBase64
+         * @param bool $forceUtf8
          *
          * @return string
          * @throws \Exception
          */
         public function getEncryptSsl($decryptedContent = "", $asBase64 = true, $forceUtf8 = true)
         {
-            if ($this->ENCRYPT_AES_KEY == md5(md5("TorneLIB Default IV - Please Change this")) || $this->ENCRYPT_AES_IV == md5(md5("TorneLIB Default IV - Please Change this"))) {
+            if ($this->ENCRYPT_AES_KEY == md5(md5("TorneLIB Default IV - Please Change this")) ||
+                $this->ENCRYPT_AES_IV == md5(md5("TorneLIB Default IV - Please Change this"))
+            ) {
                 throw new \Exception("Current encryption key and iv is not allowed to use.");
             }
 
@@ -7502,8 +7514,13 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
             }
 
             // TODO: openssl_random_pseudo_bytes
-            $binEnc = openssl_encrypt($contentData, $this->OPENSSL_CIPHER_METHOD, $this->getAesKey(), OPENSSL_RAW_DATA,
-                $this->getAesIv(true));
+            $binEnc = openssl_encrypt(
+                $contentData,
+                $this->OPENSSL_CIPHER_METHOD,
+                $this->getAesKey(),
+                OPENSSL_RAW_DATA,
+                $this->getAesIv(true)
+            );
 
             $baseEncoded = $this->base64url_encode($binEnc);
             if ($asBase64) {
@@ -7511,7 +7528,6 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
             } else {
                 return $binEnc;
             }
-
         }
 
         /**
@@ -7535,8 +7551,13 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
             }
 
             // TODO: openssl_random_pseudo_bytes
-            return openssl_decrypt($contentData, $this->OPENSSL_CIPHER_METHOD, $this->getAesKey(), OPENSSL_RAW_DATA,
-                $this->getAesIv(true));
+            return openssl_decrypt(
+                $contentData,
+                $this->OPENSSL_CIPHER_METHOD,
+                $this->getAesKey(),
+                OPENSSL_RAW_DATA,
+                $this->getAesIv(true)
+            );
         }
 
         /**
@@ -7554,7 +7575,7 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
          * Decrypt content encoded with RIJNDAEL/AES-encryption
          *
          * @param string $encryptedContent
-         * @param bool   $asBase64
+         * @param bool $asBase64
          *
          * @return string
          * @throws \Exception
@@ -7563,13 +7584,15 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
         public function aesDecrypt($encryptedContent = "", $asBase64 = true)
         {
 
-            if ( ! $this->USE_MCRYPT) {
+            if (!$this->USE_MCRYPT || version_compare(PHP_VERSION, '7.3', '>=')) {
                 return $this->getDecryptSsl($encryptedContent, $asBase64);
             }
 
             $useKey = $this->ENCRYPT_AES_KEY;
-            $useIv  = $this->ENCRYPT_AES_IV;
-            if ($useKey == md5(md5("TorneLIB Default IV - Please Change this")) || $useIv == md5(md5("TorneLIB Default IV - Please Change this"))) {
+            $useIv = $this->ENCRYPT_AES_IV;
+            if ($useKey == md5(md5("TorneLIB Default IV - Please Change this")) ||
+                $useIv == md5(md5("TorneLIB Default IV - Please Change this"))
+            ) {
                 // TODO: TORNELIB_EXCEPTIONS::TORNELIB_CRYPTO_KEY_EXCEPTION
                 throw new \Exception("Current encryption key and iv is not allowed to use.");
             }
@@ -7578,8 +7601,15 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
                 $contentData = $this->base64url_decode($encryptedContent);
             }
             /** @noinspection PhpDeprecationInspection */
-            $decryptedOutput = trim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $useKey, $contentData, MCRYPT_MODE_CBC,
-                $useIv));
+            $decryptedOutput = trim(
+                mcrypt_decrypt(
+                    MCRYPT_RIJNDAEL_256,
+                    $useKey,
+                    $contentData,
+                    MCRYPT_MODE_CBC,
+                    $useIv
+                )
+            );
 
             return $decryptedOutput;
         }
@@ -7588,20 +7618,21 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
          * Compress data with gzencode and encode to base64url
          *
          * @param string $data
-         * @param int    $compressionLevel
+         * @param int $compressionLevel
          *
          * @return string
          * @throws \Exception
          * @since 6.0.0
+         * @todo Remove camelcase
          */
         public function base64_gzencode($data = '', $compressionLevel = -1)
         {
 
-            if ( ! empty($this->COMPRESSION_LEVEL)) {
+            if (!empty($this->COMPRESSION_LEVEL)) {
                 $compressionLevel = $this->COMPRESSION_LEVEL;
             }
 
-            if ( ! function_exists('gzencode')) {
+            if (!function_exists('gzencode')) {
                 throw new \Exception("Function gzencode is missing");
             }
             $gzEncoded = gzencode($data, $compressionLevel);
@@ -7617,6 +7648,7 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
          * @return string
          * @throws \Exception
          * @since 6.0.0
+         * @todo Remove camelcase
          */
         public function base64_gzdecode($data = '')
         {
@@ -7633,10 +7665,11 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
          * @return string
          * @throws \Exception
          * @since 6.0.0
+         * @todo Remove camelcase
          */
         public function base64_bzencode($data = '')
         {
-            if ( ! function_exists('bzcompress')) {
+            if (!function_exists('bzcompress')) {
                 throw new \Exception("bzcompress is missing");
             }
             $bzEncoded = bzcompress($data);
@@ -7652,10 +7685,11 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
          * @return mixed
          * @throws \Exception
          * @since 6.0.0
+         * @todo Remove camelcase
          */
         public function base64_bzdecode($data)
         {
-            if ( ! function_exists('bzdecompress')) {
+            if (!function_exists('bzdecompress')) {
                 throw new \Exception("bzdecompress is missing");
             }
             $bzDecoded = $this->base64url_decode($data);
@@ -7671,13 +7705,13 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
          * @return mixed
          * @throws \Exception
          * @since 6.0.0
+         * @todo Remove camelcase
          */
-
         public function base64_compress($data = '')
         {
-            $results         = array();
+            $results = array();
             $bestCompression = null;
-            $lengthArray     = array();
+            $lengthArray = array();
             if (function_exists('gzencode')) {
                 $results['gz0'] = $this->base64_gzencode("gz0:" . $data, 0);
                 $results['gz9'] = $this->base64_gzencode("gz9:" . $data, 9);
@@ -7701,15 +7735,16 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
          * Decompress data that has been compressed with base64_compress
          *
          * @param string $data
-         * @param bool   $getCompressionType
+         * @param bool $getCompressionType
          *
          * @return string
          * @throws \Exception
          * @since 6.0.0
+         * @todo Remove camelcase
          */
         public function base64_decompress($data = '', $getCompressionType = false)
         {
-            $results       = array();
+            $results = array();
             $results['gz'] = $this->base64_gzdecode($data);
             if (function_exists('bzdecompress')) {
                 $results['bz'] = $this->base64_bzdecode($data);
@@ -7746,35 +7781,36 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
          * @return string
          * @throws \Exception
          * @since 6.0.0
+         * @todo Remove camelcase
          */
         private function gzDecode($data)
         {
             if (function_exists('gzdecode')) {
                 return gzdecode($data);
             }
-            if ( ! function_exists('gzinflate')) {
+            if (!function_exists('gzinflate')) {
                 throw new \Exception("Function gzinflate and gzdecode is missing");
             }
             // Inhherited from TorneEngine-Deprecated
-            $flags     = ord(substr($data, 3, 1));
+            $flags = ord(substr($data, 3, 1));
             $headerlen = 10;
             //$extralen    = 0;
             //$filenamelen = 0;
             if ($flags & 4) {
-                $extralen  = unpack('v', substr($data, 10, 2));
-                $extralen  = $extralen[1];
+                $extralen = unpack('v', substr($data, 10, 2));
+                $extralen = $extralen[1];
                 $headerlen += 2 + $extralen;
             }
-            if ($flags & 8) // Filename
-            {
+            // Filename
+            if ($flags & 8) {
                 $headerlen = strpos($data, chr(0), $headerlen) + 1;
             }
-            if ($flags & 16) // Comment
-            {
+            // Comment
+            if ($flags & 16) {
                 $headerlen = strpos($data, chr(0), $headerlen) + 1;
             }
-            if ($flags & 2) // CRC at end of file
-            {
+            // CRC at end of file
+            if ($flags & 2) {
                 $headerlen += 2;
             }
             $unpacked = gzinflate(substr($data, $headerlen));
@@ -7792,6 +7828,7 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
          *
          * @return string
          * @since 6.0.0
+         * @todo Remove camelcase
          */
         public function base64url_encode($data)
         {
@@ -7805,6 +7842,7 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
          *
          * @return string
          * @since 6.0.0
+         * @todo Remove camelcase
          */
         public function base64url_decode($data)
         {
@@ -7813,7 +7851,16 @@ if ( ! class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_ex
     }
 }
 
-if ( ! class_exists('TORNELIB_CRYPTO_TYPES', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_exists('TorneLIB\TORNELIB_CRYPTO_TYPES', CRYPTO_CLASS_EXISTS_AUTOLOAD)) {
+/**
+ * @todo Split extenders to another place
+ */
+
+if (!class_exists('TORNELIB_CRYPTO_TYPES', CRYPTO_CLASS_EXISTS_AUTOLOAD) &&
+    !class_exists(
+        'TorneLIB\TORNELIB_CRYPTO_TYPES',
+        CRYPTO_CLASS_EXISTS_AUTOLOAD
+    )
+) {
     abstract class TORNELIB_CRYPTO_TYPES
     {
         const TYPE_NONE = 0;
@@ -7822,18 +7869,23 @@ if ( ! class_exists('TORNELIB_CRYPTO_TYPES', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! 
     }
 }
 
-if ( ! class_exists('TorneLIB_Crypto', CRYPTO_CLASS_EXISTS_AUTOLOAD) && ! class_exists('TorneLIB\TorneLIB_Crypto', CRYPTO_CLASS_EXISTS_AUTOLOAD)) {
+if (!class_exists('TorneLIB_Crypto', CRYPTO_CLASS_EXISTS_AUTOLOAD) &&
+    !class_exists(
+        'TorneLIB\TorneLIB_Crypto',
+        CRYPTO_CLASS_EXISTS_AUTOLOAD
+    )
+) {
     class TorneLIB_Crypto extends MODULE_CRYPTO
     {
     }
 }
-if ( ! defined('TORNELIB_IO_RELEASE')) {
-    define('TORNELIB_IO_RELEASE', '6.0.14');
+if (!defined('TORNELIB_IO_RELEASE')) {
+    define('TORNELIB_IO_RELEASE', '6.0.15');
 }
-if ( ! defined('TORNELIB_IO_MODIFY')) {
-    define('TORNELIB_IO_MODIFY', '20180822');
+if (!defined('TORNELIB_IO_MODIFY')) {
+    define('TORNELIB_IO_MODIFY', '20190220');
 }
-if ( ! defined('TORNELIB_IO_CLIENTNAME')) {
+if (!defined('TORNELIB_IO_CLIENTNAME')) {
     define('TORNELIB_IO_CLIENTNAME', 'MODULE_IO');
 }
 if (!defined('IO_SKIP_AUTOLOAD')) {
@@ -7842,18 +7894,30 @@ if (!defined('IO_SKIP_AUTOLOAD')) {
     define('IO_CLASS_EXISTS_AUTOLOAD', false);
 }
 if (defined('TORNELIB_IO_REQUIRE')) {
-    if ( ! defined('TORNELIB_IO_REQUIRE_OPERATOR')) {
+    if (!defined('TORNELIB_IO_REQUIRE_OPERATOR')) {
         define('TORNELIB_IO_REQUIRE_OPERATOR', '==');
     }
-    define('TORNELIB_IO_ALLOW_AUTOLOAD',
-        version_compare(TORNELIB_IO_RELEASE, TORNELIB_IO_REQUIRE, TORNELIB_IO_REQUIRE_OPERATOR) ? true : false);
+    define(
+        'TORNELIB_IO_ALLOW_AUTOLOAD',
+        version_compare(
+            TORNELIB_IO_RELEASE,
+            TORNELIB_IO_REQUIRE,
+            TORNELIB_IO_REQUIRE_OPERATOR
+        ) ? true : false
+    );
 } else {
-    if ( ! defined('TORNELIB_IO_ALLOW_AUTOLOAD')) {
+    if (!defined('TORNELIB_IO_ALLOW_AUTOLOAD')) {
         define('TORNELIB_IO_ALLOW_AUTOLOAD', true);
     }
 }
 
-if ( ! class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) && ! class_exists('TorneLIB\MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) && defined('TORNELIB_IO_ALLOW_AUTOLOAD') && TORNELIB_IO_ALLOW_AUTOLOAD === true) {
+if (!class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) &&
+    !class_exists(
+        'TorneLIB\MODULE_IO',
+        IO_CLASS_EXISTS_AUTOLOAD
+    ) &&
+    defined('TORNELIB_IO_ALLOW_AUTOLOAD') &&
+    TORNELIB_IO_ALLOW_AUTOLOAD === true) {
 
     /**
      * Class MODULE_IO
@@ -7884,7 +7948,7 @@ if ( ! class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) && ! class_exists('To
         {
         }
 
-        function setCrypto()
+        public function setCrypto()
         {
             if (empty($this->CRYPTO)) {
                 $this->CRYPTO = new TorneLIB_Crypto();
@@ -7898,7 +7962,7 @@ if ( ! class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) && ! class_exists('To
          *
          * @since 6.0.3
          */
-        function setCompressionLevel($compressionLevel = 9)
+        public function setCompressionLevel($compressionLevel = 9)
         {
             $this->setCrypto();
             $this->CRYPTO->setCompressionLevel($compressionLevel);
@@ -7994,7 +8058,7 @@ if ( ! class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) && ! class_exists('To
         public function getHasXmlSerializer()
         {
             $serializerPath = stream_resolve_include_path('XML/Unserializer.php');
-            if ( ! empty($serializerPath)) {
+            if (!empty($serializerPath)) {
                 return true;
             }
 
@@ -8028,7 +8092,7 @@ if ( ! class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) && ! class_exists('To
          * The upgraded version are also supposed to work with protected values.
          *
          * @param array $objectArray
-         * @param bool  $useJsonFunction
+         * @param bool $useJsonFunction
          *
          * @return object
          * @since 6.0.0
@@ -8090,13 +8154,15 @@ if ( ! class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) && ! class_exists('To
         }
 
         /**
-         * @param array            $dataArray
+         * @param array $dataArray
          * @param SimpleXMLElement $xml
          *
          * @return mixed
          * @since 6.0.3
+         * @todo Fix PSR compliance (by switching the places of default arguments, if you do want to get rid of the nulled $xml)
+         * @todo Get rid of camelcase
          */
-        private function array_to_xml($dataArray = array(), $xml)
+        private function array_to_xml($dataArray = array(), $xml = null)
         {
             foreach ($dataArray as $key => $value) {
                 $key = is_numeric($key) ? 'item' : $key;
@@ -8124,10 +8190,10 @@ if ( ! class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) && ! class_exists('To
             if (is_array($dataArray)) {
                 foreach ($dataArray as $p => $v) {
                     if (is_array($v) || is_object($v)) {
-                        $v            = $this->getUtf8($v);
+                        $v = $this->getUtf8($v);
                         $newArray[$p] = $v;
                     } else {
-                        $v            = utf8_encode($v);
+                        $v = utf8_encode($v);
                         $newArray[$p] = $v;
                     }
 
@@ -8143,7 +8209,7 @@ if ( ! class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) && ! class_exists('To
          * @return bool
          * @since 6.0.2
          */
-        function isAssoc(array $arrayData)
+        public function isAssoc(array $arrayData)
         {
             if (array() === $arrayData) {
                 return false;
@@ -8154,8 +8220,8 @@ if ( ! class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) && ! class_exists('To
 
         /**
          * @param string $contentString
-         * @param int    $compression
-         * @param bool   $renderAndDie
+         * @param int $compression
+         * @param bool $renderAndDie
          *
          * @return string
          * @throws \Exception
@@ -8189,8 +8255,8 @@ if ( ! class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) && ! class_exists('To
          * ServerRenderer: Render JSON data
          *
          * @param array $contentData
-         * @param bool  $renderAndDie
-         * @param int   $compression
+         * @param bool $renderAndDie
+         * @param int $compression
          *
          * @return string
          * @throws \Exception
@@ -8207,8 +8273,11 @@ if ( ! class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) && ! class_exists('To
                 $objectArrayEncoded = $this->objectsIntoArray($this->getFromJson($contentData));
             }
 
-            $contentRendered = $this->compressString(@json_encode($objectArrayEncoded, JSON_PRETTY_PRINT), $compression,
-                $renderAndDie);
+            $contentRendered = $this->compressString(
+                @json_encode($objectArrayEncoded, JSON_PRETTY_PRINT),
+                $compression,
+                $renderAndDie
+            );
 
             if ($renderAndDie) {
                 header("Content-type: application/json; charset=utf-8");
@@ -8223,8 +8292,8 @@ if ( ! class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) && ! class_exists('To
          * ServerRenderer: PHP serialized
          *
          * @param array $contentData
-         * @param bool  $renderAndDie
-         * @param int   $compression
+         * @param bool $renderAndDie
+         * @param int $compression
          *
          * @return string
          * @throws \Exception
@@ -8248,14 +8317,14 @@ if ( ! class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) && ! class_exists('To
 
         /**
          * @param string $serialInput
-         * @param bool   $assoc
+         * @param bool $assoc
          *
          * @return mixed
          * @since 6.0.5
          */
         public function getFromSerializerInternal($serialInput = '', $assoc = false)
         {
-            if ( ! $assoc) {
+            if (!$assoc) {
                 return @unserialize($serialInput);
             } else {
                 return $this->arrayObjectToStdClass(@unserialize($serialInput));
@@ -8270,8 +8339,8 @@ if ( ! class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) && ! class_exists('To
          *  pecl install yaml
          *
          * @param array $contentData
-         * @param bool  $renderAndDie
-         * @param int   $compression
+         * @param bool $renderAndDie
+         * @param int $compression
          *
          * @return string
          * @throws \Exception
@@ -8284,7 +8353,8 @@ if ( ! class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) && ! class_exists('To
         ) {
             $objectArrayEncoded = $this->getUtf8($this->objectsIntoArray($contentData));
             if (function_exists('yaml_emit')) {
-                $contentRendered = $this->compressString(yaml_emit($objectArrayEncoded), $compression, $renderAndDie);
+                $contentRendered = $this->compressString(yaml_emit($objectArrayEncoded), $compression,
+                    $renderAndDie);
                 if ($renderAndDie) {
                     header("Content-Type: text/plain");
                     echo $contentRendered;
@@ -8298,9 +8368,9 @@ if ( ! class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) && ! class_exists('To
         }
 
         /**
-         * @param array  $contentData
-         * @param bool   $renderAndDie
-         * @param int    $compression
+         * @param array $contentData
+         * @param bool $renderAndDie
+         * @param int $compression
          * @param string $initialTagName
          * @param string $rootName
          *
@@ -8316,19 +8386,19 @@ if ( ! class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) && ! class_exists('To
             $rootName = 'XMLResponse'
         ) {
             $serializerPath = stream_resolve_include_path('XML/Serializer.php');
-            if ( ! empty($serializerPath)) {
+            if (!empty($serializerPath)) {
                 /** @noinspection PhpIncludeInspection */
                 require_once('XML/Serializer.php');
             }
             $objectArrayEncoded = $this->getUtf8($this->objectsIntoArray($contentData));
-            $options            = array(
-                'indent'         => '    ',
-                'linebreak'      => "\n",
-                'encoding'       => 'UTF-8',
-                'rootName'       => $rootName,
+            $options = array(
+                'indent' => '    ',
+                'linebreak' => "\n",
+                'encoding' => 'UTF-8',
+                'rootName' => $rootName,
                 'defaultTagName' => $initialTagName
             );
-            if (class_exists('XML_Serializer', IO_CLASS_EXISTS_AUTOLOAD) && ! $this->ENFORCE_SIMPLEXML) {
+            if (class_exists('XML_Serializer', IO_CLASS_EXISTS_AUTOLOAD) && !$this->ENFORCE_SIMPLEXML) {
                 $xmlSerializer = new \XML_Serializer($options);
                 $xmlSerializer->serialize($objectArrayEncoded);
                 $contentRendered = $xmlSerializer->getSerializedData();
@@ -8336,7 +8406,7 @@ if ( ! class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) && ! class_exists('To
                 // <data></data>
                 if ($this->SOAP_ATTRIBUTES_ENABLED) {
                     $soapNs = 'http://schemas.xmlsoap.org/soap/envelope/';
-                    $xml    = new \SimpleXMLElement('<?xml version="1.0"?>' . '<' . $rootName . '></' . $rootName . '>',
+                    $xml = new \SimpleXMLElement('<?xml version="1.0"?>' . '<' . $rootName . '></' . $rootName . '>',
                         0, false, $soapNs, false);
                     $xml->addAttribute($rootName . ':xmlns', $soapNs);
                     $xml->addAttribute($rootName . ':xsi', 'http://www.w3.org/2001/XMLSchema-instance');
@@ -8383,26 +8453,27 @@ if ( ! class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) && ! class_exists('To
          * Convert XML string into an object or array
          *
          * @param string $dataIn
-         * @param bool   $normalize Normalize objects (convert to stdClass)
+         * @param bool $normalize Normalize objects (convert to stdClass)
          *
          * @return \SimpleXMLElement
          * @since 6.0.5
          */
         public function getFromXml($dataIn = '', $normalize = false)
         {
-            set_error_handler( function ( $errNo, $errStr ) {
+            set_error_handler(function ($errNo, $errStr) {
                 throw new \Exception($errStr, $errNo);
-            }, E_ALL );
+            }, E_ALL);
 
             $dataIn = trim($dataIn);
 
             // Run entity checker only if there seems to be no initial tags located in the input string, as this may cause bad loops
             // for PHP (in older versions this also cause SEGFAULTs)
-            if ( ! preg_match("/^\</", $dataIn) && preg_match("/&\b(.*?)+;(.*)/is", $dataIn)) {
+            if (!preg_match("/^\</", $dataIn) && preg_match("/&\b(.*?)+;(.*)/is", $dataIn)) {
                 $dataEntity = trim(html_entity_decode($dataIn));
                 if (preg_match("/^\</", $dataEntity)) {
 
                     restore_error_handler();
+
                     return $this->getFromXml($dataEntity, $normalize);
                 }
 
@@ -8414,6 +8485,7 @@ if ( ! class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) && ! class_exists('To
                     }
 
                     restore_error_handler();
+
                     return $this->getFromXml($dataEntity, $normalize);
                 }
 
@@ -8427,11 +8499,13 @@ if ( ! class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) && ! class_exists('To
                     $xmlSerializer = new \XML_Unserializer();
                     $xmlSerializer->unserialize($dataIn);
 
-                    if ( ! $normalize) {
+                    if (!$normalize) {
                         restore_error_handler();
+
                         return $xmlSerializer->getUnserializedData();
                     } else {
                         restore_error_handler();
+
                         return $this->arrayObjectToStdClass($xmlSerializer->getUnserializedData());
                     }
                 }
@@ -8444,25 +8518,32 @@ if ( ! class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) && ! class_exists('To
                             $simpleXML = new \SimpleXMLElement($dataIn);
                         }
                         if (isset($simpleXML) && (is_object($simpleXML) || is_array($simpleXML))) {
-                            if ( ! $normalize) {
+                            if (!$normalize) {
                                 restore_error_handler();
+
                                 return $simpleXML;
                             } else {
                                 $objectClass = $this->arrayObjectToStdClass($simpleXML);
-                                if ( ! count((array)$objectClass)) {
+                                if (!count((array)$objectClass)) {
                                     $xmlExtractedPath = $this->extractXmlPath($simpleXML);
-                                    if ( ! is_null($xmlExtractedPath)) {
+                                    if (!is_null($xmlExtractedPath)) {
                                         if (is_object($xmlExtractedPath) || (is_array($xmlExtractedPath) && count($xmlExtractedPath))) {
                                             restore_error_handler();
+
                                             return $xmlExtractedPath;
                                         }
                                     }
                                 }
 
                                 restore_error_handler();
+
                                 return $objectClass;
                             }
                         }
+                    } else {
+                        // When there are no longer any chances that this parser can find xml, we at least need to restore
+                        // the error handler, or this will cause problems with other exception handlers.
+                        restore_error_handler();
                     }
                 }
             }
@@ -8480,8 +8561,8 @@ if ( ! class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) && ! class_exists('To
          */
         private function extractXmlPath($simpleXML = null)
         {
-            $canReturn       = false;
-            $xmlXpath        = null;
+            $canReturn = false;
+            $xmlXpath = null;
             $xmlPathReturner = null;
             if (method_exists($simpleXML, 'xpath')) {
                 try {
@@ -8492,10 +8573,10 @@ if ( ! class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) && ! class_exists('To
                 if (is_array($xmlXpath)) {
                     if (count($xmlXpath) == 1) {
                         $xmlPathReturner = array_pop($xmlXpath);
-                        $canReturn       = true;
+                        $canReturn = true;
                     } elseif (count($xmlXpath) > 1) {
                         $xmlPathReturner = $xmlXpath;
-                        $canReturn       = true;
+                        $canReturn = true;
                     }
                     if (isset($xmlPathReturner->return)) {
                         return $this->arrayObjectToStdClass($xmlPathReturner)->return;
@@ -8511,7 +8592,7 @@ if ( ! class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) && ! class_exists('To
 
         /**
          * @param string $yamlString
-         * @param bool   $getAssoc
+         * @param bool $getAssoc
          *
          * @return array|mixed|object
          * @throws \Exception
@@ -8542,7 +8623,8 @@ if ( ! class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) && ! class_exists('To
     }
 }
 
-if ( ! class_exists('TorneLIB_IO', IO_CLASS_EXISTS_AUTOLOAD) && ! class_exists('TorneLIB\TorneLIB_IO', IO_CLASS_EXISTS_AUTOLOAD)) {
+if (!class_exists('TorneLIB_IO', IO_CLASS_EXISTS_AUTOLOAD) && !class_exists('TorneLIB\TorneLIB_IO',
+        IO_CLASS_EXISTS_AUTOLOAD)) {
     class TorneLIB_IO extends MODULE_IO
     {
     }
