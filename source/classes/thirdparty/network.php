@@ -8463,6 +8463,8 @@ if ( ! class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) && ! class_exists('To
                                 return $objectClass;
                             }
                         }
+                    } else {
+                        restore_error_handler();
                     }
                 }
             }
