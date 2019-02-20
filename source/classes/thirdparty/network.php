@@ -8541,8 +8541,6 @@ if (!class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) &&
                             }
                         }
                     } else {
-                        // When there are no longer any chances that this parser can find xml, we at least need to restore
-                        // the error handler, or this will cause problems with other exception handlers.
                         restore_error_handler();
                     }
                 }
