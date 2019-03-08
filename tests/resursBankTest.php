@@ -98,7 +98,7 @@ class resursBankTest extends TestCase
     {
         $this->API = new ResursBank();
         $this->API->setDebug(true);
-        $this->TEST = new RESURS_TEST_BRIDGE();
+        $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
         $this->WEBDRIVER = new \RESURS_WEBDRIVER();
         if (!empty($this->webdriverFile) && file_exists(__DIR__ . '/' . $this->webdriverFile)) {
             $this->WEBDRIVER->init();
@@ -715,6 +715,23 @@ class resursBankTest extends TestCase
         // Current expectation: Removing description totally from an order still renders
         // the iframe, even if the order won't be handlable.
         static::assertFalse($hasErrors);
+    }
+
+    /**
+     * @test
+     * @throws \Exception
+     */
+    public function validateCredentials()
+    {
+        $isNotValid = $this->TEST->ECOM->validateCredentials(RESURS_ENVIRONMENTS::TEST, 'fail', 'fail');
+        $isValid = $this->TEST->ECOM->validateCredentials(RESURS_ENVIRONMENTS::TEST, $this->username, $this->password);
+        $onInit = new ResursBank();
+        // Using this function on setAuthentication should immediately throw exception if not valid.
+        $onInitOk = $onInit->setAuthentication($this->username, $this->password, true);
+
+        $initAndValidate= new ResursBank($this->username, $this->password);
+        $justValidated = $initAndValidate->validateCredentials();
+        static::assertTrue($isValid && !$isNotValid && $onInitOk && $justValidated);
     }
 
     /**

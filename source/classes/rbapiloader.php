@@ -8,7 +8,7 @@
  * @author  Resurs Bank Ecommerce
  *          /home/thorne/dev/Resurs/ecomphp/1.1/source/classes/rbapiloader.php<ecommerce.support@resurs.se>
  * @branch  1.3
- * @version 1.3.14
+ * @version 1.3.15
  * @link    https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link    https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @link    https://test.resurs.com/docs/x/KAH1 EComPHP: Bitmasking features
@@ -62,7 +62,7 @@ if (!defined('ECOMPHP_VERSION')) {
     define('ECOMPHP_VERSION', '1.3.15');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20190205');
+    define('ECOMPHP_MODIFY_DATE', '20190308');
 }
 
 /**
@@ -1310,12 +1310,17 @@ class ResursBank
      * @param string $username
      * @param string $password
      *
+     * @param bool $validate
+     * @return bool
+     * @throws Exception
      * @since 1.0.22
      * @since 1.1.22
      * @since 1.2.0
      */
-    public function setAuthentication($username = '', $password = '')
+    public function setAuthentication($username = '', $password = '', $validate = false)
     {
+        $result = null;
+
         $this->username = $username;
         $this->password = $password;
         if (!is_null($username)) {
@@ -1326,6 +1331,54 @@ class ResursBank
             $this->soapOptions['password'] = $password;
             $this->password = $password; // For use with initwsdl
         }
+
+        if ($validate) {
+            if (!$this->validateCredentials($this->current_environment, $username, $password)) {
+                throw new \Exception('Credentials is not valid', 401);
+            }
+            $result = true;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Validate entered credentials. If credentials is initialized via the constructor, no extra parameters are required.
+     *
+     * @param int $environment
+     * @param string $username
+     * @param string $password
+     * @return bool
+     * @throws Exception Borrowing 417 (Expectation Failed) here (https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/417)
+     * @since 1.1.42
+     * @since 1.0.42
+     * @since 1.3.15
+     */
+    public function validateCredentials($environment = RESURS_ENVIRONMENTS::TEST, $username = '', $password = '')
+    {
+        $result = false;
+
+        if (empty($username) && empty($password) && empty($this->username) && empty($this->password)) {
+            throw new \Exception('Validating credentials means you have to defined credentials before validating them. Use setAuthentication() or push your credentials into this method directly.',
+                417);
+        }
+        if (!empty($username)) {
+            $this->setAuthentication($username, $password);
+        }
+
+        try {
+            $methods = $this->getPaymentMethods(array(), true);
+            // Extra layer control. If there are no payment methods something is terribly wrong.
+            if (is_array($methods) && count($methods)) {
+                $result = true;
+            } else {
+                throw new \Exception('Validating credentials was successful, but not payment methods was found.', 417);
+            }
+        } catch (\Exception $ignoreMyException) {
+
+        }
+
+        return $result;
     }
 
     /**
