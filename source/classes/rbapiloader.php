@@ -1336,6 +1336,7 @@ class ResursBank
             if (!$this->validateCredentials($this->current_environment, $username, $password)) {
                 throw new \Exception('Credentials is not valid', 401);
             }
+            // Returning boolean is normally used for test cases.
             $result = true;
         }
 
