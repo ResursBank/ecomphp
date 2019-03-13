@@ -244,6 +244,7 @@ abstract class RESURS_ENCODE_TYPES {
     const SUCCESSURL = 4;
     const BACKURL = 8;
     const FAILURL = 16;
+    const LEAVE_FIRST_PART = 32;
 }
 
 ///
