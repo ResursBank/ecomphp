@@ -770,14 +770,14 @@ class resursBankTest extends TestCase
             $failUrl,
             false,
             $backUrl,
-            RESURS_ENCODE_TYPES::BACKURL + RESURS_ENCODE_TYPES::FAILURL + RESURS_ENCODE_TYPES::PATH_ONLY
+            RESURS_URL_ENCODE_TYPES::BACKURL + RESURS_URL_ENCODE_TYPES::FAILURL + RESURS_URL_ENCODE_TYPES::PATH_ONLY
         );
         $resultFailAndBackSkipFirst = $this->TEST->ECOM->setSigning(
             $successUrl,
             $failUrl,
             false,
             $backUrl,
-            RESURS_ENCODE_TYPES::BACKURL + RESURS_ENCODE_TYPES::FAILURL + RESURS_ENCODE_TYPES::PATH_ONLY + RESURS_ENCODE_TYPES::LEAVE_FIRST_PART
+            RESURS_URL_ENCODE_TYPES::BACKURL + RESURS_URL_ENCODE_TYPES::FAILURL + RESURS_URL_ENCODE_TYPES::PATH_ONLY + RESURS_URL_ENCODE_TYPES::LEAVE_FIRST_PART
         );
 
         $hasEncodedFailUrl = $this->hasEncodings($resultFailAndBack['signing'], 'failUrl');

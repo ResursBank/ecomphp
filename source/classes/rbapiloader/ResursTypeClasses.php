@@ -234,10 +234,10 @@ abstract class RESURS_ENVIRONMENTS
 }
 
 /**
- * Class RESURS_ENCODE_TYPES How to encode urls
+ * Class RESURS_URL_ENCODE_TYPES How to encode urls
  * @package Resursbank\RBEcomPHP
  */
-abstract class RESURS_ENCODE_TYPES {
+abstract class RESURS_URL_ENCODE_TYPES {
     const NONE = 0;
     const PATH_ONLY = 1;
     const FULL = 2;

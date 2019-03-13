@@ -5274,7 +5274,7 @@ class ResursBank
     }
 
     /**
-     * @param $urlType RESURS_ENCODE_TYPES
+     * @param $urlType RESURS_URL_ENCODE_TYPES
      * @return string
      * @since 1.3.15
      * @since 1.0.42
@@ -5283,18 +5283,18 @@ class ResursBank
     private function getEncodedUrl($url, $urlType)
     {
         try {
-            if ($urlType & RESURS_ENCODE_TYPES::PATH_ONLY) {
+            if ($urlType & RESURS_URL_ENCODE_TYPES::PATH_ONLY) {
                 $urlParsed = parse_url($url);
 
                 if (is_array($urlParsed) && count($urlParsed) === 4) {
                     $queryStartEncoded = '?';
                     $queryStartDecoded = '';
-                    if ($urlType & RESURS_ENCODE_TYPES::LEAVE_FIRST_PART) {
+                    if ($urlType & RESURS_URL_ENCODE_TYPES::LEAVE_FIRST_PART) {
                         $queryStartEncoded = '';
                         $queryStartDecoded = '?';
                     }
                     $encodedQuery = rawurlencode($queryStartEncoded . $urlParsed['query']);
-                    if ($urlType & RESURS_ENCODE_TYPES::LEAVE_FIRST_PART) {
+                    if ($urlType & RESURS_URL_ENCODE_TYPES::LEAVE_FIRST_PART) {
                         $encodedQuery = preg_replace('/%3D/', '=', $encodedQuery, 1);
                     }
                     $url = sprintf(
@@ -5317,8 +5317,8 @@ class ResursBank
 
     /**
      * @param $currentUrl
-     * @param $urlType RESURS_ENCODE_TYPES
-     * @param $requestBits RESURS_ENCODE_TYPES
+     * @param $urlType RESURS_URL_ENCODE_TYPES
+     * @param $requestBits RESURS_URL_ENCODE_TYPES
      * @return string
      * @since 1.3.15
      * @since 1.0.42
@@ -5343,7 +5343,7 @@ class ResursBank
      * @param string $failUrl Payment failures redirect url
      * @param bool $forceSigning Always require signing during payment
      * @param string $backUrl Backurl (optional for hosted flow) if anything else than failUrl
-     * @param int $encodeType
+     * @param RESURS_URL_ENCODE_TYPES $encodeType
      * @return mixed
      * @throws Exception
      * @since 1.0.6
@@ -5354,17 +5354,17 @@ class ResursBank
         $failUrl = '',
         $forceSigning = false,
         $backUrl = null,
-        $encodeType = RESURS_ENCODE_TYPES::NONE
+        $encodeType = RESURS_URL_ENCODE_TYPES::NONE
     ) {
         $SigningPayload['signing'] = array(
-            'successUrl' => $this->getEncodedSigningUrl($successUrl, RESURS_ENCODE_TYPES::SUCCESSURL, $encodeType),
-            'failUrl' => $this->getEncodedSigningUrl($failUrl, RESURS_ENCODE_TYPES::FAILURL, $encodeType),
+            'successUrl' => $this->getEncodedSigningUrl($successUrl, RESURS_URL_ENCODE_TYPES::SUCCESSURL, $encodeType),
+            'failUrl' => $this->getEncodedSigningUrl($failUrl, RESURS_URL_ENCODE_TYPES::FAILURL, $encodeType),
             'forceSigning' => $forceSigning
         );
         if (!is_null($backUrl)) {
             $SigningPayload['backUrl'] = $this->getEncodedSigningUrl(
                 $backUrl,
-                RESURS_ENCODE_TYPES::BACKURL,
+                RESURS_URL_ENCODE_TYPES::BACKURL,
                 $encodeType);
         }
         $this->handlePayload($SigningPayload);
