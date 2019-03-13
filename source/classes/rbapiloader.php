@@ -62,7 +62,7 @@ if (!defined('ECOMPHP_VERSION')) {
     define('ECOMPHP_VERSION', '1.3.15');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20190308');
+    define('ECOMPHP_MODIFY_DATE', '20190314');
 }
 
 /**
@@ -5286,7 +5286,7 @@ class ResursBank
             if ($urlType & RESURS_URL_ENCODE_TYPES::PATH_ONLY) {
                 $urlParsed = parse_url($url);
 
-                if (is_array($urlParsed) && count($urlParsed) === 4) {
+                if (is_array($urlParsed)) {
                     $queryStartEncoded = '?';
                     $queryStartDecoded = '';
                     if ($urlType & RESURS_URL_ENCODE_TYPES::LEAVE_FIRST_PART) {
@@ -5301,7 +5301,7 @@ class ResursBank
                         '%s://%s%s%s',
                         $urlParsed['scheme'],
                         $urlParsed['host'],
-                        $urlParsed['path'],
+                        isset($urlParsed['path']) ? $urlParsed['path'] : '/',
                         $queryStartDecoded . $encodedQuery
                     );
                 }
