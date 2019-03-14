@@ -729,9 +729,60 @@ class resursBankTest extends TestCase
         // Using this function on setAuthentication should immediately throw exception if not valid.
         $onInitOk = $onInit->setAuthentication($this->username, $this->password, true);
 
-        $initAndValidate= new ResursBank($this->username, $this->password);
+        $initAndValidate = new ResursBank($this->username, $this->password);
         $justValidated = $initAndValidate->validateCredentials();
         static::assertTrue($isValid && !$isNotValid && $onInitOk && $justValidated);
+    }
+
+    private function hasEncodings($array, $key = '', $subkey = '') {
+        $return = false;
+
+        if (is_array($array)) {
+            foreach ($array as $arrayKey => $arrayValue) {
+                $decodedValue = rawurldecode($arrayValue);
+                if (($arrayKey === $key || $key === '') && $arrayValue !== $decodedValue) {
+                    $return = true;
+                    break;
+                }
+            }
+        }
+
+        return $return;
+    }
+
+    /**
+     * @test
+     */
+    public function encodeUrls()
+    {
+        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
+
+        $successUrl = 'https://identifier.tornevall.net/?json=true&queryParam1=Test1&queryParam2=Test2&Test3=true&success=true';
+        $backUrl = 'https://identifier.tornevall.net/?json=true&queryParam1=Test1&queryParam2=Test2&Test3=true&back=true';
+        $failUrl = 'https://identifier.tornevall.net/?json=true&queryParam1=Test1&queryParam2=Test2&Test3=true&fail=true';
+
+        $resultNoEncoded = $this->TEST->ECOM->setSigning($successUrl, $failUrl, false, $backUrl);
+        $hasNoEncodedFailUrl = $this->hasEncodings($resultNoEncoded['signing'], 'failUrl');
+
+        $this->TEST->ECOM->resetPayload();
+        $resultFailAndBack = $this->TEST->ECOM->setSigning(
+            $successUrl,
+            $failUrl,
+            false,
+            $backUrl,
+            RESURS_URL_ENCODE_TYPES::BACKURL + RESURS_URL_ENCODE_TYPES::FAILURL + RESURS_URL_ENCODE_TYPES::PATH_ONLY
+        );
+        $resultFailAndBackSkipFirst = $this->TEST->ECOM->setSigning(
+            $successUrl,
+            $failUrl,
+            false,
+            $backUrl,
+            RESURS_URL_ENCODE_TYPES::BACKURL + RESURS_URL_ENCODE_TYPES::FAILURL + RESURS_URL_ENCODE_TYPES::PATH_ONLY + RESURS_URL_ENCODE_TYPES::LEAVE_FIRST_PART
+        );
+
+        $hasEncodedFailUrl = $this->hasEncodings($resultFailAndBack['signing'], 'failUrl');
+        $hasQ = preg_match('/\?/', $resultFailAndBackSkipFirst['signing']['failUrl']);
+        static::assertTrue($hasEncodedFailUrl && !$hasNoEncodedFailUrl && $hasQ);
     }
 
     /**
