@@ -5282,7 +5282,7 @@ class ResursBank
             if ($urlType & RESURS_URL_ENCODE_TYPES::PATH_ONLY) {
                 $urlParsed = parse_url($url);
 
-                if (is_array($urlParsed) && count($urlParsed) === 4) {
+                if (is_array($urlParsed)) {
                     $queryStartEncoded = '?';
                     $queryStartDecoded = '';
                     if ($urlType & RESURS_URL_ENCODE_TYPES::LEAVE_FIRST_PART) {
@@ -5297,7 +5297,7 @@ class ResursBank
                         '%s://%s%s%s',
                         $urlParsed['scheme'],
                         $urlParsed['host'],
-                        $urlParsed['path'],
+                        isset($urlParsed['path']) ? $urlParsed['path'] : '/',
                         $queryStartDecoded . $encodedQuery
                     );
                 }
@@ -5330,16 +5330,14 @@ class ResursBank
     }
 
     /**
-     * Configure signing data for the payload
-     *
-     * Note: backUrl is used when customers are clicking "back" rather than failing.
-     * Added support for multilevel encoded urls on demand since 1.3.15/1.1.40.
+     * Configure signing data for the payload. Supports partial urlencoding since (1.3.15/1.1.42).
+     * Encoding is usually not a problem when using "nice urls".
      *
      * @param string $successUrl Successful payment redirect url
      * @param string $failUrl Payment failures redirect url
      * @param bool $forceSigning Always require signing during payment
-     * @param string $backUrl Backurl (optional for hosted flow) if anything else than failUrl
-     * @param RESURS_URL_ENCODE_TYPES $encodeType
+     * @param string $backUrl Backurl (optional for hosted flow where back !== fail) if anything else than failUrl
+     * @param RESURS_URL_ENCODE_TYPES $encodeType It is NOT recommended to run this on a successurl
      * @return mixed
      * @throws Exception
      * @since 1.0.6
