@@ -46,7 +46,9 @@ if (file_exists("/etc/ecomphp.json")) {
 }
 
 /**
- * Class ResursBankTest
+ * Class ecomDeprecatedManual
+ *
+ * Resurs Bank API Gateway, PHPUnit Test Client
  */
 class ecomDeprecatedManual extends TestCase
 {
@@ -54,21 +56,23 @@ class ecomDeprecatedManual extends TestCase
     private $successUrl;
 
     /**
-     * Resurs Bank API Gateway, PHPUnit Test Client
-     *
-     * @subpackage EcomPHPClient
-     * @throws \Exception
+     * @throws Exception
      */
-
     public function setUp()
     {
         $this->globalInitialize();
+	ecom_event_reset();
     }
 
     public function tearDown()
     {
+	ecom_event_reset();
     }
 
+    /**
+     * @param string $skipKey
+     * @return bool
+     */
     private function isSkip($skipKey = '')
     {
         if (defined('SKIP_TEST')) {
@@ -100,12 +104,10 @@ class ecomDeprecatedManual extends TestCase
             }
         }
         register_shutdown_function(array($this, 'shutdownSuite'));
-        /* Set up default government id for bookings */
+        // Set up default government id for bookings
         $this->testGovId = $this->govIdNatural;
 
-        /*
-		 * If HTTP_HOST is not set, Resurs Checkout will not run properly, since the iFrame requires a valid internet connection (actually browser vs http server).
-		 */
+        // If HTTP_HOST is not set, Resurs Checkout will not run properly, since the iFrame requires a valid internet connection (actually browser vs http server).
         if ( ! isset($_SERVER['HTTP_HOST'])) {
             $_SERVER['HTTP_HOST'] = "localhost";
         }

@@ -15,17 +15,20 @@
 
 namespace Resursbank\RBEcomPHP;
 
-if (file_exists(__DIR__ . "/../vendor/autoload.php")) {
+if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
     require_once(__DIR__ . '/../vendor/autoload.php');
 } else {
     require_once('../source/classes/rbapiloader.php');
+}
+
+if (file_exists(__DIR__ . '/webdriver.php')) {
+    require_once(__DIR__ . '/webdriver.php');
 }
 
 // Resurs Bank usages
 use PHPUnit\Framework\TestCase;
 use TorneLIB\MODULE_CURL;
 use TorneLIB\MODULE_IO;
-use TorneLIB\MODULE_NETBITS;
 use TorneLIB\MODULE_SOAP;
 
 // curl wrapper, extended network handling functions etc
@@ -57,6 +60,9 @@ class resursBankTest extends TestCase
      */
     protected $API;
 
+    /** @var \RESURS_WEBDRIVER */
+    protected $WEBDRIVER;
+
     /** @var RESURS_TEST_BRIDGE $TEST Used for standard tests and simpler flow setup */
     protected $TEST;
 
@@ -77,13 +83,26 @@ class resursBankTest extends TestCase
     private $signUrl = "https://test.resurs.com/signdummy/index.php?isSigningUrl=1";
 
     /**
+     * Exact match of selenium driver we're running with tests.
+     *
+     * Add to composer: "facebook/webdriver": "dev-master"
+     *
+     * @var string
+     */
+    //protected $webdriverFile = 'selenium.jar';
+
+    /**
      * @throws \Exception
      */
-    protected function setUp()
+    public function setUp()
     {
         $this->API = new ResursBank();
         $this->API->setDebug(true);
-        $this->TEST = new RESURS_TEST_BRIDGE();
+        $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
+        $this->WEBDRIVER = new \RESURS_WEBDRIVER();
+        if (!empty($this->webdriverFile) && file_exists(__DIR__ . '/' . $this->webdriverFile)) {
+            $this->WEBDRIVER->init();
+        }
     }
 
     /**
@@ -219,6 +238,16 @@ class resursBankTest extends TestCase
 
     /**
      * @test
+     * @throws \Exception
+     */
+    public function findPaymentByGovd()
+    {
+        $payments = $this->TEST->ECOM->findPayments(array('governmentId' => '8305147715'));
+        static::assertTrue(is_array($payments) && count($payments));
+    }
+
+    /**
+     * @test
      * @param bool $noAssert
      * @return array
      * @throws \Exception
@@ -307,7 +336,8 @@ class resursBankTest extends TestCase
         $this->TEST->share('happyCustomer', $happyCustomer, false);
         if (!$noAssert) {
             // Call to undefined function mb_strpos() with assertContains in PHP 7.3
-            static::assertTrue(preg_match('/'.$this->flowHappyCustomerName.'/i', $happyCustomer->fullName)?true:false);
+            static::assertTrue(preg_match('/' . $this->flowHappyCustomerName . '/i',
+                $happyCustomer->fullName) ? true : false);
         }
 
         return $happyCustomer;
@@ -415,7 +445,7 @@ class resursBankTest extends TestCase
     }
 
     /**
-     * @test
+     * @todo Countable issue linked to an IO event
      * @throws \Exception
      */
     public function findPaymentsXmlBody()
@@ -448,6 +478,7 @@ class resursBankTest extends TestCase
         $this->TEST->ECOM->setBillingByGetAddress($customerData);
         $this->TEST->ECOM->setCustomer("198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL");
         $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+        ecom_event_unregister('update_store_id');
         $myPayLoad = $this->TEST->ECOM->getPayload();
         static::assertTrue(isset($myPayLoad['storeId']) && $myPayLoad['storeId'] >= 0);
     }
@@ -477,8 +508,43 @@ class resursBankTest extends TestCase
         } catch (\Exception $e) {
             $errorCode = $e->getCode();
         }
-
+        ecom_event_unregister('update_payload');
         static::assertTrue(isset($myPayLoad['add_a_problem_into_payload']) && !isset($myPayLoad['signing']) && (int)$errorCode > 0);
+    }
+
+    /**
+     * @test
+     *
+     * How to use this in a store environment like RCO:
+     *   - During interceptor mode, store the getOrderLineHash in a _SESSION variable.
+     *   - When interceptor handle is sent over to backend in store, run getOrderLineHash again.
+     *   - Match the old stored _SESSION variable with the new getOrderLineHash-response.
+     *   - If they mismatch, the cart has been updated while still in the checkout.
+     *
+     * @throws \Exception
+     */
+    public function hashedSpecLines()
+    {
+        $customerData = $this->getHappyCustomerData();
+        $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline, red", 800, 25);
+        $this->TEST->ECOM->addOrderLine("Product-1337", "Second simple orderline, blue", 900, 25);
+        $this->TEST->ECOM->addOrderLine("Product-1338", "Third simple orderline", 1000, 25, 'st', 'ORDER_LINE', 3);
+        $this->TEST->ECOM->addOrderLine("Product-1339", "Our fee", 45, 25, 'st', 'FEE', 3);
+        $this->TEST->ECOM->setBillingByGetAddress($customerData);
+        $this->TEST->ECOM->setCustomer(null, "0808080808", "0707070707", "test@test.com", "NATURAL");
+        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+        $orderLineHash = $this->TEST->ECOM->getOrderLineHash();
+        $this->TEST->ECOM->addOrderLine(
+            "Hacked Product",
+            "Article added after first orderline hash",
+            1000,
+            25,
+            'st',
+            'ORDER_LINE',
+            3
+        );
+        $newOrderLineHash = $this->TEST->ECOM->getOrderLineHash();
+        static::assertTrue($orderLineHash !== $newOrderLineHash);
     }
 
     /**
@@ -508,7 +574,6 @@ class resursBankTest extends TestCase
         }
         $callbacks = $this->TEST->ECOM->getCallBacksByRest(true);
         static::assertTrue(is_array($callbacks) && !count($callbacks) ? true : false);
-
     }
 
     /**
@@ -600,6 +665,124 @@ class resursBankTest extends TestCase
             $code = $e->getCode();
             static::assertTrue($code === 8);
         }
+    }
+
+    /**
+     * For the future edition of EC where __get is a helper.
+     *
+     * @test
+     */
+    /*public function newGet()
+    {
+        try {
+            $failable = $this->TEST->ECOM->nonExistent && $this->TEST->ECOM['nonExistent'] ? true : false;
+        } catch (\Exception $e) {
+            $failable = true;
+        }
+
+        try {
+            $protectedVariable = $this->TEST->ECOM->version;
+        } catch (\Exception $e) {
+            $protectedVariable = true;
+        }
+
+        $reachableVariable = $this->TEST->ECOM->current_environment;
+        $unsetButReachableVariable = $this->TEST->ECOM->test;
+
+        static::assertTrue($failable && $protectedVariable && $reachableVariable === 1 && $unsetButReachableVariable);
+    }*/
+
+    /**
+     * Special test case where we just create an iframe and then sending updatePaymentReferences via API to see
+     * if any errors are traceable
+     */
+    public function ordersWithoutDescription()
+    {
+        ecom_event_register('ecom_article_data', 'destroy_ecom_article_data');
+        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
+        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+        $this->TEST->ECOM->addOrderLine("Product-1337", "", 800, 25);
+        $hasErrors = false;
+        try {
+            $paymentId = "nodesc_" . sha1(microtime(true));
+            //$newPaymentId = 'PROPER_' . $paymentId;
+            $this->TEST->ECOM->createPayment($paymentId);
+        } catch (\Exception $e) {
+            $hasErrors = true;
+        }
+        ecom_event_unregister('ecom_article_data');
+
+        // Current expectation: Removing description totally from an order still renders
+        // the iframe, even if the order won't be handlable.
+        static::assertFalse($hasErrors);
+    }
+
+    /**
+     * @test
+     * @throws \Exception
+     */
+    public function validateCredentials()
+    {
+        $isNotValid = $this->TEST->ECOM->validateCredentials(RESURS_ENVIRONMENTS::TEST, 'fail', 'fail');
+        $isValid = $this->TEST->ECOM->validateCredentials(RESURS_ENVIRONMENTS::TEST, $this->username, $this->password);
+        $onInit = new ResursBank();
+        // Using this function on setAuthentication should immediately throw exception if not valid.
+        $onInitOk = $onInit->setAuthentication($this->username, $this->password, true);
+
+        $initAndValidate = new ResursBank($this->username, $this->password);
+        $justValidated = $initAndValidate->validateCredentials();
+        static::assertTrue($isValid && !$isNotValid && $onInitOk && $justValidated);
+    }
+
+    private function hasEncodings($array, $key = '', $subkey = '') {
+        $return = false;
+
+        if (is_array($array)) {
+            foreach ($array as $arrayKey => $arrayValue) {
+                $decodedValue = rawurldecode($arrayValue);
+                if (($arrayKey === $key || $key === '') && $arrayValue !== $decodedValue) {
+                    $return = true;
+                    break;
+                }
+            }
+        }
+
+        return $return;
+    }
+
+    /**
+     * @test
+     */
+    public function encodeUrls()
+    {
+        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
+
+        $successUrl = 'https://identifier.tornevall.net/?json=true&queryParam1=Test1&queryParam2=Test2&Test3=true&success=true';
+        $backUrl = 'https://identifier.tornevall.net/?json=true&queryParam1=Test1&queryParam2=Test2&Test3=true&back=true';
+        $failUrl = 'https://identifier.tornevall.net/?json=true&queryParam1=Test1&queryParam2=Test2&Test3=true&fail=true';
+
+        $resultNoEncoded = $this->TEST->ECOM->setSigning($successUrl, $failUrl, false, $backUrl);
+        $hasNoEncodedFailUrl = $this->hasEncodings($resultNoEncoded['signing'], 'failUrl');
+
+        $this->TEST->ECOM->resetPayload();
+        $resultFailAndBack = $this->TEST->ECOM->setSigning(
+            $successUrl,
+            $failUrl,
+            false,
+            $backUrl,
+            RESURS_URL_ENCODE_TYPES::BACKURL + RESURS_URL_ENCODE_TYPES::FAILURL + RESURS_URL_ENCODE_TYPES::PATH_ONLY
+        );
+        $resultFailAndBackSkipFirst = $this->TEST->ECOM->setSigning(
+            $successUrl,
+            $failUrl,
+            false,
+            $backUrl,
+            RESURS_URL_ENCODE_TYPES::BACKURL + RESURS_URL_ENCODE_TYPES::FAILURL + RESURS_URL_ENCODE_TYPES::PATH_ONLY + RESURS_URL_ENCODE_TYPES::LEAVE_FIRST_PART
+        );
+
+        $hasEncodedFailUrl = $this->hasEncodings($resultFailAndBack['signing'], 'failUrl');
+        $hasQ = preg_match('/\?/', $resultFailAndBackSkipFirst['signing']['failUrl']);
+        static::assertTrue($hasEncodedFailUrl && !$hasNoEncodedFailUrl && $hasQ);
     }
 
     /**
