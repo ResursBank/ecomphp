@@ -245,6 +245,9 @@ abstract class RESURS_ENVIRONMENTS
  *
  * @package Resursbank\RBEcomPHP
  * @since 1.3.16
+ * @since 1.1.44
+ * @since 1.0.44
+ * @deprecated Do not use this unless you see urlencoding problems in your environment.
  */
 abstract class RESURS_URL_ENCODE_TYPES
 {

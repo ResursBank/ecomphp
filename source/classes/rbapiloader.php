@@ -3290,6 +3290,14 @@ class ResursBank
         }
     }
 
+    /**
+     * @param $key
+     * @return bool
+     * @throws Exception
+     * @since 1.3.16
+     * @since 1.1.44
+     * @since 1.0.44
+     */
     public function hasMetaDataKey($key)
     {
         $return = false;
