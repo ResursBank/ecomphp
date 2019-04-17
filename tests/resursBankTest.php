@@ -238,6 +238,52 @@ class resursBankTest extends TestCase
 
     /**
      * @test
+     */
+    public function preMetaData()
+    {
+        $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline", 800, 25);
+        $this->TEST->ECOM->setMetaData('inboundKey', 'inboundValue');
+
+        $meta = $this->TEST->ECOM->getMetaData(null, true);
+        $metaKey = $this->TEST->ECOM->getMetaData(null, true, true);
+
+        static::assertTrue(count($meta['payloadMetaData']) > 0 && count($metaKey['payloadMetaData']));
+    }
+
+    /**
+     * @test Avoid duplicate metadata in pre set method.
+     * @throws \Exception
+     */
+    public function setMetaData()
+    {
+        $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline", 800, 25);
+        try {
+            $this->TEST->ECOM->setMetaData('inboundKey', 'inboundValue');
+            $this->TEST->ECOM->setMetaData('inboundKey', 'inboundValue');
+            $this->TEST->ECOM->setMetaData('inboundKey', 'inboundValue');
+        } catch (\Exception $e) {
+            static::assertTrue($e->getCode() === 400);
+        }
+    }
+
+    /**
+     * @test Avoid duplicate metadata in pre set method.
+     * @throws \Exception
+     */
+    public function setMetaDataDuplicate()
+    {
+        $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline", 800, 25);
+        $this->TEST->ECOM->setMetaData('inboundKey', 'inboundValue', false);
+        $this->TEST->ECOM->setMetaData('inboundKey', 'inboundValue', false);
+        $this->TEST->ECOM->setMetaData('inboundKey', 'inboundValue', false);
+        $plm = $this->TEST->ECOM->getMetaData(null, true);
+        $allMetas = $plm['payloadMetaData'];
+
+        static::assertTrue(count($allMetas) === 3);
+    }
+
+    /**
+     * @test
      * @throws \Exception
      */
     public function findPaymentByGovd()
@@ -734,7 +780,8 @@ class resursBankTest extends TestCase
         static::assertTrue($isValid && !$isNotValid && $onInitOk && $justValidated);
     }
 
-    private function hasEncodings($array, $key = '', $subkey = '') {
+    private function hasEncodings($array, $key = '', $subkey = '')
+    {
         $return = false;
 
         if (is_array($array)) {
