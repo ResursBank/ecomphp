@@ -317,6 +317,32 @@ class resursBankTest extends TestCase
     }
 
     /**
+     * Only run this when emulating colliding orders in the woocommerce plugin.
+     * @param bool $noAssert
+     * @return array
+     * @throws \Exception
+     */
+    public function wooCommerceCollider($noAssert = false)
+    {
+        $incremental = 1430;
+        $customerData = $this->getHappyCustomerData();
+        $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline", 800, 25);
+        $this->TEST->ECOM->setBillingByGetAddress($customerData);
+        $this->TEST->ECOM->setCustomer("198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL");
+        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+        $this->TEST->ECOM->setMetaData('metaKeyTestTime', time());
+        $this->TEST->ECOM->setMetaData('metaKeyTestMicroTime', microtime(true));
+        $this->TEST->ECOM->setPreferredId($incremental);
+        $response = $this->TEST->ECOM->createPayment($this->getMethodId());
+        if (!$noAssert) {
+            /** @noinspection PhpUndefinedFieldInspection */
+            static::assertTrue($response->bookPaymentStatus == 'BOOKED' || $response->bookPaymentStatus == 'SIGNING');
+        }
+
+        return $response;
+    }
+
+    /**
      * @test Using PSP during simplified flow (with government id / SSN)
      * @return array
      * @throws \Exception
