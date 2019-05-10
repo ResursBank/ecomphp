@@ -318,6 +318,7 @@ class resursBankTest extends TestCase
 
     /**
      * Only run this when emulating colliding orders in the woocommerce plugin.
+     *
      * @param bool $noAssert
      * @return array
      * @throws \Exception
@@ -524,7 +525,7 @@ class resursBankTest extends TestCase
     {
         $paymentScanList = $this->TEST->ECOM->findPayments(array('statusSet' => array('IS_DEBITED')), 1, 10, array(
             'ascending' => false,
-            'sortColumns' => array('FINALIZED_TIME', 'MODIFIED_TIME', 'BOOKED_TIME')
+            'sortColumns' => array('FINALIZED_TIME', 'MODIFIED_TIME', 'BOOKED_TIME'),
         ));
 
         $handle = $this->TEST->ECOM->getCurlHandle();
@@ -806,57 +807,37 @@ class resursBankTest extends TestCase
         static::assertTrue($isValid && !$isNotValid && $onInitOk && $justValidated);
     }
 
-    private function hasEncodings($array, $key = '', $subkey = '')
+    /**
+     * @test
+     */
+    public function stringExceptions()
     {
-        $return = false;
-
-        if (is_array($array)) {
-            foreach ($array as $arrayKey => $arrayValue) {
-                $decodedValue = rawurldecode($arrayValue);
-                if (($arrayKey === $key || $key === '') && $arrayValue !== $decodedValue) {
-                    $return = true;
-                    break;
-                }
-            }
+        try {
+            throw new \ResursException('Fail', 0, null, 'TEST_ERROR_CODE_AS_STRING', __FUNCTION__);
+        } catch (\Exception $e) {
+            $firstCode = $e->getCode();
+        }
+        try {
+            throw new \ResursException('Fail', 0, null, 'TEST_ERROR_CODE_AS_STRING_WITHOUT_CONSTANT', __FUNCTION__);
+        } catch (\Exception $e) {
+            $secondCode = $e->getCode();
         }
 
-        return $return;
+        static::assertTrue($firstCode === 1007 && $secondCode === 'TEST_ERROR_CODE_AS_STRING_WITHOUT_CONSTANT');
     }
 
     /**
      * @test
      */
-    public function encodeUrls()
+    public function failUpdatePaymentReference()
     {
-        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
-
-        $successUrl = 'https://identifier.tornevall.net/?json=true&queryParam1=Test1&queryParam2=Test2&Test3=true&success=true';
-        $backUrl = 'https://identifier.tornevall.net/?json=true&queryParam1=Test1&queryParam2=Test2&Test3=true&back=true';
-        $failUrl = 'https://identifier.tornevall.net/?json=true&queryParam1=Test1&queryParam2=Test2&Test3=true&fail=true';
-
-        $resultNoEncoded = $this->TEST->ECOM->setSigning($successUrl, $failUrl, false, $backUrl);
-        $hasNoEncodedFailUrl = $this->hasEncodings($resultNoEncoded['signing'], 'failUrl');
-
-        $this->TEST->ECOM->resetPayload();
-        $resultFailAndBack = $this->TEST->ECOM->setSigning(
-            $successUrl,
-            $failUrl,
-            false,
-            $backUrl,
-            RESURS_URL_ENCODE_TYPES::BACKURL + RESURS_URL_ENCODE_TYPES::FAILURL + RESURS_URL_ENCODE_TYPES::PATH_ONLY
-        );
-        $resultFailAndBackSkipFirst = $this->TEST->ECOM->setSigning(
-            $successUrl,
-            $failUrl,
-            false,
-            $backUrl,
-            RESURS_URL_ENCODE_TYPES::BACKURL + RESURS_URL_ENCODE_TYPES::FAILURL + RESURS_URL_ENCODE_TYPES::PATH_ONLY + RESURS_URL_ENCODE_TYPES::LEAVE_FIRST_PART
-        );
-
-        $hasEncodedFailUrl = $this->hasEncodings($resultFailAndBack['signing'], 'failUrl');
-        $hasQ = preg_match('/\?/', $resultFailAndBackSkipFirst['signing']['failUrl']);
-        static::assertTrue($hasEncodedFailUrl && !$hasNoEncodedFailUrl && $hasQ);
+        try {
+            $this->TEST->ECOM->updatePaymentReference('not_this', 'not_that');
+        } catch (\Exception $e) {
+            static::assertTrue($e->getCode() === 700);
+        }
     }
+
 
     /**
      * @test
