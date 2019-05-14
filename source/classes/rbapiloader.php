@@ -4421,14 +4421,18 @@ class ResursBank
         } elseif ($myFlow == RESURS_FLOW_TYPES::RESURS_CHECKOUT) {
             $checkoutUrl = $this->getCheckoutUrl() . "/checkout/payments/" . $payment_id_or_method;
             try {
-                $checkoutResponse = $this->CURL->doPost($checkoutUrl, $this->Payload,
-                    NETCURL_POST_DATATYPES::DATATYPE_JSON);
+                $checkoutResponse = $this->CURL->doPost(
+                    $checkoutUrl,
+                    $this->Payload,
+                    NETCURL_POST_DATATYPES::DATATYPE_JSON
+                );
                 $parsedResponse = $this->CURL->getParsed($checkoutResponse);
                 $responseCode = $this->CURL->getCode($checkoutResponse);
                 // Do not trust response codes!
                 if (isset($parsedResponse->paymentSessionId)) {
                     $this->paymentSessionId = $parsedResponse->paymentSessionId;
-                    $this->SpecLines = array();
+                    //$this->SpecLines = array();
+                    $this->resetPayload();
 
                     /** @noinspection PhpUndefinedFieldInspection */
                     return $parsedResponse->html;
@@ -6399,6 +6403,12 @@ class ResursBank
             'Payload' => $this->Payload,
             'SpecLines' => $this->SpecLines
         );
+
+        // Flags that prevents any reset of payloads. Here, it will be just filled.
+        if ($this->getFlag('NO_RESET_PAYLOAD')) {
+            return;
+        }
+
         $this->SpecLines = array();
         $this->Payload = array();
     }

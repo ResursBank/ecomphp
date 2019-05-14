@@ -794,6 +794,45 @@ class resursBankTest extends TestCase
      * @test
      * @throws \Exception
      */
+    public function updateStrangePaymentReference()
+    {
+        $showFrames = false;
+
+        $this->TEST->ECOM->setFlag('NO_RESET_PAYLOAD');
+        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
+        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+
+        // First update.
+        $this->TEST->ECOM->addOrderLine("Product-1337", "", 800, 25);
+        $id = $this->TEST->ECOM->getPreferredPaymentId();
+        $fIframe = $this->TEST->ECOM->createPayment($id);
+        $renameToFirst = microtime(true);
+        $this->TEST->ECOM->updatePaymentReference($id, $renameToFirst);
+
+        // Second update.
+        $this->TEST->ECOM->addOrderLine("Product-1337-OverWriteMe", "", 1200, 25);
+        $sIframe = $this->TEST->ECOM->createPayment($id);
+        // Update this reference to the above payment id.
+        $this->TEST->ECOM->updatePaymentReference($id, $renameToFirst);
+        $this->TEST->ECOM->deleteFlag('NO_RESET_PAYLOAD');
+
+        if ($showFrames) {
+            echo $fIframe . "\n";
+            echo $sIframe . "\n";
+        }
+
+        // Making above steps will give two different iframe-sessions that can be updated
+        // to the same final order id. However, there can be only one winner of the final payment session.
+        // To figure out which, there are different articles and final sums in the order.
+        // For the default ecom behaviour, the payload will reset after each "createPayment"
+        // so there won't be any refills.
+        static::assertTrue(!empty($renameToFirst) && $fIframe !== $sIframe);
+    }
+
+    /**
+     * @test
+     * @throws \Exception
+     */
     public function validateCredentials()
     {
         $isNotValid = $this->TEST->ECOM->validateCredentials(RESURS_ENVIRONMENTS::TEST, 'fail', 'fail');
