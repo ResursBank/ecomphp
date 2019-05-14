@@ -798,7 +798,10 @@ class resursBankTest extends TestCase
     {
         $showFrames = false;
 
-        $this->TEST->ECOM->setFlag('NO_RESET_PAYLOAD');
+        // Using NO_RESET_PAYLOAD in the test suite may lead to unexpected faults, so
+        // have it disabled, unless you need something very specific out of this test.
+
+        //$this->TEST->ECOM->setFlag('NO_RESET_PAYLOAD');
         $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
         $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
 
@@ -814,7 +817,7 @@ class resursBankTest extends TestCase
         $sIframe = $this->TEST->ECOM->createPayment($id);
         // Update this reference to the above payment id.
         $this->TEST->ECOM->updatePaymentReference($id, $renameToFirst);
-        $this->TEST->ECOM->deleteFlag('NO_RESET_PAYLOAD');
+        //$this->TEST->ECOM->deleteFlag('NO_RESET_PAYLOAD');
 
         if ($showFrames) {
             echo $fIframe . "\n";
