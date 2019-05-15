@@ -4431,8 +4431,8 @@ class ResursBank
                 // Do not trust response codes!
                 if (isset($parsedResponse->paymentSessionId)) {
                     $this->paymentSessionId = $parsedResponse->paymentSessionId;
-                    //$this->SpecLines = array();
-                    $this->resetPayload();
+                    $this->SpecLines = array();
+                    //$this->resetPayload();
 
                     /** @noinspection PhpUndefinedFieldInspection */
                     return $parsedResponse->html;
