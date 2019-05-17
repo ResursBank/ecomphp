@@ -6404,6 +6404,15 @@ class ResursBank
     }
 
     /**
+     * @param $paymentId
+     */
+    private function setAfterShopPaymentId($paymentId) {
+        if (empty($this->preferredId)) {
+            $this->preferredId = $paymentId;
+        }
+    }
+
+    /**
      * Aftershop Payment Finalization (DEBIT)
      *
      * Make sure that you are running this with try-catches in cases where failures may occur.
@@ -6420,6 +6429,8 @@ class ResursBank
      */
     public function paymentFinalize($paymentId = "", $customPayloadItemList = array(), $runOnce = false)
     {
+        //$this->setAfterShopPaymentId($paymentId);
+
         try {
             $afterShopObject = $this->getAfterShopObjectByPayload($paymentId, $customPayloadItemList,
                 RESURS_AFTERSHOP_RENDER_TYPES::FINALIZE);
@@ -6492,6 +6503,8 @@ class ResursBank
      */
     public function paymentAnnul($paymentId = "", $customPayloadItemList = array(), $runOnce = false)
     {
+        //$this->setAfterShopPaymentId($paymentId);
+
         $afterShopObject = $this->getAfterShopObjectByPayload($paymentId, $customPayloadItemList,
             RESURS_AFTERSHOP_RENDER_TYPES::ANNUL);
         $this->aftershopPrepareMetaData($paymentId);
@@ -6545,6 +6558,8 @@ class ResursBank
      */
     public function paymentCredit($paymentId = "", $customPayloadItemList = array(), $runOnce = false)
     {
+        //$this->setAfterShopPaymentId($paymentId);
+
         $afterShopObject = $this->getAfterShopObjectByPayload($paymentId, $customPayloadItemList,
             RESURS_AFTERSHOP_RENDER_TYPES::CREDIT);
         $this->aftershopPrepareMetaData($paymentId);
