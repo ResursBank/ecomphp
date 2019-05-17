@@ -54,6 +54,9 @@ class resursBankTest extends TestCase
      */
     protected $API;
 
+    /** @var \RESURS_WEBDRIVER */
+    protected $WEBDRIVER;
+
     /** @var RESURS_TEST_BRIDGE $TEST Used for standard tests and simpler flow setup */
     protected $TEST;
 
@@ -74,13 +77,26 @@ class resursBankTest extends TestCase
     private $signUrl = "https://test.resurs.com/signdummy/index.php?isSigningUrl=1";
 
     /**
+     * Exact match of selenium driver we're running with tests.
+     *
+     * Add to composer: "facebook/webdriver": "dev-master"
+     *
+     * @var string
+     */
+    //protected $webdriverFile = 'selenium.jar';
+
+    /**
      * @throws \Exception
      */
-    protected function setUp()
+    public function setUp()
     {
         $this->API = new ResursBank();
         $this->API->setDebug(true);
-        $this->TEST = new RESURS_TEST_BRIDGE();
+        $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
+        $this->WEBDRIVER = new \RESURS_WEBDRIVER();
+        if (!empty($this->webdriverFile) && file_exists(__DIR__ . '/' . $this->webdriverFile)) {
+            $this->WEBDRIVER->init();
+        }
     }
 
     /**
@@ -216,6 +232,62 @@ class resursBankTest extends TestCase
 
     /**
      * @test
+     */
+    public function preMetaData()
+    {
+        $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline", 800, 25);
+        $this->TEST->ECOM->setMetaData('inboundKey', 'inboundValue');
+
+        $meta = $this->TEST->ECOM->getMetaData(null, true);
+        $metaKey = $this->TEST->ECOM->getMetaData(null, true, true);
+
+        static::assertTrue(count($meta['payloadMetaData']) > 0 && count($metaKey['payloadMetaData']));
+    }
+
+    /**
+     * @test Avoid duplicate metadata in pre set method.
+     * @throws \Exception
+     */
+    public function setMetaData()
+    {
+        $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline", 800, 25);
+        try {
+            $this->TEST->ECOM->setMetaData('inboundKey', 'inboundValue');
+            $this->TEST->ECOM->setMetaData('inboundKey', 'inboundValue');
+            $this->TEST->ECOM->setMetaData('inboundKey', 'inboundValue');
+        } catch (\Exception $e) {
+            static::assertTrue($e->getCode() === 400);
+        }
+    }
+
+    /**
+     * @test Avoid duplicate metadata in pre set method.
+     * @throws \Exception
+     */
+    public function setMetaDataDuplicate()
+    {
+        $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline", 800, 25);
+        $this->TEST->ECOM->setMetaData('inboundKey', 'inboundValue', false);
+        $this->TEST->ECOM->setMetaData('inboundKey', 'inboundValue', false);
+        $this->TEST->ECOM->setMetaData('inboundKey', 'inboundValue', false);
+        $plm = $this->TEST->ECOM->getMetaData(null, true);
+        $allMetas = $plm['payloadMetaData'];
+
+        static::assertTrue(count($allMetas) === 3);
+    }
+
+    /**
+     * @test
+     * @throws \Exception
+     */
+    public function findPaymentByGovd()
+    {
+        $payments = $this->TEST->ECOM->findPayments(array('governmentId' => '8305147715'));
+        static::assertTrue(is_array($payments) && count($payments));
+    }
+
+    /**
+     * @test
      * @param bool $noAssert
      * @return array
      * @throws \Exception
@@ -229,6 +301,33 @@ class resursBankTest extends TestCase
         $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
         $this->TEST->ECOM->setMetaData('metaKeyTestTime', time());
         $this->TEST->ECOM->setMetaData('metaKeyTestMicroTime', microtime(true));
+        $response = $this->TEST->ECOM->createPayment($this->getMethodId());
+        if (!$noAssert) {
+            /** @noinspection PhpUndefinedFieldInspection */
+            static::assertTrue($response->bookPaymentStatus == 'BOOKED' || $response->bookPaymentStatus == 'SIGNING');
+        }
+
+        return $response;
+    }
+
+    /**
+     * Only run this when emulating colliding orders in the woocommerce plugin.
+     *
+     * @param bool $noAssert
+     * @return array
+     * @throws \Exception
+     */
+    public function wooCommerceCollider($noAssert = false)
+    {
+        $incremental = 1430;
+        $customerData = $this->getHappyCustomerData();
+        $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline", 800, 25);
+        $this->TEST->ECOM->setBillingByGetAddress($customerData);
+        $this->TEST->ECOM->setCustomer("198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL");
+        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+        $this->TEST->ECOM->setMetaData('metaKeyTestTime', time());
+        $this->TEST->ECOM->setMetaData('metaKeyTestMicroTime', microtime(true));
+        $this->TEST->ECOM->setPreferredId($incremental);
         $response = $this->TEST->ECOM->createPayment($this->getMethodId());
         if (!$noAssert) {
             /** @noinspection PhpUndefinedFieldInspection */
@@ -303,7 +402,9 @@ class resursBankTest extends TestCase
         $happyCustomer = $this->TEST->ECOM->getAddress($this->flowHappyCustomer);
         $this->TEST->share('happyCustomer', $happyCustomer, false);
         if (!$noAssert) {
-            static::assertContains($this->flowHappyCustomerName, $happyCustomer->fullName);
+            // Call to undefined function mb_strpos() with assertContains in PHP 7.3
+            static::assertTrue(preg_match('/' . $this->flowHappyCustomerName . '/i',
+                $happyCustomer->fullName) ? true : false);
         }
 
         return $happyCustomer;
@@ -411,19 +512,61 @@ class resursBankTest extends TestCase
     }
 
     /**
-     * @test
+     * @todo Countable issue linked to an IO event
      * @throws \Exception
      */
     public function findPaymentsXmlBody()
     {
         $paymentScanList = $this->TEST->ECOM->findPayments(array('statusSet' => array('IS_DEBITED')), 1, 10, array(
             'ascending' => false,
-            'sortColumns' => array('FINALIZED_TIME', 'MODIFIED_TIME', 'BOOKED_TIME')
+            'sortColumns' => array('FINALIZED_TIME', 'MODIFIED_TIME', 'BOOKED_TIME'),
         ));
 
         $handle = $this->TEST->ECOM->getCurlHandle();
         $requestBody = $handle->getRequestBody();
         static::assertTrue(strlen($requestBody) > 100 && count($paymentScanList));
+    }
+
+    /**
+     * @test
+     * @throws \Exception
+     */
+    public function updateStrangePaymentReference()
+    {
+        $showFrames = false;
+
+        // Using NO_RESET_PAYLOAD in the test suite may lead to unexpected faults, so
+        // have it disabled, unless you need something very specific out of this test.
+
+        //$this->TEST->ECOM->setFlag('NO_RESET_PAYLOAD');
+        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
+        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+
+        // First update.
+        $this->TEST->ECOM->addOrderLine("Product-1337", "", 800, 25);
+        $id = $this->TEST->ECOM->getPreferredPaymentId();
+        $fIframe = $this->TEST->ECOM->createPayment($id);
+        $renameToFirst = microtime(true);
+        $this->TEST->ECOM->updatePaymentReference($id, $renameToFirst);
+
+        // Second update.
+        $this->TEST->ECOM->addOrderLine("Product-1337-OverWriteMe", "", 1200, 25);
+        $sIframe = $this->TEST->ECOM->createPayment($id);
+        // Update this reference to the above payment id.
+        $this->TEST->ECOM->updatePaymentReference($id, $renameToFirst);
+        //$this->TEST->ECOM->deleteFlag('NO_RESET_PAYLOAD');
+
+        if ($showFrames) {
+            echo $fIframe . "\n";
+            echo $sIframe . "\n";
+        }
+
+        // Making above steps will give two different iframe-sessions that can be updated
+        // to the same final order id. However, there can be only one winner of the final payment session.
+        // To figure out which, there are different articles and final sums in the order.
+        // For the default ecom behaviour, the payload will reset after each "createPayment"
+        // so there won't be any refills.
+        static::assertTrue(!empty($renameToFirst) && $fIframe !== $sIframe);
     }
 
     /**
@@ -444,6 +587,7 @@ class resursBankTest extends TestCase
         $this->TEST->ECOM->setBillingByGetAddress($customerData);
         $this->TEST->ECOM->setCustomer("198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL");
         $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+        ecom_event_unregister('update_store_id');
         $myPayLoad = $this->TEST->ECOM->getPayload();
         static::assertTrue(isset($myPayLoad['storeId']) && $myPayLoad['storeId'] >= 0);
     }
@@ -463,18 +607,58 @@ class resursBankTest extends TestCase
         ecom_event_register('update_payload', 'ecom_inject_payload');
         $customerData = $this->getHappyCustomerData();
         $errorCode = 0;
+        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
         $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline", 800, 25);
         $this->TEST->ECOM->setBillingByGetAddress($customerData);
         $this->TEST->ECOM->setCustomer(null, "0808080808", "0707070707", "test@test.com", "NATURAL");
         $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
         try {
-            $myPayLoad = $this->TEST->ECOM->getPayload();
             $this->TEST->ECOM->createPayment($this->getMethodId());
         } catch (\Exception $e) {
             $errorCode = $e->getCode();
         }
+        $myPayLoad = $this->TEST->ECOM->getPayload();
+        ecom_event_unregister('update_payload');
+        static::assertTrue(
+            isset($myPayLoad['add_a_problem_into_payload']) &&
+            !isset($myPayLoad['signing']) &&
+            (int)$errorCode > 0
+        );
+    }
 
-        static::assertTrue(isset($myPayLoad['add_a_problem_into_payload']) && !isset($myPayLoad['signing']) && (int)$errorCode > 0);
+    /**
+     * @test
+     *
+     * How to use this in a store environment like RCO:
+     *   - During interceptor mode, store the getOrderLineHash in a _SESSION variable.
+     *   - When interceptor handle is sent over to backend in store, run getOrderLineHash again.
+     *   - Match the old stored _SESSION variable with the new getOrderLineHash-response.
+     *   - If they mismatch, the cart has been updated while still in the checkout.
+     *
+     * @throws \Exception
+     */
+    public function hashedSpecLines()
+    {
+        $customerData = $this->getHappyCustomerData();
+        $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline, red", 800, 25);
+        $this->TEST->ECOM->addOrderLine("Product-1337", "Second simple orderline, blue", 900, 25);
+        $this->TEST->ECOM->addOrderLine("Product-1338", "Third simple orderline", 1000, 25, 'st', 'ORDER_LINE', 3);
+        $this->TEST->ECOM->addOrderLine("Product-1339", "Our fee", 45, 25, 'st', 'FEE', 3);
+        $this->TEST->ECOM->setBillingByGetAddress($customerData);
+        $this->TEST->ECOM->setCustomer(null, "0808080808", "0707070707", "test@test.com", "NATURAL");
+        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+        $orderLineHash = $this->TEST->ECOM->getOrderLineHash();
+        $this->TEST->ECOM->addOrderLine(
+            "Hacked Product",
+            "Article added after first orderline hash",
+            1000,
+            25,
+            'st',
+            'ORDER_LINE',
+            3
+        );
+        $newOrderLineHash = $this->TEST->ECOM->getOrderLineHash();
+        static::assertTrue($orderLineHash !== $newOrderLineHash);
     }
 
     /**
@@ -504,7 +688,6 @@ class resursBankTest extends TestCase
         }
         $callbacks = $this->TEST->ECOM->getCallBacksByRest(true);
         static::assertTrue(is_array($callbacks) && !count($callbacks) ? true : false);
-
     }
 
     /**
@@ -597,6 +780,106 @@ class resursBankTest extends TestCase
             static::assertTrue($code === 8);
         }
     }
+
+    /**
+     * For the future edition of EC where __get is a helper.
+     *
+     * @test
+     */
+    /*public function newGet()
+    {
+        try {
+            $failable = $this->TEST->ECOM->nonExistent && $this->TEST->ECOM['nonExistent'] ? true : false;
+        } catch (\Exception $e) {
+            $failable = true;
+        }
+
+        try {
+            $protectedVariable = $this->TEST->ECOM->version;
+        } catch (\Exception $e) {
+            $protectedVariable = true;
+        }
+
+        $reachableVariable = $this->TEST->ECOM->current_environment;
+        $unsetButReachableVariable = $this->TEST->ECOM->test;
+
+        static::assertTrue($failable && $protectedVariable && $reachableVariable === 1 && $unsetButReachableVariable);
+    }*/
+
+    /**
+     * Special test case where we just create an iframe and then sending updatePaymentReferences via API to see
+     * if any errors are traceable
+     */
+    public function ordersWithoutDescription()
+    {
+        ecom_event_register('ecom_article_data', 'destroy_ecom_article_data');
+        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
+        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+        $this->TEST->ECOM->addOrderLine("Product-1337", "", 800, 25);
+        $hasErrors = false;
+        try {
+            $paymentId = "nodesc_" . sha1(microtime(true));
+            //$newPaymentId = 'PROPER_' . $paymentId;
+            $this->TEST->ECOM->createPayment($paymentId);
+        } catch (\Exception $e) {
+            $hasErrors = true;
+        }
+        ecom_event_unregister('ecom_article_data');
+
+        // Current expectation: Removing description totally from an order still renders
+        // the iframe, even if the order won't be handlable.
+        static::assertFalse($hasErrors);
+    }
+
+
+    /**
+     * @test
+     * @throws \Exception
+     */
+    public function validateCredentials()
+    {
+        $isNotValid = $this->TEST->ECOM->validateCredentials(RESURS_ENVIRONMENTS::TEST, 'fail', 'fail');
+        $isValid = $this->TEST->ECOM->validateCredentials(RESURS_ENVIRONMENTS::TEST, $this->username, $this->password);
+        $onInit = new ResursBank();
+        // Using this function on setAuthentication should immediately throw exception if not valid.
+        $onInitOk = $onInit->setAuthentication($this->username, $this->password, true);
+
+        $initAndValidate = new ResursBank($this->username, $this->password);
+        $justValidated = $initAndValidate->validateCredentials();
+        static::assertTrue($isValid && !$isNotValid && $onInitOk && $justValidated);
+    }
+
+    /**
+     * @test
+     */
+    public function stringExceptions()
+    {
+        try {
+            throw new \ResursException('Fail', 0, null, 'TEST_ERROR_CODE_AS_STRING', __FUNCTION__);
+        } catch (\Exception $e) {
+            $firstCode = $e->getCode();
+        }
+        try {
+            throw new \ResursException('Fail', 0, null, 'TEST_ERROR_CODE_AS_STRING_WITHOUT_CONSTANT', __FUNCTION__);
+        } catch (\Exception $e) {
+            $secondCode = $e->getCode();
+        }
+
+        static::assertTrue($firstCode === 1007 && $secondCode === 'TEST_ERROR_CODE_AS_STRING_WITHOUT_CONSTANT');
+    }
+
+    /**
+     * @test
+     */
+    public function failUpdatePaymentReference()
+    {
+        try {
+            $this->TEST->ECOM->updatePaymentReference('not_this', 'not_that');
+        } catch (\Exception $e) {
+            static::assertTrue($e->getCode() === 700);
+        }
+    }
+
 
     /**
      * @test
