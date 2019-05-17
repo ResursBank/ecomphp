@@ -318,6 +318,7 @@ class resursBankTest extends TestCase
 
     /**
      * Only run this when emulating colliding orders in the woocommerce plugin.
+     *
      * @param bool $noAssert
      * @return array
      * @throws \Exception
@@ -524,12 +525,54 @@ class resursBankTest extends TestCase
     {
         $paymentScanList = $this->TEST->ECOM->findPayments(array('statusSet' => array('IS_DEBITED')), 1, 10, array(
             'ascending' => false,
-            'sortColumns' => array('FINALIZED_TIME', 'MODIFIED_TIME', 'BOOKED_TIME')
+            'sortColumns' => array('FINALIZED_TIME', 'MODIFIED_TIME', 'BOOKED_TIME'),
         ));
 
         $handle = $this->TEST->ECOM->getCurlHandle();
         $requestBody = $handle->getRequestBody();
         static::assertTrue(strlen($requestBody) > 100 && count($paymentScanList));
+    }
+
+    /**
+     * @test
+     * @throws \Exception
+     */
+    public function updateStrangePaymentReference()
+    {
+        $showFrames = false;
+
+        // Using NO_RESET_PAYLOAD in the test suite may lead to unexpected faults, so
+        // have it disabled, unless you need something very specific out of this test.
+
+        //$this->TEST->ECOM->setFlag('NO_RESET_PAYLOAD');
+        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
+        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+
+        // First update.
+        $this->TEST->ECOM->addOrderLine("Product-1337", "", 800, 25);
+        $id = $this->TEST->ECOM->getPreferredPaymentId();
+        $fIframe = $this->TEST->ECOM->createPayment($id);
+        $renameToFirst = microtime(true);
+        $this->TEST->ECOM->updatePaymentReference($id, $renameToFirst);
+
+        // Second update.
+        $this->TEST->ECOM->addOrderLine("Product-1337-OverWriteMe", "", 1200, 25);
+        $sIframe = $this->TEST->ECOM->createPayment($id);
+        // Update this reference to the above payment id.
+        $this->TEST->ECOM->updatePaymentReference($id, $renameToFirst);
+        //$this->TEST->ECOM->deleteFlag('NO_RESET_PAYLOAD');
+
+        if ($showFrames) {
+            echo $fIframe . "\n";
+            echo $sIframe . "\n";
+        }
+
+        // Making above steps will give two different iframe-sessions that can be updated
+        // to the same final order id. However, there can be only one winner of the final payment session.
+        // To figure out which, there are different articles and final sums in the order.
+        // For the default ecom behaviour, the payload will reset after each "createPayment"
+        // so there won't be any refills.
+        static::assertTrue(!empty($renameToFirst) && $fIframe !== $sIframe);
     }
 
     /**
@@ -570,18 +613,23 @@ class resursBankTest extends TestCase
         ecom_event_register('update_payload', 'ecom_inject_payload');
         $customerData = $this->getHappyCustomerData();
         $errorCode = 0;
+        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
         $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline", 800, 25);
         $this->TEST->ECOM->setBillingByGetAddress($customerData);
         $this->TEST->ECOM->setCustomer(null, "0808080808", "0707070707", "test@test.com", "NATURAL");
         $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
         try {
-            $myPayLoad = $this->TEST->ECOM->getPayload();
             $this->TEST->ECOM->createPayment($this->getMethodId());
         } catch (\Exception $e) {
             $errorCode = $e->getCode();
         }
+        $myPayLoad = $this->TEST->ECOM->getPayload();
         ecom_event_unregister('update_payload');
-        static::assertTrue(isset($myPayLoad['add_a_problem_into_payload']) && !isset($myPayLoad['signing']) && (int)$errorCode > 0);
+        static::assertTrue(
+            isset($myPayLoad['add_a_problem_into_payload']) &&
+            !isset($myPayLoad['signing']) &&
+            (int)$errorCode > 0
+        );
     }
 
     /**
@@ -789,6 +837,7 @@ class resursBankTest extends TestCase
         static::assertFalse($hasErrors);
     }
 
+
     /**
      * @test
      * @throws \Exception
@@ -806,57 +855,37 @@ class resursBankTest extends TestCase
         static::assertTrue($isValid && !$isNotValid && $onInitOk && $justValidated);
     }
 
-    private function hasEncodings($array, $key = '', $subkey = '')
+    /**
+     * @test
+     */
+    public function stringExceptions()
     {
-        $return = false;
-
-        if (is_array($array)) {
-            foreach ($array as $arrayKey => $arrayValue) {
-                $decodedValue = rawurldecode($arrayValue);
-                if (($arrayKey === $key || $key === '') && $arrayValue !== $decodedValue) {
-                    $return = true;
-                    break;
-                }
-            }
+        try {
+            throw new \ResursException('Fail', 0, null, 'TEST_ERROR_CODE_AS_STRING', __FUNCTION__);
+        } catch (\Exception $e) {
+            $firstCode = $e->getCode();
+        }
+        try {
+            throw new \ResursException('Fail', 0, null, 'TEST_ERROR_CODE_AS_STRING_WITHOUT_CONSTANT', __FUNCTION__);
+        } catch (\Exception $e) {
+            $secondCode = $e->getCode();
         }
 
-        return $return;
+        static::assertTrue($firstCode === 1007 && $secondCode === 'TEST_ERROR_CODE_AS_STRING_WITHOUT_CONSTANT');
     }
 
     /**
      * @test
      */
-    public function encodeUrls()
+    public function failUpdatePaymentReference()
     {
-        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
-
-        $successUrl = 'https://identifier.tornevall.net/?json=true&queryParam1=Test1&queryParam2=Test2&Test3=true&success=true';
-        $backUrl = 'https://identifier.tornevall.net/?json=true&queryParam1=Test1&queryParam2=Test2&Test3=true&back=true';
-        $failUrl = 'https://identifier.tornevall.net/?json=true&queryParam1=Test1&queryParam2=Test2&Test3=true&fail=true';
-
-        $resultNoEncoded = $this->TEST->ECOM->setSigning($successUrl, $failUrl, false, $backUrl);
-        $hasNoEncodedFailUrl = $this->hasEncodings($resultNoEncoded['signing'], 'failUrl');
-
-        $this->TEST->ECOM->resetPayload();
-        $resultFailAndBack = $this->TEST->ECOM->setSigning(
-            $successUrl,
-            $failUrl,
-            false,
-            $backUrl,
-            RESURS_URL_ENCODE_TYPES::BACKURL + RESURS_URL_ENCODE_TYPES::FAILURL + RESURS_URL_ENCODE_TYPES::PATH_ONLY
-        );
-        $resultFailAndBackSkipFirst = $this->TEST->ECOM->setSigning(
-            $successUrl,
-            $failUrl,
-            false,
-            $backUrl,
-            RESURS_URL_ENCODE_TYPES::BACKURL + RESURS_URL_ENCODE_TYPES::FAILURL + RESURS_URL_ENCODE_TYPES::PATH_ONLY + RESURS_URL_ENCODE_TYPES::LEAVE_FIRST_PART
-        );
-
-        $hasEncodedFailUrl = $this->hasEncodings($resultFailAndBack['signing'], 'failUrl');
-        $hasQ = preg_match('/\?/', $resultFailAndBackSkipFirst['signing']['failUrl']);
-        static::assertTrue($hasEncodedFailUrl && !$hasNoEncodedFailUrl && $hasQ);
+        try {
+            $this->TEST->ECOM->updatePaymentReference('not_this', 'not_that');
+        } catch (\Exception $e) {
+            static::assertTrue($e->getCode() === 700);
+        }
     }
+
 
     /**
      * @test
