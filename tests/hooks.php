@@ -1,14 +1,22 @@
 <?php
 
-function inject_test_storeid() {
-	return 700;
+function inject_test_storeid()
+{
+    return 700;
 }
 
-function ecom_inject_payload( $payload ) {
-	$payload['add_a_problem_into_payload'] = true;
-	if ( isset( $payload['signing'] ) ) {
-		unset( $payload['signing'] );
-	}
+function ecom_inject_payload($payload)
+{
+    $payload['add_a_problem_into_payload'] = true;
+    if (isset($payload['signing'])) {
+        unset($payload['signing']);
+    }
 
-	return $payload;
+    return $payload;
+}
+
+function destroy_ecom_article_data($specData)
+{
+    unset($specData['description']);
+    return $specData;
 }
