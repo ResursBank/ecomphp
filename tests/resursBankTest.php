@@ -18,6 +18,9 @@ if (file_exists(__DIR__ . "/../vendor/autoload.php")) {
 } else {
     require_once('../source/classes/rbapiloader.php');
 }
+if (file_exists(__DIR__ . '/webdriver.php')) {
+    require_once(__DIR__ . '/webdriver.php');
+}
 
 // Usages for v1.1
 use PHPUnit\Framework\TestCase;
@@ -26,6 +29,8 @@ use Resursbank\RBEcomPHP\MODULE_IO;
 use Resursbank\RBEcomPHP\RESURS_TEST_BRIDGE;
 use Resursbank\RBEcomPHP\ResursBank;
 use Resursbank\RBEcomPHP\RESURS_CALLBACK_TYPES;
+use Resursbank\RBEcomPHP\RESURS_FLOW_TYPES;
+use Resursbank\RBEcomPHP\RESURS_ENVIRONMENTS;
 
 // Global test configuration section starts here
 require_once(__DIR__ . "/classes/ResursBankTestClass.php");

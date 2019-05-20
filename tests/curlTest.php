@@ -7,12 +7,12 @@ if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
 }
 if (file_exists(__DIR__ . "/../tornelib.php")) {
     // Work with TorneLIBv5
-    /** @noinspection PhpIncludeInspection */
     require_once(__DIR__ . '/../tornelib.php');
 }
 
 use PHPUnit\Framework\TestCase;
-
+use Resursbank\RBEcomPHP\MODULE_CURL;
+use Resursbank\RBEcomPHP\NETCURL_POST_DATATYPES;
 ini_set('memory_limit', -1);    // Free memory limit, some tests requires more memory (like ip-range handling)
 
 /** @noinspection PhpUndefinedClassInspection */
@@ -343,5 +343,4 @@ class curlTest extends TestCase
         error_reporting(E_ALL);
         $this->CURL = new MODULE_CURL();
     }
-
 }
