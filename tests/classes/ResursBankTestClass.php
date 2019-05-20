@@ -5,7 +5,8 @@
 /**
  * Class RESURS_TEST_BRIDGE Primary test class for setting up and simplify standard tests like order booking etc
  */
-class RESURS_TEST_BRIDGE {
+class RESURS_TEST_BRIDGE
+{
 
     /** @var ResursBank The ECom Class */
     public $ECOM;
@@ -13,9 +14,18 @@ class RESURS_TEST_BRIDGE {
     /** @var string Shared data filename */
     private $shareFile;
 
-    function __construct( $userName = "ecomphpPipelineTest", $password = "4Em4r5ZQ98x3891D6C19L96TQ72HsisD" ) {
+    /**
+     * RESURS_TEST_BRIDGE constructor.
+     *
+     * @param string $userName
+     * @param string $password
+     *
+     * @throws \Exception
+     */
+    function __construct($userName = 'ecomphpPipelineTest', $password = '4Em4r5ZQ98x3891D6C19L96TQ72HsisD')
+    {
         $this->shareFile = __DIR__ . "/../storage/shared.serialize";
-        $this->ECOM      = new ResursBank( $userName, $password, RESURS_ENVIRONMENTS::ENVIRONMENT_TEST, true );
+        $this->ECOM = new ResursBank($userName, $password, RESURS_ENVIRONMENTS::TEST, true);
     }
 
     /**
@@ -26,9 +36,10 @@ class RESURS_TEST_BRIDGE {
      * @return mixed
      * @throws \Exception
      */
-    public function getCredentialControl( $successLogin = true ) {
-        if ( ! $successLogin ) {
-            $this->ECOM = new ResursBank( "fail", "fail" );
+    public function getCredentialControl($successLogin = true)
+    {
+        if (!$successLogin) {
+            $this->ECOM = new ResursBank("fail", "fail");
         }
 
         return $this->ECOM->getPaymentMethods();
@@ -43,41 +54,43 @@ class RESURS_TEST_BRIDGE {
      *
      * @return mixed
      */
-    public function share( $key = '', $value = null, $appendArray = true ) {
-        if ( ! file_exists( $this->shareFile ) ) {
-            file_put_contents( $this->shareFile, "" );
+    public function share($key = '', $value = null, $appendArray = true)
+    {
+        if (!file_exists($this->shareFile)) {
+            file_put_contents($this->shareFile, "");
         }
-        $shareData = unserialize( file_get_contents( $this->shareFile ) );
+        $shareData = unserialize(file_get_contents($this->shareFile));
 
-        if ( ! empty( $key ) ) {
-            if ( ! isset( $shareData[ $key ] ) ) {
-                if ( ! is_null( $value ) ) {
-                    $shareData[ $key ] = array( $value );
+        if (!empty($key)) {
+            if (!isset($shareData[$key])) {
+                if (!is_null($value)) {
+                    $shareData[$key] = array($value);
                 } else {
                     return null;
                 }
             } else {
-                if ( ! is_null( $value ) ) {
-                    if ( $appendArray ) {
-                        $shareData[ $key ][] = $value;
+                if (!is_null($value)) {
+                    if ($appendArray) {
+                        $shareData[$key][] = $value;
                     } else {
-                        $shareData[ $key ] = array( $value );
+                        $shareData[$key] = array($value);
                     }
                 } else {
-                    return $shareData[ $key ];
+                    return $shareData[$key];
                 }
             }
         }
-        file_put_contents( $this->shareFile, serialize( $shareData ) );
+        file_put_contents($this->shareFile, serialize($shareData));
 
         return $shareData;
     }
 
-    public function unshare( $key = '' ) {
-        if ( ! empty( $key ) ) {
+    public function unshare($key = '')
+    {
+        if (!empty($key)) {
             $currentShare = $this->share();
-            unset( $currentShare[ $key ] );
-            @file_put_contents( $this->shareFile, serialize( $currentShare ) );
+            unset($currentShare[$key]);
+            @file_put_contents($this->shareFile, serialize($currentShare));
             return true;
         }
         return false;
@@ -88,8 +101,9 @@ class RESURS_TEST_BRIDGE {
      *
      * @param int $flow
      */
-    public function setFlow( $flow = RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW ) {
-        $this->ECOM->setPreferredPaymentFlowService( $flow );
+    public function setFlow($flow = RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW)
+    {
+        $this->ECOM->setPreferredPaymentFlowService($flow);
     }
 
 }

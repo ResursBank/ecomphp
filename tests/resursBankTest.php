@@ -13,10 +13,13 @@
  * @license Apache 2.0
  */
 
-if (file_exists(__DIR__ . "/../vendor/autoload.php")) {
+if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
     require_once(__DIR__ . '/../vendor/autoload.php');
 } else {
-    require_once(__DIR__ . '/../source/classes/rbapiloader.php');
+    require_once('../source/classes/rbapiloader.php');
+}
+if (file_exists(__DIR__ . '/webdriver.php')) {
+    require_once(__DIR__ . '/webdriver.php');
 }
 
 // Usages for v1.0
