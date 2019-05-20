@@ -20,7 +20,6 @@ if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
 } else {
     require_once('../source/classes/rbapiloader.php');
 }
-
 if (file_exists(__DIR__ . '/webdriver.php')) {
     require_once(__DIR__ . '/webdriver.php');
 }

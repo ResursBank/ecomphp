@@ -106,5 +106,4 @@ class RESURS_TEST_BRIDGE
     {
         $this->ECOM->setPreferredPaymentFlowService($flow);
     }
-
 }
