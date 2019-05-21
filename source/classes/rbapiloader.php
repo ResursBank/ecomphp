@@ -653,6 +653,9 @@ class ResursBank
         $targetEnvironment = RESURS_ENVIRONMENTS::NOT_SET,
         $debug = null
     ) {
+        // Try to adjust memory if lower than this value in php.ini.
+        $this->getMemoryLimitAdjusted('256M');
+
         if (isset($_SERVER['HTTP_HOST'])) {
             $theHost = $_SERVER['HTTP_HOST'];
         } else {
@@ -7099,6 +7102,112 @@ class ResursBank
     {
         $this->autoDebitableTypesActive = $activation;
     }
+
+    ///////////// INTERNAL MEMORY LIMIT HANDLER BEGIN
+
+    /**
+     * WP Style byte conversion for memory limits.
+     *
+     * @param $value
+     * @return mixed
+     */
+    public function getBytes($value)
+    {
+        $value = strtolower(trim($value));
+        $bytes = (int)$value;
+
+        if (false !== strpos($value, 't')) {
+            $bytes *= 1024 * 1024 * 1024 * 1024;
+        } elseif (false !== strpos($value, 'g')) {
+            $bytes *= 1024 * 1024 * 1024;
+        } elseif (false !== strpos($value, 'm')) {
+            $bytes *= 1024 * 1024;
+        } elseif (false !== strpos($value, 'k')) {
+            $bytes *= 1024;
+        } elseif (false !== strpos($value, 'b')) {
+            $bytes *= 1;
+        }
+
+        // Deal with large (float) values which run into the maximum integer size.
+        return min($bytes, PHP_INT_MAX);
+    }
+
+    /**
+     * Check if the setting is settable with ini_set(). Partially borrowed from WordPress.
+     *
+     * @param $setting
+     * @return bool
+     */
+    public function getIniSettable($setting)
+    {
+        static $ini_all;
+
+        if (!function_exists('ini_set')) {
+            return false;
+        }
+
+        if (!isset($ini_all)) {
+            $ini_all = false;
+            // Sometimes `ini_get_all()` is disabled via the `disable_functions` option for "security purposes".
+            if (function_exists('ini_get_all')) {
+                $ini_all = ini_get_all();
+            }
+        }
+
+        // Bit operator to workaround https://bugs.php.net/bug.php?id=44936 which changes access level
+        // to 63 in PHP 5.2.6 - 5.2.17.
+        if (isset($ini_all[$setting]['access']) &&
+            (INI_ALL === ($ini_all[$setting]['access'] & 7)
+                || INI_USER === ($ini_all[$setting]['access'] & 7))
+        ) {
+            return true;
+        }
+
+        // If we were unable to retrieve the details, fail gracefully to assume it's changeable.
+        if (!is_array($ini_all)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Set new memory limit for PHP.
+     *
+     * @param string $newLimitValue
+     * @return bool
+     */
+    public function setMemoryLimit($newLimitValue = '512M')
+    {
+        $return = false;
+
+        $oldMemoryValue = $this->getBytes(ini_get('memory_limit'));
+        if ($this->getIniSettable('memory_limit')) {
+            $blindIniSet = ini_set('memory_limit', $newLimitValue) !== false ? true : false;
+            $newMemoryValue = $this->getBytes(ini_get('memory_limit'));
+            $return = $blindIniSet && $oldMemoryValue !== $newMemoryValue ? true : false;
+        }
+
+        return $return;
+    }
+
+    /**
+     * Enforce automatic adjustment if memory limit is set too low (or your defined value).
+     *
+     * @param string $minLimit
+     * @return bool
+     */
+    public function getMemoryLimitAdjusted($minLimit = '256M', $maxLimit = '-1')
+    {
+        $return = false;
+        $currentLimit = $this->getBytes(ini_get('memory_limit'));
+        $myLimit = $this->getBytes($minLimit);
+        if ($currentLimit <= $myLimit) {
+            $return = $this->setMemoryLimit($maxLimit);
+        }
+        return $return;
+    }
+    ///////////// INTERNAL MEMORY LIMIT HANDLER END
 
     /**
      * Magic function that will help us clean up unnecessary content. Future prepared.
