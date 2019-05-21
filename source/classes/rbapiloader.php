@@ -464,7 +464,7 @@ class ResursBank
         'unregisterEventCallback' => 'ConfigurationService',
         'getRegisteredEventCallback' => 'ConfigurationService',
         'peekInvoiceSequence' => 'ConfigurationService',
-        'setInvoiceSequence' => 'ConfigurationService'
+        'setInvoiceSequence' => 'ConfigurationService',
     );
 
     /**
@@ -508,7 +508,7 @@ class ResursBank
         'connection_timeout' => 60,
         'login' => '',
         'password' => '',
-        'trace' => 1
+        'trace' => 1,
     );
     /**
      * Don't want to use SSL verifiers in curl mode
@@ -1373,7 +1373,9 @@ class ResursBank
             if (is_array($methods) && count($methods)) {
                 $result = true;
             } else {
-                throw new \ResursException('Validating credentials was successful, but not payment methods was found.', 417);
+                throw new \ResursException(
+                    'Validating credentials was successful, but not payment methods was found.',
+                    417);
             }
         } catch (\Exception $ignoreMyException) {
 
@@ -1440,7 +1442,7 @@ class ResursBank
         $this->validateExternalUrl = array(
             'url' => $url,
             'http_accept' => $expectedHttpAcceptCode,
-            'http_error' => $expectedHttpErrorCode
+            'http_error' => $expectedHttpErrorCode,
         );
     }
 
@@ -1499,7 +1501,7 @@ class ResursBank
             'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
             'abcdefghijklmnopqrstuvwxyz',
             '0123456789',
-            '!@#$%*?'
+            '!@#$%*?',
         );
 
         // Set complexity to no limit if type 5 is requested
@@ -1885,7 +1887,7 @@ class ResursBank
 
         ////// DIGEST CONFIGURATION BEGIN
         $renderCallback['digestConfiguration'] = array(
-            'digestParameters' => $this->getCallbackTypeParameters($callbackType)
+            'digestParameters' => $this->getCallbackTypeParameters($callbackType),
         );
         if (
             isset($digestData['digestAlgorithm']) && strtolower($digestData['digestAlgorithm']) != "sha1" &&
@@ -2066,8 +2068,8 @@ class ResursBank
                 rand(10000, 30000),
                 rand(10000, 30000),
                 rand(10000, 30000),
-                rand(10000, 30000)
-            )
+                rand(10000, 30000),
+            ),
         );
         try {
             /** @noinspection PhpUndefinedMethodInspection */
@@ -2472,7 +2474,7 @@ class ResursBank
             $paymentScanList = $this->findPayments(array('statusSet' => array($paymentType)), 1, $scanDebitCount,
                 array(
                     'ascending' => false,
-                    'sortColumns' => array('FINALIZED_TIME', 'MODIFIED_TIME', 'BOOKED_TIME')
+                    'sortColumns' => array('FINALIZED_TIME', 'MODIFIED_TIME', 'BOOKED_TIME'),
                 ));
             $lastHighestInvoice = $this->getHighestValueFromPaymentList($paymentScanList, $lastHighestInvoice);
         }
@@ -2539,7 +2541,7 @@ class ResursBank
         $paymentMethods = $this->postService("getPaymentMethods", array(
             'customerType' => isset($parameters['customerType']) ? $parameters['customerType'] : null,
             'language' => isset($parameters['language']) ? $parameters['language'] : null,
-            'purchaseAmount' => isset($parameters['purchaseAmount']) ? $parameters['purchaseAmount'] : null
+            'purchaseAmount' => isset($parameters['purchaseAmount']) ? $parameters['purchaseAmount'] : null,
         ));
         // Make sure this method always returns an array even if it is only one method.
         // Ecommerce will, in case of only one available method return an object instead of an array.
@@ -2738,7 +2740,7 @@ class ResursBank
         return $this->postService("getAddress", array(
             'governmentId' => $governmentId,
             'customerType' => $customerType,
-            'customerIpAddress' => $customerIpAddress
+            'customerIpAddress' => $customerIpAddress,
         ));
     }
 
@@ -2978,11 +2980,11 @@ class ResursBank
                         }
                     }
                     $metaDataResponse = array(
-                        'payloadMetaData' => $newArray
+                        'payloadMetaData' => $newArray,
                     );
                 } else {
                     $metaDataResponse = array(
-                        'payloadMetaData' => $this->Payload['metaData']
+                        'payloadMetaData' => $this->Payload['metaData'],
                     );
                 }
             } else {
@@ -3080,7 +3082,7 @@ class ResursBank
         $searchCriterias = array(
             'searchCriteria' => $searchCriteria,
             'pageNumber' => $pageNumber,
-            'itemsPerPage' => $itemsPerPage
+            'itemsPerPage' => $itemsPerPage,
         );
         if (!empty($sortBy)) {
             $searchCriterias['sortBy'] = $sortBy;
@@ -3190,7 +3192,7 @@ class ResursBank
                         isset($jsonized->detailedMessage) ? $jsonized->detailedMessage : $e->getMessage();
                     throw new \ResursException(
                         $errorMessage,
-                        is_numeric($jsonized->errorCode) ? $jsonized->errorCode :0,
+                        is_numeric($jsonized->errorCode) ? $jsonized->errorCode : 0,
                         null,
                         !is_numeric($jsonized->errorCode) && is_string($jsonized->errorCode) ? $jsonized->errorCode : null,
                         __FUNCTION__
@@ -3271,7 +3273,7 @@ class ResursBank
         $metaDataArray = array(
             'paymentId' => $paymentId,
             'key' => $metaDataKey,
-            'value' => $metaDataValue
+            'value' => $metaDataValue,
         );
         /** @noinspection PhpUndefinedMethodInspection */
         $metaDataResponse = $this->CURL->doGet($this->getServiceUrl("addMetaData"))->addMetaData($metaDataArray);
@@ -3467,7 +3469,7 @@ class ResursBank
     ) {
         $returnHtml = $this->postService("getCostOfPurchaseHtml", array(
             'paymentMethodId' => $paymentMethod,
-            'amount' => $amount
+            'amount' => $amount,
         ));
         // Try to make the target open as a different target, if set. This will not invoke, if not set.
         if (!empty($hrefTarget)) {
@@ -4196,7 +4198,7 @@ class ResursBank
                 'unitMeasure' => $unitMeasure,
                 'unitAmountWithoutVat' => $unitAmountWithoutVat,
                 'vatPct' => $vatPct,
-                'type' => !empty($articleType) ? $articleType : ""
+                'type' => !empty($articleType) ? $articleType : "",
             );
             $newSpecData = $this->event('ecom_article_data', $specData);
             if (!is_null($newSpecData) && is_array($newSpecData)) {
@@ -4227,7 +4229,7 @@ class ResursBank
             // Try correctify speclines that have been merged in the wrong way
             if (isset($this->SpecLines['artNo'])) {
                 $this->SpecLines = array(
-                    $this->SpecLines
+                    $this->SpecLines,
                 );
             }
             foreach ($this->SpecLines as $specIndex => $specRow) {
@@ -4275,7 +4277,7 @@ class ResursBank
                 $this->Payload['orderData'] = array(
                     'specLines' => $this->sanitizePaymentSpec($this->SpecLines, $myFlow),
                     'totalAmount' => $paymentSpec['totalAmount'],
-                    'totalVatAmount' => $paymentSpec['totalVatAmount']
+                    'totalVatAmount' => $paymentSpec['totalVatAmount'],
                 );
             }
             if ($myFlow === RESURS_FLOW_TYPES::HOSTED_FLOW) {
@@ -4284,7 +4286,7 @@ class ResursBank
                 $this->Payload['orderData'] = array(
                     'orderLines' => $this->sanitizePaymentSpec($this->SpecLines, $myFlow),
                     'totalAmount' => $paymentSpec['totalAmount'],
-                    'totalVatAmount' => $paymentSpec['totalVatAmount']
+                    'totalVatAmount' => $paymentSpec['totalVatAmount'],
                 );
             }
             if ($myFlow == RESURS_FLOW_TYPES::RESURS_CHECKOUT) {
@@ -4393,7 +4395,8 @@ class ResursBank
             $this->setSessionVar('lastPaymentExecute', time());
         }
         if (trim(strtolower($this->username)) == "exshop") {
-            throw new \ResursException("The use of exshop is no longer supported", \RESURS_EXCEPTIONS::EXSHOP_PROHIBITED);
+            throw new \ResursException("The use of exshop is no longer supported",
+                \RESURS_EXCEPTIONS::EXSHOP_PROHIBITED);
         }
         $error = array();
         $myFlow = $this->getPreferredPaymentFlowService();
@@ -4654,7 +4657,8 @@ class ResursBank
             $payment_id_or_method = $this->preferredId;
         }
         if (!count($this->Payload)) {
-            throw new \ResursException("No payload are set for this payment", \RESURS_EXCEPTIONS::BOOKPAYMENT_NO_BOOKDATA);
+            throw new \ResursException("No payload are set for this payment",
+                \RESURS_EXCEPTIONS::BOOKPAYMENT_NO_BOOKDATA);
         }
 
         // Obsolete way to handle multidimensional specrows
@@ -4959,7 +4963,7 @@ class ResursBank
                 'unitMeasure',
                 'unitAmountWithoutVat',
                 'vatPct',
-                'type'
+                'type',
             ),
             'hosted' => array(
                 'artNo',
@@ -4969,7 +4973,7 @@ class ResursBank
                 'unitAmountWithoutVat',
                 'vatPct',
                 'totalVatAmount',
-                'totalAmount'
+                'totalAmount',
             ),
             'simplified' => array(
                 'id',
@@ -4980,14 +4984,14 @@ class ResursBank
                 'unitAmountWithoutVat',
                 'vatPct',
                 'totalVatAmount',
-                'totalAmount'
+                'totalAmount',
             ),
             'minimalistic' => array(
                 'artNo',
                 'description',
                 'unitAmountWithoutVat',
-                'quantity'
-            )
+                'quantity',
+            ),
         );
         if (is_array($specLines)) {
             $myFlow = $this->getPreferredPaymentFlowService();
@@ -5103,7 +5107,7 @@ class ResursBank
             'lastName' => $lastName,
             'addressRow1' => $addressRow1,
             'postalArea' => $postalArea,
-            'postalCode' => $postalCode
+            'postalCode' => $postalCode,
         );
 
         $trimAddress = trim($addressRow2); // PHP Compatibility
@@ -5440,7 +5444,7 @@ class ResursBank
         $SigningPayload['signing'] = array(
             'successUrl' => $this->getEncodedSigningUrl($successUrl, RESURS_URL_ENCODE_TYPES::SUCCESSURL, $encodeType),
             'failUrl' => $this->getEncodedSigningUrl($failUrl, RESURS_URL_ENCODE_TYPES::FAILURL, $encodeType),
-            'forceSigning' => $forceSigning
+            'forceSigning' => $forceSigning,
         );
         if (!is_null($backUrl)) {
             $SigningPayload['backUrl'] = $this->getEncodedSigningUrl(
@@ -6316,7 +6320,7 @@ class ResursBank
         $payloadType = RESURS_AFTERSHOP_RENDER_TYPES::NONE
     ) {
         $finalAfterShopSpec = array(
-            'paymentId' => $paymentId
+            'paymentId' => $paymentId,
         );
         if (!is_array($customPayloadItemList)) {
             // Make sure this is correct
@@ -6401,7 +6405,7 @@ class ResursBank
     {
         $this->PayloadHistory[] = array(
             'Payload' => $this->Payload,
-            'SpecLines' => $this->SpecLines
+            'SpecLines' => $this->SpecLines,
         );
 
         // Flags that prevents any reset of payloads. Here, it will be just filled.
@@ -6416,7 +6420,8 @@ class ResursBank
     /**
      * @param $paymentId
      */
-    private function setAfterShopPaymentId($paymentId) {
+    private function setAfterShopPaymentId($paymentId)
+    {
         if (empty($this->preferredId)) {
             $this->preferredId = $paymentId;
         }
@@ -6724,7 +6729,7 @@ class ResursBank
         $additionalDataArray = array(
             'paymentId' => $paymentId,
             'paymentSpec' => $this->Payload['orderData'],
-            'createdBy' => $createdBy
+            'createdBy' => $createdBy,
         );
         $Result = $this->postService("additionalDebitOfPayment", $additionalDataArray, true);
         if ($Result >= 200 && $Result <= 250) {
