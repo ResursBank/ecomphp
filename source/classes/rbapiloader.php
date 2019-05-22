@@ -653,14 +653,13 @@ class ResursBank
         $targetEnvironment = RESURS_ENVIRONMENTS::NOT_SET,
         $debug = null
     ) {
-        // Try to adjust memory if lower than this value in php.ini.
-        $this->getMemoryLimitAdjusted('256M');
-
         if (isset($_SERVER['HTTP_HOST'])) {
             $theHost = $_SERVER['HTTP_HOST'];
         } else {
             $theHost = "nohost.localhost";
         }
+
+        //$this->getMemoryLimitAdjusted('256M', $memoryLimit);
 
         if (!is_null($debug) && is_bool($debug)) {
             $this->debug = $debug;
@@ -846,6 +845,14 @@ class ResursBank
      */
     private function InitializeServices($reInitializeCurl = true)
     {
+        /*
+        if ($this->isFlag('MEMORY_SAFE')) {
+            $testMemorySafeLimit = $this->getFlag('MEMORY_SAFE_LIMIT');
+            // Try to adjust memory if lower than this value in php.ini.
+            $memoryLimit = empty($testMemorySafeLimit) ? '-1' : $testMemorySafeLimit;
+            $this->getMemoryLimitAdjusted('256M', $memoryLimit);
+        }
+        */
 
         $inheritExtendedSoapWarnings = false;
         if (is_null($this->CURL)) {
