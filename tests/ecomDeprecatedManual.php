@@ -36,7 +36,6 @@ use \TorneLIB\MODULE_NETWORK;
 if ( ! isset($_SERVER['HTTP_USER_AGENT'])) {
     $_SERVER['HTTP_USER_AGENT'] = "EComPHP/Test-InternalClient";
 }
-ini_set('memory_limit', -1);
 
 if (file_exists("/etc/ecomphp.json")) {
     $ecomExt = @json_decode(@file_get_contents("/etc/ecomphp.json"));
