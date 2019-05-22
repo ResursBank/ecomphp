@@ -659,7 +659,7 @@ class ResursBank
             $theHost = "nohost.localhost";
         }
 
-        //$this->getMemoryLimitAdjusted('256M', $memoryLimit);
+        $this->getMemoryLimitAdjusted('128M', $memoryLimit);
 
         if (!is_null($debug) && is_bool($debug)) {
             $this->debug = $debug;
