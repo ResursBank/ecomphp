@@ -1837,6 +1837,31 @@ class ResursBank
     }
 
     /**
+     * Check if external url validation should be done and throw only on failures.
+     * This is per default skipped unless requested.
+     *
+     * @return bool
+     * @throws \ResursException
+     */
+    private function setRegisterCallbackAddressValidation()
+    {
+        if (is_array($this->validateExternalUrl) && count($this->validateExternalUrl)) {
+            $isValidAddress = $this->validateExternalAddress();
+            if ($isValidAddress == RESURS_CALLBACK_REACHABILITY::IS_NOT_REACHABLE) {
+                throw new \ResursException(
+                    'Reachability Response: Your site might not be available to our callbacks'
+                );
+            } elseif ($isValidAddress == RESURS_CALLBACK_REACHABILITY::IS_REACHABLE_WITH_PROBLEMS) {
+                throw new \ResursException(
+                    'Reachability Response: Your site is available from the outside, ' .
+                    'but problems occurred, that indicates that your site can not respond to external calls.'
+                );
+            }
+        }
+        return true;
+    }
+
+    /**
      * Register a callback URL with Resurs Bank
      *
      * @param int $callbackType
@@ -1858,16 +1883,10 @@ class ResursBank
         $basicAuthPassword = null
     ) {
         $this->InitializeServices();
-        if (is_array($this->validateExternalUrl) && count($this->validateExternalUrl)) {
-            $isValidAddress = $this->validateExternalAddress();
-            if ($isValidAddress == RESURS_CALLBACK_REACHABILITY::IS_NOT_REACHABLE) {
-                throw new \ResursException('Reachability Response: Your site might not be available to our callbacks');
-            } elseif ($isValidAddress == RESURS_CALLBACK_REACHABILITY::IS_REACHABLE_WITH_PROBLEMS) {
-                throw new \ResursException('Reachability Response: Your site is available from the outside, ' .
-                    'but problems occurred, that indicates that your site can not respond to external calls.'
-                );
-            }
-        }
+
+        // Not thrown = Success or skipped
+        $this->setRegisterCallbackAddressValidation();
+
         // The final array
         $renderCallback = array();
 
@@ -1891,33 +1910,34 @@ class ResursBank
         $renderCallback['digestConfiguration'] = array(
             'digestParameters' => $this->getCallbackTypeParameters($callbackType),
         );
-        if (
-            isset($digestData['digestAlgorithm']) && strtolower($digestData['digestAlgorithm']) != "sha1" &&
-            strtolower($digestData['digestAlgorithm']) != "md5"
+
+        if (isset($digestData['digestAlgorithm']) &&
+            (
+                strtolower($digestData['digestAlgorithm']) === "sha1" ||
+                strtolower($digestData['digestAlgorithm']) === "md5"
+            )
         ) {
-            $renderCallback['digestConfiguration']['digestAlgorithm'] = "sha1";
-        } elseif (!isset($callbackDigest['digestAlgorithm'])) {
-            $renderCallback['digestConfiguration']['digestAlgorithm'] = "sha1";
+            $renderCallback['digestConfiguration']['digestAlgorithm'] = strtoupper($digestData['digestAlgorithm']);
+        } else {
+            // Always uppercase.
+            $renderCallback['digestConfiguration']['digestAlgorithm'] = "SHA1";
         }
-        $renderCallback['digestConfiguration']['digestAlgorithm'] = strtoupper(
-            $renderCallback['digestConfiguration']['digestAlgorithm']
-        );
-        if (!empty($callbackDigest['digestSalt'])) {
-            if ($digestData['digestSalt']) {
-                $renderCallback['digestConfiguration']['digestSalt'] = $digestData['digestSalt'];
+
+        $hasDigest = false;
+        if (isset($digestData['digestSalt']) && !empty($digestData['digestSalt'])) {
+            $renderCallback['digestConfiguration']['digestSalt'] = $digestData['digestSalt'];
+            $hasDigest = true;
+        }
+
+        if (!$hasDigest) {
+            if (isset($this->digestKey[$renderCallback['eventType']]) &&
+                !empty($this->digestKey[$renderCallback['eventType']])) {
+                $renderCallback['digestConfiguration']['digestSalt'] = $this->digestKey[$renderCallback['eventType']];
+            } elseif (!empty($this->globalDigestKey)) {
+                $renderCallback['digestConfiguration']['digestSalt'] = $this->globalDigestKey;
             }
         }
-        // Overriders - if the globalDigestKey or the digestKey (specific type required) is set,
-        // it means that setCallbackDigest has been used.
-        if (!empty($this->globalDigestKey)) {
-            $renderCallback['digestConfiguration']['digestSalt'] = $this->globalDigestKey;
-        }
-        if (
-            isset($this->digestKey[$renderCallback['eventType']]) &&
-            !empty($this->digestKey[$renderCallback['eventType']])
-        ) {
-            $renderCallback['digestConfiguration']['digestSalt'] = $this->digestKey['eventType'];
-        }
+
         if (empty($renderCallback['digestConfiguration']['digestSalt'])) {
             throw new \ResursException("Can not continue without a digest salt key",
                 \RESURS_EXCEPTIONS::CALLBACK_SALTDIGEST_MISSING);
@@ -1930,9 +1950,16 @@ class ResursBank
             if (isset($renderCallback['eventType'])) {
                 unset($renderCallback['eventType']);
             }
-            $renderedResponse = $this->CURL->doPost($renderCallbackUrl, $renderCallback,
-                NETCURL_POST_DATATYPES::DATATYPE_JSON);
-            $code = $this->CURL->getCode($renderedResponse);
+            try {
+                $renderedResponse = $this->CURL->doPost(
+                    $renderCallbackUrl,
+                    $renderCallback,
+                    NETCURL_POST_DATATYPES::DATATYPE_JSON
+                );
+                $code = $this->CURL->getCode($renderedResponse);
+            } catch (\Exception $e) {
+                $code = $e->getCode();
+            }
         } else {
             $registerBy = 'wsdl';
             $renderCallbackUrl = $this->getServiceUrl("registerEventCallback");

@@ -725,6 +725,70 @@ class resursBankTest extends TestCase
     }
 
     /**
+     * @test Test registration of callbacks in three different ways - including backward compatibility.
+     *
+     * Note: We can not check whether the salt keys are properly set in realtime, but during our own
+     * tests, it is confirmed that all salt keys are different after this test.
+     *
+     * @throws \Exception
+     */
+    public function setRegisterCallback()
+    {
+        $this->TEST->ECOM->setCallbackDigestSalt(
+            uniqid(sha1(microtime(true))),
+            RESURS_CALLBACK_TYPES::BOOKED
+        );
+
+        // Set "all global" key. If nothing are predefined in the call of registration
+        $this->TEST->ECOM->setCallbackDigestSalt(uniqid(md5(microtime(true))));
+
+        $cbCount = 0;
+        $templateUrl = "https://test.resurs.com/callbacks/";
+
+        // Phase 1: Register callback with local salt key.
+        if ($this->TEST->ECOM->setRegisterCallback(
+            RESURS_CALLBACK_TYPES::FINALIZATION,
+            $templateUrl . "type/finalization",
+            array(
+                'digestAlgorithm' => 'md5',
+                'digestSalt' => uniqid(microtime(true)),
+            )
+        )) {
+            $cbCount++;
+        }
+
+        // Phase 2: Register callback with the globally stored type-based key (see above).
+        if ($this->TEST->ECOM->setRegisterCallback(
+            RESURS_CALLBACK_TYPES::BOOKED,
+            $templateUrl . "type/booked"
+        )) {
+            $cbCount++;
+        }
+
+        // Phase 3: Register callback with the absolute global stored key (see above).
+        if ($this->TEST->ECOM->setRegisterCallback(
+            RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL,
+            $templateUrl . "type/automatic_fraud_control"
+        )) {
+            $cbCount++;
+        }
+
+        // Phase 4: Make sure this works for UPDATE also.
+        if ($this->TEST->ECOM->setRegisterCallback(
+            RESURS_CALLBACK_TYPES::UPDATE,
+            $templateUrl . "type/finalization",
+            array(
+                'digestAlgorithm' => 'md5',
+                'digestSalt' => uniqid(sha1(md5(microtime(true)))),
+            )
+        )) {
+            $cbCount++;
+        }
+
+        static::assertTrue($cbCount === 4);
+    }
+
+    /**
      * @return null
      * @throws \Exception
      */
