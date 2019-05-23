@@ -660,7 +660,7 @@ class ResursBank
         }
 
         $memoryLimit = defined('MEMORY_SAFE_LIMIT') && !empty(MEMORY_SAFE_LIMIT) ? MEMORY_SAFE_LIMIT : -1;
-        $this->getMemoryLimitAdjusted('128M');
+        $this->getMemoryLimitAdjusted('128M', $memoryLimit);
 
         if (!is_null($debug) && is_bool($debug)) {
             $this->debug = $debug;
@@ -846,15 +846,6 @@ class ResursBank
      */
     private function InitializeServices($reInitializeCurl = true)
     {
-        /*
-        if ($this->isFlag('MEMORY_SAFE')) {
-            $testMemorySafeLimit = $this->getFlag('MEMORY_SAFE_LIMIT');
-            // Try to adjust memory if lower than this value in php.ini.
-            $memoryLimit = empty($testMemorySafeLimit) ? '-1' : $testMemorySafeLimit;
-            $this->getMemoryLimitAdjusted('256M', $memoryLimit);
-        }
-        */
-
         $inheritExtendedSoapWarnings = false;
         if (is_null($this->CURL)) {
             $reInitializeCurl = true;
