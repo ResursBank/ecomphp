@@ -13,8 +13,6 @@ if (file_exists(__DIR__ . "/../tornelib.php")) {
 
 use PHPUnit\Framework\TestCase;
 
-ini_set('memory_limit', -1);    // Free memory limit, some tests requires more memory (like ip-range handling)
-
 /** @noinspection PhpUndefinedClassInspection */
 
 class curlTest extends TestCase
