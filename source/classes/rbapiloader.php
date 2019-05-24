@@ -227,6 +227,11 @@ class ResursBank
      */
     private $metaDataKey;
 
+    /**
+     * @var array Last stored getPayment()
+     */
+    private $lastPaymentStored;
+
     ///// Package related
     /**
      * Has the necessary services been initialized yet?
@@ -2940,7 +2945,7 @@ class ResursBank
         if ($this->isFlag('GET_PAYMENT_BY_REST') || !$this->SOAP_AVAILABLE) {
             // This will ALWAYS run if SOAP is unavailable
             try {
-                return $this->getPaymentByRest($paymentId);
+                return ($this->lastPaymentStored = $this->getPaymentByRest($paymentId));
             } catch (\ResursException $e) {
                 // 3 = The order does not exist, default REST error.
                 // If we for some reason get 404 errors here, the error should be retrown as 3.
@@ -2953,11 +2958,19 @@ class ResursBank
         }
 
         try {
-            return $this->getPaymentBySoap($paymentId);
+            return ($this->lastPaymentStored = $this->getPaymentBySoap($paymentId));
         } catch (Exception $e) {
             // 8 = REFERENCED_DATA_DONT_EXISTS
             throw $e;
         }
+    }
+
+    /**
+     * @return array
+     */
+    public function getPaymentCached()
+    {
+        return $this->lastPaymentStored;
     }
 
     /**
@@ -6449,8 +6462,11 @@ class ResursBank
         //$this->setAfterShopPaymentId($paymentId);
 
         try {
-            $afterShopObject = $this->getAfterShopObjectByPayload($paymentId, $customPayloadItemList,
-                RESURS_AFTERSHOP_RENDER_TYPES::FINALIZE);
+            $afterShopObject = $this->getAfterShopObjectByPayload(
+                $paymentId,
+                $customPayloadItemList,
+                RESURS_AFTERSHOP_RENDER_TYPES::FINALIZE
+            );
         } catch (Exception $afterShopObjectException) {
             // No rows to finalize? Check if this was auto debited by internal rules, or throw back error.
             if (
@@ -6463,6 +6479,20 @@ class ResursBank
                 return true;
             }
             throw $afterShopObjectException;
+        }
+        $cachedPayment = $this->getPaymentCached();
+        if (!is_null($cachedPayment) &&
+            is_object($cachedPayment) &&
+            $cachedPayment->id === $paymentId) {
+            if ($this->isFrozen($cachedPayment)) {
+                // Throw it like Resurs Bank one step earlier. Since we do a getPayment
+                // before the finalization we do not have make an extra call if payment status
+                // is forzen.
+                throw new \ResursException(
+                    'EComPHP can not finalize frozen payments',
+                    \RESURS_EXCEPTIONS::ECOMMERCEERROR_NOT_ALLOWED_IN_CURRENT_STATE
+                );
+            }
         }
         $this->aftershopPrepareMetaData($paymentId);
         try {
@@ -6482,8 +6512,11 @@ class ResursBank
 
                 return $this->paymentFinalize($paymentId, $customPayloadItemList, true);
             }
-            throw new \ResursException($finalizationException->getMessage(), $finalizationException->getCode(),
-                $finalizationException);
+            throw new \ResursException(
+                $finalizationException->getMessage(),
+                $finalizationException->getCode(),
+                $finalizationException
+            );
         }
 
         return false;
