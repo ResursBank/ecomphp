@@ -293,15 +293,16 @@ class resursBankTest extends TestCase
     /**
      * @test
      * @param bool $noAssert
+     * @param string $govId
      * @return array
      * @throws \Exception
      */
-    public function generateSimpleSimplifiedInvoiceOrder($noAssert = false)
+    public function generateSimpleSimplifiedInvoiceOrder($noAssert = false, $govId = '198305147715')
     {
         $customerData = $this->getHappyCustomerData();
         $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline", 800, 25);
         $this->TEST->ECOM->setBillingByGetAddress($customerData);
-        $this->TEST->ECOM->setCustomer("198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL");
+        $this->TEST->ECOM->setCustomer($govId, "0808080808", "0707070707", "test@test.com", "NATURAL");
         $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
         $this->TEST->ECOM->setMetaData('metaKeyTestTime', time());
         $this->TEST->ECOM->setMetaData('metaKeyTestMicroTime', microtime(true));
@@ -312,6 +313,27 @@ class resursBankTest extends TestCase
         }
 
         return $response;
+    }
+
+    /**
+     * @test Finalize frozen orders - ECom should prevent this before Resurs Bank to save performance.
+     *
+     * @throws \Exception
+     */
+    public function finalizeFrozen()
+    {
+        $payment = $this->generateSimpleSimplifiedInvoiceOrder(true, '198101010000');
+        if (isset($payment->paymentId) && $payment->bookPaymentStatus === 'FROZEN') {
+            // Verified frozen.
+            try {
+                $this->TEST->ECOM->finalizePayment($payment->paymentId);
+            } catch (\Exception $e) {
+                static::assertTrue(
+                    $e->getCode() === \RESURS_EXCEPTIONS::ECOMMERCEERROR_NOT_ALLOWED_IN_CURRENT_STATE,
+                    'Finalization properly prohibited by current state'
+                );
+            }
+        }
     }
 
     /**
