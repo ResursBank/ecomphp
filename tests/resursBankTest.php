@@ -294,15 +294,16 @@ class resursBankTest extends TestCase
     /**
      * @test
      * @param bool $noAssert
+     * @param string $govId
      * @return array
      * @throws \Exception
      */
-    public function generateSimpleSimplifiedInvoiceOrder($noAssert = false)
+    public function generateSimpleSimplifiedInvoiceOrder($noAssert = false, $govId = '198305147715')
     {
         $customerData = $this->getHappyCustomerData();
         $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline", 800, 25);
         $this->TEST->ECOM->setBillingByGetAddress($customerData);
-        $this->TEST->ECOM->setCustomer("198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL");
+        $this->TEST->ECOM->setCustomer($govId, "0808080808", "0707070707", "test@test.com", "NATURAL");
         $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
         $this->TEST->ECOM->setMetaData('metaKeyTestTime', time());
         $this->TEST->ECOM->setMetaData('metaKeyTestMicroTime', microtime(true));
@@ -313,6 +314,27 @@ class resursBankTest extends TestCase
         }
 
         return $response;
+    }
+
+    /**
+     * @test Finalize frozen orders - ECom should prevent this before Resurs Bank to save performance.
+     *
+     * @throws \Exception
+     */
+    public function finalizeFrozen()
+    {
+        $payment = $this->generateSimpleSimplifiedInvoiceOrder(true, '198101010000');
+        if (isset($payment->paymentId) && $payment->bookPaymentStatus === 'FROZEN') {
+            // Verified frozen.
+            try {
+                $this->TEST->ECOM->finalizePayment($payment->paymentId);
+            } catch (\Exception $e) {
+                static::assertTrue(
+                    $e->getCode() === \RESURS_EXCEPTIONS::ECOMMERCEERROR_NOT_ALLOWED_IN_CURRENT_STATE,
+                    'Finalization properly prohibited by current state'
+                );
+            }
+        }
     }
 
     /**
@@ -723,6 +745,70 @@ class resursBankTest extends TestCase
         }
         $callbacks = $this->TEST->ECOM->getCallBacksByRest();
         static::assertTrue(is_array($callbacks) && !count($callbacks) ? true : false);
+    }
+
+    /**
+     * @test Test registration of callbacks in three different ways - including backward compatibility.
+     *
+     * Note: We can not check whether the salt keys are properly set in realtime, but during our own
+     * tests, it is confirmed that all salt keys are different after this test.
+     *
+     * @throws \Exception
+     */
+    public function setRegisterCallback()
+    {
+        $this->TEST->ECOM->setCallbackDigestSalt(
+            uniqid(sha1(microtime(true))),
+            RESURS_CALLBACK_TYPES::BOOKED
+        );
+
+        // Set "all global" key. If nothing are predefined in the call of registration
+        $this->TEST->ECOM->setCallbackDigestSalt(uniqid(md5(microtime(true))));
+
+        $cbCount = 0;
+        $templateUrl = "https://test.resurs.com/callbacks/";
+
+        // Phase 1: Register callback with local salt key.
+        if ($this->TEST->ECOM->setRegisterCallback(
+            RESURS_CALLBACK_TYPES::FINALIZATION,
+            $templateUrl . "type/finalization",
+            array(
+                'digestAlgorithm' => 'md5',
+                'digestSalt' => uniqid(microtime(true)),
+            )
+        )) {
+            $cbCount++;
+        }
+
+        // Phase 2: Register callback with the globally stored type-based key (see above).
+        if ($this->TEST->ECOM->setRegisterCallback(
+            RESURS_CALLBACK_TYPES::BOOKED,
+            $templateUrl . "type/booked"
+        )) {
+            $cbCount++;
+        }
+
+        // Phase 3: Register callback with the absolute global stored key (see above).
+        if ($this->TEST->ECOM->setRegisterCallback(
+            RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL,
+            $templateUrl . "type/automatic_fraud_control"
+        )) {
+            $cbCount++;
+        }
+
+        // Phase 4: Make sure this works for UPDATE also.
+        if ($this->TEST->ECOM->setRegisterCallback(
+            RESURS_CALLBACK_TYPES::UPDATE,
+            $templateUrl . "type/finalization",
+            array(
+                'digestAlgorithm' => 'md5',
+                'digestSalt' => uniqid(sha1(md5(microtime(true)))),
+            )
+        )) {
+            $cbCount++;
+        }
+
+        static::assertTrue($cbCount === 4);
     }
 
     /**
