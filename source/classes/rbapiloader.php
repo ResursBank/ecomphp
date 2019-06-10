@@ -3230,8 +3230,15 @@ class ResursBank
                     isset($jsonized->errorCode) &&
                     ((int)$jsonized->errorCode > 0 || strlen($jsonized->errorCode) > 3)
                 ) {
-                    $errorMessage = isset($jsonized->description) ? $jsonized->description :
-                        isset($jsonized->detailedMessage) ? $jsonized->detailedMessage : $e->getMessage();
+
+                    if (isset($jsonized->description)) {
+                        $errorMessage = $jsonized->description;
+                    } else if (isset($jsonized->detailedMessage)) {
+                        $errorMessage = $jsonized->detailedMessage;
+                    } else {
+                        $errorMessage = $e->getMessage();
+                    }
+
                     throw new \ResursException(
                         $errorMessage,
                         is_numeric($jsonized->errorCode) ? $jsonized->errorCode : 0,
