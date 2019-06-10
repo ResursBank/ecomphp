@@ -3233,7 +3233,7 @@ class ResursBank
 
                     if (isset($jsonized->description)) {
                         $errorMessage = $jsonized->description;
-                    } else if (isset($jsonized->detailedMessage)) {
+                    } elseif (isset($jsonized->detailedMessage)) {
                         $errorMessage = $jsonized->detailedMessage;
                     } else {
                         $errorMessage = $e->getMessage();
