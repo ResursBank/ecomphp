@@ -633,7 +633,7 @@ class resursBankTest extends TestCase
         ecom_event_register('update_payload', 'ecom_inject_payload');
         $customerData = $this->getHappyCustomerData();
         $errorCode = 0;
-        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
+        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
         $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline", 800, 25);
         $this->TEST->ECOM->setBillingByGetAddress($customerData);
         $this->TEST->ECOM->setCustomer(null, "0808080808", "0707070707", "test@test.com", "NATURAL");
@@ -644,12 +644,12 @@ class resursBankTest extends TestCase
             $errorCode = $e->getCode();
         }
         $myPayLoad = $this->TEST->ECOM->getPayload();
-        ecom_event_unregister('update_payload');
         static::assertTrue(
             isset($myPayLoad['add_a_problem_into_payload']) &&
             !isset($myPayLoad['signing']) &&
             (int)$errorCode > 0
         );
+        ecom_event_unregister('update_payload');
     }
 
     /**
