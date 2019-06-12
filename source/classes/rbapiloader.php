@@ -8,7 +8,7 @@
  * @author  Resurs Bank Ecommerce
  *          /home/thorne/dev/Resurs/ecomphp/1.1/source/classes/rbapiloader.php<ecommerce.support@resurs.se>
  * @branch  1.3
- * @version 1.3.19
+ * @version 1.3.20
  * @link    https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link    https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @link    https://test.resurs.com/docs/x/KAH1 EComPHP: Bitmasking features
@@ -3748,6 +3748,113 @@ class ResursBank
     }
 
     /**
+     * Quantity Recalculation of a getPayment. Also supports arrays.
+     *
+     * When ECom gets an article row that needs recalculation on quantity level, this method can be used.
+     * Note: The article row needs to be "completed" from the start, to get a successful recalculation.
+     * By means, you need a prepared "proper" payment already, where you only need to adjust the quantity
+     * values.
+     *
+     * @param array|\stdClass $artObject
+     * @param int $quantity
+     *
+     * @return mixed
+     * @throws \ResursException
+     * @since 1.3.20
+     * @since 1.0.47
+     * @since 1.1.47
+     */
+    public function getRecalculatedQuantity($artObject, $quantity = -1)
+    {
+        // If no quantity passed into this method, try to reuse quantity in the object.
+        if ($quantity === -1) {
+            if (isset($artObject->quantity)) {
+                $quantity = $artObject->quantity;
+            } elseif (isset($artObject['quantity'])) {
+                $quantity = $artObject['quantity'];
+            } else {
+                throw new \ResursException(
+                    'A valid quantity is required for this recalculation.',
+                    \RESURS_EXCEPTIONS::INTERNAL_QUANTITY_EXCEPTION
+                );
+            }
+        }
+
+        if (is_object($artObject) &&
+            isset($artObject->unitAmountWithoutVat) &&
+            isset($artObject->vatPct) &&
+            isset($artObject->totalVatAmount) &&
+            isset($artObject->totalAmount)
+        ) {
+            $artObject->totalVatAmount = $this->getTotalVatAmount(
+                $artObject->unitAmountWithoutVat,
+                $artObject->vatPct,
+                $quantity
+            );
+            $artObject->totalAmount = $this->getTotalAmount(
+                $artObject->unitAmountWithoutVat,
+                $artObject->vatPct,
+                $quantity
+            );
+            $artObject->quantity = $quantity;
+        }
+
+        // If this one arrives as an array, handle this also.
+        if (is_array($artObject) &&
+            isset($artObject['unitAmountWithoutVat']) &&
+            isset($artObject['vatPct']) &&
+            isset($artObject['totalVatAmount']) &&
+            isset($artObject['totalAmount'])
+        ) {
+            $artObject['totalVatAmount'] = $this->getTotalVatAmount(
+                $artObject['unitAmountWithoutVat'],
+                $artObject['vatPct'],
+                $quantity
+            );
+            $artObject['totalAmount'] = $this->getTotalAmount(
+                $artObject['unitAmountWithoutVat'],
+                $artObject['vatPct'],
+                $quantity
+            );
+            $artObject['quantity'] = $quantity;
+        }
+
+        return $artObject;
+    }
+
+    /**
+     * Lazy calculation of total amounts (make sure the vat is an integer and not a decimal value).
+     *
+     * @param float $unitAmountWithoutVat
+     * @param int $vatPct
+     * @param int $quantity
+     * @return float|int
+     * @since 1.3.20
+     * @since 1.0.47
+     * @since 1.1.47
+     */
+    public function getTotalVatAmount($unitAmountWithoutVat, $vatPct, $quantity)
+    {
+        return ($unitAmountWithoutVat * $vatPct / 100) * $quantity;
+    }
+
+    /**
+     * Lazy calculation of total amounts (make sure the vat is an integer and not a decimal value).
+     *
+     * @param $unitAmountWithoutVat
+     * @param $vatPct
+     * @param $quantity
+     * @return float|int
+     * @since 1.3.20
+     * @since 1.0.47
+     * @since 1.1.47
+     */
+    public function getTotalAmount($unitAmountWithoutVat, $vatPct, $quantity)
+    {
+        return ($unitAmountWithoutVat + ($unitAmountWithoutVat * $vatPct / 100)) * $quantity;
+    }
+
+    /**
      * Payment spec container cleaner
      *
      * TODO: Key on artNo, description, price instead
@@ -3757,6 +3864,7 @@ class ResursBank
      * @param bool $keepOpposite Setting this to true, will run the opposite of what the function actually do
      *
      * @return array New array
+     * @throws \ResursException
      * @since 1.0.0
      * @since 1.1.0
      */
@@ -3774,9 +3882,15 @@ class ResursBank
                             if ($currentObject->artNo == $currentCleanObject->artNo) {
                                 $foundObject = true;
                                 if ($keepOpposite) {
-                                    // This little one does the opposite of what this function normally do:
                                     // Remove everything from the array except the found row.
-                                    $cleanedArray[] = $currentObject;
+                                    if ($currentObject->quantity !== $currentCleanObject->quantity) {
+                                        $cleanedArray[] = $currentObject;
+                                    } else {
+                                        $cleanedArray[] = $this->getRecalculatedQuantity(
+                                            $currentObject,
+                                            $currentCleanObject->quantity
+                                        );
+                                    }
                                 }
                                 break;
                             }
@@ -3789,9 +3903,15 @@ class ResursBank
                             if ($currentObject->artNo == $currentCleanObject['artNo']) {
                                 $foundObject = true;
                                 if ($keepOpposite) {
-                                    // This little one does the opposite of what this function normally do:
                                     // Remove everything from the array except the found row.
-                                    $cleanedArray[] = $currentObject;
+                                    if ($currentObject->quantity !== $currentCleanObject['quantity']) {
+                                        $cleanedArray[] = $currentObject;
+                                    } else {
+                                        $cleanedArray[] = $this->getRecalculatedQuantity(
+                                            $currentObject,
+                                            $currentCleanObject['quantity']
+                                        );
+                                    }
                                 }
                                 break;
                             }
