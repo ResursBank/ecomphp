@@ -3230,8 +3230,14 @@ class ResursBank
                     isset($jsonized->errorCode) &&
                     ((int)$jsonized->errorCode > 0 || strlen($jsonized->errorCode) > 3)
                 ) {
-                    $errorMessage = isset($jsonized->description) ? $jsonized->description :
-                        isset($jsonized->detailedMessage) ? $jsonized->detailedMessage : $e->getMessage();
+                    if (isset($jsonized->description)) {
+                        $errorMessage = $jsonized->description;
+                    } elseif (isset($jsonized->detailedMessage)) {
+                        $errorMessage = $jsonized->detailedMessage;
+                    } else {
+                        $errorMessage = $e->getMessage();
+                    }
+
                     throw new \ResursException(
                         $errorMessage,
                         is_numeric($jsonized->errorCode) ? $jsonized->errorCode : 0,
@@ -3823,7 +3829,7 @@ class ResursBank
     }
 
     /**
-     * Lazy calculation of total amounts (make sure the vat is an integer and not a decimal value).
+     * Lazy calculation of total amounts (make sure the VAT is an integer and not a decimal value).
      *
      * @param float $unitAmountWithoutVat
      * @param int $vatPct
@@ -3839,7 +3845,7 @@ class ResursBank
     }
 
     /**
-     * Lazy calculation of total amounts (make sure the vat is an integer and not a decimal value).
+     * Lazy calculation of total amounts (make sure the VAT is an integer and not a decimal value).
      *
      * @param $unitAmountWithoutVat
      * @param $vatPct
@@ -3857,20 +3863,23 @@ class ResursBank
     /**
      * Payment spec container cleaner
      *
-     * TODO: Key on artNo, description, price instead
-     *
-     * @param array $currentArray The current speclineArray
-     * @param array $cleanWith The array with the speclines that should be removed from currentArray
-     * @param bool $keepOpposite Setting this to true, will run the opposite of what the function actually do
-     *
+     * @param array $currentArray The current speclineArray.
+     * @param array $cleanWith The array with the speclines that should be removed from currentArray.
+     * @param bool $keepOpposite Setting this to true, will run the opposite of what the function actually do.
      * @return array New array
      * @throws \ResursException
      * @since 1.0.0
      * @since 1.1.0
+     * @todo Key on artNo, description, price instead. This is probably recommended if we run on quantity controls.
      */
-    private function removeFromArray($currentArray = array(), $cleanWith = array(), $keepOpposite = false)
-    {
-        $cleanedArray = array();
+    private function removeFromArray(
+        $currentArray = [],
+        $cleanWith = [],
+        $keepOpposite = false,
+        $skipOnQuantityArray = []
+    ) {
+        $cleanedArray = [];
+        $currentCleanObject = null;
         foreach ($currentArray as $currentObject) {
             if (is_array($cleanWith)) {
                 $foundObject = false;
@@ -3882,15 +3891,7 @@ class ResursBank
                             if ($currentObject->artNo == $currentCleanObject->artNo) {
                                 $foundObject = true;
                                 if ($keepOpposite) {
-                                    // Remove everything from the array except the found row.
-                                    if ($currentObject->quantity !== $currentCleanObject->quantity) {
-                                        $cleanedArray[] = $currentObject;
-                                    } else {
-                                        $cleanedArray[] = $this->getRecalculatedQuantity(
-                                            $currentObject,
-                                            $currentCleanObject->quantity
-                                        );
-                                    }
+                                    $cleanedArray[] = $this->getMatchedQuantity($currentObject, $currentCleanObject);
                                 }
                                 break;
                             }
@@ -3903,15 +3904,7 @@ class ResursBank
                             if ($currentObject->artNo == $currentCleanObject['artNo']) {
                                 $foundObject = true;
                                 if ($keepOpposite) {
-                                    // Remove everything from the array except the found row.
-                                    if ($currentObject->quantity !== $currentCleanObject['quantity']) {
-                                        $cleanedArray[] = $currentObject;
-                                    } else {
-                                        $cleanedArray[] = $this->getRecalculatedQuantity(
-                                            $currentObject,
-                                            $currentCleanObject['quantity']
-                                        );
-                                    }
+                                    $cleanedArray[] = $this->getMatchedQuantity($currentObject, $currentCleanObject);
                                 }
                                 break;
                             }
@@ -3921,6 +3914,46 @@ class ResursBank
                 if (!$keepOpposite) {
                     if (!$foundObject) {
                         $cleanedArray[] = $currentObject;
+                    } else {
+                        if (is_array($skipOnQuantityArray) && count($skipOnQuantityArray)) {
+                            // If there is a match and $skipOnQuantityArray is set, we should probably handle this
+                            // as a special quantity case (when running CREDIT or ANNUL).
+                            foreach ($skipOnQuantityArray as $article) {
+                                // User defined array with articles. This is where we will find differences to the
+                                // default getPayment-payload ($currentArray).
+                                $userQuantity = $this->getQuantityByArticle(
+                                    $cleanWith,
+                                    $currentObject->artNo
+                                );
+                                // The current quantity from the primary loop.
+                                $paymentQuantity = $this->getQuantityByArticle(
+                                    $currentArray,
+                                    $currentObject->artNo
+                                );
+
+                                // Checking if the current article of $skipOnQuantityArray contains a valid
+                                // article number. It checks both stdClass-objects and arrays.
+                                $allowQuantityControl = false;
+                                if (is_object($article) && isset($article->artNo)) {
+                                    $allowQuantityControl = true;
+                                } elseif (is_array($article) && isset($article['artNo'])) {
+                                    $allowQuantityControl = true;
+                                }
+
+                                // Checks if the current quantity differs. If they are note equal, we're
+                                // allowed to store them too.
+                                if ($allowQuantityControl) {
+                                    if (
+                                        intval($userQuantity) > 0 &&
+                                        intval($paymentQuantity) > 0 &&
+                                        intval($userQuantity) !== intval($paymentQuantity)
+                                    ) {
+                                        $cleanedArray[] = $currentObject;
+                                    }
+                                    break;
+                                }
+                            }
+                        }
                     }
                 }
             } else {
@@ -3931,6 +3964,88 @@ class ResursBank
         return $cleanedArray;
     }
 
+    /**
+     * Extract quantity from a getPayment-object based on the article number.
+     *
+     * @param $articleObject
+     * @param $artNo
+     * @return int
+     */
+    private function getQuantityByArticle($articleObject, $artNo)
+    {
+        $quantity = 0;
+
+        if (is_array($articleObject) && count($articleObject)) {
+            foreach ($articleObject as $articleItem) {
+                if (is_object($articleItem) &&
+                    isset($articleItem->artNo) &&
+                    isset($articleItem->quantity) &&
+                    $articleItem->artNo === $artNo
+                ) {
+                    $quantity = $articleItem->quantity;
+                    break;
+                }
+            }
+        } else {
+            // In this case article number is not necessary as we alread have the article itself.
+            if (is_object($articleObject) && isset($articleObject->quantity)) {
+                $quantity = $articleObject->quantity;
+            } elseif (is_array($articleObject) && isset($articleObject['quantity'])) {
+                $quantity = $articleObject['quantity'];
+            }
+        }
+
+        return $quantity;
+    }
+
+    /**
+     * @param $currentObject
+     * @param $currentMatchObject
+     * @param bool $asBoolean When enabled, [status=>true,result=>the object] when there is a quantity mismatch
+     * @return array
+     * @throws \ResursException
+     */
+    private function getMatchedQuantity($currentObject, $currentMatchObject, $asBoolean = false) {
+        $result = $currentObject;
+        $returnedBoolean = false;
+        $returnType = null;
+
+        // Note: The matching method converts all quantity values to integers as some of them arrives as floats.
+
+        if (is_object($currentMatchObject) && isset($currentMatchObject->quantity)) {
+            if (intval($currentObject->quantity) !== intval($currentMatchObject->quantity)) {
+                if ($asBoolean) {
+                    $returnedBoolean = true;
+                    $returnType = 'object';
+                }
+                $result = $this->getRecalculatedQuantity(
+                    $currentObject,
+                    $currentMatchObject->quantity
+                );
+            }
+        } elseif (is_array($currentMatchObject) && isset($currentMatchObject['quantity'])) {
+            if (intval($currentObject->quantity) !== intval($currentMatchObject['quantity'])) {
+                if ($asBoolean) {
+                    $returnedBoolean = true;
+                    $returnType = 'array';
+                }
+                $result = $this->getRecalculatedQuantity(
+                    $currentObject,
+                    $currentMatchObject['quantity']
+                );
+            }
+        }
+
+        if ($asBoolean) {
+            return [
+                'status' => $returnedBoolean,
+                'result' => $result,
+                'returnType' => $returnType
+            ];
+        }
+
+        return $result;
+    }
 
     ////// Client specific
 
@@ -6274,31 +6389,46 @@ class ResursBank
         $returnSpecObject = null;
 
         $this->BIT->setBitStructure(
-            array(
+            [
                 'FINALIZE' => RESURS_AFTERSHOP_RENDER_TYPES::FINALIZE,
                 'CREDIT' => RESURS_AFTERSHOP_RENDER_TYPES::CREDIT,
                 'ANNUL' => RESURS_AFTERSHOP_RENDER_TYPES::ANNUL,
                 'AUTHORIZE' => RESURS_AFTERSHOP_RENDER_TYPES::AUTHORIZE,
-            )
+            ]
         );
 
-        // Get payment spec bulked
+        // Get payment spec bulked.
         $paymentIdOrPaymentObject = $this->getPaymentSpecByStatus($paymentIdOrPaymentObjectData);
 
         if ($this->BIT->isBit(RESURS_AFTERSHOP_RENDER_TYPES::FINALIZE, $renderType)) {
-            $returnSpecObject = $this->removeFromArray($paymentIdOrPaymentObject['AUTHORIZE'],
-                array_merge($paymentIdOrPaymentObject['DEBIT'], $paymentIdOrPaymentObject['ANNUL'],
-                    $paymentIdOrPaymentObject['CREDIT']));
+            $returnSpecObject = $this->removeFromArray(
+                $paymentIdOrPaymentObject['AUTHORIZE'],
+                array_merge(
+                    $paymentIdOrPaymentObject['DEBIT'],
+                    $paymentIdOrPaymentObject['ANNUL'],
+                    $paymentIdOrPaymentObject['CREDIT']
+                )
+            );
         } elseif ($this->BIT->isBit(RESURS_AFTERSHOP_RENDER_TYPES::CREDIT, $renderType)) {
-            $returnSpecObject = $this->removeFromArray($paymentIdOrPaymentObject['DEBIT'],
-                array_merge($paymentIdOrPaymentObject['ANNUL'], $paymentIdOrPaymentObject['CREDIT']));
+            $returnSpecObject = $this->removeFromArray(
+                $paymentIdOrPaymentObject['DEBIT'],
+                array_merge(
+                    $paymentIdOrPaymentObject['ANNUL'],
+                    $paymentIdOrPaymentObject['CREDIT']
+                )
+            );
         } elseif ($this->BIT->isBit(RESURS_AFTERSHOP_RENDER_TYPES::ANNUL, $renderType)) {
-            $returnSpecObject = $this->removeFromArray($paymentIdOrPaymentObject['AUTHORIZE'],
-                array_merge($paymentIdOrPaymentObject['DEBIT'], $paymentIdOrPaymentObject['ANNUL'],
-                    $paymentIdOrPaymentObject['CREDIT']));
+            $returnSpecObject = $this->removeFromArray(
+                $paymentIdOrPaymentObject['AUTHORIZE'],
+                array_merge(
+                    $paymentIdOrPaymentObject['DEBIT'],
+                    $paymentIdOrPaymentObject['ANNUL'],
+                    $paymentIdOrPaymentObject['CREDIT']
+                )
+            );
         } else {
             // If no type is chosen, return all rows
-            $returnSpecObject = $this->removeFromArray($paymentIdOrPaymentObject, array());
+            $returnSpecObject = $this->removeFromArray($paymentIdOrPaymentObject, []);
         }
 
         return $returnSpecObject;
@@ -6698,12 +6828,15 @@ class ResursBank
      * @since 1.1.22
      * @since 1.2.0
      */
-    public function paymentAnnul($paymentId = "", $customPayloadItemList = array(), $runOnce = false)
+    public function paymentAnnul($paymentId = "", $customPayloadItemList = [], $runOnce = false)
     {
         //$this->setAfterShopPaymentId($paymentId);
 
-        $afterShopObject = $this->getAfterShopObjectByPayload($paymentId, $customPayloadItemList,
-            RESURS_AFTERSHOP_RENDER_TYPES::ANNUL);
+        $afterShopObject = $this->getAfterShopObjectByPayload(
+            $paymentId,
+            $customPayloadItemList,
+            RESURS_AFTERSHOP_RENDER_TYPES::ANNUL
+        );
         $this->aftershopPrepareMetaData($paymentId);
         try {
             $afterShopResponseCode = $this->postService("annulPayment", $afterShopObject, true);
@@ -6815,9 +6948,9 @@ class ResursBank
         // Collect the payment sorted by status
         $currentPaymentSpec = $this->getPaymentSpecByStatus($currentPayment);
 
-        // Sanitized paymentspec based on what to CREDIT
+        // Sanitized paymentspec based on what CAN be fully CREDITed with no custom payment load.
         $creditObject = $this->sanitizeAfterShopSpec($currentPayment, RESURS_AFTERSHOP_RENDER_TYPES::CREDIT);
-        // Sanitized paymentspec based on what to ANNUL
+        // Sanitized paymentspec based on what CAN be fully ANNULLED wit no custom payment load.
         $annulObject = $this->sanitizeAfterShopSpec($currentPayment, RESURS_AFTERSHOP_RENDER_TYPES::ANNUL);
 
         if (is_array($customPayloadItemList) && count($customPayloadItemList)) {
@@ -6834,22 +6967,46 @@ class ResursBank
                 // If it is customized, we need to render the cancellation differently to specify what's what.
 
                 // Validation object - Contains everything that CAN be credited
-                $validatedCreditObject = $this->removeFromArray($currentPaymentSpec['DEBIT'],
-                    array_merge($currentPaymentSpec['ANNUL'], $currentPaymentSpec['CREDIT']));
-                // Validation object - Contains everything that CAN be annulled
-                $validatedAnnulmentObject = $this->removeFromArray($currentPaymentSpec['AUTHORIZE'],
-                    array_merge($currentPaymentSpec['DEBIT'], $currentPaymentSpec['ANNUL'],
-                        $currentPaymentSpec['CREDIT']));
+                $validatedCreditObject = $this->removeFromArray(
+                    $currentPaymentSpec['DEBIT'],
+                    array_merge(
+                        $currentPaymentSpec['ANNUL'],
+                        $currentPaymentSpec['CREDIT']
+                    ),
+                    false,
+                    $currentOrderLines
+                );
+                // Validation object - Contains everything that CAN be annulled.
+                $validatedAnnulmentObject = $this->removeFromArray(
+                    $currentPaymentSpec['AUTHORIZE'],
+                    array_merge(
+                        $currentPaymentSpec['DEBIT'],
+                        $currentPaymentSpec['ANNUL'],
+                        $currentPaymentSpec['CREDIT']
+                    ),
+                    false,
+                    $currentOrderLines
+                );
 
                 // Clean up selected rows from the credit element and keep those rows than still can be credited and
                 // matches the orderRow-request
-                $newCreditObject = $this->objectsIntoArray($this->removeFromArray($validatedCreditObject,
-                    $currentOrderLines, true));
+                $newCreditObject = $this->objectsIntoArray(
+                    $this->removeFromArray(
+                        $validatedCreditObject,
+                        $currentOrderLines,
+                        true
+                    )
+                );
 
                 // Clean up selected rows from the credit element and keep those rows than still can be annulled and
                 // matches the orderRow-request
-                $newAnnulObject = $this->objectsIntoArray($this->removeFromArray($validatedAnnulmentObject,
-                    $currentOrderLines, true));
+                $newAnnulObject = $this->objectsIntoArray(
+                    $this->removeFromArray(
+                        $validatedAnnulmentObject,
+                        $currentOrderLines,
+                        true
+                    )
+                );
 
                 if (is_array($newCreditObject) && count($newCreditObject)) {
                     $this->paymentCredit($paymentId, $newCreditObject);
