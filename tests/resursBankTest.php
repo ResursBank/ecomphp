@@ -654,6 +654,16 @@ class resursBankTest extends TestCase
 
     /**
      * @test
+     */
+    public function getCostOfPurchase() {
+        $result = $this->TEST->ECOM->getCostOfPurchase('PARTPAYMENT', '10000');
+        //$result = $this->TEST->ECOM->getCostOfPurchase($this->getMethodId(), '10000');
+
+        static::assertTrue(strlen($result) > 1000);
+    }
+
+    /**
+     * @test
      *
      * How to use this in a store environment like RCO:
      *   - During interceptor mode, store the getOrderLineHash in a _SESSION variable.
