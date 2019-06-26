@@ -3866,6 +3866,7 @@ class ResursBank
      * @param array $currentArray The current speclineArray.
      * @param array $cleanWith The array with the speclines that should be removed from currentArray.
      * @param bool $keepOpposite Setting this to true, will run the opposite of what the function actually do.
+     * @param array $skipOnQuantityArray
      * @return array New array
      * @throws \ResursException
      * @since 1.0.0
@@ -6998,10 +6999,10 @@ class ResursBank
         }
         $this->renderPaymentSpec(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
         $this->aftershopPrepareMetaData($paymentId);
-        try {
-            // Render and check if this is customized
-            $currentOrderLines = $this->getOrderLines();
+        // Render and current orderlines. This may contain customized orderlines.
+        $currentOrderLines = $this->getOrderLines();
 
+        try {
             if (is_array($currentOrderLines) && count($currentOrderLines)) {
                 // If it is customized, we need to render the cancellation differently to specify what's what.
 
