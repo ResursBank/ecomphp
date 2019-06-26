@@ -6410,28 +6410,66 @@ class ResursBank
                 )
             );
         } elseif ($this->BIT->isBit(RESURS_AFTERSHOP_RENDER_TYPES::CREDIT, $renderType)) {
-            $returnSpecObject = $this->removeFromArray(
-                $paymentIdOrPaymentObject['DEBIT'],
-                array_merge(
-                    $paymentIdOrPaymentObject['ANNUL'],
+            $returnSpecObject = $this->getQuantityDifferences(
+                $this->removeFromArray(
+                    $paymentIdOrPaymentObject['DEBIT'],
+                    array_merge(
+                        $paymentIdOrPaymentObject['ANNUL'],
+                        $paymentIdOrPaymentObject['CREDIT']
+                    ),
+                    false,
                     $paymentIdOrPaymentObject['CREDIT']
-                )
+                ),
+                $paymentIdOrPaymentObject['CREDIT']
             );
         } elseif ($this->BIT->isBit(RESURS_AFTERSHOP_RENDER_TYPES::ANNUL, $renderType)) {
-            $returnSpecObject = $this->removeFromArray(
-                $paymentIdOrPaymentObject['AUTHORIZE'],
-                array_merge(
-                    $paymentIdOrPaymentObject['DEBIT'],
-                    $paymentIdOrPaymentObject['ANNUL'],
-                    $paymentIdOrPaymentObject['CREDIT']
-                )
+            $returnSpecObject = $this->getQuantityDifferences(
+                $this->removeFromArray
+                (
+                    $paymentIdOrPaymentObject['AUTHORIZE'],
+                    array_merge(
+                        $paymentIdOrPaymentObject['DEBIT'],
+                        $paymentIdOrPaymentObject['ANNUL'],
+                        $paymentIdOrPaymentObject['CREDIT']
+                    ),
+                    false,
+                    $paymentIdOrPaymentObject['ANNUL']
+                ),
+                $paymentIdOrPaymentObject['ANNUL']
             );
+
         } else {
             // If no type is chosen, return all rows
             $returnSpecObject = $this->removeFromArray($paymentIdOrPaymentObject, []);
         }
 
         return $returnSpecObject;
+    }
+
+    /**
+     * Look for differences in a quantity object, adjust it and recalculate sums.
+     *
+     * @param array $specObject
+     * @param array $whatsLeftObject
+     * @return array
+     * @throws \ResursException
+     */
+    private function getQuantityDifferences($specObject = array(), $whatsLeftObject = array())
+    {
+        foreach ($specObject as $productRow) {
+            foreach ($whatsLeftObject as $leftObject) {
+                if (is_object($leftObject) && isset($leftObject->artNo) && $leftObject->artNo === $productRow->artNo) {
+                    $productRow->quantity = intval($productRow->quantity) - intval($leftObject->quantity);
+                    $productRow = $this->getRecalculatedQuantity($productRow, $productRow->quantity);
+                }
+                if (is_array($leftObject) && isset($leftObject['artNo']) && $leftObject['artNo'] === $productRow->artNo) {
+                    $productRow->quantity = intval($productRow->quantity) - intval($leftObject['quantity']);
+                    $productRow = $this->getRecalculatedQuantity($productRow, $productRow->quantity);
+                }
+            }
+        }
+
+        return $specObject;
     }
 
     /**
