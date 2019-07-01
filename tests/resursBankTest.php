@@ -315,6 +315,37 @@ class resursBankTest extends TestCase
         return $response;
     }
 
+    public function getProductPrice($static = false) {
+        if (!$static) {
+            return rand(30, 90);
+        }
+
+        return 90;
+    }
+
+    /**
+     * @test
+     * @param string $govId
+     * @return array
+     * @throws \Exception
+     */
+    public function generateSimpleSimplifiedInvoiceQuantityOrder($govId = '198305147715', $staticProductPrice = false)
+    {
+        $customerData = $this->getHappyCustomerData();
+        $this->TEST->ECOM->addOrderLine("PR01", "PR01", $this->getProductPrice($staticProductPrice), 25, 'st', 'ORDER_LINE', 100);
+        $this->TEST->ECOM->addOrderLine("PR02", "PR02", $this->getProductPrice($staticProductPrice), 25, 'st', 'ORDER_LINE', 100);
+        $this->TEST->ECOM->addOrderLine("PR03", "PR03", $this->getProductPrice($staticProductPrice), 25, 'st', 'ORDER_LINE', 100);
+        $this->TEST->ECOM->addOrderLine("PR04", "PR04", $this->getProductPrice($staticProductPrice), 25, 'st', 'ORDER_LINE', 100);
+        $this->TEST->ECOM->setBillingByGetAddress($customerData);
+        $this->TEST->ECOM->setCustomer($govId, "0808080808", "0707070707", "test@test.com", "NATURAL");
+        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+        $this->TEST->ECOM->setMetaData('metaKeyTestTime', time());
+        $this->TEST->ECOM->setMetaData('metaKeyTestMicroTime', microtime(true));
+        $response = $this->TEST->ECOM->createPayment($this->getMethodId());
+
+        return $response;
+    }
+
     /**
      * @test Finalize frozen orders - ECom should prevent this before Resurs Bank to save performance.
      *
@@ -947,6 +978,183 @@ class resursBankTest extends TestCase
         $initAndValidate = new ResursBank($this->username, $this->password);
         $justValidated = $initAndValidate->validateCredentials();
         static::assertTrue($isValid && !$isNotValid && $onInitOk && $justValidated);
+    }
+
+    /**
+     * @test
+     *
+     * Put order with quantity 100. Annul 50, debit 50. Using old arrayed method.
+     *
+     * @throws \Exception
+     */
+    public function annulAndDebitedPaymentQuantityOldMethod()
+    {
+        $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder();
+        $paymentid = $payment->paymentId;
+
+        $this->TEST->ECOM->annulPayment($paymentid, [['artNo' => 'PR01', 'quantity' => 50]]);
+        $this->TEST->ECOM->finalizePayment($paymentid, [['artNo' => 'PR01', 'quantity' => 50]]);
+
+        static::assertTrue(
+            $this->getPaymentStatusQuantity(
+                $paymentid,
+                [
+                    'AUTHORIZE' => [
+                        'PR01',
+                        100,
+                    ],
+                    'ANNUL' => [
+                        'PR01',
+                        50,
+                    ],
+                    'DEBIT' => [
+                        'PR01',
+                        50,
+                    ],
+                ]
+            )
+        );
+    }
+
+    /**
+     * @test
+     *
+     * Put order with quantity 100. Annul 50, debit 50. Using addOrderLine.
+     *
+     * @throws \Exception
+     */
+    public function annulAndDebitedPaymentQuantityProperMethod()
+    {
+        $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
+        $paymentid = $payment->paymentId;
+
+        $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 50);
+        $this->TEST->ECOM->annulPayment($paymentid);
+        $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 50);
+        $this->TEST->ECOM->finalizePayment($paymentid);
+
+        static::assertTrue(
+            $this->getPaymentStatusQuantity(
+                $paymentid,
+                [
+                    'AUTHORIZE' => [
+                        'PR01',
+                        100,
+                    ],
+                    'ANNUL' => [
+                        'PR01',
+                        50,
+                    ],
+                    'DEBIT' => [
+                        'PR01',
+                        50,
+                    ],
+                ]
+            )
+        );
+    }
+
+    /**
+     * @test
+     *
+     * Put order with quantity 100. Annul 50, debit 50, credit 25.
+     *
+     * @throws \Exception
+     */
+    public function annulDebitAndCreditPaymentQuantityProperMethod()
+    {
+        $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
+        $paymentid = $payment->paymentId;
+
+        $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 50);
+        $this->TEST->ECOM->annulPayment($paymentid);
+        $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 50);
+        $this->TEST->ECOM->finalizePayment($paymentid);
+        $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 25);
+        $this->TEST->ECOM->creditPayment($paymentid);
+
+        static::assertTrue(
+            $this->getPaymentStatusQuantity(
+                $paymentid,
+                [
+                    'AUTHORIZE' => [
+                        'PR01',
+                        100,
+                    ],
+                    'ANNUL' => [
+                        'PR01',
+                        50,
+                    ],
+                    'CREDIT' => [
+                        'PR01',
+                        25,
+                    ],
+                    'DEBIT' => [
+                        'PR01',
+                        50,
+                    ],
+                ]
+            )
+        );
+    }
+
+    /**
+     * @test
+     *
+     * Put order with quantity 100. Annul 50, debit 50, credit 25. And then kill the full order.
+     * Expected result is:
+     *
+     * Part 1: one row has 50 annulled, 25 debited and 25 credited.
+     * Part 2: one row has 50 annulled, 50 credited, and the resut of the order should be annulled.
+     *
+     *
+     * @throws \Exception
+     */
+    public function annulTrollPaymentAndKill()
+    {
+        $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
+        $paymentid = $payment->paymentId;
+
+        $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 50);
+        $this->TEST->ECOM->annulPayment($paymentid);
+        $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 50);
+        $this->TEST->ECOM->finalizePayment($paymentid);
+        $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 25);
+        $this->TEST->ECOM->creditPayment($paymentid);
+
+        // And the annul payment.
+        $this->TEST->ECOM->cancelPayment($paymentid);
+
+        $confirmKill = $this->TEST->ECOM->getPayment($paymentid);
+        print_r($confirmKill);
+    }
+
+
+
+    /**
+     * Get mathching result from payment.
+     *
+     * @param $paymentId
+     * @param array $requestFor
+     * @return bool
+     * @throws \Exception
+     */
+    private function getPaymentStatusQuantity($paymentId, $requestFor = array()) {
+        $statusList = $this->TEST->ECOM->getPaymentSpecByStatus($paymentId);
+        $mustMatch = count($requestFor);
+        $matches = 0;
+        foreach ($requestFor as $type => $reqList) {
+            if (isset($statusList[$type])) {
+                foreach ($statusList[$type] as $article) {
+                    if ($article->artNo === $reqList[0] && (int)$article->quantity === (int)$reqList[1]) {
+                        $matches++;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return $mustMatch === $matches ? true : false;
     }
 
     /**
