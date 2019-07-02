@@ -6416,7 +6416,7 @@ class ResursBank
                     ),
                     false,
                     $paymentIdOrPaymentObject['DEBIT'],
-                    $paymentIdOrPaymentObject['ANNUL'],
+                    $paymentIdOrPaymentObject['ANNUL']
                 ),
                 array_merge(
                     $paymentIdOrPaymentObject['DEBIT'],

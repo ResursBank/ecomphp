@@ -286,7 +286,7 @@ class resursBankTest extends TestCase
      */
     public function findPaymentByGovd()
     {
-        $payments = $this->TEST->ECOM->findPayments(array('governmentId' => '8305147715'));
+        $payments = $this->TEST->ECOM->findPayments(['governmentId' => '8305147715']);
         static::assertTrue(is_array($payments) && count($payments));
     }
 
@@ -315,7 +315,8 @@ class resursBankTest extends TestCase
         return $response;
     }
 
-    public function getProductPrice($static = false) {
+    public function getProductPrice($static = false)
+    {
         if (!$static) {
             return rand(30, 90);
         }
@@ -332,10 +333,42 @@ class resursBankTest extends TestCase
     public function generateSimpleSimplifiedInvoiceQuantityOrder($govId = '198305147715', $staticProductPrice = false)
     {
         $customerData = $this->getHappyCustomerData();
-        $this->TEST->ECOM->addOrderLine("PR01", "PR01", $this->getProductPrice($staticProductPrice), 25, 'st', 'ORDER_LINE', 100);
-        $this->TEST->ECOM->addOrderLine("PR02", "PR02", $this->getProductPrice($staticProductPrice), 25, 'st', 'ORDER_LINE', 100);
-        $this->TEST->ECOM->addOrderLine("PR03", "PR03", $this->getProductPrice($staticProductPrice), 25, 'st', 'ORDER_LINE', 100);
-        $this->TEST->ECOM->addOrderLine("PR04", "PR04", $this->getProductPrice($staticProductPrice), 25, 'st', 'ORDER_LINE', 100);
+        $this->TEST->ECOM->addOrderLine(
+            "PR01",
+            "PR01",
+            $this->getProductPrice($staticProductPrice),
+            25,
+            'st',
+            'ORDER_LINE',
+            100
+        );
+        $this->TEST->ECOM->addOrderLine(
+            "PR02",
+            "PR02",
+            $this->getProductPrice($staticProductPrice),
+            25,
+            'st',
+            'ORDER_LINE',
+            100
+        );
+        $this->TEST->ECOM->addOrderLine(
+            "PR03",
+            "PR03",
+            $this->getProductPrice($staticProductPrice),
+            25,
+            'st',
+            'ORDER_LINE',
+            100
+        );
+        $this->TEST->ECOM->addOrderLine(
+            "PR04",
+            "PR04",
+            $this->getProductPrice($staticProductPrice),
+            25,
+            'st',
+            'ORDER_LINE',
+            100
+        );
         $this->TEST->ECOM->setBillingByGetAddress($customerData);
         $this->TEST->ECOM->setCustomer($govId, "0808080808", "0707070707", "test@test.com", "NATURAL");
         $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
@@ -520,7 +553,7 @@ class resursBankTest extends TestCase
         $methodList = $this->TEST->share('paymentMethods');
         if (is_array($methodList) && !count($methodList) || !is_array($methodList)) {
             $this->TEST->ECOM->setSimplifiedPsp(true);
-            $paymentMethods = $this->TEST->ECOM->getPaymentMethods(array(), true);
+            $paymentMethods = $this->TEST->ECOM->getPaymentMethods([], true);
             foreach ($paymentMethods as $method) {
                 $this->TEST->share('METHOD_' . $method->id, $method, false);
             }
@@ -574,10 +607,10 @@ class resursBankTest extends TestCase
      */
     public function findPaymentsXmlBody()
     {
-        $paymentScanList = $this->TEST->ECOM->findPayments(array('statusSet' => array('IS_DEBITED')), 1, 10, array(
+        $paymentScanList = $this->TEST->ECOM->findPayments(['statusSet' => ['IS_DEBITED']], 1, 10, [
             'ascending' => false,
-            'sortColumns' => array('FINALIZED_TIME', 'MODIFIED_TIME', 'BOOKED_TIME'),
-        ));
+            'sortColumns' => ['FINALIZED_TIME', 'MODIFIED_TIME', 'BOOKED_TIME'],
+        ]);
 
         $handle = $this->TEST->ECOM->getCurlHandle();
         $requestBody = $handle->getRequestBody();
@@ -686,7 +719,8 @@ class resursBankTest extends TestCase
     /**
      * @test
      */
-    public function getCostOfPurchase() {
+    public function getCostOfPurchase()
+    {
         $result = $this->TEST->ECOM->getCostOfPurchase('PARTPAYMENT', '10000');
         //$result = $this->TEST->ECOM->getCostOfPurchase($this->getMethodId(), '10000');
 
@@ -812,10 +846,10 @@ class resursBankTest extends TestCase
         if ($this->TEST->ECOM->setRegisterCallback(
             RESURS_CALLBACK_TYPES::FINALIZATION,
             $templateUrl . "type/finalization",
-            array(
+            [
                 'digestAlgorithm' => 'md5',
                 'digestSalt' => uniqid(microtime(true)),
-            )
+            ]
         )) {
             $cbCount++;
         }
@@ -840,10 +874,10 @@ class resursBankTest extends TestCase
         if ($this->TEST->ECOM->setRegisterCallback(
             RESURS_CALLBACK_TYPES::UPDATE,
             $templateUrl . "type/finalization",
-            array(
+            [
                 'digestAlgorithm' => 'md5',
                 'digestSalt' => uniqid(sha1(md5(microtime(true)))),
-            )
+            ]
         )) {
             $cbCount++;
         }
@@ -1130,7 +1164,6 @@ class resursBankTest extends TestCase
     }
 
 
-
     /**
      * Get mathching result from payment.
      *
@@ -1139,7 +1172,8 @@ class resursBankTest extends TestCase
      * @return bool
      * @throws \Exception
      */
-    private function getPaymentStatusQuantity($paymentId, $requestFor = array()) {
+    private function getPaymentStatusQuantity($paymentId, $requestFor = [])
+    {
         $statusList = $this->TEST->ECOM->getPaymentSpecByStatus($paymentId);
         $mustMatch = count($requestFor);
         $matches = 0;
