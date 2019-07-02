@@ -3237,7 +3237,6 @@ class ResursBank
                     } else {
                         $errorMessage = $e->getMessage();
                     }
-
                     throw new \ResursException(
                         $errorMessage,
                         is_numeric($jsonized->errorCode) ? $jsonized->errorCode : 0,
