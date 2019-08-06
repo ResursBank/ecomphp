@@ -1004,11 +1004,14 @@ class resursBankTest extends TestCase
      */
     public function annulAndDebitedPaymentQuantityProperMethod()
     {
+        // Four orderlines are normally created here.
         $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
         $paymentid = $payment->paymentId;
 
+        // Annul 50 of PR01.
         $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 50);
         $this->TEST->ECOM->annulPayment($paymentid);
+        // Debit the rest of PR01.
         $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 50);
         $this->TEST->ECOM->finalizePayment($paymentid);
 
