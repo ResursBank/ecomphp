@@ -7,7 +7,7 @@
  * then one test on, with different kind of exepectations.
  * @package EcomPHPTest
  * @author Resurs Bank AB, Tomas Tornevall <tomas.tornevall@resurs.se>
- * @version 0.2.0
+ * @version 0.2
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://resursbankplugins.atlassian.net/browse/ECOMPHP-214 Rebuilding!
  * @license Apache 2.0
