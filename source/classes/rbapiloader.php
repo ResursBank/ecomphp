@@ -4101,9 +4101,25 @@ class ResursBank
      */
     public function getCreatedBy()
     {
-        $createdBy = $this->realClientName . "_" . $this->getVersionNumber(true);
-        if (!empty($this->loggedInuser)) {
-            $createdBy .= "/" . $this->loggedInuser;
+        // Allow clients to skip clientname (if client name is confusing in paymentadmin) by setting
+        // flag CREATED_BY_NO_CLIENT_NAME. If unset, ecomphp_decimalVesionNumber will be shown.
+        if (!$this->isFlag('CREATED_BY_NO_CLIENT_NAME')) {
+            $createdBy = $this->realClientName . "_" . $this->getVersionNumber(true);
+
+            // If logged in user is set by client or plugin, add this to the createdBy string.
+            if (!empty($this->loggedInuser)) {
+                $createdBy .= "/" . $this->loggedInuser;
+            }
+        } else {
+            // If client or plugin chose to exclude clentname, we'll still look for a logged in user.
+            if (!empty($this->loggedInuser)) {
+                $createdBy = $this->loggedInuser;
+            } else {
+                // If no logged in user is set, ecomphp will mark the createdBy-string with an indication
+                // that something or someone on the remote has done something to the order. This is
+                // done to clarify that this hasn't been done with a regular ResursBank-local interface.
+                $createdBy = "EComPHP-RemoteClientAction";
+            }
         }
 
         return $createdBy;
