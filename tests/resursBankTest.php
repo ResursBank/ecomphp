@@ -921,6 +921,19 @@ class resursBankTest extends TestCase
         static::assertFalse($hasErrors);
     }
 
+    /*public function proxyBook()
+    {
+        $CURL = $this->TEST->ECOM->getCurlHandle();
+        $CURL->setProxy('https://proxy.server', CURLPROXY_HTTPS);
+        $this->TEST->ECOM->setCurlHandle($CURL);
+        $customerData = $this->getHappyCustomerData();
+        $this->TEST->ECOM->setBillingByGetAddress($customerData);
+        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
+        $this->TEST->ECOM->setCustomer('8305147715', "0808080808", "0707070707", "test@test.com", "NATURAL");
+        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+        $this->TEST->ECOM->addOrderLine("ProxyArtRequest", "My Proxified Product", 800, 25);
+        $paymentId = $this->TEST->ECOM->createPayment($this->getMethodId());
+    }*/
 
     /**
      * @test
