@@ -954,19 +954,19 @@ class ResursBank
     }
 
     /**
-     * Return the CURL communication handle to the client, when in debug mode (Read only)
+     * Return the CURL communication handle to the client.
      *
      * @param bool $bulk
-     *
+     * @param bool $reinitialize Get a brand new handle, in case of failures where old handles are inherited the wrong way.
      * @return array|mixed|MODULE_CURL
-     * @throws \Exception
+     * @throws Exception
      * @since 1.0.22
      * @since 1.1.22
      * @since 1.2.0
      */
-    public function getCurlHandle($bulk = false)
+    public function getCurlHandle($bulk = false, $reinitialize = false)
     {
-        $this->InitializeServices(false);
+        $this->InitializeServices($reinitialize);
         if ($bulk) {
             if (count($this->CURL_HANDLE_COLLECTOR)) {
                 return array_pop($this->CURL_HANDLE_COLLECTOR);
