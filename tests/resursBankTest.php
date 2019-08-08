@@ -964,7 +964,14 @@ class resursBankTest extends TestCase
         $CURL = $this->TEST->ECOM->getCurlHandle();
         $CURL->setProxy('10.1.1.55:80', CURLPROXY_HTTP);
         $this->TEST->ECOM->setCurlHandle($CURL);
-        $request = $CURL->doGet('https://identifier.tornevall.net/ip.php');
+
+        try {
+            $request = $CURL->doGet('https://identifier.tornevall.net/ip.php');
+        } catch (\Exception $e) {
+            static::markTestSkipped(sprintf('Proxy test skipped (%d): %s', $e->getCode(), $e->getMessage()));
+            return;
+        }
+
         if ($this->isProperIp($request['body'])) {
             static::assertTrue(count($this->TEST->ECOM->getPaymentMethods()) > 0);
         } else {
@@ -982,7 +989,14 @@ class resursBankTest extends TestCase
         $CURL = $this->TEST->ECOM->getCurlHandle();
         $CURL->setProxy('10.1.1.55:80', CURLPROXY_HTTP);
         $this->TEST->ECOM->setCurlHandle($CURL);
-        $request = $CURL->doGet('https://identifier.tornevall.net/ip.php');
+
+        try {
+            $request = $CURL->doGet('https://identifier.tornevall.net/ip.php');
+        } catch (\Exception $e) {
+            static::markTestSkipped(sprintf('Proxy test skipped (%d): %s', $e->getCode(), $e->getMessage()));
+            return;
+        }
+
         if ($this->isProperIp($request['body'])) {
             $customerData = $this->getHappyCustomerData();
             $this->TEST->ECOM->setBillingByGetAddress($customerData);
@@ -1008,7 +1022,14 @@ class resursBankTest extends TestCase
         $CURL = $this->TEST->ECOM->getCurlHandle();
         $CURL->setProxy('10.1.1.55:80', CURLPROXY_HTTP);
         $this->TEST->ECOM->setCurlHandle($CURL);
-        $request = $CURL->doGet('https://identifier.tornevall.net/ip.php');
+
+        try {
+            $request = $CURL->doGet('https://identifier.tornevall.net/ip.php');
+        } catch (\Exception $e) {
+            static::markTestSkipped(sprintf('Proxy test skipped (%d): %s', $e->getCode(), $e->getMessage()));
+            return;
+        }
+
         if ($this->isProperIp($request['body'])) {
             $customerData = $this->getHappyCustomerData();
             $this->TEST->ECOM->setBillingByGetAddress($customerData);
