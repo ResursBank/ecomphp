@@ -259,6 +259,12 @@ class ResursBank
      * @since 1.1.1
      */
     private $CURL;
+
+    /**
+     * @var MODULE_CURL $CURL_USER_DEFINED
+     */
+    private $CURL_USER_DEFINED;
+
     /**
      * Handles created during in one http call are collected here
      * @var array
@@ -876,9 +882,14 @@ class ResursBank
         } else {
             $this->environment = $this->env_prod;
         }
-        if (class_exists('\Resursbank\RBEcomPHP\MODULE_CURL',
-                ECOM_CLASS_EXISTS_AUTOLOAD) || class_exists('\TorneLIB\MODULE_CURL', ECOM_CLASS_EXISTS_AUTOLOAD)) {
-            $this->CURL = new MODULE_CURL();
+        if (class_exists('\Resursbank\RBEcomPHP\MODULE_CURL', ECOM_CLASS_EXISTS_AUTOLOAD) ||
+            class_exists('\TorneLIB\MODULE_CURL', ECOM_CLASS_EXISTS_AUTOLOAD)
+        ) {
+            if (!is_null($this->CURL_USER_DEFINED)) {
+                $this->CURL = $this->CURL_USER_DEFINED;
+            } else {
+                $this->CURL = new MODULE_CURL();
+            }
             $this->CURL->setChain(false);
             if ($inheritExtendedSoapWarnings) {
                 $this->CURL->setFlag('SOAPWARNINGS_EXTEND', true);
@@ -887,7 +898,6 @@ class ResursBank
             $this->CURL->setStoreSessionExceptions(true);
             $this->CURL->setAuthentication($this->soapOptions['login'], $this->soapOptions['password']);
             $this->CURL->setUserAgent($this->myUserAgent);
-            //$this->CURL->setThrowableHttpCodes();
             $this->NETWORK = new MODULE_NETWORK();
             $this->BIT = $this->NETWORK->BIT;
         }
@@ -949,32 +959,28 @@ class ResursBank
     }
 
     /**
-     * Return the CURL communication handle to the client, when in debug mode (Read only)
+     * Return the CURL communication handle to the client.
      *
      * @param bool $bulk
-     *
+     * @param bool $reinitialize Get a brand new handle, in case of failures where old handles are inherited the wrong way.
      * @return array|mixed|MODULE_CURL
-     * @throws \Exception
+     * @throws Exception
      * @since 1.0.22
      * @since 1.1.22
      * @since 1.2.0
      */
-    public function getCurlHandle($bulk = false)
+    public function getCurlHandle($bulk = false, $reinitialize = false)
     {
-        $this->InitializeServices(false);
-        if ($this->debug) {
-            if ($bulk) {
-                if (count($this->CURL_HANDLE_COLLECTOR)) {
-                    return array_pop($this->CURL_HANDLE_COLLECTOR);
-                }
-
-                return $this->CURL_HANDLE_COLLECTOR;
+        $this->InitializeServices($reinitialize);
+        if ($bulk) {
+            if (count($this->CURL_HANDLE_COLLECTOR)) {
+                return array_pop($this->CURL_HANDLE_COLLECTOR);
             }
 
-            return $this->CURL;
-        } else {
-            throw new \ResursException("Can't return handle. The module is in wrong state (non-debug mode)", 403);
+            return $this->CURL_HANDLE_COLLECTOR;
         }
+
+        return $this->CURL;
     }
 
     /**
@@ -993,6 +999,7 @@ class ResursBank
         $this->InitializeServices();
         if ($this->debug) {
             $this->CURL = $newCurlHandle;
+            $this->CURL_USER_DEFINED = $newCurlHandle;
         } else {
             throw new \ResursException("Can't return handle. The module is in wrong state (non-debug mode)", 403);
         }
