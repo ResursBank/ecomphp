@@ -5,6 +5,7 @@
  * Some of the tests in this suite is being made to check that the "share data between tests" works properly.
  * As setUp() resets tests to basic each time it runs, we can not share for example payments that we can make more
  * then one test on, with different kind of exepectations.
+ *
  * @package EcomPHPTest
  * @author Resurs Bank AB, Tomas Tornevall <tomas.tornevall@resurs.se>
  * @version 0.2.0
@@ -49,6 +50,7 @@ if (file_exists("/etc/ecomphp.json")) {
 
 /**
  * Class resursBankTest
+ *
  * @package Resursbank\RBEcomPHP
  */
 class resursBankTest extends TestCase
@@ -114,7 +116,8 @@ class resursBankTest extends TestCase
 
     /**
      * @test
-     * @testdox Tests API credentials and getPaymentMethods. Expected result: Approved connection with a specific number of payment methods
+     * @testdox Tests API credentials and getPaymentMethods. Expected result: Approved connection with a specific
+     *     number of payment methods
      * @throws \Exception
      */
     public function apiPaymentMethodsWithCredentials()
@@ -286,7 +289,7 @@ class resursBankTest extends TestCase
      */
     public function findPaymentByGovd()
     {
-        $payments = $this->TEST->ECOM->findPayments(array('governmentId' => '8305147715'));
+        $payments = $this->TEST->ECOM->findPayments(['governmentId' => '8305147715']);
         static::assertTrue(is_array($payments) && count($payments));
     }
 
@@ -489,7 +492,7 @@ class resursBankTest extends TestCase
         $methodList = $this->TEST->share('paymentMethods');
         if (is_array($methodList) && !count($methodList) || !is_array($methodList)) {
             $this->TEST->ECOM->setSimplifiedPsp(true);
-            $paymentMethods = $this->TEST->ECOM->getPaymentMethods(array(), true);
+            $paymentMethods = $this->TEST->ECOM->getPaymentMethods([], true);
             foreach ($paymentMethods as $method) {
                 $this->TEST->share('METHOD_' . $method->id, $method, false);
             }
@@ -543,10 +546,10 @@ class resursBankTest extends TestCase
      */
     public function findPaymentsXmlBody()
     {
-        $paymentScanList = $this->TEST->ECOM->findPayments(array('statusSet' => array('IS_DEBITED')), 1, 10, array(
+        $paymentScanList = $this->TEST->ECOM->findPayments(['statusSet' => ['IS_DEBITED']], 1, 10, [
             'ascending' => false,
-            'sortColumns' => array('FINALIZED_TIME', 'MODIFIED_TIME', 'BOOKED_TIME'),
-        ));
+            'sortColumns' => ['FINALIZED_TIME', 'MODIFIED_TIME', 'BOOKED_TIME'],
+        ]);
 
         $handle = $this->TEST->ECOM->getCurlHandle();
         $requestBody = $handle->getRequestBody();
@@ -596,8 +599,7 @@ class resursBankTest extends TestCase
     }
 
     /**
-     * @test
-     * @throws \Exception
+     * @testdox Disabling this for now as it is extremely annoying during tests.
      * @throws \Exception
      */
     public function hookExperiment1()
@@ -619,8 +621,8 @@ class resursBankTest extends TestCase
     }
 
     /**
-     * @test
-     * @throws \Exception
+     * @testdox Disabling this for now as it is extremely annoying during tests.
+     *
      * @throws \Exception
      */
     public function hookExperiment2()
@@ -771,10 +773,10 @@ class resursBankTest extends TestCase
         if ($this->TEST->ECOM->setRegisterCallback(
             RESURS_CALLBACK_TYPES::FINALIZATION,
             $templateUrl . "type/finalization",
-            array(
+            [
                 'digestAlgorithm' => 'md5',
                 'digestSalt' => uniqid(microtime(true)),
-            )
+            ]
         )) {
             $cbCount++;
         }
@@ -799,10 +801,10 @@ class resursBankTest extends TestCase
         if ($this->TEST->ECOM->setRegisterCallback(
             RESURS_CALLBACK_TYPES::UPDATE,
             $templateUrl . "type/finalization",
-            array(
+            [
                 'digestAlgorithm' => 'md5',
                 'digestSalt' => uniqid(sha1(md5(microtime(true)))),
-            )
+            ]
         )) {
             $cbCount++;
         }
@@ -921,19 +923,126 @@ class resursBankTest extends TestCase
         static::assertFalse($hasErrors);
     }
 
-    /*public function proxyBook()
+    /**
+     * @param $addr
+     * @return bool
+     */
+    private function isProperIp($addr)
+    {
+        $not = ['127.0.0.1'];
+        if (filter_var(trim($addr), FILTER_VALIDATE_IP) && !in_array(trim($addr), $not)) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * @test
+     * @throws \Exception
+     */
+    public function proxyByHandle()
     {
         $CURL = $this->TEST->ECOM->getCurlHandle();
-        $CURL->setProxy('https://proxy.server', CURLPROXY_HTTPS);
+        $CURL->setProxy('10.1.1.55:80', CURLPROXY_HTTP);
+        $CURL->setChain();
+        try {
+            $request = $CURL->doGet('https://identifier.tornevall.net/ip.php');
+            static::assertTrue($this->isProperIp($request->getBody()));
+        } catch (\Exception $e) {
+            static::markTestSkipped(sprintf('Proxy test skipped (%d): %s', $e->getCode(), $e->getMessage()));
+            return;
+        }
+    }
+
+    /**
+     * @test
+     * @testdox Test proxy function. Very internal test though. Ignore if you're on the wrong network.
+     * @throws \Exception
+     */
+    public function proxyByPaymentMethods()
+    {
+        $CURL = $this->TEST->ECOM->getCurlHandle();
+        $CURL->setProxy('10.1.1.55:80', CURLPROXY_HTTP);
         $this->TEST->ECOM->setCurlHandle($CURL);
-        $customerData = $this->getHappyCustomerData();
-        $this->TEST->ECOM->setBillingByGetAddress($customerData);
-        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
-        $this->TEST->ECOM->setCustomer('8305147715', "0808080808", "0707070707", "test@test.com", "NATURAL");
-        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
-        $this->TEST->ECOM->addOrderLine("ProxyArtRequest", "My Proxified Product", 800, 25);
-        $paymentId = $this->TEST->ECOM->createPayment($this->getMethodId());
-    }*/
+
+        try {
+            $request = $CURL->doGet('https://identifier.tornevall.net/ip.php');
+        } catch (\Exception $e) {
+            static::markTestSkipped(sprintf('Proxy test skipped (%d): %s', $e->getCode(), $e->getMessage()));
+            return;
+        }
+
+        if ($this->isProperIp($request['body'])) {
+            static::assertTrue(count($this->TEST->ECOM->getPaymentMethods()) > 0);
+        } else {
+            static::markTestSkipped('Could not complete proxy test');
+        }
+    }
+
+    /**
+     * @test
+     * @testdox Book payment through proxy. Simplified flow.
+     * @throws \Exception
+     */
+    public function proxyByBookSimplified()
+    {
+        $CURL = $this->TEST->ECOM->getCurlHandle();
+        $CURL->setProxy('10.1.1.55:80', CURLPROXY_HTTP);
+        $this->TEST->ECOM->setCurlHandle($CURL);
+
+        try {
+            $request = $CURL->doGet('https://identifier.tornevall.net/ip.php');
+        } catch (\Exception $e) {
+            static::markTestSkipped(sprintf('Proxy test skipped (%d): %s', $e->getCode(), $e->getMessage()));
+            return;
+        }
+
+        if ($this->isProperIp($request['body'])) {
+            $customerData = $this->getHappyCustomerData();
+            $this->TEST->ECOM->setBillingByGetAddress($customerData);
+            $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
+            $this->TEST->ECOM->setCustomer('8305147715', "0808080808", "0707070707", "test@test.com", "NATURAL");
+            $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+            $this->TEST->ECOM->addOrderLine("ProxyArtRequest", "My Proxified Product", 800, 25);
+            $payment = $this->TEST->ECOM->createPayment($this->getMethodId());
+            static::assertTrue(strlen($payment->paymentId) > 5);
+        } else {
+            static::markTestSkipped('Could not complete proxy test');
+        }
+    }
+
+    /**
+     * @test
+     * @testdox This test is not creating a full order, it just gets the iframe as we need manual interactions by
+     *     customer included..
+     * @throws \Exception
+     */
+    public function proxyByBookRcoHalfway()
+    {
+        $CURL = $this->TEST->ECOM->getCurlHandle();
+        $CURL->setProxy('10.1.1.55:80', CURLPROXY_HTTP);
+        $this->TEST->ECOM->setCurlHandle($CURL);
+
+        try {
+            $request = $CURL->doGet('https://identifier.tornevall.net/ip.php');
+        } catch (\Exception $e) {
+            static::markTestSkipped(sprintf('Proxy test skipped (%d): %s', $e->getCode(), $e->getMessage()));
+            return;
+        }
+
+        if ($this->isProperIp($request['body'])) {
+            $customerData = $this->getHappyCustomerData();
+            $this->TEST->ECOM->setBillingByGetAddress($customerData);
+            $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
+            $this->TEST->ECOM->setCustomer('8305147715', "0808080808", "0707070707", "test@test.com", "NATURAL");
+            $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+            $this->TEST->ECOM->addOrderLine("ProxyArtRequest", "My Proxified Product", 800, 25);
+            $iframeRequest = $this->TEST->ECOM->createPayment($this->getMethodId());
+            static::assertTrue(preg_match('/iframe src/i', $iframeRequest) ? true : false);
+        } else {
+            static::markTestSkipped('Could not complete proxy test');
+        }
+    }
 
     /**
      * @test
