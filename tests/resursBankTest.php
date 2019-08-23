@@ -831,7 +831,15 @@ class resursBankTest extends TestCase
             $cbCount++;
         }
 
-        static::assertTrue($cbCount === 4);
+        // Phase 5: Include ANNULLMENT
+        if ($this->TEST->ECOM->setRegisterCallback(
+            RESURS_CALLBACK_TYPES::ANNULMENT,
+            $templateUrl . "type/annul"
+        )) {
+            $cbCount++;
+        }
+
+        static::assertTrue($cbCount === 5);
     }
 
     /**
