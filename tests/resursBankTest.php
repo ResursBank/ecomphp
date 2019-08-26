@@ -1224,19 +1224,24 @@ class resursBankTest extends TestCase
      *
      * @throws \Exception
      */
-    public function annulTrollPaymentAndKill()
+    public function cancelMixedPayment()
     {
         $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
         $paymentid = $payment->paymentId;
 
+        // Annul 50
         $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 50);
         $this->TEST->ECOM->annulPayment($paymentid);
+
+        // Finalize 50
         $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 50);
         $this->TEST->ECOM->finalizePayment($paymentid);
+
+        // Credit 25
         $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 25);
         $this->TEST->ECOM->creditPayment($paymentid);
 
-        // And the annul payment.
+        // Annul the rest (which gives us another 25 credits on PR01. Credited should at this point be 50.).
         $this->TEST->ECOM->cancelPayment($paymentid);
 
         static::assertTrue(
@@ -1253,7 +1258,7 @@ class resursBankTest extends TestCase
                     ],
                     'CREDIT' => [
                         'PR01',
-                        25,
+                        50,
                     ],
                     'DEBIT' => [
                         'PR01',
@@ -1275,21 +1280,27 @@ class resursBankTest extends TestCase
      */
     private function getPaymentStatusQuantity($paymentId, $requestFor = [])
     {
+        // This is from newer releases arrays instead of objects (unfortunately).
+        // Mostly because some objects can't be copied as their key values are manipulated
+        // in some foreach loops (which is very unwelcome).
         $statusList = $this->TEST->ECOM->getPaymentSpecByStatus($paymentId);
-        $mustMatch = count($requestFor);
+        $statusListTable = $this->TEST->ECOM->getPaymentDiffAsTable($statusList);
+        $expectedMatch = count($requestFor);
         $matches = 0;
+
         foreach ($requestFor as $type => $reqList) {
-            if (isset($statusList[$type])) {
-                foreach ($statusList[$type] as $article) {
-                    if ($article->artNo === $reqList[0] && (int)$article->quantity === (int)$reqList[1]) {
+            if (isset($reqList[1])) {
+                $setArt = $reqList[0];
+                $setQuantity = $reqList[1];
+                foreach ($statusListTable as $article) {
+                    if ($article['artNo'] === $setArt && (int)$article[$type] === (int)$setQuantity) {
                         $matches++;
-                        break;
                     }
                 }
             }
         }
 
-        return $mustMatch === $matches ? true : false;
+        return $expectedMatch === $matches ? true : false;
     }
 
     /**

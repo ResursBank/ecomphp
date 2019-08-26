@@ -6156,13 +6156,14 @@ class ResursBank
      *
      * @param $paymentIdOrPaymentObject
      *
+     * @param bool $getAsTable
      * @return array
-     * @throws \Exception
+     * @throws Exception
      * @deprecated 1.3.21 Use getPaymentDiffByStatus instead!
      */
-    public function getPaymentSpecByStatus($paymentIdOrPaymentObject)
+    public function getPaymentSpecByStatus($paymentIdOrPaymentObject, $getAsTable = false)
     {
-        return $this->getPaymentDiffByStatus($paymentIdOrPaymentObject);
+        return $this->getPaymentDiffByStatus($paymentIdOrPaymentObject, $getAsTable);
     }
 
     /**
@@ -6302,8 +6303,9 @@ class ResursBank
      *
      * @param $orderlineStatuses
      * @return array
+     * @since 1.3.21
      */
-    private function getPaymentDiffAsTable($orderlineStatuses) {
+    public function getPaymentDiffAsTable($orderlineStatuses) {
         $tableStatusList = array();
 
         if (is_array($orderlineStatuses) && count($orderlineStatuses) && isset($orderlineStatuses['AUTHORIZE'])) {
@@ -7725,7 +7727,7 @@ class ResursBank
      * @return mixed
      * @throws Exception
      */
-    /*function __get($name)
+    function __get($name)
     {
         $requestedVariableProperties = get_class_vars(__CLASS__);
 
@@ -7748,7 +7750,7 @@ class ResursBank
         }
 
         return $return;
-    }*/
+    }
 
     /**
      * v1.1 method compatibility
