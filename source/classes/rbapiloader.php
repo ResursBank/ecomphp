@@ -62,7 +62,7 @@ if (!defined('ECOMPHP_VERSION')) {
     define('ECOMPHP_VERSION', '1.3.22');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20190823');
+    define('ECOMPHP_MODIFY_DATE', '20190527');
 }
 
 /**
@@ -3249,6 +3249,7 @@ class ResursBank
                     } else {
                         $errorMessage = $e->getMessage();
                     }
+
                     throw new \ResursException(
                         $errorMessage,
                         is_numeric($jsonized->errorCode) ? $jsonized->errorCode : 0,
@@ -6155,10 +6156,9 @@ class ResursBank
      * as is.
      *
      * @param $paymentIdOrPaymentObject
-     *
      * @param bool $getAsTable
      * @return array
-     * @throws Exception
+     * @throws \Exception
      * @deprecated 1.3.21 Use getPaymentDiffByStatus instead!
      */
     public function getPaymentSpecByStatus($paymentIdOrPaymentObject, $getAsTable = false)
@@ -6796,9 +6796,6 @@ class ResursBank
     /**
      * Aftershop Payment Finalization (DEBIT)
      *
-     * Make sure that you are running this with try-catches in cases where failures may occur.
-     * Method rebuilt with paymentCancel as template, with a tiny twist (190802).
-     *
      * @param $paymentId
      * @param array $customPayloadItemList
      * @param bool $runOnce Only run this once, throw second time
@@ -6889,7 +6886,6 @@ class ResursBank
 
     /**
      * Aftershop Payment Annulling (ANNUL)
-     * Make sure that you are running this with try-catches in cases where failures may occur.
      *
      * @param $paymentId
      * @param array $customPayloadItemList
@@ -7037,7 +7033,6 @@ class ResursBank
     {
         $paymentData = $this->getPayment($paymentId);
         // Collect the payment sorted by status
-        //$currentPaymentSpec = $this->getPaymentDiffByStatus($paymentData);
         $currentPaymentTable = $this->getPaymentDiffByStatus($paymentData, true);
 
         // Sanitized paymentspec based on what CAN be fully ANNULLED (and actually also debited) wit no custom payment load.
@@ -7727,7 +7722,7 @@ class ResursBank
      * @return mixed
      * @throws Exception
      */
-    function __get($name)
+    /*function __get($name)
     {
         $requestedVariableProperties = get_class_vars(__CLASS__);
 
@@ -7750,7 +7745,7 @@ class ResursBank
         }
 
         return $return;
-    }
+    }*/
 
     /**
      * v1.1 method compatibility
