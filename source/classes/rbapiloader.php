@@ -343,6 +343,8 @@ class ResursBank
      */
     private $speclineCustomization = false;
 
+    private $skipAfterShopPaymentValidation = true;
+
     /// Environment URLs
     /**
      * Chosen environment
@@ -6799,15 +6801,21 @@ class ResursBank
      * @param $paymentId
      * @param array $customPayloadItemList
      * @param bool $runOnce Only run this once, throw second time
-     *
+     * @param bool $skipSpecValidation Set to true, you're skipping validation of orderrows.
      * @return bool
      * @throws \Exception
      * @since 1.0.22
      * @since 1.1.22
      * @since 1.2.0
      */
-    public function paymentFinalize($paymentId = "", $customPayloadItemList = [], $runOnce = false)
+    public function paymentFinalize($paymentId = "", $customPayloadItemList = [], $runOnce = false, $skipSpecValidation = false)
     {
+        if (!is_array($customPayloadItemList)) {
+            $customPayloadItemList = array();
+        }
+
+        $this->setAftershopPaymentValidation($skipSpecValidation);
+
         try {
             $afterShopObject = $this->getAfterShopObjectByPayload(
                 $paymentId,
@@ -6875,13 +6883,14 @@ class ResursBank
      *
      * @param string $paymentId
      * @param array $customPayloadItemList
-     *
+     * @param bool $runOnce
+     * @param bool $skipSpecValidation
      * @return bool
-     * @throws \Exception
+     * @throws Exception
      */
-    public function finalizePayment($paymentId = "", $customPayloadItemList = array())
+    public function finalizePayment($paymentId = "", $customPayloadItemList = array(), $runOnce = false, $skipSpecValidation = false)
     {
-        return $this->paymentFinalize($paymentId, $customPayloadItemList);
+        return $this->paymentFinalize($paymentId, $customPayloadItemList, $runOnce, $skipSpecValidation);
     }
 
     /**
@@ -6890,14 +6899,21 @@ class ResursBank
      * @param $paymentId
      * @param array $customPayloadItemList
      * @param bool $runOnce Only run this once, throw second time
+     * @param bool $skipSpecValidation Set to true, you're skipping validation of orderrows.
      * @return bool
      * @throws \Exception
      * @since 1.0.22
      * @since 1.1.22
      * @since 1.2.0
      */
-    public function paymentAnnul($paymentId = "", $customPayloadItemList = [], $runOnce = false)
+    public function paymentAnnul($paymentId = "", $customPayloadItemList = [], $runOnce = false, $skipSpecValidation = false)
     {
+        if (!is_array($customPayloadItemList)) {
+            $customPayloadItemList = array();
+        }
+
+        $this->setAftershopPaymentValidation($skipSpecValidation);
+
         $afterShopObject = $this->getAfterShopObjectByPayload(
             $paymentId,
             $customPayloadItemList,
@@ -6937,13 +6953,14 @@ class ResursBank
      *
      * @param string $paymentId
      * @param array $customPayloadItemList
-     *
+     * @param bool $runOnce
+     * @param bool $skipSpecValidation
      * @return bool
-     * @throws \Exception
+     * @throws Exception
      */
-    public function annulPayment($paymentId = "", $customPayloadItemList = array())
+    public function annulPayment($paymentId = "", $customPayloadItemList = array(), $runOnce = false, $skipSpecValidation = false)
     {
-        return $this->paymentAnnul($paymentId, $customPayloadItemList);
+        return $this->paymentAnnul($paymentId, $customPayloadItemList, $runOnce, $skipSpecValidation);
     }
 
     /**
@@ -6954,15 +6971,21 @@ class ResursBank
      * @param $paymentId
      * @param array $customPayloadItemList
      * @param bool $runOnce Only run this once, throw second time
-     *
+     * @param bool $skipSpecValidation Set to true, you're skipping validation of orderrows.
      * @return bool
      * @throws \Exception
      * @since 1.0.22
      * @since 1.1.22
      * @since 1.2.0
      */
-    public function paymentCredit($paymentId = "", $customPayloadItemList = array(), $runOnce = false)
+    public function paymentCredit($paymentId = "", $customPayloadItemList = array(), $runOnce = false, $skipSpecValidation = false)
     {
+        if (!is_array($customPayloadItemList)) {
+            $customPayloadItemList = array();
+        }
+
+        $this->setAftershopPaymentValidation($skipSpecValidation);
+
         $afterShopObject = $this->getAfterShopObjectByPayload(
             $paymentId,
             $customPayloadItemList,
@@ -7005,13 +7028,28 @@ class ResursBank
      *
      * @param string $paymentId
      * @param array $customPayloadItemList
-     *
+     * @param bool $runOnce
+     * @param bool $skipSpecValidation
      * @return bool
-     * @throws \Exception
+     * @throws Exception
      */
-    public function creditPayment($paymentId = "", $customPayloadItemList = array())
+    public function creditPayment($paymentId = "", $customPayloadItemList = array(), $runOnce = false, $skipSpecValidation = false)
     {
-        return $this->paymentCredit($paymentId, $customPayloadItemList);
+        return $this->paymentCredit($paymentId, $customPayloadItemList, $runOnce, $skipSpecValidation);
+    }
+
+    /**
+     * Get configuration of paymentspec validation during aftershop actions.
+     *
+     * @param bool $skipValidationStatus
+     */
+    private function setAftershopPaymentValidation($skipValidationStatus = false) {
+        // Flag overriders.
+        if ($this->isFlag('SKIP_AFTERSHOP_VALIDATION')) {
+            $skipValidationStatus = true;
+        }
+
+        $this->skipAfterShopPaymentValidation = $skipValidationStatus;
     }
 
     /**
@@ -7022,18 +7060,20 @@ class ResursBank
      *
      * @param string $paymentId
      * @param array $customPayloadItemList
-     * @param bool $useResursValidation
+     * @param bool $skipSpecValidation Set to true, you're skipping validation of orderrows.
      * @return bool
      * @throws Exception
      * @since 1.0.22
      * @since 1.1.22
      * @since 1.2.0
      */
-    public function paymentCancel($paymentId = "", $customPayloadItemList = array())
+    public function paymentCancel($paymentId = "", $customPayloadItemList = array(), $skipSpecValidation = false)
     {
         if (!is_array($customPayloadItemList)) {
             $customPayloadItemList = array();
         }
+
+        $this->setAftershopPaymentValidation($skipSpecValidation);
 
         $paymentData = $this->getPayment($paymentId);
         // Collect the payment sorted by status
@@ -7116,9 +7156,14 @@ class ResursBank
         $return = array();
         $id = 0;
 
+        if ($this->skipAfterShopPaymentValidation) {
+            return $currentOrderLines;
+        }
+
         foreach ($currentOrderLines as $idx => $orderRow) {
             // Count unsafe payment objects per row.
             $isUnsafePaymentObject = 0;
+
             foreach ($currentPaymentSpecTable as $statusRow) {
                 if ($type === 'credit') {
                     $quantityMatch = $statusRow['CREDITABLE'];
@@ -7214,9 +7259,9 @@ class ResursBank
      * @return bool
      * @throws \Exception
      */
-    public function cancelPayment($paymentId = "", $customPayloadItemList = array())
+    public function cancelPayment($paymentId = "", $customPayloadItemList = array(), $skipSpecValidation = false)
     {
-        return $this->paymentCancel($paymentId, $customPayloadItemList);
+        return $this->paymentCancel($paymentId, $customPayloadItemList, $skipSpecValidation);
     }
 
     /**

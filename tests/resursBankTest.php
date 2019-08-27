@@ -1214,6 +1214,34 @@ class resursBankTest extends TestCase
 
     /**
      * @test
+     * @throws \Exception
+     */
+    public function creditSomethingElse() {
+        $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
+        $paymentid = $payment->paymentId;
+
+        $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 50);
+        $this->TEST->ECOM->finalizePayment($paymentid);
+
+        $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 120, 25, 'st', 'ORDER_LINE', 25);
+        $this->TEST->ECOM->creditPayment($paymentid, null, false, true);
+
+        // The new creditec object does not seem to be reflected in its state.
+        static::assertTrue(
+            $this->getPaymentStatusQuantity(
+                $paymentid,
+                [
+                    'DEBIT' => [
+                        'PR01',
+                        50,
+                    ],
+                ]
+            )
+        );
+    }
+
+    /**
+     * @test
      *
      * Put order with quantity 100. Annul 50, debit 50, credit 25. And then kill the full order.
      * Expected result is:
@@ -1268,7 +1296,6 @@ class resursBankTest extends TestCase
             )
         );
     }
-
 
     /**
      * Get mathching result from payment.
@@ -1333,8 +1360,6 @@ class resursBankTest extends TestCase
             static::assertTrue($e->getCode() === 700);
         }
     }
-
-
 
     /**
      * @test
