@@ -7020,17 +7020,21 @@ class ResursBank
      * This function cancels a full order depending on the order content. Payloads MAY be customized but on your own
      * risk!
      *
-     * @param $paymentId
+     * @param string $paymentId
      * @param array $customPayloadItemList
-     *
+     * @param bool $useResursValidation
      * @return bool
-     * @throws \Exception
+     * @throws Exception
      * @since 1.0.22
      * @since 1.1.22
      * @since 1.2.0
      */
     public function paymentCancel($paymentId = "", $customPayloadItemList = array())
     {
+        if (!is_array($customPayloadItemList)) {
+            $customPayloadItemList = array();
+        }
+
         $paymentData = $this->getPayment($paymentId);
         // Collect the payment sorted by status
         $currentPaymentTable = $this->getPaymentDiffByStatus($paymentData, true);
