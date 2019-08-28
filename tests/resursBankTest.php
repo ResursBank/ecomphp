@@ -1220,11 +1220,16 @@ class resursBankTest extends TestCase
         $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
         $paymentid = $payment->paymentId;
 
-        $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 50);
+        $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 100);
         $this->TEST->ECOM->finalizePayment($paymentid);
 
-        $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 120, 25, 'st', 'ORDER_LINE', 25);
+        $this->TEST->ECOM->addOrderLine('Rabatt', 'Rabatt', 120, 25, 'st', 'ORDER_LINE', 25);
         $this->TEST->ECOM->creditPayment($paymentid, null, false, true);
+
+        $this->TEST->ECOM->addOrderLine('Rabatt', 'Rabatt', 120, 25, 'st', 'ORDER_LINE', 25);
+        $this->TEST->ECOM->creditPayment($paymentid, null, false, true);
+
+        //define('TEST_TRIGGER', 1);
 
         // The new creditec object does not seem to be reflected in its state.
         static::assertTrue(
@@ -1233,8 +1238,12 @@ class resursBankTest extends TestCase
                 [
                     'DEBIT' => [
                         'PR01',
-                        50,
+                        100,
                     ],
+                    'CREDIT' => [
+                        'Rabatt',
+                        50,
+                    ]
                 ]
             )
         );
