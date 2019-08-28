@@ -6230,9 +6230,9 @@ class ResursBank
         );
 
         foreach ($paymentDiffTable as $row) {
-            $annullable = $row['ANNULLABLE'];
-            $debitable = $row['DEBITABLE'];
-            $creditable = $row['CREDITABLE'];
+            $annullable = isset($row['ANNULLABLE']) ? $row['ANNULLABLE'] : 0;
+            $debitable = isset($row['DEBITABLE']) ? $row['DEBITABLE'] : 0;
+            $creditable = isset($row['CREDITABLE']) ? $row['CREDITABLE'] : 0;
 
             $newOrderRow = $this->getPurgedPaymentRow(
                 $row,
