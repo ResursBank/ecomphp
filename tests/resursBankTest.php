@@ -82,8 +82,6 @@ class resursBankTest extends TestCase
     /** @var string Landing page for signings */
     private $signUrl = "https://test.resurs.com/signdummy/index.php?isSigningUrl=1";
 
-    private $skipTestHooks = true;
-
     /**
      * Exact match of selenium driver we're running with tests.
      *
@@ -118,7 +116,7 @@ class resursBankTest extends TestCase
 
     /**
      * @test
-     * @testdox Tests API credentials and getPaymentMethods. Expected result: Approved connection with a specific number of payment methods
+     * @testdox Tests API credentials and getPaymentMethods.
      * @throws \Exception
      */
     public function apiPaymentMethodsWithCredentials()
@@ -1370,70 +1368,6 @@ class resursBankTest extends TestCase
         }
     }
 
-    /**
-     * @test
-     * @throws \Exception
-     */
-    /*public function hookExperiment1()
-    {
-        if ($this->skipTestHooks) {
-            static::markTestSkipped('ecomhooks request ignore.');
-
-            return;
-        }
-        if (!function_exists('ecom_event_register')) {
-            static::markTestIncomplete('ecomhooks does not exist');
-
-            return;
-        }
-        ecom_event_register('update_store_id', 'inject_test_storeid');
-        $customerData = $this->getHappyCustomerData();
-        $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline", 800, 25);
-        $this->TEST->ECOM->setBillingByGetAddress($customerData);
-        $this->TEST->ECOM->setCustomer("198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL");
-        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
-        ecom_event_unregister('update_store_id');
-        $myPayLoad = $this->TEST->ECOM->getPayload();
-        static::assertTrue(isset($myPayLoad['storeId']) && $myPayLoad['storeId'] >= 0);
-    }*/
-
-    /**
-     * @test
-     * @throws \Exception
-     */
-    /*public function hookExperiment2()
-    {
-        if ($this->skipTestHooks) {
-            static::markTestSkipped('ecomhooks request ignore.');
-
-            return;
-        }
-        if (!function_exists('ecom_event_register')) {
-            static::markTestIncomplete('ecomhooks does not exist');
-
-            return;
-        }
-        ecom_event_register('update_payload', 'ecom_inject_payload');
-        $customerData = $this->getHappyCustomerData();
-        $errorCode = 0;
-        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
-        $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline", 800, 25);
-        $this->TEST->ECOM->setBillingByGetAddress($customerData);
-        $this->TEST->ECOM->setCustomer(null, "0808080808", "0707070707", "test@test.com", "NATURAL");
-        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
-        try {
-            $this->TEST->ECOM->createPayment($this->getMethodId());
-        } catch (\Exception $e) {
-            $errorCode = $e->getCode();
-        }
-        $myPayLoad = $this->TEST->ECOM->getPayload();
-        static::assertTrue(
-            isset($myPayLoad['add_a_problem_into_payload']) &&
-            !isset($myPayLoad['signing']) &&
-            (int)$errorCode > 0
-        );
-        ecom_event_unregister('update_payload');
-    }*/
 
     /**
      * @test
