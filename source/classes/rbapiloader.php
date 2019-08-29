@@ -7294,9 +7294,6 @@ class ResursBank
                     $useQuantity = $realQuantity;
                     $useUnitAmount = $realUnitAmount;
                     $useVatPct = $realVatPct;
-                } else {
-                    $useUnitAmount = $orderRow['unitAmountWithoutVat'];
-                    $useVatPct = $orderRow['vatPct'];
                 }
 
                 // Validation is based on same article, description and price.
@@ -7322,6 +7319,11 @@ class ResursBank
                             'CREDITABLE',
                         ]
                     );
+
+                    if (!$this->skipAfterShopPaymentValidation) {
+                        $useUnitAmount = $orderRow['unitAmountWithoutVat'];
+                        $useVatPct = $orderRow['vatPct'];
+                    }
 
                     // Make sure we use the correct getPaymentData.
                     $orderRow['id'] = $id;
