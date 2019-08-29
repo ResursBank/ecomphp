@@ -4801,11 +4801,17 @@ class ResursBank
                     if (isset($this->Payload['customer']['address'])) {
                         unset($this->Payload['customer']['address']);
                     }
+                } else {
+                    // By not removing fields on this kind of exeption means that we need to protect the customer object.
+                    $this->checkoutCustomerFieldSupport = true;
                 }
                 if (!$this->isFlag('KEEP_RCO_DELIVERY')) {
                     if (isset($this->Payload['customer']['deliveryAddress'])) {
                         unset($this->Payload['customer']['deliveryAddress']);
                     }
+                } else {
+                    // By not removing fields on this kind of exeption means that we need to protect the customer object.
+                    $this->checkoutCustomerFieldSupport = true;
                 }
                 if ($this->checkoutCustomerFieldSupport === false && isset($this->Payload['customer'])) {
                     unset($this->Payload['customer']);
@@ -5391,8 +5397,15 @@ class ResursBank
         if (!empty($phone)) {
             $this->Payload['customer']['phone'] = $phone;
         }
-        if (!empty($cellphone)) {
-            $this->Payload['customer']['cellPhone'] = $cellphone;
+        // The field for cellphone in RCO is called mobile.
+        if ($this->getPreferredPaymentFlowService() === RESURS_FLOW_TYPES::RESURS_CHECKOUT) {
+            if (!empty($cellphone)) {
+                $this->Payload['customer']['mobile'] = $cellphone;
+            }
+        } else {
+            if (!empty($cellphone)) {
+                $this->Payload['customer']['cellPhone'] = $cellphone;
+            }
         }
         if (!empty($customerType)) {
 
