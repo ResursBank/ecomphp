@@ -4797,11 +4797,15 @@ class ResursBank
                 if (isset($this->Payload['paymentData'])) {
                     unset($this->Payload['paymentData']);
                 }
-                if (isset($this->Payload['customer']['address'])) {
-                    unset($this->Payload['customer']['address']);
+                if (!$this->isFlag('KEEP_RCO_BILLING')) {
+                    if (isset($this->Payload['customer']['address'])) {
+                        unset($this->Payload['customer']['address']);
+                    }
                 }
-                if (isset($this->Payload['customer']['deliveryAddress'])) {
-                    unset($this->Payload['customer']['deliveryAddress']);
+                if (!$this->isFlag('KEEP_RCO_DELIVERY')) {
+                    if (isset($this->Payload['customer']['deliveryAddress'])) {
+                        unset($this->Payload['customer']['deliveryAddress']);
+                    }
                 }
                 if ($this->checkoutCustomerFieldSupport === false && isset($this->Payload['customer'])) {
                     unset($this->Payload['customer']);
