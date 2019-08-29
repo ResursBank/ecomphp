@@ -7249,13 +7249,13 @@ class ResursBank
 
             foreach ($currentPaymentSpecTable as $statusRow) {
                 if ($type === 'credit') {
-                    $quantityMatch = $statusRow['CREDITABLE'];
+                    $quantityMatch = isset($statusRow['CREDITABLE']) ? $statusRow['CREDITABLE'] : 0;
                 } else if ($type === 'annul') {
-                    $quantityMatch = $statusRow['ANNULLABLE'];
+                    $quantityMatch = isset($statusRow['ANNULLABLE']) ? $statusRow['ANNULLABLE'] : 0;
                 } else if ($type === 'debit') {
-                    $quantityMatch = $statusRow['DEBITABLE'];
+                    $quantityMatch = isset($statusRow['DEBITABLE']) ? $statusRow['DEBITABLE'] : 0;
                 } else if ($type === 'authorize') {
-                    $quantityMatch = $statusRow['AUTHORIZE'];
+                    $quantityMatch = isset($statusRow['AUTHORIZE']) ? $statusRow['AUTHORIZE'] : 0;
                 } else {
                     $quantityMatch = 0;
                 }
