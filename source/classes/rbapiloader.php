@@ -205,29 +205,6 @@ class ResursBank
     private $realClientName = "EComPHP";
 
     /**
-     * $metaDataHashEnabled When enabled, ECom uses Resurs metadata to add a sha1-encoded hash string,
-     * based on parts of the payload to secure the data transport (unfinished)
-     * @var bool
-     */
-    private $metaDataHashEnabled = false;
-    /**
-     * $metaDataHashEncrypted When enabled, ECom will try to pack and encrypt metadata strings instead of
-     * hashing it (unfinished)
-     * @var bool
-     */
-    private $metaDataHashEncrypted = false;
-    /**
-     * Encryption AES IV
-     * @var string
-     */
-    private $metaDataIv;
-    /**
-     * Encryption AES Key
-     * @var null
-     */
-    private $metaDataKey;
-
-    /**
      * @var array Last stored getPayment()
      */
     private $lastPaymentStored;
@@ -4523,8 +4500,6 @@ class ResursBank
         }
         $error = array();
         $myFlow = $this->getPreferredPaymentFlowService();
-
-        //$this->addMetaDataHash($payment_id_or_method);
 
         // Using this function to validate that card data info is properly set up
         // during the deprecation state in >= 1.0.2/1.1.1
