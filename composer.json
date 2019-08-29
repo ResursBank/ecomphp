@@ -6,8 +6,8 @@
     "php": ">=5.3",
     "ext-soap": "*",
     "ext-curl": "*",
-    "resursbank/crypto-fork": "^6.0",
-    "resursbank/netcurl": "^6.0"
+    "tornevall/tornelib-php-crypto": "^6.0",
+    "tornevall/tornelib-php-netcurl": "^6.0"
   },
   "authors": [
     {

@@ -599,62 +599,6 @@ class resursBankTest extends TestCase
     }
 
     /**
-     * @testdox Disabling this for now as it is extremely annoying during tests.
-     * @throws \Exception
-     */
-    public function hookExperiment1()
-    {
-        if (!function_exists('ecom_event_register')) {
-            static::markTestIncomplete('ecomhooks does not exist');
-
-            return;
-        }
-        ecom_event_register('update_store_id', 'inject_test_storeid');
-        $customerData = $this->getHappyCustomerData();
-        $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline", 800, 25);
-        $this->TEST->ECOM->setBillingByGetAddress($customerData);
-        $this->TEST->ECOM->setCustomer("198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL");
-        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
-        ecom_event_unregister('update_store_id');
-        $myPayLoad = $this->TEST->ECOM->getPayload();
-        static::assertTrue(isset($myPayLoad['storeId']) && $myPayLoad['storeId'] >= 0);
-    }
-
-    /**
-     * @testdox Disabling this for now as it is extremely annoying during tests.
-     *
-     * @throws \Exception
-     */
-    public function hookExperiment2()
-    {
-        if (!function_exists('ecom_event_register')) {
-            static::markTestIncomplete('ecomhooks does not exist');
-
-            return;
-        }
-        ecom_event_register('update_payload', 'ecom_inject_payload');
-        $customerData = $this->getHappyCustomerData();
-        $errorCode = 0;
-        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
-        $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline", 800, 25);
-        $this->TEST->ECOM->setBillingByGetAddress($customerData);
-        $this->TEST->ECOM->setCustomer(null, "0808080808", "0707070707", "test@test.com", "NATURAL");
-        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
-        try {
-            $this->TEST->ECOM->createPayment($this->getMethodId());
-        } catch (\Exception $e) {
-            $errorCode = $e->getCode();
-        }
-        $myPayLoad = $this->TEST->ECOM->getPayload();
-        ecom_event_unregister('update_payload');
-        static::assertTrue(
-            isset($myPayLoad['add_a_problem_into_payload']) &&
-            !isset($myPayLoad['signing']) &&
-            (int)$errorCode > 0
-        );
-    }
-
-    /**
      * @test
      *
      * How to use this in a store environment like RCO:
