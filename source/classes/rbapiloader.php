@@ -6153,6 +6153,7 @@ class ResursBank
      * @param bool $getAsTable
      * @return array
      * @throws \Exception
+     * @since I have no idea
      * @deprecated 1.3.21 Use getPaymentDiffByStatus instead!
      */
     public function getPaymentSpecByStatus($paymentIdOrPaymentObject, $getAsTable = false)
@@ -6397,6 +6398,7 @@ class ResursBank
      * @param $paymentDiffArtRow
      * @param $authorizeObject
      * @return bool
+     * @since 1.3.22
      */
     private function getIsInAuthorize($paymentDiffArtRow, $authorizeObject) {
         $return = false;
@@ -6412,6 +6414,7 @@ class ResursBank
      * @param $artRow
      * @param $matchList
      * @return array|mixed
+     * @since 1.3.22
      */
     private function getOrderRowMatch($artRow, $matchList)
     {
@@ -6437,6 +6440,7 @@ class ResursBank
     /**
      * @param $row
      * @return mixed
+     * @since 1.3.22
      */
     private function getPurgedPaymentRow($row, $alsoCleanBy = array()) {
         $cleanBy = array('totalVatAmount', 'totalAmount', 'quantity', 'id');
@@ -6458,6 +6462,7 @@ class ResursBank
      * @param $paymentDiff
      * @param $paymentType
      * @return mixed
+     * @since 1.3.22
      */
     public function getMergedPaymentDiff($paymentRows, $paymentDiff, $paymentType) {
         // Convert to correct row, if only one.
@@ -6506,6 +6511,7 @@ class ResursBank
      * @param int $renderType RESURS_AFTERSHOP_RENDER_TYPES as unique type or bitmask
      * @return array
      * @throws \Exception
+     * @since First book of moses
      */
     public function sanitizeAfterShopSpec(
         $paymentIdOrPaymentObjectData = '',
@@ -7202,6 +7208,7 @@ class ResursBank
      *
      * @param $duplicateState
      * @throws Exception
+     * @since 1.3.22
      */
     private function checkUnsafePaymentObject ($duplicateState) {
         if ($duplicateState > 2) {
@@ -7350,6 +7357,7 @@ class ResursBank
      *
      * @return bool
      * @throws \Exception
+     * @since Forever
      */
     public function cancelPayment($paymentId = "", $customPayloadItemList = array(), $skipSpecValidation = false)
     {
