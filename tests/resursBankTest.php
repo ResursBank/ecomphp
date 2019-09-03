@@ -5,7 +5,6 @@
  * Some of the tests in this suite is being made to check that the "share data between tests" works properly.
  * As setUp() resets tests to basic each time it runs, we can not share for example payments that we can make more
  * then one test on, with different kind of exepectations.
- *
  * @package EcomPHPTest
  * @author Resurs Bank AB, Tomas Tornevall <tomas.tornevall@resurs.se>
  * @version 0.2.0
@@ -14,9 +13,7 @@
  * @license Apache 2.0
  */
 
-namespace Resursbank\RBEcomPHP;
-
-if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
+if (file_exists(__DIR__ . "/../vendor/autoload.php")) {
     require_once(__DIR__ . '/../vendor/autoload.php');
 } else {
     require_once('../source/classes/rbapiloader.php');
@@ -25,13 +22,15 @@ if (file_exists(__DIR__ . '/webdriver.php')) {
     require_once(__DIR__ . '/webdriver.php');
 }
 
-// Resurs Bank usages
+// Usages for v1.1
 use PHPUnit\Framework\TestCase;
-use TorneLIB\MODULE_CURL;
-use TorneLIB\MODULE_IO;
-use TorneLIB\MODULE_SOAP;
-
-// curl wrapper, extended network handling functions etc
+use Resursbank\RBEcomPHP\MODULE_CURL;
+use Resursbank\RBEcomPHP\MODULE_IO;
+use Resursbank\RBEcomPHP\RESURS_TEST_BRIDGE;
+use Resursbank\RBEcomPHP\ResursBank;
+use Resursbank\RBEcomPHP\RESURS_CALLBACK_TYPES;
+use Resursbank\RBEcomPHP\RESURS_FLOW_TYPES;
+use Resursbank\RBEcomPHP\RESURS_ENVIRONMENTS;
 
 // Global test configuration section starts here
 require_once(__DIR__ . "/classes/ResursBankTestClass.php");
@@ -41,6 +40,7 @@ require_once(__DIR__ . "/hooks.php");
 if (!isset($_SERVER['HTTP_USER_AGENT'])) {
     $_SERVER['HTTP_USER_AGENT'] = "EComPHP/Test-InternalClient";
 }
+ini_set('memory_limit', -1);
 if (file_exists("/etc/ecomphp.json")) {
     $ecomExt = @json_decode(@file_get_contents("/etc/ecomphp.json"));
     if (isset($ecomExt->skip)) {
@@ -50,7 +50,6 @@ if (file_exists("/etc/ecomphp.json")) {
 
 /**
  * Class resursBankTest
- *
  * @package Resursbank\RBEcomPHP
  */
 class resursBankTest extends TestCase
