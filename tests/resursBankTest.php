@@ -1368,6 +1368,21 @@ class resursBankTest extends TestCase
         }
     }
 
+    /**
+     * @test
+     * @testdox Reverse thinking in purgerverse.
+     */
+    public function keyPurging()
+    {
+        $purgableByResurs = $this->TEST->ECOM->setGetPaymentKeys('tiny');
+        $purgableByWooCommerce = $this->TEST->ECOM->setGetPaymentKeys(['artNo', 'description', 'unitMeasure']);
+
+        static::assertTrue(
+            count($purgableByResurs) === 7 &&
+            count($purgableByWooCommerce) === 6 ? true : false
+        );
+    }
+
 
     /**
      * @test
