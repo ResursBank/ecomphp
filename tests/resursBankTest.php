@@ -5,9 +5,10 @@
  * Some of the tests in this suite is being made to check that the "share data between tests" works properly.
  * As setUp() resets tests to basic each time it runs, we can not share for example payments that we can make more
  * then one test on, with different kind of exepectations.
+ *
  * @package EcomPHPTest
  * @author Resurs Bank AB, Tomas Tornevall <tomas.tornevall@resurs.se>
- * @version 0.2
+ * @version 0.2.0
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://resursbankplugins.atlassian.net/browse/ECOMPHP-214 Rebuilding!
  * @license Apache 2.0
@@ -49,6 +50,7 @@ if (file_exists("/etc/ecomphp.json")) {
 
 /**
  * Class resursBankTest
+ *
  * @package Resursbank\RBEcomPHP
  */
 class resursBankTest extends TestCase
@@ -79,8 +81,6 @@ class resursBankTest extends TestCase
 
     /** @var string Landing page for signings */
     private $signUrl = "https://test.resurs.com/signdummy/index.php?isSigningUrl=1";
-
-    private $skipTestHooks = true;
 
     /**
      * Exact match of selenium driver we're running with tests.
@@ -116,7 +116,8 @@ class resursBankTest extends TestCase
 
     /**
      * @test
-     * @testdox Tests API credentials and getPaymentMethods. Expected result: Approved connection with a specific number of payment methods
+     * @testdox Tests API credentials and getPaymentMethods. Expected result: Approved connection with a specific
+     *     number of payment methods
      * @throws \Exception
      */
     public function apiPaymentMethodsWithCredentials()
@@ -313,70 +314,6 @@ class resursBankTest extends TestCase
             /** @noinspection PhpUndefinedFieldInspection */
             static::assertTrue($response->bookPaymentStatus == 'BOOKED' || $response->bookPaymentStatus == 'SIGNING');
         }
-
-        return $response;
-    }
-
-    public function getProductPrice($static = false)
-    {
-        if (!$static) {
-            return rand(30, 90);
-        }
-
-        return 90;
-    }
-
-    /**
-     * @test
-     * @param string $govId
-     * @return array
-     * @throws \Exception
-     */
-    public function generateSimpleSimplifiedInvoiceQuantityOrder($govId = '198305147715', $staticProductPrice = false)
-    {
-        $customerData = $this->getHappyCustomerData();
-        $this->TEST->ECOM->addOrderLine(
-            "PR01",
-            "PR01",
-            $this->getProductPrice($staticProductPrice),
-            25,
-            'st',
-            'ORDER_LINE',
-            100
-        );
-        $this->TEST->ECOM->addOrderLine(
-            "PR02",
-            "PR02",
-            $this->getProductPrice($staticProductPrice),
-            25,
-            'st',
-            'ORDER_LINE',
-            100
-        );
-        $this->TEST->ECOM->addOrderLine(
-            "PR03",
-            "PR03",
-            $this->getProductPrice($staticProductPrice),
-            25,
-            'st',
-            'ORDER_LINE',
-            100
-        );
-        $this->TEST->ECOM->addOrderLine(
-            "PR04",
-            "PR04",
-            $this->getProductPrice($staticProductPrice),
-            25,
-            'st',
-            'ORDER_LINE',
-            100
-        );
-        $this->TEST->ECOM->setBillingByGetAddress($customerData);
-        $this->TEST->ECOM->setCustomer($govId, "0808080808", "0707070707", "test@test.com", "NATURAL");
-        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
-        $this->TEST->ECOM->setMetaData('metaKeyTestTime', time());
-        $this->TEST->ECOM->setMetaData('metaKeyTestMicroTime', microtime(true));
-        $response = $this->TEST->ECOM->createPayment($this->getMethodId());
 
         return $response;
     }
@@ -663,17 +600,6 @@ class resursBankTest extends TestCase
 
     /**
      * @test
-     */
-    public function getCostOfPurchase()
-    {
-        $result = $this->TEST->ECOM->getCostOfPurchase('PARTPAYMENT', '10000');
-        //$result = $this->TEST->ECOM->getCostOfPurchase($this->getMethodId(), '10000');
-
-        static::assertTrue(strlen($result) > 1000);
-    }
-
-    /**
-     * @test
      *
      * How to use this in a store environment like RCO:
      *   - During interceptor mode, store the getOrderLineHash in a _SESSION variable.
@@ -920,7 +846,7 @@ class resursBankTest extends TestCase
      * Special test case where we just create an iframe and then sending updatePaymentReferences via API to see
      * if any errors are traceable
      */
-    /*public function ordersWithoutDescription()
+    public function ordersWithoutDescription()
     {
         ecom_event_register('ecom_article_data', 'destroy_ecom_article_data');
         $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
@@ -939,8 +865,128 @@ class resursBankTest extends TestCase
         // Current expectation: Removing description totally from an order still renders
         // the iframe, even if the order won't be handlable.
         static::assertFalse($hasErrors);
-    }*/
+    }
 
+    /**
+     * @param $addr
+     * @return bool
+     */
+    private function isProperIp($addr)
+    {
+        $not = ['127.0.0.1'];
+        if (filter_var(trim($addr), FILTER_VALIDATE_IP) && !in_array(trim($addr), $not)) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * @test
+     * @throws \Exception
+     */
+    public function proxyByHandle()
+    {
+        $CURL = $this->TEST->ECOM->getCurlHandle();
+        $CURL->setProxy('10.1.1.55:80', CURLPROXY_HTTP);
+        $CURL->setChain();
+        try {
+            $request = $CURL->doGet('https://identifier.tornevall.net/ip.php');
+            static::assertTrue($this->isProperIp($request->getBody()));
+        } catch (\Exception $e) {
+            static::markTestSkipped(sprintf('Proxy test skipped (%d): %s', $e->getCode(), $e->getMessage()));
+            return;
+        }
+    }
+
+    /**
+     * @test
+     * @testdox Test proxy function. Very internal test though. Ignore if you're on the wrong network.
+     * @throws \Exception
+     */
+    public function proxyByPaymentMethods()
+    {
+        $CURL = $this->TEST->ECOM->getCurlHandle();
+        $CURL->setProxy('10.1.1.55:80', CURLPROXY_HTTP);
+        $this->TEST->ECOM->setCurlHandle($CURL);
+
+        try {
+            $request = $CURL->doGet('https://identifier.tornevall.net/ip.php');
+        } catch (\Exception $e) {
+            static::markTestSkipped(sprintf('Proxy test skipped (%d): %s', $e->getCode(), $e->getMessage()));
+            return;
+        }
+
+        if ($this->isProperIp($request['body'])) {
+            static::assertTrue(count($this->TEST->ECOM->getPaymentMethods()) > 0);
+        } else {
+            static::markTestSkipped('Could not complete proxy test');
+        }
+    }
+
+    /**
+     * @test
+     * @testdox Book payment through proxy. Simplified flow.
+     * @throws \Exception
+     */
+    public function proxyByBookSimplified()
+    {
+        $CURL = $this->TEST->ECOM->getCurlHandle();
+        $CURL->setProxy('10.1.1.55:80', CURLPROXY_HTTP);
+        $this->TEST->ECOM->setCurlHandle($CURL);
+
+        try {
+            $request = $CURL->doGet('https://identifier.tornevall.net/ip.php');
+        } catch (\Exception $e) {
+            static::markTestSkipped(sprintf('Proxy test skipped (%d): %s', $e->getCode(), $e->getMessage()));
+            return;
+        }
+
+        if ($this->isProperIp($request['body'])) {
+            $customerData = $this->getHappyCustomerData();
+            $this->TEST->ECOM->setBillingByGetAddress($customerData);
+            $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
+            $this->TEST->ECOM->setCustomer('8305147715', "0808080808", "0707070707", "test@test.com", "NATURAL");
+            $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+            $this->TEST->ECOM->addOrderLine("ProxyArtRequest", "My Proxified Product", 800, 25);
+            $payment = $this->TEST->ECOM->createPayment($this->getMethodId());
+            static::assertTrue(strlen($payment->paymentId) > 5);
+        } else {
+            static::markTestSkipped('Could not complete proxy test');
+        }
+    }
+
+    /**
+     * @test
+     * @testdox This test is not creating a full order, it just gets the iframe as we need manual interactions by
+     *     customer included..
+     * @throws \Exception
+     */
+    public function proxyByBookRcoHalfway()
+    {
+        $CURL = $this->TEST->ECOM->getCurlHandle();
+        $CURL->setProxy('10.1.1.55:80', CURLPROXY_HTTP);
+        $this->TEST->ECOM->setCurlHandle($CURL);
+
+        try {
+            $request = $CURL->doGet('https://identifier.tornevall.net/ip.php');
+        } catch (\Exception $e) {
+            static::markTestSkipped(sprintf('Proxy test skipped (%d): %s', $e->getCode(), $e->getMessage()));
+            return;
+        }
+
+        if ($this->isProperIp($request['body'])) {
+            $customerData = $this->getHappyCustomerData();
+            $this->TEST->ECOM->setBillingByGetAddress($customerData);
+            $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
+            $this->TEST->ECOM->setCustomer('8305147715', "0808080808", "0707070707", "test@test.com", "NATURAL");
+            $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+            $this->TEST->ECOM->addOrderLine("ProxyArtRequest", "My Proxified Product", 800, 25);
+            $iframeRequest = $this->TEST->ECOM->createPayment($this->getMethodId());
+            static::assertTrue(preg_match('/iframe src/i', $iframeRequest) ? true : false);
+        } else {
+            static::markTestSkipped('Could not complete proxy test');
+        }
+    }
 
     /**
      * @test
@@ -957,207 +1003,6 @@ class resursBankTest extends TestCase
         $initAndValidate = new ResursBank($this->username, $this->password);
         $justValidated = $initAndValidate->validateCredentials();
         static::assertTrue($isValid && !$isNotValid && $onInitOk && $justValidated);
-    }
-
-    /**
-     * @test
-     *
-     * Put order with quantity 100. Annul 50, debit 50. Using old arrayed method.
-     *
-     * @throws \Exception
-     */
-    public function annulAndDebitedPaymentQuantityOldMethod()
-    {
-        $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder();
-        $paymentid = $payment->paymentId;
-
-        $this->TEST->ECOM->annulPayment($paymentid, [['artNo' => 'PR01', 'quantity' => 50]]);
-        $this->TEST->ECOM->finalizePayment($paymentid, [['artNo' => 'PR01', 'quantity' => 50]]);
-
-        static::assertTrue(
-            $this->getPaymentStatusQuantity(
-                $paymentid,
-                [
-                    'AUTHORIZE' => [
-                        'PR01',
-                        100,
-                    ],
-                    'ANNUL' => [
-                        'PR01',
-                        50,
-                    ],
-                    'DEBIT' => [
-                        'PR01',
-                        50,
-                    ],
-                ]
-            )
-        );
-    }
-
-    /**
-     * @test
-     *
-     * Put order with quantity 100. Annul 50, debit 50. Using addOrderLine.
-     *
-     * @throws \Exception
-     */
-    public function annulAndDebitedPaymentQuantityProperMethod()
-    {
-        // Four orderlines are normally created here.
-        $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
-        $paymentid = $payment->paymentId;
-
-        // Annul 50 of PR01.
-        $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 50);
-        $this->TEST->ECOM->annulPayment($paymentid);
-        // Debit the rest of PR01.
-        $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 50);
-        $this->TEST->ECOM->finalizePayment($paymentid);
-
-        static::assertTrue(
-            $this->getPaymentStatusQuantity(
-                $paymentid,
-                [
-                    'AUTHORIZE' => [
-                        'PR01',
-                        100,
-                    ],
-                    'ANNUL' => [
-                        'PR01',
-                        50,
-                    ],
-                    'DEBIT' => [
-                        'PR01',
-                        50,
-                    ],
-                ]
-            )
-        );
-    }
-
-    /**
-     * @test
-     *
-     * Put order with quantity 100. Annul 50, debit 50, credit 25.
-     *
-     * @throws \Exception
-     */
-    public function annulDebitAndCreditPaymentQuantityProperMethod()
-    {
-        $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
-        $paymentid = $payment->paymentId;
-
-        $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 50);
-        $this->TEST->ECOM->annulPayment($paymentid);
-        $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 50);
-        $this->TEST->ECOM->finalizePayment($paymentid);
-        $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 25);
-        $this->TEST->ECOM->creditPayment($paymentid);
-
-        static::assertTrue(
-            $this->getPaymentStatusQuantity(
-                $paymentid,
-                [
-                    'AUTHORIZE' => [
-                        'PR01',
-                        100,
-                    ],
-                    'ANNUL' => [
-                        'PR01',
-                        50,
-                    ],
-                    'CREDIT' => [
-                        'PR01',
-                        25,
-                    ],
-                    'DEBIT' => [
-                        'PR01',
-                        50,
-                    ],
-                ]
-            )
-        );
-    }
-
-    /**
-     * @test
-     *
-     * Put order with quantity 100. Annul 50, debit 50, credit 25. And then kill the full order.
-     * Expected result is:
-     *
-     * Part 1: one row has 50 annulled, 25 debited and 25 credited.
-     * Part 2: one row has 50 annulled, 50 credited, and the resut of the order should be annulled.
-     *
-     *
-     * @throws \Exception
-     */
-    public function annulTrollPaymentAndKill()
-    {
-        $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
-        $paymentid = $payment->paymentId;
-
-        $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 50);
-        $this->TEST->ECOM->annulPayment($paymentid);
-        $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 50);
-        $this->TEST->ECOM->finalizePayment($paymentid);
-        $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 25);
-        $this->TEST->ECOM->creditPayment($paymentid);
-
-        // And the annul payment.
-        $this->TEST->ECOM->cancelPayment($paymentid);
-
-        static::assertTrue(
-            $this->getPaymentStatusQuantity(
-                $paymentid,
-                [
-                    'AUTHORIZE' => [
-                        'PR01',
-                        100,
-                    ],
-                    'ANNUL' => [
-                        'PR02',
-                        100,
-                    ],
-                    'CREDIT' => [
-                        'PR01',
-                        25,
-                    ],
-                    'DEBIT' => [
-                        'PR01',
-                        50,
-                    ],
-                ]
-            )
-        );
-    }
-
-
-    /**
-     * Get mathching result from payment.
-     *
-     * @param $paymentId
-     * @param array $requestFor
-     * @return bool
-     * @throws \Exception
-     */
-    private function getPaymentStatusQuantity($paymentId, $requestFor = [])
-    {
-        $statusList = $this->TEST->ECOM->getPaymentSpecByStatus($paymentId);
-        $mustMatch = count($requestFor);
-        $matches = 0;
-        foreach ($requestFor as $type => $reqList) {
-            if (isset($statusList[$type])) {
-                foreach ($statusList[$type] as $article) {
-                    if ($article->artNo === $reqList[0] && (int)$article->quantity === (int)$reqList[1]) {
-                        $matches++;
-                        break;
-                    }
-                }
-            }
-        }
-
-        return $mustMatch === $matches ? true : false;
     }
 
     /**
@@ -1191,72 +1036,6 @@ class resursBankTest extends TestCase
         }
     }
 
-
-
-    /**
-     * @test
-     * @throws \Exception
-     */
-    public function hookExperiment1()
-    {
-        if ($this->skipTestHooks) {
-            static::markTestSkipped('ecomhooks request ignore.');
-
-            return;
-        }
-        if (!function_exists('ecom_event_register')) {
-            static::markTestIncomplete('ecomhooks does not exist');
-
-            return;
-        }
-        ecom_event_register('update_store_id', 'inject_test_storeid');
-        $customerData = $this->getHappyCustomerData();
-        $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline", 800, 25);
-        $this->TEST->ECOM->setBillingByGetAddress($customerData);
-        $this->TEST->ECOM->setCustomer("198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL");
-        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
-        ecom_event_unregister('update_store_id');
-        $myPayLoad = $this->TEST->ECOM->getPayload();
-        static::assertTrue(isset($myPayLoad['storeId']) && $myPayLoad['storeId'] >= 0);
-    }
-
-    /**
-     * @test
-     * @throws \Exception
-     */
-    public function hookExperiment2()
-    {
-        if ($this->skipTestHooks) {
-            static::markTestSkipped('ecomhooks request ignore.');
-
-            return;
-        }
-        if (!function_exists('ecom_event_register')) {
-            static::markTestIncomplete('ecomhooks does not exist');
-
-            return;
-        }
-        ecom_event_register('update_payload', 'ecom_inject_payload');
-        $customerData = $this->getHappyCustomerData();
-        $errorCode = 0;
-        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
-        $this->TEST->ECOM->addOrderLine("Product-1337", "One simple orderline", 800, 25);
-        $this->TEST->ECOM->setBillingByGetAddress($customerData);
-        $this->TEST->ECOM->setCustomer(null, "0808080808", "0707070707", "test@test.com", "NATURAL");
-        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
-        try {
-            $this->TEST->ECOM->createPayment($this->getMethodId());
-        } catch (\Exception $e) {
-            $errorCode = $e->getCode();
-        }
-        $myPayLoad = $this->TEST->ECOM->getPayload();
-        static::assertTrue(
-            isset($myPayLoad['add_a_problem_into_payload']) &&
-            !isset($myPayLoad['signing']) &&
-            (int)$errorCode > 0
-        );
-        ecom_event_unregister('update_payload');
-    }
 
     /**
      * @test
