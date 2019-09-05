@@ -183,6 +183,7 @@ class ResursBank
      * Notify internally if the keyset has been changed.
      *
      * @var bool
+     * @since 1.3.23
      */
     private $getPaymentDefaultPurgeSet = false;
 
