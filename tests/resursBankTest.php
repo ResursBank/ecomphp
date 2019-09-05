@@ -1374,8 +1374,8 @@ class resursBankTest extends TestCase
      */
     public function keyPurging()
     {
-        $purgableByResurs = $this->TEST->ECOM->setGetPaymentKeys('tiny');
-        $purgableByWooCommerce = $this->TEST->ECOM->setGetPaymentKeys(['artNo', 'description', 'unitMeasure']);
+        $purgableByResurs = $this->TEST->ECOM->setGetPaymentMatchKeys('tiny');
+        $purgableByWooCommerce = $this->TEST->ECOM->setGetPaymentMatchKeys(['artNo', 'description', 'unitMeasure']);
 
         static::assertTrue(
             count($purgableByResurs) === 7 &&
