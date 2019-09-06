@@ -6576,6 +6576,7 @@ class ResursBank
     /**
      * @param $row
      * @param array $alsoCleanBy Also include this on special needs.
+     * @param bool $excludeDefaults
      * @return mixed
      * @since 1.3.23
      */
