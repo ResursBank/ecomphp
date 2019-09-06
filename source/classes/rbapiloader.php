@@ -3924,6 +3924,22 @@ class ResursBank
     }
 
     /**
+     * @param $clientName
+     * @since 1.3.23
+     */
+    public function setRealClientName($clientName) {
+        $this->realClientName = $clientName;
+    }
+
+    /**
+     * @return string
+     * @since 1.3.23
+     */
+    public function getRealClientName() {
+        return $this->realClientName;
+    }
+
+    /**
      * Convert version number to decimals
      *
      * @return string
