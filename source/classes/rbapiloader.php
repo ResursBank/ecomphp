@@ -62,7 +62,7 @@ if (!defined('ECOMPHP_VERSION')) {
     define('ECOMPHP_VERSION', '1.3.23');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20190904');
+    define('ECOMPHP_MODIFY_DATE', '20190909');
 }
 
 /**
@@ -4567,8 +4567,6 @@ class ResursBank
         $error = array();
         $myFlow = $this->getPreferredPaymentFlowService();
 
-        //$this->addMetaDataHash($payment_id_or_method);
-
         // Using this function to validate that card data info is properly set up
         // during the deprecation state in >= 1.0.2/1.1.1
         if ($myFlow == RESURS_FLOW_TYPES::SIMPLIFIED_FLOW) {
@@ -4923,6 +4921,7 @@ class ResursBank
                 if (isset($this->Payload['customer']['address'])) {
                     $this->checkoutCustomerFieldSupport = true;
                 }
+
                 if (isset($this->Payload['customer']['deliveryAddress'])) {
                     $this->checkoutCustomerFieldSupport = true;
                 }
@@ -4930,6 +4929,7 @@ class ResursBank
                 if ($this->checkoutCustomerFieldSupport === false && isset($this->Payload['customer'])) {
                     unset($this->Payload['customer']);
                 }
+
                 // Making sure sloppy developers uses shopUrl properly.
                 if (!isset($this->Payload['shopUrl'])) {
                     if ($this->validateCheckoutShopUrl) {
@@ -6244,6 +6244,7 @@ class ResursBank
      * @param bool $getAsTable
      * @return array
      * @throws \Exception
+     * @since Ever.
      * @deprecated 1.3.21 Use getPaymentDiffByStatus instead!
      */
     public function getPaymentSpecByStatus($paymentIdOrPaymentObject, $getAsTable = false)
@@ -7377,6 +7378,7 @@ class ResursBank
      *
      * @param $duplicateState
      * @throws Exception
+     * @since 1.3.22
      */
     private function checkUnsafePaymentObject ($duplicateState) {
         if ($duplicateState > 2) {
