@@ -4885,22 +4885,15 @@ class ResursBank
                 if (isset($this->Payload['paymentData'])) {
                     unset($this->Payload['paymentData']);
                 }
-                if (!$this->isFlag('KEEP_RCO_BILLING')) {
-                    if (isset($this->Payload['customer']['address'])) {
-                        unset($this->Payload['customer']['address']);
-                    }
-                } else {
-                    // By not removing fields on this kind of exeption means that we need to protect the customer object.
+
+                // By not removing fields on this kind of exeption means that we need to protect the customer object.
+                if (isset($this->Payload['customer']['address'])) {
                     $this->checkoutCustomerFieldSupport = true;
                 }
-                if (!$this->isFlag('KEEP_RCO_DELIVERY')) {
-                    if (isset($this->Payload['customer']['deliveryAddress'])) {
-                        unset($this->Payload['customer']['deliveryAddress']);
-                    }
-                } else {
-                    // By not removing fields on this kind of exeption means that we need to protect the customer object.
+                if (isset($this->Payload['customer']['deliveryAddress'])) {
                     $this->checkoutCustomerFieldSupport = true;
                 }
+
                 if ($this->checkoutCustomerFieldSupport === false && isset($this->Payload['customer'])) {
                     unset($this->Payload['customer']);
                 }
