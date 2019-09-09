@@ -1180,6 +1180,10 @@ class ResursBank
      */
     public function setFlag($flagKey = '', $flagValue = null)
     {
+        if (($flagKey === 'CURL_TIMEOUT' || $flagKey === 'NETCURL_TIMEOUT') && intval($flagValue) > 0) {
+            $this->internalFlags[$flagKey] = $flagValue;
+        }
+
         if (is_null($this->CURL)) {
             $this->InitializeServices();
         }
