@@ -731,6 +731,7 @@ class resursBankTest extends TestCase
          */
 
         try {
+            //$this->TEST->ECOM->setRegisterCallbacksViaRest(false);
             $this->TEST->ECOM->unregisterEventCallback(255, true);
         } catch (\Exception $e) {
         }
@@ -1366,6 +1367,21 @@ class resursBankTest extends TestCase
         } catch (\Exception $e) {
             static::assertTrue($e->getCode() === 700);
         }
+    }
+
+    /**
+     * @test
+     * @testdox Reverse thinking in purgerverse.
+     */
+    public function keyPurging()
+    {
+        $purgableByResurs = $this->TEST->ECOM->setGetPaymentMatchKeys('tiny');
+        $purgableByWooCommerce = $this->TEST->ECOM->setGetPaymentMatchKeys(['artNo', 'description', 'unitMeasure']);
+
+        static::assertTrue(
+            count($purgableByResurs) === 7 &&
+            count($purgableByWooCommerce) === 6 ? true : false
+        );
     }
 
 
