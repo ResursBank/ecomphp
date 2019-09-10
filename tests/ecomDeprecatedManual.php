@@ -33,33 +33,37 @@ if (file_exists("/etc/ecomphp.json")) {
 }
 
 /**
- * Class resursBankTest: Primary test client
+ * Class ecomDeprecatedManual
+ *
+ * Resurs Bank API Gateway, PHPUnit Test Client
  */
-class ResursBankTest extends TestCase
+class ecomDeprecatedManual extends TestCase
 {
     private $failUrl;
     private $successUrl;
 
     /**
-     * Resurs Bank API Gateway, PHPUnit Test Client
-     *
-     * @subpackage EcomPHPClient
-     * @throws \Exception
+     * @throws Exception
      */
-
     public function setUp()
     {
         $this->globalInitialize();
+        ecom_event_reset();
     }
 
     public function tearDown()
     {
+        ecom_event_reset();
     }
 
+    /**
+     * @param string $skipKey
+     * @return bool
+     */
     private function isSkip($skipKey = '')
     {
         if (defined('SKIP_TEST')) {
-            if ( ! empty($skipKey) && in_array($skipKey, SKIP_TEST)) {
+            if (!empty($skipKey) && in_array($skipKey, SKIP_TEST)) {
                 return true;
             }
         }
@@ -82,18 +86,16 @@ class ResursBankTest extends TestCase
 
         $this->NETWORK = new MODULE_NETWORK();
         if (version_compare(PHP_VERSION, '5.3.0', "<")) {
-            if ( ! $this->allowObsoletePHP) {
+            if (!$this->allowObsoletePHP) {
                 throw new \Exception("PHP 5.3 or later are required for this module to work. If you feel safe with running this with an older version, please see ");
             }
         }
-        register_shutdown_function(array($this, 'shutdownSuite'));
-        /* Set up default government id for bookings */
+        register_shutdown_function([$this, 'shutdownSuite']);
+        // Set up default government id for bookings
         $this->testGovId = $this->govIdNatural;
 
-        /*
-		 * If HTTP_HOST is not set, Resurs Checkout will not run properly, since the iFrame requires a valid internet connection (actually browser vs http server).
-		 */
-        if ( ! isset($_SERVER['HTTP_HOST'])) {
+        // If HTTP_HOST is not set, Resurs Checkout will not run properly, since the iFrame requires a valid internet connection (actually browser vs http server).
+        if (!isset($_SERVER['HTTP_HOST'])) {
             $_SERVER['HTTP_HOST'] = "localhost";
         }
         if (empty($overrideUsername)) {
@@ -119,9 +121,9 @@ class ResursBankTest extends TestCase
      * @var array
      * @deprecated 1.1.12
      */
-    private $paymentMethodCount = array(
-        'mock' => 5
-    );
+    private $paymentMethodCount = [
+        'mock' => 5,
+    ];
     private $paymentIdAuthed = "20170519125223-9587503794";
 
     /** @var $NETWORK MODULE_NETWORK */
@@ -199,7 +201,7 @@ class ResursBankTest extends TestCase
     /** @var string Test with organization number (legal) */
     private $govIdLegalOrg = "166997368573";
     /** @var array Available methods for test (SE) */
-    private $availableMethods = array();
+    private $availableMethods = [];
     /** @var bool Wait for fraud control to take place in a booking */
     private $waitForFraudControl = false;
 
@@ -212,19 +214,19 @@ class ResursBankTest extends TestCase
         if (file_exists(__DIR__ . '/test.json')) {
             $config = json_decode(file_get_contents(__DIR__ . '/test.json'));
             if (isset($config->mock->username)) {
-                $this->username       = $config->mock->username;
+                $this->username = $config->mock->username;
                 $this->usernameSweden = $this->username;
             }
             if (isset($config->mock->password)) {
-                $this->password       = $config->mock->password;
+                $this->password = $config->mock->password;
                 $this->passwordSweden = $this->password;
             }
             if (isset($config->sweden->username)) {
-                $this->username       = $config->sweden->username;
+                $this->username = $config->sweden->username;
                 $this->usernameSweden = $this->username;
             }
             if (isset($config->sweden->password)) {
-                $this->password       = $config->sweden->password;
+                $this->password = $config->sweden->password;
                 $this->passwordSweden = $this->password;
             }
             if (isset($config->availableMethods)) {
@@ -254,15 +256,15 @@ class ResursBankTest extends TestCase
      */
     private function mkpass()
     {
-        $retp               = null;
-        $characterListArray = array(
+        $retp = null;
+        $characterListArray = [
             'abcdefghijklmnopqrstuvwxyz',
             'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
             '0123456789',
-        );
+        ];
         //'!@#$%*?'
-        $chars = array();
-        $max   = 10; // This is for now static
+        $chars = [];
+        $max = 10; // This is for now static
         foreach ($characterListArray as $charListIndex => $charList) {
             for ($i = 0; $i <= ceil($max / sizeof($characterListArray)); $i++) {
                 $chars[] = $charList{mt_rand(0, (strlen($charList) - 1))};
@@ -282,7 +284,7 @@ class ResursBankTest extends TestCase
      */
     private function getAMethod()
     {
-        $methods      = null;
+        $methods = null;
         $currentError = null;
         try {
             $methods = $this->rb->getPaymentMethods();
@@ -291,20 +293,20 @@ class ResursBankTest extends TestCase
         }
         if (is_array($methods)) {
             $method = array_pop($methods);
-            $id     = $method->id;
+            $id = $method->id;
 
             return $id;
         }
-        throw new \Exception("Cannot receive a random payment method from ecommerce" . (! empty($currentError) ? " ($currentError)" : ""));
+        throw new \Exception("Cannot receive a random payment method from ecommerce" . (!empty($currentError) ? " ($currentError)" : ""));
     }
 
     /**
      * Book a payment, internal function
      *
-     * @param string     $setMethod    The payment method to use
-     * @param bool|false $bookSuccess  Set to true if booking is supposed to success
+     * @param string $setMethod The payment method to use
+     * @param bool|false $bookSuccess Set to true if booking is supposed to success
      * @param bool|false $forceSigning Set to true if signing is forced
-     * @param bool|true  $signSuccess  True=Successful signing, False=Failed signing
+     * @param bool|true $signSuccess True=Successful signing, False=Failed signing
      *
      * @return array|bool
      * @throws Exception
@@ -315,66 +317,69 @@ class ResursBankTest extends TestCase
         $forceSigning = false,
         $signSuccess = true
     ) {
-        $paymentServiceSet  = $this->rb->getPreferredPaymentFlowService();
-        $useMethodList      = $this->availableMethods;
+        $paymentServiceSet = $this->rb->getPreferredPaymentFlowService();
+        $useMethodList = $this->availableMethods;
         $useGovIdLegalCivic = $this->govIdLegalCivic;
-        $useGovId           = $this->testGovId;
-        $usePhoneNumber     = "0101010101";
-        $bookStatus         = null;
+        $useGovId = $this->testGovId;
+        $usePhoneNumber = "0101010101";
+        $bookStatus = null;
 
-        if ( ! count($this->availableMethods) || empty($this->username)) {
+        $bookId = null;
+
+        if (!count($this->availableMethods) || empty($this->username)) {
             static::markTestSkipped('No payment methods are available');
         }
         if ($this->zeroSpecLine) {
-            if ( ! $this->zeroSpecLineZeroTax) {
+            if (!$this->zeroSpecLineZeroTax) {
                 $bookData['specLine'] = $this->getSpecLineZero();
             } else {
-                $bookData['specLine'] = $this->getSpecLineZero(array(), true);
+                $bookData['specLine'] = $this->getSpecLineZero([], true);
             }
         } else {
             $bookData['specLine'] = $this->getSpecLine();
         }
-        $this->zeroSpecLine   = false;
-        $bookData['address']  = array(
-            'fullName'    => 'Test Testsson',
-            'firstName'   => 'Test',
-            'lastName'    => 'Testsson',
+        $this->zeroSpecLine = false;
+        $bookData['address'] = [
+            'fullName' => 'Test Testsson',
+            'firstName' => 'Test',
+            'lastName' => 'Testsson',
             'addressRow1' => 'Testgatan 1',
-            'postalArea'  => 'Testort',
-            'postalCode'  => '12121',
-            'country'     => 'SE'
-        );
-        $bookData['customer'] = array(
+            'postalArea' => 'Testort',
+            'postalCode' => '12121',
+            'country' => 'SE',
+        ];
+        $bookData['customer'] = [
             'governmentId' => $useGovId,
-            'phone'        => $usePhoneNumber,
-            'email'        => 'noreply@resurs.se',
-            'type'         => 'NATURAL'
-        );
+            'phone' => $usePhoneNumber,
+            'email' => 'noreply@resurs.se',
+            'type' => 'NATURAL',
+        ];
         if (isset($useMethodList['invoice_legal']) && $setMethod == $useMethodList['invoice_legal']) {
             $bookData['customer']['contactGovernmentId'] = $useGovIdLegalCivic;
-            $bookData['customer']['type']                = 'LEGAL';
+            $bookData['customer']['type'] = 'LEGAL';
         }
         if (isset($useMethodList['card']) && $setMethod == $useMethodList['card']) {
             $useGovId = $this->cardGovId;
-            //$this->rb->prepareCardData( $this->cardNumber, false );
             $this->rb->setCardData($this->cardNumber);
         }
         if (isset($useMethodList['card_new']) && $setMethod == $useMethodList['card_new']) {
             $useGovId = $this->cardGovId;
-            //$this->rb->prepareCardData( null, true );
             $this->rb->setCardData();
         }
         $bookData['paymentData']['waitForFraudControl'] = $this->waitForFraudControl;
-        $bookData['signing']                            = array(
-            'successUrl'   => $this->signUrl . '&success=true&preferredService=' . $this->rb->getPreferredPaymentFlowService(),
-            'failUrl'      => $this->signUrl . '&success=false&preferredService=' . $this->rb->getPreferredPaymentFlowService(),
-            'backUrl'      => $this->signUrl . '&success=backurl&preferredService=' . $this->rb->getPreferredPaymentFlowService(),
-            'forceSigning' => $forceSigning
-        );
+        $bookData['signing'] = [
+            'successUrl' => $this->signUrl . '&success=true&preferredService=' . $this->rb->getPreferredPaymentFlowService(),
+            'failUrl' => $this->signUrl . '&success=false&preferredService=' . $this->rb->getPreferredPaymentFlowService(),
+            'backUrl' => $this->signUrl . '&success=backurl&preferredService=' . $this->rb->getPreferredPaymentFlowService(),
+            'forceSigning' => $forceSigning,
+        ];
 
-        if ($paymentServiceSet !== RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT) {
+        $this->rb->setMetaData('metaKeyTestTime', time());
+        $this->rb->setMetaData('metaKeyTestMicroTime', microtime(true));
+
+        if ($paymentServiceSet !== RESURS_FLOW_TYPES::RESURS_CHECKOUT) {
             $res = $this->rb->createPayment($setMethod, $bookData);
-            if ($paymentServiceSet == RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW) {
+            if ($paymentServiceSet == RESURS_FLOW_TYPES::HOSTED_FLOW) {
                 $domainInfo = $this->NETWORK->getUrlDomain($res);
                 if (preg_match("/^http/i", $domainInfo[1])) {
                     $hostedContent = $this->CURL->getBody($this->CURL->doGet($res));
@@ -383,7 +388,8 @@ class ResursBankTest extends TestCase
                 }
             }
         } else {
-            $res = $this->rb->createPayment($this->rb->getPreferredPaymentId(), $bookData);
+            $bookId = $this->rb->getPreferredPaymentId();
+            $res = $this->rb->createPayment($bookId, $bookData);
         }
 
         /*
@@ -393,27 +399,28 @@ class ResursBankTest extends TestCase
             $bookStatus = $res->bookPaymentStatus;
         }
 
-        if ($paymentServiceSet == RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT) {
+        if ($paymentServiceSet == RESURS_FLOW_TYPES::RESURS_CHECKOUT) {
             return $res;
         }
 
-        if ($bookStatus == "SIGNING") {
+        if ($bookStatus == 'SIGNING') {
+            $bookId = $res->paymentId;
             /* Pick up the signing url */
             /** @noinspection PhpUndefinedFieldInspection */
             $signUrl = $res->signingUrl;
             // Authentication is different to signing
             if (preg_match("/authenticate/i", $signUrl)) {
-                $authenticate        = $signUrl . "&govId=" . $useGovId;
-                $authenticate        = preg_replace("/authenticate/i", 'doAuth', $authenticate);
+                $authenticate = $signUrl . "&govId=" . $useGovId;
+                $authenticate = preg_replace("/authenticate/i", 'doAuth', $authenticate);
                 $authenticateRequest = $this->CURL->doGet($authenticate);
-                $getSuccessContent   = $this->CURL->getParsed($authenticateRequest);
+                $getSuccessContent = $this->CURL->getParsed($authenticateRequest);
             } else {
-                $getSigningPage  = file_get_contents($signUrl);
-                $NETWORK         = new MODULE_NETWORK();
+                $getSigningPage = file_get_contents($signUrl);
+                $NETWORK = new MODULE_NETWORK();
                 $signUrlHostInfo = $NETWORK->getUrlDomain($signUrl, true);
-                $getUrlHost      = $signUrlHostInfo[1] . "://" . $signUrlHostInfo[0];
-                $hostUri         = explode("/", isset($signUrlHostInfo[2]) ? $signUrlHostInfo[2] : null);
-                $uriPath         = "";
+                $getUrlHost = $signUrlHostInfo[1] . "://" . $signUrlHostInfo[0];
+                $hostUri = explode("/", isset($signUrlHostInfo[2]) ? $signUrlHostInfo[2] : null);
+                $uriPath = "";
                 if (is_array($hostUri) && count($hostUri) > 1) {
                     array_shift($hostUri);
                     if (count($hostUri) >= 2) {
@@ -429,8 +436,12 @@ class ResursBankTest extends TestCase
                 $getSuccessContent = $this->CURL->getParsed($getPostCurlObject);
             }
             if (isset($getSuccessContent->_GET->success)) {
+
+                // Make sure the test books the signed payment
+                $bookRes = $this->rb->bookSignedPayment($bookId);
+
                 /** @noinspection PhpUndefinedFieldInspection */
-                if ($getSuccessContent->_GET->success == "true") {
+                if ($getSuccessContent->_GET->success == "true" && (int)$bookRes->approvedAmount > 0) {
                     if ($signSuccess) {
                         return true;
                     } else {
@@ -439,7 +450,7 @@ class ResursBankTest extends TestCase
                 }
                 /** @noinspection PhpUndefinedFieldInspection */
                 if ($getSuccessContent->_GET->success == "false") {
-                    if ( ! $signSuccess) {
+                    if (!$signSuccess) {
                         return true;
                     } else {
                         return false;
@@ -472,34 +483,34 @@ class ResursBankTest extends TestCase
      * @return array
      */
 
-    private function getSpecLine($specialSpecline = array())
+    private function getSpecLine($specialSpecline = [])
     {
         if (count($specialSpecline)) {
             return $specialSpecline;
         }
 
-        return array(
-            'artNo'                => 'EcomPHP-testArticle-' . rand(1, 1024),
-            'description'          => 'EComPHP Random Test Article number ' . rand(1, 1024),
-            'quantity'             => 1,
+        return [
+            'artNo' => 'EcomPHP-testArticle-' . rand(1, 1024),
+            'description' => 'EComPHP Random Test Article number ' . rand(1, 1024),
+            'quantity' => 1,
             'unitAmountWithoutVat' => intval(rand(1000, 10000)),
-            'vatPct'               => 25
-        );
+            'vatPct' => 25,
+        ];
     }
 
-    private function getSpecLineZero($specialSpecline = array(), $zeroTax = false)
+    private function getSpecLineZero($specialSpecline = [], $zeroTax = false)
     {
         if (count($specialSpecline)) {
             return $specialSpecline;
         }
 
-        return array(
-            'artNo'                => 'EcomPHP-testArticle-' . rand(1, 1024),
-            'description'          => 'EComPHP Random Test Article number ' . rand(1, 1024),
-            'quantity'             => 1,
+        return [
+            'artNo' => 'EcomPHP-testArticle-' . rand(1, 1024),
+            'description' => 'EComPHP Random Test Article number ' . rand(1, 1024),
+            'quantity' => 1,
             'unitAmountWithoutVat' => 0,
-            'vatPct'               => $zeroTax ? 0 : 25
-        );
+            'vatPct' => $zeroTax ? 0 : 25,
+        ];
     }
 
     /**
@@ -560,7 +571,7 @@ class ResursBankTest extends TestCase
      */
     public function testGetPaymentMethodsFail()
     {
-        $paymentMethods = array();
+        $paymentMethods = [];
         if ($this->ignoreDefaultTests) {
             static::markTestSkipped();
         }
@@ -628,12 +639,12 @@ class ResursBankTest extends TestCase
         if ($this->ignoreDefaultTests) {
             static::markTestSkipped();
         }
-        $getAddressData = array();
+        $getAddressData = [];
         try {
             $getAddressData = $this->rb->getAddress($this->govIdNatural, 'NATURAL', '127.0.0.1');
         } catch (\Exception $e) {
         }
-        static::assertTrue(! empty($getAddressData->fullName));
+        static::assertTrue(!empty($getAddressData->fullName));
     }
 
     public function testGetAddressMockIP()
@@ -641,12 +652,12 @@ class ResursBankTest extends TestCase
         if ($this->ignoreDefaultTests) {
             static::markTestSkipped();
         }
-        $getAddressData = array();
+        $getAddressData = [];
         try {
             $getAddressData = $this->rb->getAddress($this->govIdNatural, 'NATURAL', 'blablabla');
         } catch (\Exception $e) {
         }
-        static::assertTrue(! empty($getAddressData->fullName));
+        static::assertTrue(!empty($getAddressData->fullName));
     }
 
     /**
@@ -657,12 +668,12 @@ class ResursBankTest extends TestCase
         if ($this->ignoreDefaultTests) {
             static::markTestSkipped();
         }
-        $getAddressData = array();
+        $getAddressData = [];
         try {
             $getAddressData = $this->rb->getAddress($this->govIdLegalCivic, 'LEGAL', '127.0.0.1');
         } catch (\Exception $e) {
         }
-        static::assertTrue(! empty($getAddressData->fullName));
+        static::assertTrue(!empty($getAddressData->fullName));
     }
 
     /**
@@ -673,12 +684,12 @@ class ResursBankTest extends TestCase
         if ($this->ignoreDefaultTests) {
             static::markTestSkipped();
         }
-        $getAddressData = array();
+        $getAddressData = [];
         try {
             $getAddressData = $this->rb->getAddress($this->govIdLegalOrg, 'LEGAL', '127.0.0.1');
         } catch (\Exception $e) {
         }
-        static::assertTrue(! empty($getAddressData->fullName));
+        static::assertTrue(!empty($getAddressData->fullName));
     }
 
     /**
@@ -695,8 +706,8 @@ class ResursBankTest extends TestCase
         $annuity = false;
         $methods = $this->rb->getPaymentMethods();
         if (is_array($methods)) {
-            $method  = array_pop($methods);
-            $id      = $method->id;
+            $method = array_pop($methods);
+            $id = $method->id;
             $annuity = $this->rb->getAnnuityFactors($id);
         }
         static::assertTrue(count($annuity) > 1);
@@ -731,7 +742,7 @@ class ResursBankTest extends TestCase
         if ($this->ignoreBookingTests) {
             static::markTestSkipped();
         }
-        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW);
+        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::HOSTED_FLOW);
         $bookResult = $this->doBookPayment($this->availableMethods['invoice_natural'], true, false, true);
         // Can't do bookings yet, since this is a forwarder. We would like to emulate browser clicking here, to complete the order.
         static::assertTrue(strlen($bookResult) > 1024);
@@ -825,12 +836,12 @@ class ResursBankTest extends TestCase
      */
     private function getAPayment($paymentId = null, $randomize = false)
     {
-        $paymentList = $this->rb->findPayments(array(), 1, 100);
+        $paymentList = $this->rb->findPayments([], 1, 100);
         if (is_null($paymentId)) {
             if (is_array($paymentList) && count($paymentList)) {
-                if ( ! $randomize) {
+                if (!$randomize) {
                     $existingPayment = array_pop($paymentList);
-                    $paymentId       = $existingPayment->paymentId;
+                    $paymentId = $existingPayment->paymentId;
                 } else {
                     $paymentIdIndex = rand(0, count($paymentList));
                     if (isset($paymentList[$paymentIdIndex])) {
@@ -853,7 +864,7 @@ class ResursBankTest extends TestCase
             static::markTestSkipped();
         }
         $this->zeroSpecLine = true;
-        $hasException       = false;
+        $hasException = false;
         try {
             $this->doBookPayment($this->availableMethods['invoice_natural'], true, false, true);
         } catch (\Exception $exceptionWanted) {
@@ -875,7 +886,7 @@ class ResursBankTest extends TestCase
             static::markTestSkipped();
         }
         $this->testGovId = $this->govIdNaturalDenied;
-        $bookResult      = $this->doBookPayment($this->availableMethods['invoice_natural'], false, false, true);
+        $bookResult = $this->doBookPayment($this->availableMethods['invoice_natural'], false, false, true);
         static::assertTrue($bookResult);
     }
 
@@ -891,10 +902,10 @@ class ResursBankTest extends TestCase
         if ($this->ignoreBookingTests) {
             static::markTestSkipped();
         }
-        $this->username  = $this->usernameSweden;
-        $this->password  = $this->passwordSweden;
+        $this->username = $this->usernameSweden;
+        $this->password = $this->passwordSweden;
         $this->testGovId = $this->govIdLegalOrg;
-        $bookResult      = $this->doBookPayment($this->availableMethods['invoice_legal'], false, false, true);
+        $bookResult = $this->doBookPayment($this->availableMethods['invoice_legal'], false, false, true);
         static::assertTrue($bookResult);
     }
 
@@ -937,10 +948,10 @@ class ResursBankTest extends TestCase
             static::markTestSkipped();
         }
         $methodSimple = $this->getAMethod();
-        $amount       = rand(1000, 10000);
-        $sekkiUrls    = $this->rb->getSekkiUrls($amount, $methodSimple);
-        $matches      = 0;
-        $appenders    = 0;
+        $amount = rand(1000, 10000);
+        $sekkiUrls = $this->rb->getSekkiUrls($amount, $methodSimple);
+        $matches = 0;
+        $appenders = 0;
         if (is_array($sekkiUrls)) {
             foreach ($sekkiUrls as $UrlData) {
                 if ($UrlData->appendPriceLast) {
@@ -964,12 +975,12 @@ class ResursBankTest extends TestCase
         if ($this->ignoreSEKKItests) {
             static::markTestSkipped();
         }
-        $methodSimple   = $this->getAMethod();
-        $amount         = rand(1000, 10000);
+        $methodSimple = $this->getAMethod();
+        $amount = rand(1000, 10000);
         $preparedMethod = $this->rb->getPaymentMethodSpecific($methodSimple);
         if (isset($preparedMethod->legalInfoLinks)) {
             $sekkiUrls = $this->rb->getSekkiUrls($amount, $preparedMethod->legalInfoLinks);
-            $matches   = 0;
+            $matches = 0;
             $appenders = 0;
             if (is_array($sekkiUrls)) {
                 foreach ($sekkiUrls as $UrlData) {
@@ -992,15 +1003,15 @@ class ResursBankTest extends TestCase
      */
     public function testSekkiAll()
     {
-        $matches   = 0;
+        $matches = 0;
         $appenders = 0;
         if ($this->ignoreSEKKItests) {
             static::markTestSkipped();
         }
-        $amount    = rand(1000, 10000);
+        $amount = rand(1000, 10000);
         $sekkiUrls = $this->rb->getSekkiUrls($amount);
         foreach ($sekkiUrls as $method => $sekkiUrlsVal) {
-            $matches   = 0;
+            $matches = 0;
             $appenders = 0;
             if (is_array($sekkiUrlsVal)) {
                 foreach ($sekkiUrlsVal as $UrlData) {
@@ -1026,8 +1037,8 @@ class ResursBankTest extends TestCase
         if ($this->ignoreSEKKItests) {
             static::markTestSkipped();
         }
-        $amount    = rand(1000, 10000);
-        $URL       = "https://test.resurs.com/customurl/index.html?content=true&secondparameter=true";
+        $amount = rand(1000, 10000);
+        $URL = "https://test.resurs.com/customurl/index.html?content=true&secondparameter=true";
         $customURL = $this->rb->getSekkiUrls($amount, null, $URL);
         static::assertTrue((preg_match("/amount=$amount/i", $customURL) ? true : false));
     }
@@ -1047,22 +1058,22 @@ class ResursBankTest extends TestCase
     private function getCheckoutFrame($returnTheFrame = false, $returnPaymentReference = false)
     {
         $assumeThis = false;
-        $iFrameUrl  = null;
+        $iFrameUrl = null;
         if ($returnTheFrame) {
             $iFrameUrl = false;
         }
         if ($this->ignoreBookingTests) {
             static::markTestSkipped();
         }
-        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT);
+        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
         $newReferenceId = $this->rb->getPreferredPaymentId();
-        $bookResult     = $this->doBookPayment($newReferenceId, true, false, true);
+        $bookResult = $this->doBookPayment($newReferenceId, true, false, true);
         if (is_string($bookResult) && preg_match("/iframe src/i", $bookResult)) {
             $iframeUrls = $this->NETWORK->getUrlsFromHtml($bookResult, 0, 1);
-            $iFrameUrl  = array_pop($iframeUrls);
+            $iFrameUrl = array_pop($iframeUrls);
             $this->CURL->doGet($iFrameUrl);
             $iframeBody = $this->CURL->getBody();
-            if ( ! empty($iframeBody)) {
+            if (!empty($iframeBody)) {
                 $assumeThis = true;
             }
         }
@@ -1070,7 +1081,7 @@ class ResursBankTest extends TestCase
         if ($returnPaymentReference) {
             return $this->rb->getPreferredPaymentId();
         }
-        if ( ! $returnTheFrame) {
+        if (!$returnTheFrame) {
             return $assumeThis;
         } else {
             return $iFrameUrl;
@@ -1109,7 +1120,7 @@ class ResursBankTest extends TestCase
      */
     public function testCheckoutAsFromDocs()
     {
-        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT);
+        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
         $iframePaymentReference = $this->rb->getPreferredPaymentId(30, "CREATE-");
         $this->rb->addOrderLine(
             "HORSE",
@@ -1123,7 +1134,7 @@ class ResursBankTest extends TestCase
         $this->rb->setShopUrl("https://my.iframe.shop.com/test", true);
         $this->rb->setCheckoutUrls("https://google.com/?q=signingSuccessful", "https://google.com/?q=signingFailed");
         $theFrame = $this->rb->createPayment($iframePaymentReference);
-        $urls     = $this->NETWORK->getUrlsFromHtml($theFrame);
+        $urls = $this->NETWORK->getUrlsFromHtml($theFrame);
         static::assertTrue(count($urls) == 2);
     }
 
@@ -1137,7 +1148,7 @@ class ResursBankTest extends TestCase
     public function testUpdatePaymentReference()
     {
         $iframePaymentReference = $this->rb->getPreferredPaymentId(30, "CREATE-");
-        $iFrameUrl              = null;
+        $iFrameUrl = null;
         try {
             $iFrameUrl = $this->getCheckoutFrame(true);
         } catch (\Exception $e) {
@@ -1148,12 +1159,12 @@ class ResursBankTest extends TestCase
         $this->CURL->setLocalCookies(true);
         $this->CURL->doGet($iFrameUrl);
 
-        $payload    = $this->rb->getPayload();
-        $orderLines = array("orderLines" => $payload['orderLines']);
+        $payload = $this->rb->getPayload();
+        $orderLines = ["orderLines" => $payload['orderLines']];
 
         $iframeContent = $this->CURL->getBody();;
         $Success = false;
-        if ( ! empty($iframePaymentReference) && ! empty($iFrameUrl) && ! empty($iframeContent) && strlen($iframeContent) > 1024) {
+        if (!empty($iframePaymentReference) && !empty($iFrameUrl) && !empty($iframeContent) && strlen($iframeContent) > 1024) {
             $newReference = $this->rb->getPreferredPaymentId(30, "UPDATE-", true, true);
             try {
                 $Success = $this->rb->updatePaymentReference($iframePaymentReference, $newReference);
@@ -1183,7 +1194,7 @@ class ResursBankTest extends TestCase
     public function testUpdatePaymentReferenceFail()
     {
         $iframePaymentReference = $this->rb->getPreferredPaymentId(30, "CREATE-");
-        $iFrameUrl              = null;
+        $iFrameUrl = null;
         try {
             $iFrameUrl = $this->getCheckoutFrame(true);
         } catch (\Exception $e) {
@@ -1193,11 +1204,11 @@ class ResursBankTest extends TestCase
         $this->CURL->setLocalCookies(true);
         $iframeRequest = $this->CURL->doGet($iFrameUrl);
 
-        $payload    = $this->rb->getPayload();
-        $orderLines = array("orderLines" => $payload['orderLines']);
+        $payload = $this->rb->getPayload();
+        $orderLines = ["orderLines" => $payload['orderLines']];
 
         $iframeContent = $this->CURL->getBody($iframeRequest);
-        if ( ! empty($iframePaymentReference) && ! empty($iFrameUrl) && ! empty($iframeContent) && strlen($iframeContent) > 1024) {
+        if (!empty($iframePaymentReference) && !empty($iFrameUrl) && !empty($iframeContent) && strlen($iframeContent) > 1024) {
             $newReference = $this->rb->getPreferredPaymentId(30, "UPDATE-", true, true);
             try {
                 $this->rb->updatePaymentReference($iframePaymentReference, $newReference);
@@ -1217,7 +1228,7 @@ class ResursBankTest extends TestCase
     public function testUpdateWrongPaymentReference()
     {
         $iframePaymentReference = $this->rb->getPreferredPaymentId(30, "CREATE-");
-        $iFrameUrl              = null;
+        $iFrameUrl = null;
         try {
             $iFrameUrl = $this->getCheckoutFrame(true);
         } catch (\Exception $e) {
@@ -1227,7 +1238,7 @@ class ResursBankTest extends TestCase
         $this->CURL->setLocalCookies(true);
         $iframeRequest = $this->CURL->doGet($iFrameUrl);
         $iframeContent = $this->CURL->getBody($iframeRequest);
-        if ( ! empty($iframePaymentReference) && ! empty($iFrameUrl) && ! empty($iframeContent) && strlen($iframeContent) > 1024) {
+        if (!empty($iframePaymentReference) && !empty($iFrameUrl) && !empty($iframeContent) && strlen($iframeContent) > 1024) {
             $newReference = "#" . $this->rb->getPreferredPaymentId(30, "FAIL-", true, true);
             try {
                 $this->rb->updatePaymentReference($iframePaymentReference, $newReference);
@@ -1288,20 +1299,20 @@ class ResursBankTest extends TestCase
      */
     public function testAddMetaData()
     {
-        $paymentData   = null;
+        $paymentData = null;
         $chosenPayment = 0;
-        $paymentId     = null;
+        $paymentId = null;
 
         $paymentList = $this->rb->findPayments();
         // For some reason, we not always get a valid order
         $preventLoop = 0;
-        while ( ! isset($paymentList[$chosenPayment]) && $preventLoop++ < 10) {
+        while (!isset($paymentList[$chosenPayment]) && $preventLoop++ < 10) {
             $chosenPayment = rand(0, count($paymentList));
         }
 
         if (isset($paymentList[$chosenPayment])) {
             $paymentData = $paymentList[$chosenPayment];
-            $paymentId   = $paymentData->paymentId;
+            $paymentId = $paymentData->paymentId;
             static::assertTrue($this->rb->addMetaData($paymentId, "RandomKey" . rand(1000, 1999),
                 "RandomValue" . rand(2000, 3000)));
         } else {
@@ -1314,7 +1325,7 @@ class ResursBankTest extends TestCase
      */
     public function testAddMetaDataFailure()
     {
-        $paymentData  = null;
+        $paymentData = null;
         $hasException = false;
         try {
             $this->rb->addMetaData("UnexistentPaymentId", "RandomKey" . rand(1000, 1999),
@@ -1323,7 +1334,7 @@ class ResursBankTest extends TestCase
             static::assertTrue(true);
             $hasException = true;
         }
-        if ( ! $hasException) {
+        if (!$hasException) {
             static::markTestSkipped("addMetaDataFailure failed since it never got an exception");
         }
     }
@@ -1353,21 +1364,21 @@ class ResursBankTest extends TestCase
      */
     private function renderCallbackData($useUrlRewrite = false)
     {
-        $setCallbackType     = null;
-        $returnCallbackArray = array();
-        $parameter           = array(
-            'ANNULMENT'               => array('paymentId'),
-            'FINALIZATION'            => array('paymentId'),
-            'UNFREEZE'                => array('paymentId'),
-            'UPDATE'                  => array('paymentId'),
-            'AUTOMATIC_FRAUD_CONTROL' => array('paymentId', 'result')
-        );
+        $setCallbackType = null;
+        $returnCallbackArray = [];
+        $parameter = [
+            'ANNULMENT' => ['paymentId'],
+            'FINALIZATION' => ['paymentId'],
+            'UNFREEZE' => ['paymentId'],
+            'UPDATE' => ['paymentId'],
+            'AUTOMATIC_FRAUD_CONTROL' => ['paymentId', 'result'],
+        ];
         foreach ($parameter as $callbackType => $parameterArray) {
             $digestSaltString = $this->mkpass();
-            $digestArray      = array(
-                'digestSalt'       => $digestSaltString,
-                'digestParameters' => $parameterArray
-            );
+            $digestArray = [
+                'digestSalt' => $digestSaltString,
+                'digestParameters' => $parameterArray,
+            ];
             if ($callbackType == "ANNULMENT") {
                 $setCallbackType = RESURS_CALLBACK_TYPES::CALLBACK_TYPE_ANNULMENT;
             }
@@ -1383,24 +1394,24 @@ class ResursBankTest extends TestCase
             if ($callbackType == "UPDATE") {
                 $setCallbackType = RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UPDATE;
             }
-            $renderArray = array();
+            $renderArray = [];
             if (is_array($parameterArray)) {
                 foreach ($parameterArray as $parameterName) {
-                    if ( ! $useUrlRewrite) {
+                    if (!$useUrlRewrite) {
                         $renderArray[] = $parameterName . "={" . $parameterName . "}";
                     } else {
                         $renderArray[] = $parameterName . "/{" . $parameterName . "}";
                     }
                 }
             }
-            if ( ! $useUrlRewrite) {
+            if (!$useUrlRewrite) {
                 $callbackURL = $this->callbackUrl . "?event=" . $callbackType . "&digest={digest}&" . implode("&",
                         $renderArray) . "&lastReg=" . strftime("%y%m%d%H%M%S", time());
             } else {
                 $callbackURL = $this->callbackUrl . "/event/" . $callbackType . "/digest/{digest}/" . implode("/",
                         $renderArray) . "/lastReg/" . strftime("%y%m%d%H%M%S", time());
             }
-            $returnCallbackArray[] = array($setCallbackType, $callbackURL, $digestArray);
+            $returnCallbackArray[] = [$setCallbackType, $callbackURL, $digestArray];
         }
 
         return $returnCallbackArray;
@@ -1415,7 +1426,7 @@ class ResursBankTest extends TestCase
     {
         $callbackArrayData = $this->renderCallbackData(true);
         $this->rb->setCallbackDigest($this->mkpass());
-        $cResponse = array();
+        $cResponse = [];
         $this->rb->setRegisterCallbacksViaRest(false);
         foreach ($callbackArrayData as $indexCB => $callbackInfo) {
             $cResponse[$callbackInfo[0]] = $this->rb->setRegisterCallback($callbackInfo[0],
@@ -1439,7 +1450,7 @@ class ResursBankTest extends TestCase
     {
         $callbackArrayData = $this->renderCallbackData(true);
         $this->rb->setCallbackDigest($this->mkpass());
-        $cResponse = array();
+        $cResponse = [];
         $this->rb->setRegisterCallbacksViaRest(false);
         foreach ($callbackArrayData as $indexCB => $callbackInfo) {
             $cResponse[$callbackInfo[0]] = $this->rb->setRegisterCallback($callbackInfo[0],
@@ -1462,7 +1473,7 @@ class ResursBankTest extends TestCase
     public function testSetRegisterCallbacksRest()
     {
         $callbackArrayData = $this->renderCallbackData(true);
-        $cResponse         = array();
+        $cResponse = [];
         $this->rb->setCallbackDigest($this->mkpass());
         $this->rb->setRegisterCallbacksViaRest(true);
         foreach ($callbackArrayData as $indexCB => $callbackInfo) {
@@ -1489,7 +1500,7 @@ class ResursBankTest extends TestCase
     public function testSetRegisterCallbacksRestUrlRewrite()
     {
         $callbackArrayData = $this->renderCallbackData(true);
-        $cResponse         = array();
+        $cResponse = [];
         $this->rb->setCallbackDigest($this->mkpass());
         $this->rb->setRegisterCallbacksViaRest(true);
         foreach ($callbackArrayData as $indexCB => $callbackInfo) {
@@ -1531,18 +1542,18 @@ class ResursBankTest extends TestCase
      */
     public function testSetRegisterCallbacksWithValidatedUrlViaRest()
     {
-        if ( ! $this->ignoreUrlExternalValidation) {
+        if (!$this->ignoreUrlExternalValidation) {
             $this->rb->setRegisterCallbacksViaRest(true);
             $callbackArrayData = $this->renderCallbackData();
             $this->rb->setCallbackDigest($this->mkpass());
-            $cResponse = array();
+            $cResponse = [];
             foreach ($callbackArrayData as $indexCB => $callbackInfo) {
                 try {
                     $this->rb->setValidateExternalCallbackUrl($callbackInfo[1] . "&via=restValidated");
                     $cResponse[$callbackInfo[0]] = $this->rb->setRegisterCallback($callbackInfo[0],
                         $callbackInfo[1] . "&via=restValidated", $callbackInfo[2]);
                 } catch (\Exception $e) {
-                    static::markTestSkipped("Exception thrown: URL Validation failed for " . (isset($callbackInfo[1]) && ! empty($callbackInfo[1]) ? $callbackInfo[1] . "&via=restValidated" : "??") . " during the setRegisterCallback procss (" . $e->getMessage() . ")");
+                    static::markTestSkipped("Exception thrown: URL Validation failed for " . (isset($callbackInfo[1]) && !empty($callbackInfo[1]) ? $callbackInfo[1] . "&via=restValidated" : "??") . " during the setRegisterCallback procss (" . $e->getMessage() . ")");
                 }
             }
             $successFulCallbacks = 0;
@@ -1592,7 +1603,7 @@ class ResursBankTest extends TestCase
             }
         } catch (\Exception $e) {
             $errorMessage = $e->getMessage();
-            static::assertTrue(! empty($errorMessage));
+            static::assertTrue(!empty($errorMessage));
         }
     }
 
@@ -1606,7 +1617,7 @@ class ResursBankTest extends TestCase
         }
         /* If disabled */
         $callbackArrayData = $this->renderCallbackData();
-        $callbackSetResult = array();
+        $callbackSetResult = [];
         $this->rb->setCallbackDigest($this->mkpass());
         foreach ($callbackArrayData as $indexCB => $callbackInfo) {
             try {
@@ -1643,7 +1654,7 @@ class ResursBankTest extends TestCase
      */
     function testSetCustomerNatural()
     {
-        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT);
+        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RES);
         $ReturnedPayload = $this->rb->setBillingByGetAddress($this->govIdNatural);
         static::assertEquals($this->govIdNatural, $ReturnedPayload['customer']['governmentId']);
     }
@@ -1653,7 +1664,7 @@ class ResursBankTest extends TestCase
      */
     function testSetCustomerLegal()
     {
-        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT);
+        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
         $ReturnedPayload = $this->rb->setBillingByGetAddress($this->govIdLegalCivic, "LEGAL");
         static::assertTrue($ReturnedPayload['customer']['governmentId'] == $this->govIdLegalCivic && $ReturnedPayload['customer']['address']['fullName'] == $this->govIdLegalFullname);
     }
@@ -1662,9 +1673,9 @@ class ResursBankTest extends TestCase
      * @param string $articleNumberOrId
      * @param string $description
      * @param string $unitAmountWithoutVat
-     * @param int    $vatPct
-     * @param null   $type
-     * @param int    $quantity
+     * @param int $vatPct
+     * @param null $type
+     * @param int $quantity
      */
     private function addRandomOrderLine(
         $articleNumberOrId = "Artikel",
@@ -1695,33 +1706,33 @@ class ResursBankTest extends TestCase
      */
     private function doMockSign($URL, $govId, $fail = false)
     {
-        $mockFormResponse  = $this->CURL->doGet($URL);
-        $MockDomain        = $this->NETWORK->getUrlDomain($this->CURL->getUrl());
-        $MockDomainPath    = null;
+        $mockFormResponse = $this->CURL->doGet($URL);
+        $MockDomain = $this->NETWORK->getUrlDomain($this->CURL->getUrl());
+        $MockDomainPath = null;
         $mockDomainPathDir = null;
         if (isset($MockDomain[2])) {
-            $MockDomainPath    = explode("/", $MockDomain[2]);
-            $mockDomainPathDir = isset($MockDomainPath[1]) && ! empty($MockDomainPath[1]) ? $MockDomainPath[1] : "";
+            $MockDomainPath = explode("/", $MockDomain[2]);
+            $mockDomainPathDir = isset($MockDomainPath[1]) && !empty($MockDomainPath[1]) ? $MockDomainPath[1] : "";
         }
 
         $MockForm = $this->CURL->getBody($mockFormResponse);
         if (method_exists($this->CURL, "getParsedDomById")) {
             $this->CURL->setDomContentParser(false);
             $mockFormDom = $this->CURL->getParsedDomById();
-            if (isset($mockFormDom['mockForm']['innerhtml']) && ! empty($mockFormDom['mockForm']['innerhtml'])) {
+            if (isset($mockFormDom['mockForm']['innerhtml']) && !empty($mockFormDom['mockForm']['innerhtml'])) {
                 $MockForm = $mockFormDom['mockForm']['innerhtml'];
             }
             $this->CURL->setDomContentParser(true);
         }
         //$SignBody           = $this->CURL->getBody( $this->CURL->doGet( $URL ) );
         $MockFormActionPath = preg_replace("/(.*?)action=\"(.*?)\"(.*)/is", '$2', $MockForm);
-        $MockFormToken      = preg_replace("/(.*?)resursToken\" value=\"(.*?)\"(.*)/is", '$2', $MockForm);
-        $mockFailUrl        = preg_replace("/(.*?)\"\/mock\/failAuth(.*?)\"(.*)/is", '$2', $MockForm);
+        $MockFormToken = preg_replace("/(.*?)resursToken\" value=\"(.*?)\"(.*)/is", '$2', $MockForm);
+        $mockFailUrl = preg_replace("/(.*?)\"\/mock\/failAuth(.*?)\"(.*)/is", '$2', $MockForm);
         $prepareMockSuccess = $MockDomain[1] . "://" . $MockDomain[0] . "/" . $mockDomainPathDir . "/" . $MockFormActionPath . "?resursToken=" . $MockFormToken . "&govId=" . $govId;
-        $prepareMockFail    = $MockDomain[1] . "://" . $MockDomain[0] . "/mock/failAuth" . $mockFailUrl;
-        if ( ! $fail) {
+        $prepareMockFail = $MockDomain[1] . "://" . $MockDomain[0] . "/mock/failAuth" . $mockFailUrl;
+        if (!$fail) {
             $ValidateUrl = $this->NETWORK->getUrlDomain($prepareMockSuccess, true);
-            if (isset($ValidateUrl[0]) && ! empty($ValidateUrl[0])) {
+            if (isset($ValidateUrl[0]) && !empty($ValidateUrl[0])) {
                 $mockSuccess = $this->CURL->getParsed($this->CURL->doGet($prepareMockSuccess));
                 if (isset($mockSuccess->_GET->success)) {
                     /** @noinspection PhpUndefinedFieldInspection */
@@ -1730,7 +1741,7 @@ class ResursBankTest extends TestCase
             }
         } else {
             $ValidateUrl = $this->NETWORK->getUrlDomain($prepareMockFail, true);
-            if ( ! empty($ValidateUrl[0])) {
+            if (!empty($ValidateUrl[0])) {
                 try {
                     $mockSuccess = $this->CURL->getParsed($this->CURL->doGet($prepareMockFail));
                 } catch (\Exception $e) {
@@ -1752,7 +1763,7 @@ class ResursBankTest extends TestCase
     function testCreatePaymentPayloadSimplified()
     {
         try {
-            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW);
+            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
             $this->rb->setBillingByGetAddress("198305147715");
             //$this->rb->setBillingAddress("Anders Andersson", "Anders", "Andersson", "Hamngatan 2", null, "Ingestans", "12345", "SE");
             $this->rb->setCustomer("198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL");
@@ -1809,7 +1820,7 @@ class ResursBankTest extends TestCase
     function testCreatePaymentPayloadOwnPayLoadIpManipulation1()
     {
         try {
-            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW);
+            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
             $this->rb->setBillingByGetAddress("198305147715");
             //$this->rb->setBillingAddress("Anders Andersson", "Anders", "Andersson", "Hamngatan 2", null, "Ingestans", "12345", "SE");
             $this->rb->setCustomer("198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL");
@@ -1818,21 +1829,21 @@ class ResursBankTest extends TestCase
 
             $this->rb->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
             try {
-                $myPayLoad = array(
-                    'paymentData' => array(
+                $myPayLoad = [
+                    'paymentData' => [
                         'waitForFraudControl' => false,
-                        'annulIfFrozen'       => false,
-                        'finalizeIfBooked'    => false,
-                        'customerIpAddress'   => "1.2.3.4.5.6.7.8.9.0.1.2.3.4.5.6.7.8.9.0.1.2.3.4.5.6.7.8.9.0.1.2.3.4.5.6.7.8.9.0.1.2.3.4.5.6.7.8.9.0.1.2.3.4.5.6.7.8.9.0.1.2.3.4.5.6.7.8.9.0"
-                    ),
-                    'metaData'    => array(
-                        'key'   => 'CustomerId',
-                        'value' => 'l33tCustomer'
-                    ),
-                    'customer'    => array(
-                        'yourCustomerId' => 'DatL33tCustomer'
-                    )
-                );
+                        'annulIfFrozen' => false,
+                        'finalizeIfBooked' => false,
+                        'customerIpAddress' => "1.2.3.4.5.6.7.8.9.0.1.2.3.4.5.6.7.8.9.0.1.2.3.4.5.6.7.8.9.0.1.2.3.4.5.6.7.8.9.0.1.2.3.4.5.6.7.8.9.0.1.2.3.4.5.6.7.8.9.0.1.2.3.4.5.6.7.8.9.0",
+                    ],
+                    'metaData' => [
+                        'key' => 'CustomerId',
+                        'value' => 'l33tCustomer',
+                    ],
+                    'customer' => [
+                        'yourCustomerId' => 'DatL33tCustomer',
+                    ],
+                ];
 
                 // Using myPayLoad will lead tgo FROZEN
                 $Payment = $this->rb->createPayment($this->availableMethods['invoice_natural'], $myPayLoad);
@@ -1850,7 +1861,7 @@ class ResursBankTest extends TestCase
     function testCreatePaymentPayloadOwnPayLoadIpManipulation2()
     {
         try {
-            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW);
+            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
             $this->rb->setBillingByGetAddress("198305147715");
             //$this->rb->setBillingAddress("Anders Andersson", "Anders", "Andersson", "Hamngatan 2", null, "Ingestans", "12345", "SE");
             $this->rb->setCustomer("198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL");
@@ -1860,21 +1871,21 @@ class ResursBankTest extends TestCase
 
             $this->rb->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
             try {
-                $myPayLoad = array(
-                    'paymentData' => array(
+                $myPayLoad = [
+                    'paymentData' => [
                         'waitForFraudControl' => false,
-                        'annulIfFrozen'       => false,
-                        'finalizeIfBooked'    => false,
-                        'customerIpAddress'   => "abcdefghijklmno"
-                    ),
-                    'metaData'    => array(
-                        'key'   => 'CustomerId',
-                        'value' => 'l33tCustomer'
-                    ),
-                    'customer'    => array(
-                        'yourCustomerId' => 'DatL33tCustomer'
-                    )
-                );
+                        'annulIfFrozen' => false,
+                        'finalizeIfBooked' => false,
+                        'customerIpAddress' => "abcdefghijklmno",
+                    ],
+                    'metaData' => [
+                        'key' => 'CustomerId',
+                        'value' => 'l33tCustomer',
+                    ],
+                    'customer' => [
+                        'yourCustomerId' => 'DatL33tCustomer',
+                    ],
+                ];
                 // Using myPayLoad will lead tgo FROZEN
                 $Payment = $this->rb->createPayment($this->availableMethods['invoice_natural'], $myPayLoad);
                 /** @noinspection PhpUndefinedFieldInspection */
@@ -1891,7 +1902,7 @@ class ResursBankTest extends TestCase
     function testCreatePaymentPayloadOwnPayLoadSpoofedIpFrozenWithFraudControl()
     {
         try {
-            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW);
+            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
             $this->rb->setBillingByGetAddress("198305147715");
             //$this->rb->setBillingAddress("Anders Andersson", "Anders", "Andersson", "Hamngatan 2", null, "Ingestans", "12345", "SE");
             $this->rb->setCustomer("198305147715", "0808080808", "0707070707", "test@test.com", "NATURAL");
@@ -1901,21 +1912,21 @@ class ResursBankTest extends TestCase
 
             $this->rb->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
             try {
-                $myPayLoad = array(
-                    'paymentData' => array(
+                $myPayLoad = [
+                    'paymentData' => [
                         'waitForFraudControl' => false,
-                        'annulIfFrozen'       => false,
-                        'finalizeIfBooked'    => false,
-                        'customerIpAddress'   => "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff"
-                    ),
-                    'metaData'    => array(
-                        'key'   => 'CustomerId',
-                        'value' => 'l33tCustomer'
-                    ),
-                    'customer'    => array(
-                        'yourCustomerId' => 'DatL33tCustomer'
-                    )
-                );
+                        'annulIfFrozen' => false,
+                        'finalizeIfBooked' => false,
+                        'customerIpAddress' => "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+                    ],
+                    'metaData' => [
+                        'key' => 'CustomerId',
+                        'value' => 'l33tCustomer',
+                    ],
+                    'customer' => [
+                        'yourCustomerId' => 'DatL33tCustomer',
+                    ],
+                ];
                 // Using myPayLoad will lead tgo FROZEN
                 $Payment = $this->rb->createPayment($this->availableMethods['invoice_natural'], $myPayLoad);
                 /** @noinspection PhpUndefinedFieldInspection */
@@ -1935,7 +1946,7 @@ class ResursBankTest extends TestCase
     function testCreatePaymentPayloadForcedSigningSimplified()
     {
         try {
-            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW);
+            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
             $this->rb->setBillingByGetAddress("198305147715");
             $this->rb->setCustomer(null, "0808080808", "0707070707", "test@test.com", "NATURAL");
             $this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null,
@@ -1953,7 +1964,7 @@ class ResursBankTest extends TestCase
                 /** @noinspection PhpUndefinedFieldInspection */
                 if ($Payment->bookPaymentStatus == "SIGNING") {
                     /** @noinspection PhpUndefinedFieldInspection */
-                    $signUrl  = $Payment->signingUrl;
+                    $signUrl = $Payment->signingUrl;
                     $signData = $this->doMockSign($signUrl, "198305147715");
                     /** @noinspection PhpUndefinedFieldInspection */
                     static::assertTrue($signData->success == "true");
@@ -1969,9 +1980,9 @@ class ResursBankTest extends TestCase
 
     function testCreatePaymentPayloadForcedSigningMultipleSimplified()
     {
-        $signData = array();
+        $signData = [];
         try {
-            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW);
+            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
             $this->rb->setBillingByGetAddress("198305147715");
             $this->rb->setCustomer(null, "0808080808", "0707070707", "test@test.com", "NATURAL");
             $this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null,
@@ -1991,7 +2002,7 @@ class ResursBankTest extends TestCase
                     /** @noinspection PhpUndefinedFieldInspection */
                     $signUrl = $Payment->signingUrl;
                     try {
-                        $signings              = 0;
+                        $signings = 0;
                         $signData[$signings++] = $this->doMockSign($signUrl, "198305147715");
                         $signData[$signings++] = $this->doMockSign($signUrl, "198305147715");
                         $signData[$signings++] = $this->doMockSign($signUrl, "198305147715");
@@ -2014,7 +2025,7 @@ class ResursBankTest extends TestCase
     function testCreatePaymentPayloadForcedSigningReUseMockFailSimplified()
     {
         try {
-            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW);
+            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
             $this->rb->setBillingByGetAddress("198305147715");
             $this->rb->setCustomer(null, "0808080808", "0707070707", "test@test.com", "NATURAL");
             $this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null,
@@ -2034,7 +2045,7 @@ class ResursBankTest extends TestCase
                     /** @noinspection PhpUndefinedFieldInspection */
                     $signUrl = $Payment->signingUrl;
                     try {
-                        $signings              = 0;
+                        $signings = 0;
                         $signData[$signings++] = $this->doMockSign($signUrl, "198305147715", true);
                         /** @noinspection PhpUnusedLocalVariableInspection */
                         $signData[$signings++] = $this->doMockSign($signUrl, "198305147715", true);
@@ -2054,7 +2065,7 @@ class ResursBankTest extends TestCase
 		try {
 			///// card_new
 
-			$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW );
+			$this->rb->setPreferredPaymentFlowService( RESURS_FLOW_TYPES::SIMPLIFIED_FLOW );
 			$this->rb->setBillingByGetAddress( "198305147715" );
 			$this->rb->setCustomer( null, "0808080808", "0707070707", "test@test.com", "NATURAL" );
 			$this->addRandomOrderLine( "Art " . rand( 1024, 2048 ), "Beskrivning " . rand( 2048, 4096 ), "0.80", 25, null, 10 );
@@ -2090,7 +2101,7 @@ class ResursBankTest extends TestCase
     function testCreatePaymentPayloadUseExecuteSimplified()
     {
         try {
-            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW);
+            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
             $this->rb->setBillingByGetAddress("198305147715");
             $this->rb->setCustomer(null, "0808080808", "0707070707", "test@test.com", "NATURAL");
             $this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25, null,
@@ -2124,7 +2135,7 @@ class ResursBankTest extends TestCase
     function testCreatePaymentPayloadUseExecuteResursCheckout()
     {
         try {
-            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT);
+            $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
             $this->rb->setBillingByGetAddress("198305147715");
             $this->rb->setCustomer(null, "0808080808", "0707070707", "test@test.com", "NATURAL");
             $this->addRandomOrderLine("Art " . rand(1024, 2048), "Beskrivning " . rand(2048, 4096), "0.80", 25,
@@ -2165,10 +2176,10 @@ class ResursBankTest extends TestCase
     }
 
     /**
-     * @param int    $orderLines
-     * @param int    $quantity
-     * @param int    $minAmount
-     * @param int    $maxAmount
+     * @param int $orderLines
+     * @param int $quantity
+     * @param int $minAmount
+     * @param int $maxAmount
      * @param string $govId
      *
      * @return array|null
@@ -2182,7 +2193,7 @@ class ResursBankTest extends TestCase
         $govId = '198305147715'
     ) {
         $Payment = null;
-        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW);
+        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
         $this->rb->setBillingByGetAddress($govId);
         $this->rb->setCustomer($govId, "0808080808", "0707070707", "test@test.com", "NATURAL");
         if ($orderLines > 0) {
@@ -2206,10 +2217,10 @@ class ResursBankTest extends TestCase
     }
 
     /**
-     * @param int    $orderLines
-     * @param int    $quantity
-     * @param int    $minAmount
-     * @param int    $maxAmount
+     * @param int $orderLines
+     * @param int $quantity
+     * @param int $minAmount
+     * @param int $maxAmount
      * @param string $govId
      *
      * @return mixed
@@ -2274,7 +2285,7 @@ class ResursBankTest extends TestCase
     {
         $paymentId = $this->getPaymentIdFromOrderByClientChoice();
         $this->rb->annulPayment($paymentId);
-        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_RESURS_CHECKOUT);
+        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
         $this->rb->addOrderLine("myExtraOrderLine-1", "One orderline added with additionalDebitOfPayment", 100, 25);
         $this->rb->addOrderLine("myExtraOrderLine-2", "One orderline added with additionalDebitOfPayment", 200, 25);
         static::assertTrue($this->rb->setAdditionalDebitOfPayment($paymentId));
@@ -2322,6 +2333,7 @@ class ResursBankTest extends TestCase
         } catch (\Exception $e) {
             // Exceptions that comes from this part of the system does not seem to generate any exception code.
             static::assertTrue($e->getCode() == 500 || $e->getCode() == \RESURS_EXCEPTIONS::UNKOWN_SOAP_EXCEPTION_CODE_ZERO);
+
             return;
         }
         static::fail("Test " . __FUNCTION__ . " got no proper assertion. This test SHOULD receive an exception from ecommerce (since negative values should not be allowed) but that never occured.");
@@ -2344,7 +2356,7 @@ class ResursBankTest extends TestCase
             100, 25);
         $this->rb->setAdditionalDebitOfPayment($paymentId);
         $merged = $this->rb->getPaymentSpecByStatus($paymentId);
-        $added  = 0;
+        $added = 0;
         foreach ($merged['AUTHORIZE'] as $articles) {
             if ($articles->artNo == "myAdditionalOrderLineFirst") {
                 $added++;
@@ -2375,7 +2387,7 @@ class ResursBankTest extends TestCase
             $this->rb->addOrderLine("myAdditionalOrderLine", "One orderline added with additionalDebitOfPayment", 105,
                 25);
             $this->rb->setAdditionalDebitOfPayment($paymentId);
-            $merged   = $this->rb->getPaymentSpecByStatus($paymentId);
+            $merged = $this->rb->getPaymentSpecByStatus($paymentId);
             $quantity = 0;
             foreach ($merged['AUTHORIZE'] as $articles) {
                 if ($articles->artNo == "myAdditionalOrderLine") {
@@ -2385,8 +2397,8 @@ class ResursBankTest extends TestCase
             static::assertEquals(2, $quantity);
         } catch (\Exception $e) {
             if ($e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID) {
-                if ( ! defined('SKIP_TEST')) {
-                    define('SKIP_TEST', array('skip' => 'aftershop'));
+                if (!defined('SKIP_TEST')) {
+                    define('SKIP_TEST', ['skip' => 'aftershop']);
                 }
                 static::markTestSkipped('Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)');
             } else {
@@ -2430,8 +2442,8 @@ class ResursBankTest extends TestCase
             static::assertTrue($this->rb->finalizePayment($paymentId));
         } catch (\Exception $e) {
             if ($e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID) {
-                if ( ! defined('SKIP_TEST')) {
-                    define('SKIP_TEST', array('skip' => 'aftershop'));
+                if (!defined('SKIP_TEST')) {
+                    define('SKIP_TEST', ['skip' => 'aftershop']);
                 }
                 static::markTestSkipped('Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)');
             } else {
@@ -2445,10 +2457,13 @@ class ResursBankTest extends TestCase
      */
     function testAfterShopSanitizer()
     {
-        $paymentId         = $this->getPaymentIdFromOrderByClientChoice(2);
-        $sanitizedShopSpec = $this->rb->sanitizeAfterShopSpec($paymentId,
-            RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_FINALIZE);
-        static::assertCount(2, $sanitizedShopSpec);
+        $expect = 2;        // When the above works, we expect 2
+        $paymentId = $this->getPaymentIdFromOrderByClientChoice(2);
+        $saneFinalize = $this->rb->sanitizeAfterShopSpec($paymentId, RESURS_AFTERSHOP_RENDER_TYPES::FINALIZE);
+        //$paymentId = '145000153';
+        //$saneAnnul = $this->rb->sanitizeAfterShopSpec($paymentId, RESURS_AFTERSHOP_RENDER_TYPES::ANNUL);
+        //$saneFinalAnnul = $this->rb->sanitizeAfterShopSpec($paymentId, (RESURS_AFTERSHOP_RENDER_TYPES::ANNUL | RESURS_AFTERSHOP_RENDER_TYPES::FINALIZE));
+        static::assertCount($expect, $saneFinalize);
     }
 
     /**
@@ -2467,7 +2482,7 @@ class ResursBankTest extends TestCase
         } catch (\Exception $e) {
             $previousException = $e->getPrevious();
             // $exceptionMessage = $e->getMessage();
-            static::assertTrue(isset($previousException->faultstring) && ! empty($previousException->faultstring));
+            static::assertTrue(isset($previousException->faultstring) && !empty($previousException->faultstring));
         }
     }
 
@@ -2487,12 +2502,12 @@ class ResursBankTest extends TestCase
             $this->rb->setAfterShopInvoiceExtRef("Test Testsson");
             try {
                 $finalizeResult = $this->rb->paymentFinalize($paymentId);
-                $testOrder      = $this->rb->getPaymentSpecCount($paymentId);
+                $testOrder = $this->rb->getPaymentSpecCount($paymentId);
                 static::assertTrue(($finalizeResult == 200 && $testOrder['AUTHORIZE'] == 2 && $testOrder['DEBIT'] == 2));
             } catch (\Exception $e) {
                 if ($e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID) {
-                    if ( ! defined('SKIP_TEST')) {
-                        define('SKIP_TEST', array('skip' => 'aftershop'));
+                    if (!defined('SKIP_TEST')) {
+                        define('SKIP_TEST', ['skip' => 'aftershop']);
                     }
                     static::markTestSkipped('Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)');
                 } else {
@@ -2526,12 +2541,12 @@ class ResursBankTest extends TestCase
                 100, 25);
             try {
                 $finalizeResult = $this->rb->paymentFinalize($paymentId);
-                $testOrder      = $this->rb->getPaymentSpecCount($paymentId);
+                $testOrder = $this->rb->getPaymentSpecCount($paymentId);
                 static::assertTrue(($finalizeResult == 200 && $testOrder['AUTHORIZE'] == 2 && $testOrder['DEBIT'] == 1));
             } catch (\Exception $e) {
                 if ($e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID) {
-                    if ( ! defined('SKIP_TEST')) {
-                        define('SKIP_TEST', array('skip' => 'aftershop'));
+                    if (!defined('SKIP_TEST')) {
+                        define('SKIP_TEST', ['skip' => 'aftershop']);
                     }
                     static::markTestSkipped('Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)');
                 } else {
@@ -2564,14 +2579,14 @@ class ResursBankTest extends TestCase
                 'st', 'ORDER_LINE', 2);
             try {
                 $finalizeResult = $this->rb->paymentFinalize($paymentId);
-                $countOrder     = $this->rb->getPaymentSpecCount($paymentId);
-                $testOrder      = $this->rb->getPaymentSpecByStatus($paymentId);
+                $countOrder = $this->rb->getPaymentSpecCount($paymentId);
+                $testOrder = $this->rb->getPaymentSpecByStatus($paymentId);
                 // Also check the quantity on this
                 static::assertTrue(($finalizeResult == 200 && $countOrder['AUTHORIZE'] == 2 && $countOrder['DEBIT'] == 1 && (int)$testOrder['DEBIT']['0']->quantity == 2));
             } catch (\Exception $e) {
                 if ($e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID) {
-                    if ( ! defined('SKIP_TEST')) {
-                        define('SKIP_TEST', array('skip' => 'aftershop'));
+                    if (!defined('SKIP_TEST')) {
+                        define('SKIP_TEST', ['skip' => 'aftershop']);
                     }
                     static::markTestSkipped('Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)');
                 } else {
@@ -2598,21 +2613,21 @@ class ResursBankTest extends TestCase
         $paymentId = $this->getPaymentIdFromOrderByClientChoice(1);
         if ($this->resetConnection()) {
             $this->rb->setAfterShopInvoiceExtRef("Test Testsson");
-            $newArray = array(
-                'artNo'                => 'myAdditionalManualOrderLine',
-                'description'          => "One orderline added with addOrderLine",
+            $newArray = [
+                'artNo' => 'myAdditionalManualOrderLine',
+                'description' => "One orderline added with addOrderLine",
                 'unitAmountWithoutVat' => 100,
-                'vatPct'               => 25,
-                'quantity'             => 1
-            );
+                'vatPct' => 25,
+                'quantity' => 1,
+            ];
             try {
                 $finalizeResult = $this->rb->paymentFinalize($paymentId, $newArray);
-                $testOrder      = $this->rb->getPaymentSpecCount($paymentId);
+                $testOrder = $this->rb->getPaymentSpecCount($paymentId);
                 static::assertTrue(($finalizeResult == 200 && $testOrder['AUTHORIZE'] == 2 && $testOrder['DEBIT'] == 1));
             } catch (\Exception $e) {
                 if ($e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID) {
-                    if ( ! defined('SKIP_TEST')) {
-                        define('SKIP_TEST', array('skip' => 'aftershop'));
+                    if (!defined('SKIP_TEST')) {
+                        define('SKIP_TEST', ['skip' => 'aftershop']);
                     }
                     static::markTestSkipped('Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)');
                 } else {
@@ -2640,30 +2655,30 @@ class ResursBankTest extends TestCase
         $paymentId = $this->getPaymentIdFromOrderByClientChoice(1);
         if ($this->resetConnection()) {
             $this->rb->setAfterShopInvoiceExtRef("Test Testsson");
-            $orderLineArray = array(
-                array(
-                    'artNo'                => 'myAdditionalManualFirstOrderLine',
-                    'description'          => "One orderline added with addOrderLine",
+            $orderLineArray = [
+                [
+                    'artNo' => 'myAdditionalManualFirstOrderLine',
+                    'description' => "One orderline added with addOrderLine",
                     'unitAmountWithoutVat' => 100,
-                    'vatPct'               => 25,
-                    'quantity'             => 1
-                ),
-                array(
-                    'artNo'                => 'myAdditionalManualSecondOrderLine',
-                    'description'          => "One orderline added with addOrderLine",
+                    'vatPct' => 25,
+                    'quantity' => 1,
+                ],
+                [
+                    'artNo' => 'myAdditionalManualSecondOrderLine',
+                    'description' => "One orderline added with addOrderLine",
                     'unitAmountWithoutVat' => 100,
-                    'vatPct'               => 25,
-                    'quantity'             => 1
-                ),
-            );
+                    'vatPct' => 25,
+                    'quantity' => 1,
+                ],
+            ];
             try {
                 $finalizeResult = $this->rb->paymentFinalize($paymentId, $orderLineArray);
-                $testOrder      = $this->rb->getPaymentSpecCount($paymentId);
+                $testOrder = $this->rb->getPaymentSpecCount($paymentId);
                 static::assertTrue(($finalizeResult == 200 && $testOrder['AUTHORIZE'] == 3 && $testOrder['DEBIT'] == 2));
             } catch (\Exception $e) {
                 if ($e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID) {
-                    if ( ! defined('SKIP_TEST')) {
-                        define('SKIP_TEST', array('skip' => 'aftershop'));
+                    if (!defined('SKIP_TEST')) {
+                        define('SKIP_TEST', ['skip' => 'aftershop']);
                     }
                     static::markTestSkipped('Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)');
                 } else {
@@ -2690,22 +2705,22 @@ class ResursBankTest extends TestCase
         $paymentId = $this->getPaymentIdFromOrderByClientChoice(1);
         if ($this->resetConnection()) {
             $this->rb->setAfterShopInvoiceExtRef("Test Testsson");
-            $newArray = array(
-                'artNo'                => 'myAdditionalMismatchingOrderLine',
-                'description'          => "One orderline added with addOrderLine",
+            $newArray = [
+                'artNo' => 'myAdditionalMismatchingOrderLine',
+                'description' => "One orderline added with addOrderLine",
                 'unitAmountWithoutVat' => 101,
-                'vatPct'               => 25,
-                'quantity'             => 2
-            );
+                'vatPct' => 25,
+                'quantity' => 2,
+            ];
             try {
                 $finalizeResult = $this->rb->paymentFinalize($paymentId, $newArray);
-                $countOrder     = $this->rb->getPaymentSpecCount($paymentId);
-                $testOrder      = $this->rb->getPaymentSpecByStatus($paymentId);
+                $countOrder = $this->rb->getPaymentSpecCount($paymentId);
+                $testOrder = $this->rb->getPaymentSpecByStatus($paymentId);
                 static::assertTrue(($finalizeResult == 200 && $countOrder['AUTHORIZE'] == 2 && $countOrder['DEBIT'] == 1 && (int)$testOrder['DEBIT']['0']->quantity == 2));
             } catch (\Exception $e) {
                 if ($e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID) {
-                    if ( ! defined('SKIP_TEST')) {
-                        define('SKIP_TEST', array('skip' => 'aftershop'));
+                    if (!defined('SKIP_TEST')) {
+                        define('SKIP_TEST', ['skip' => 'aftershop']);
                     }
                     static::markTestSkipped('Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)');
                 } else {
@@ -2755,12 +2770,12 @@ class ResursBankTest extends TestCase
 
             $this->rb->setAfterShopInvoiceExtRef("Test Testsson");
             $cancellationResult = $this->rb->paymentCancel($paymentId);
-            $result             = $this->rb->getPaymentSpecCount($paymentId);
+            $result = $this->rb->getPaymentSpecCount($paymentId);
             static::assertTrue($cancellationResult && $result['AUTHORIZE'] == 4 && $result['DEBIT'] == 2 && $result['CREDIT'] == 2 && $result['ANNUL'] == 2);
         } catch (\Exception $e) {
             if ($e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID) {
-                if ( ! defined('SKIP_TEST')) {
-                    define('SKIP_TEST', array('skip' => 'aftershop'));
+                if (!defined('SKIP_TEST')) {
+                    define('SKIP_TEST', ['skip' => 'aftershop']);
                 }
                 static::markTestSkipped('Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)');
             } else {
@@ -2790,8 +2805,8 @@ class ResursBankTest extends TestCase
             static::assertTrue($result['AUTHORIZE'] == 3 && $result['DEBIT'] == 3 && $result['CREDIT'] == 1 && $result['ANNUL'] == 0);
         } catch (\Exception $e) {
             if ($e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID) {
-                if ( ! defined('SKIP_TEST')) {
-                    define('SKIP_TEST', array('skip' => 'aftershop'));
+                if (!defined('SKIP_TEST')) {
+                    define('SKIP_TEST', ['skip' => 'aftershop']);
                 }
                 static::markTestSkipped('Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)');
             } else {
@@ -2851,8 +2866,8 @@ class ResursBankTest extends TestCase
         }
 
         if ($skipInvoiceTest) {
-            if ( ! defined('SKIP_TEST')) {
-                define('SKIP_TEST', array('skip' => 'aftershop'));
+            if (!defined('SKIP_TEST')) {
+                define('SKIP_TEST', ['skip' => 'aftershop']);
             }
         }
     }
@@ -2883,22 +2898,22 @@ class ResursBankTest extends TestCase
         $this->rb->setAfterShopInvoiceExtRef("Test Testsson");
         $this->rb->addOrderLine("debitLine-1", "One orderline added with addOrderLine", 100, 25);
 
-        $newArray = array(
-            array(
-                'artNo'                => 'authLine-2',
-                'description'          => "One orderline added with addOrderLine",
+        $newArray = [
+            [
+                'artNo' => 'authLine-2',
+                'description' => "One orderline added with addOrderLine",
                 'unitAmountWithoutVat' => 100,
-                'vatPct'               => 25,
-                'quantity'             => 2
-            ),
-            array(
-                'artNo'                => 'nonExistentValidatedAndRemovedArticle',
-                'description'          => 'This article will never reach the cancellation rowspec',
+                'vatPct' => 25,
+                'quantity' => 2,
+            ],
+            [
+                'artNo' => 'nonExistentValidatedAndRemovedArticle',
+                'description' => 'This article will never reach the cancellation rowspec',
                 'unitAmountWithoutVat' => 200,
-                'vatPct'               => 25,
-                'quantity'             => 2
-            ),
-        );
+                'vatPct' => 25,
+                'quantity' => 2,
+            ],
+        ];
 
         try {
             $cancellationResult = $this->rb->paymentCancel($paymentId, $newArray);
@@ -2935,8 +2950,8 @@ class ResursBankTest extends TestCase
             $this->rb->paymentAnnul($paymentId);
         } catch (\Exception $e) {
             if ($e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID) {
-                if ( ! defined('SKIP_TEST')) {
-                    define('SKIP_TEST', array('skip' => 'aftershop'));
+                if (!defined('SKIP_TEST')) {
+                    define('SKIP_TEST', ['skip' => 'aftershop']);
                 }
                 static::markTestSkipped('Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)');
             } else {
@@ -2945,10 +2960,8 @@ class ResursBankTest extends TestCase
 
         }
 
-
-        //$this->resetConnection();
         $remainArray = $this->rb->sanitizeAfterShopSpec($paymentId,
-            (RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_ANNUL + RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_CREDIT));
+            (RESURS_AFTERSHOP_RENDER_TYPES::ANNUL + RESURS_AFTERSHOP_RENDER_TYPES::CREDIT));
         static::assertCount(2, $remainArray);
     }
 
@@ -2991,8 +3004,8 @@ class ResursBankTest extends TestCase
             static::assertTrue($paymentSpecCount['AUTHORIZE'] == 4 && $paymentSpecCount['DEBIT'] == 2 && $paymentSpecCount['CREDIT'] == 2 && $paymentSpecCount['ANNUL'] == 2);
         } catch (\Exception $e) {
             if ($e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID) {
-                if ( ! defined('SKIP_TEST')) {
-                    define('SKIP_TEST', array('skip' => 'aftershop'));
+                if (!defined('SKIP_TEST')) {
+                    define('SKIP_TEST', ['skip' => 'aftershop']);
                 }
                 static::markTestSkipped('Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)');
             } else {
@@ -3032,8 +3045,8 @@ class ResursBankTest extends TestCase
             static::assertTrue($paymentSpecCount['AUTHORIZE'] == 4 && $paymentSpecCount['DEBIT'] == 2 && $paymentSpecCount['CREDIT'] == 2 && $paymentSpecCount['ANNUL'] == 2);
         } catch (\Exception $e) {
             if ($e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID) {
-                if ( ! defined('SKIP_TEST')) {
-                    define('SKIP_TEST', array('skip' => 'aftershop'));
+                if (!defined('SKIP_TEST')) {
+                    define('SKIP_TEST', ['skip' => 'aftershop']);
                 }
                 static::markTestSkipped('Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)');
             } else {
@@ -3082,8 +3095,8 @@ class ResursBankTest extends TestCase
             static::assertTrue($paymentSpecCount['AUTHORIZE'] == 4 && $paymentSpecCount['DEBIT'] == 2 && $paymentSpecCount['CREDIT'] == 2 && $paymentSpecCount['ANNUL'] == 2);
         } catch (\Exception $e) {
             if ($e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID) {
-                if ( ! defined('SKIP_TEST')) {
-                    define('SKIP_TEST', array('skip' => 'aftershop'));
+                if (!defined('SKIP_TEST')) {
+                    define('SKIP_TEST', ['skip' => 'aftershop']);
                 }
                 static::markTestSkipped('Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)');
             } else {
@@ -3131,10 +3144,10 @@ class ResursBankTest extends TestCase
     public function testGitTags()
     {
         $tagVersions = $this->rb->getVersionsByGitTag();
-        $currentTag  = array_pop($tagVersions);
-        $lastTag     = array_pop($tagVersions);
-        $notCurrent  = $this->rb->getIsCurrent($lastTag);
-        $perfect     = $this->rb->getIsCurrent($currentTag);
+        $currentTag = array_pop($tagVersions);
+        $lastTag = array_pop($tagVersions);
+        $notCurrent = $this->rb->getIsCurrent($lastTag);
+        $perfect = $this->rb->getIsCurrent($currentTag);
         static::assertTrue($notCurrent === false && $perfect === true);
     }
 
@@ -3143,7 +3156,7 @@ class ResursBankTest extends TestCase
      */
     public function testHostedCountryCode()
     {
-        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW);
+        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::HOSTED_FLOW);
         $this->rb->setBillingAddress(
             "Given Name",
             "Given",
@@ -3176,11 +3189,11 @@ class ResursBankTest extends TestCase
         try {
             $this->rb->paymentFinalize($paymentId);
             static::assertTrue($this->rb->getOrderStatusByPayment($paymentId,
-                    RESURS_CALLBACK_TYPES::CALLBACK_TYPE_FINALIZATION) === RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED);
+                    RESURS_CALLBACK_TYPES::FINALIZATION) === RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED);
         } catch (\Exception $e) {
             if ($e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID) {
-                if ( ! defined('SKIP_TEST')) {
-                    define('SKIP_TEST', array('skip' => 'aftershop'));
+                if (!defined('SKIP_TEST')) {
+                    define('SKIP_TEST', ['skip' => 'aftershop']);
                 }
                 static::markTestSkipped('Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)');
             } else {
@@ -3200,7 +3213,7 @@ class ResursBankTest extends TestCase
         $paymentId = $this->getPaymentIdFromOrderByClientChoice(1, 1, 1000, 2000);
         //$this->rb->paymentFinalize( $paymentId );
         static::assertTrue($this->rb->getOrderStatusByPayment($paymentId,
-                RESURS_CALLBACK_TYPES::CALLBACK_TYPE_FINALIZATION) === RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED);
+                RESURS_CALLBACK_TYPES::FINALIZATION) === RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED);
     }
 
     /**
@@ -3215,11 +3228,11 @@ class ResursBankTest extends TestCase
         try {
             $this->rb->paymentAnnul($paymentId);
             static::assertTrue($this->rb->getOrderStatusByPayment($paymentId,
-                    RESURS_CALLBACK_TYPES::CALLBACK_TYPE_ANNULMENT) === RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_ANNULLED);
+                    RESURS_CALLBACK_TYPES::ANNULMENT) === RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_ANNULLED);
         } catch (\Exception $e) {
             if ($e->getCode() == RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID) {
-                if ( ! defined('SKIP_TEST')) {
-                    define('SKIP_TEST', array('skip' => 'aftershop'));
+                if (!defined('SKIP_TEST')) {
+                    define('SKIP_TEST', ['skip' => 'aftershop']);
                 }
                 static::markTestSkipped('Test skipped due to ALREADY_EXISTS_INVOICE_ID (did someone reindex elastic?)');
             } else {
@@ -3236,7 +3249,7 @@ class ResursBankTest extends TestCase
         // Unfreeze after 10m
         $paymentId = $this->getPaymentIdFromOrderByClientChoice(1, 1, 1000, 2000, '198101010000');
         static::assertTrue($this->rb->getOrderStatusByPayment($paymentId,
-                RESURS_CALLBACK_TYPES::CALLBACK_TYPE_BOOKED) == RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING);
+                RESURS_CALLBACK_TYPES::BOOKED) == RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING);
     }
 
     /**
@@ -3246,7 +3259,7 @@ class ResursBankTest extends TestCase
     {
         $paymentId = $this->getPaymentIdFromOrderByClientChoice(1, 1, 1000, 2000, '198305147715');
         static::assertTrue($this->rb->getOrderStatusByPayment($paymentId,
-                RESURS_CALLBACK_TYPES::CALLBACK_TYPE_UNFREEZE) == RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PROCESSING);
+                RESURS_CALLBACK_TYPES::UNFREEZE) == RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PROCESSING);
     }
 
     /**
@@ -3256,7 +3269,7 @@ class ResursBankTest extends TestCase
     {
         $paymentId = $this->getPaymentIdFromOrderByClientChoice(1, 1, 1000, 2000, '198305147715');
         static::assertTrue($this->rb->getOrderStatusByPayment($paymentId,
-                RESURS_CALLBACK_TYPES::CALLBACK_TYPE_AUTOMATIC_FRAUD_CONTROL,
+                RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL,
                 'THAWED') == RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PROCESSING);
     }
 
@@ -3267,7 +3280,7 @@ class ResursBankTest extends TestCase
     {
         $paymentId = $this->getPaymentIdFromOrderByClientChoice(1, 1, 1000, 2000, '198209123705');
         static::assertTrue($this->rb->getOrderStatusByPayment($paymentId,
-                RESURS_CALLBACK_TYPES::CALLBACK_TYPE_AUTOMATIC_FRAUD_CONTROL,
+                RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL,
                 'FROZEN') == RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING);
     }
 
@@ -3291,7 +3304,7 @@ class ResursBankTest extends TestCase
      */
     public function testHostedThreeFlags()
     {
-        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_HOSTED_FLOW);
+        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::HOSTED_FLOW);
         $this->rb->setBillingAddress(
             "Given Name",
             "Given",
@@ -3318,7 +3331,7 @@ class ResursBankTest extends TestCase
      */
     public function testSimplifiedThreeFlags()
     {
-        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW);
+        $this->rb->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
         $this->rb->setBillingAddress(
             "Given Name",
             "Given",
@@ -3350,7 +3363,7 @@ class ResursBankTest extends TestCase
             $isolatedRB->getPaymentMethods();
         } catch (\Exception $failException) {
             $exceptionMessage = $failException->getMessage();
-            $authTest         = (preg_match("/401 unauthorized/i", $exceptionMessage) ? true : false);
+            $authTest = (preg_match("/401 unauthorized/i", $exceptionMessage) ? true : false);
             static::assertTrue($authTest);
         }
     }

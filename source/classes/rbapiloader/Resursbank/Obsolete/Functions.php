@@ -1,6 +1,7 @@
 <?php
 
-if (class_exists('Resursbank_Obsolete_Functions', ECOM_CLASS_EXISTS_AUTOLOAD) && class_exists('Resursbank\RBEcomPHP\Resursbank_Obsolete_Functions',
+if (class_exists('Resursbank_Obsolete_Functions',
+        ECOM_CLASS_EXISTS_AUTOLOAD) && class_exists('Resursbank\RBEcomPHP\Resursbank_Obsolete_Functions',
         ECOM_CLASS_EXISTS_AUTOLOAD)) {
     return;
 }
@@ -74,7 +75,7 @@ class Resursbank_Obsolete_Functions
      * @deprecated 1.0.1
      * @deprecated 1.1.1
      */
-    public $Include = array('ConfigurationService', 'SimplifiedShopFlowService', 'AfterShopFlowService');
+    public $Include = ['ConfigurationService', 'SimplifiedShopFlowService', 'AfterShopFlowService'];
     /**
      * @var \stdClass $configurationService
      * @deprecated Calls to this service class are no longer in use
@@ -144,11 +145,11 @@ class Resursbank_Obsolete_Functions
      * @deprecated 1.0.1 CURL library handles most of it
      * @deprecated 1.1.1 CURL library handles most of it
      */
-    public $sslPemLocations = array(
+    public $sslPemLocations = [
         '/etc/ssl/certs/cacert.pem',
         '/etc/ssl/certs/ca-certificates.crt',
-        '/usr/local/ssl/certs/cacert.pem'
-    );
+        '/usr/local/ssl/certs/cacert.pem',
+    ];
     /**
      * In tests being made with newer wsdl stubs, extended customer are surprisingly always best practice. It is however settable from here if we need to avoid this.
      *
@@ -257,12 +258,12 @@ class Resursbank_Obsolete_Functions
      * @var array Files to look for in class directories, to find RB
      * @deprecated Removed in 1.2
      */
-    private $classPathFiles = array(
+    private $classPathFiles = [
         '/simplifiedshopflowservice-client/Resurs_SimplifiedShopFlowService.php',
         '/configurationservice-client/Resurs_ConfigurationService.php',
         '/aftershopflowservice-client/Resurs_AfterShopFlowService.php',
-        '/shopflowservice-client/Resurs_ShopFlowService.php'
-    );
+        '/shopflowservice-client/Resurs_ShopFlowService.php',
+    ];
 
     /**
      * Stored array for booked payments
@@ -270,7 +271,7 @@ class Resursbank_Obsolete_Functions
      * @deprecated 1.0.2
      * @deprecated 1.1.2
      */
-    private $bookData = array();
+    private $bookData = [];
     /**
      * bookedCallbackUrl that may be set in runtime on bookpayments - has to be null or a string with 1 character or more
      * @var string
@@ -381,12 +382,12 @@ class Resursbank_Obsolete_Functions
     ///// Template rules (Which is a clone from Resurs Bank deprecated shopflow that defines what customer data fields that is required while running simplified flow)
     ///// In the deprecated shopFlow, this was the default behaviour.
     /** @var array Form template rules handled */
-    private $formTemplateRuleArray = array();
+    private $formTemplateRuleArray = [];
     /**
      * Array rules set, baed by getTemplateFieldsByMethodType()
      * @var array
      */
-    private $templateFieldsByMethodResponse = array();
+    private $templateFieldsByMethodResponse = [];
 
 
     ///// Configuration system (deprecated)
@@ -424,7 +425,7 @@ class Resursbank_Obsolete_Functions
      * @deprecated 1.0.1
      * @deprecated 1.1.1
      */
-    private $configurationArray = array();
+    private $configurationArray = [];
     /**
      * Time in seconds when cache should be considered outdated and needs to get updated with new fresh data
      * @var int
@@ -432,11 +433,6 @@ class Resursbank_Obsolete_Functions
      * @deprecated 1.1.1
      */
     private $configurationCacheTimeout = 3600;
-
-
-
-
-
 
 
     protected $parent;
@@ -513,11 +509,12 @@ class Resursbank_Obsolete_Functions
     public function setCallback(
         $callbackType = RESURS_CALLBACK_TYPES::CALLBACK_TYPE_NOT_SET,
         $callbackUriTemplate = "",
-        $callbackDigest = array(),
+        $callbackDigest = [],
         $basicAuthUserName = null,
         $basicAuthPassword = null
     ) {
-        return $this->parent->setRegisterCallback($callbackType, $callbackUriTemplate, $callbackDigest, $basicAuthUserName,
+        return $this->parent->setRegisterCallback($callbackType, $callbackUriTemplate, $callbackDigest,
+            $basicAuthUserName,
             $basicAuthPassword);
     }
 
@@ -591,10 +588,10 @@ class Resursbank_Obsolete_Functions
      */
     public function bookPayment(
         $paymentMethodIdOrPaymentReference = '',
-        $bookData = array(),
+        $bookData = [],
         $getReturnedObjectAsStd = true,
         $keepReturnObject = false,
-        $externalParameters = array()
+        $externalParameters = []
     ) {
         return $this->parent->createPayment($paymentMethodIdOrPaymentReference, $bookData);
     }
@@ -621,10 +618,10 @@ class Resursbank_Obsolete_Functions
      */
     private function bookPaymentBulk(
         $paymentMethodId = '',
-        $bookData = array(),
+        $bookData = [],
         $getReturnedObjectAsStd = true,
         $keepReturnObject = false,
-        $externalParameters = array()
+        $externalParameters = []
     ) {
         if (empty($paymentMethodId)) {
             return new \stdClass();
@@ -645,7 +642,7 @@ class Resursbank_Obsolete_Functions
                 $this->isHostedFlow = true;
             }
         }
-        $skipSteps = array();
+        $skipSteps = [];
         /* Special rule preparation for Resurs Bank hosted flow */
         if ($this->getBookParameter('type',
                 $externalParameters) == "hosted" || (isset($bookData['type']) && $bookData['type'] == "hosted")) {
@@ -672,28 +669,28 @@ class Resursbank_Obsolete_Functions
             $this->InitializeServices();
         }
         $this->updatePaymentdata($paymentMethodId,
-            isset($bookData['paymentData']) && is_array($bookData['paymentData']) && count($bookData['paymentData']) ? $bookData['paymentData'] : array());
+            isset($bookData['paymentData']) && is_array($bookData['paymentData']) && count($bookData['paymentData']) ? $bookData['paymentData'] : []);
         if (isset($bookData['specLine']) && is_array($bookData['specLine'])) {
-            $this->updateCart(isset($bookData['specLine']) ? $bookData['specLine'] : array());
+            $this->updateCart(isset($bookData['specLine']) ? $bookData['specLine'] : []);
         } else {
             // For omni and hosted flow, if specLine is not set
             if (isset($bookData['orderLines']) && is_array($bookData['orderLines'])) {
-                $this->updateCart(isset($bookData['orderLines']) ? $bookData['orderLines'] : array());
+                $this->updateCart(isset($bookData['orderLines']) ? $bookData['orderLines'] : []);
             }
         }
         $this->updatePaymentSpec($this->_paymentSpeclines);
         /* Prepare address data for hosted flow and simplified, ignore if we're on omni, where this data is not required */
         if (!isset($skipSteps['address'])) {
             if (isset($bookData['deliveryAddress'])) {
-                $addressArray = array(
+                $addressArray = [
                     'address' => $bookData['address'],
-                    'deliveryAddress' => $bookData['deliveryAddress']
-                );
-                $this->updateAddress(isset($addressArray) ? $addressArray : array(),
-                    isset($bookData['customer']) ? $bookData['customer'] : array());
+                    'deliveryAddress' => $bookData['deliveryAddress'],
+                ];
+                $this->updateAddress(isset($addressArray) ? $addressArray : [],
+                    isset($bookData['customer']) ? $bookData['customer'] : []);
             } else {
-                $this->updateAddress(isset($bookData['address']) ? $bookData['address'] : array(),
-                    isset($bookData['customer']) ? $bookData['customer'] : array());
+                $this->updateAddress(isset($bookData['address']) ? $bookData['address'] : [],
+                    isset($bookData['customer']) ? $bookData['customer'] : []);
             }
         }
         /* Prepare and collect data for a bookpayment - if the flow is simple */
@@ -815,7 +812,6 @@ class Resursbank_Obsolete_Functions
     }
 
 
-
     /**
      * Adds your client name to the current client name string which is used as User-Agent when communicating with ecommerce.
      *
@@ -834,7 +830,6 @@ class Resursbank_Obsolete_Functions
 
 
     /////////////////////////// EXTREMELY OUTDATED CODE BEGIN (THAT MIGHT NOT EVEN WORK ANYMORE SINCE WERE OUT OF WSDL)
-
 
 
     /////////////////////////// OUTDATED JSON METHODS
@@ -856,7 +851,7 @@ class Resursbank_Obsolete_Functions
      * @deprecated 1.1.2
      */
     public function toJsonByType(
-        $dataContainer = array(),
+        $dataContainer = [],
         $paymentMethodType = RESURS_FLOW_TYPES::FLOW_SIMPLIFIED_FLOW,
         $updateCart = false
     ) {
@@ -948,20 +943,20 @@ class Resursbank_Obsolete_Functions
                     $newDataContainer['shopUrl'] = $this->checkoutShopUrl;
                 }
 
-                $orderlineProps = array(
+                $orderlineProps = [
                     "artNo",
                     "vatPcs",
                     "vatPct",
                     "unitMeasure",
                     "quantity",
                     "description",
-                    "unitAmountWithoutVat"
-                );
+                    "unitAmountWithoutVat",
+                ];
                 /**
                  * Sanitizing orderlines in case it's an orderline conversion from a simplified shopflow.
                  */
                 if (isset($newDataContainer['orderLines']) && is_array($newDataContainer['orderLines'])) {
-                    $orderLineClean = array();
+                    $orderLineClean = [];
                     /*
                      * Single Orderline Compatibility: When an order line is not properly sent to the handler, it has to be converted to an indexed array first,
                      */
@@ -970,7 +965,7 @@ class Resursbank_Obsolete_Functions
                     }
                     if (isset($newDataContainer['orderLines']['artNo'])) {
                         $singleOrderLine = $newDataContainer['orderLines'];
-                        $newDataContainer['orderLines'] = array($singleOrderLine);
+                        $newDataContainer['orderLines'] = [$singleOrderLine];
                     }
                     unset($newDataContainer['customer'], $newDataContainer['paymentData']);
                     foreach ($newDataContainer['orderLines'] as $orderLineId => $orderLineArray) {
@@ -1010,9 +1005,9 @@ class Resursbank_Obsolete_Functions
                     /*
                      * Return orderLines only, if this function is called as an updateCart.
                      */
-                    $newDataContainer = array(
-                        'orderLines' => is_array($newDataContainer['orderLines']) ? $newDataContainer['orderLines'] : array()
-                    );
+                    $newDataContainer = [
+                        'orderLines' => is_array($newDataContainer['orderLines']) ? $newDataContainer['orderLines'] : [],
+                    ];
                 }
                 $this->jsonOmni = $newDataContainer;
             }
@@ -1057,7 +1052,7 @@ class Resursbank_Obsolete_Functions
      * @deprecated 1.0.8
      * @deprecated 1.1.8
      */
-    private function toJson($jsonData = array())
+    private function toJson($jsonData = [])
     {
         if (is_array($jsonData) || is_object($jsonData)) {
             $jsonData = json_encode($jsonData);
@@ -1161,18 +1156,18 @@ class Resursbank_Obsolete_Functions
         }
         $caCert = $this->getCertFile();
         $sslVerify = true;
-        $sslSetup = array();
+        $sslSetup = [];
         if (isset($this->sslVerify)) {
             $sslVerify = $this->sslVerify;
         }
         if (!empty($caCert)) {
-            $sslSetup = array(
+            $sslSetup = [
                 'cafile' => $caCert,
                 'verify_peer' => $sslVerify,
                 'verify_peer_name' => $sslVerify,
                 'verify_host' => $sslVerify,
-                'allow_self_signed' => true
-            );
+                'allow_self_signed' => true,
+            ];
         }
 
         return $sslSetup;
@@ -1193,9 +1188,9 @@ class Resursbank_Obsolete_Functions
      * @deprecated 1.0.8
      * @deprecated 1.1.8
      */
-    public function sslGetOptionsStream($optionsArray = array(), $selfContext = array())
+    public function sslGetOptionsStream($optionsArray = [], $selfContext = [])
     {
-        $streamContextOptions = array();
+        $streamContextOptions = [];
         $sslCorrection = $this->sslStreamContextCorrection();
         if (count($sslCorrection)) {
             $streamContextOptions['ssl'] = $this->sslStreamContextCorrection();
@@ -1321,7 +1316,7 @@ class Resursbank_Obsolete_Functions
      * @deprecated 1.0.8
      * @deprecated 1.1.8
      */
-    private function getDataObject($d = array(), $forceConversion = false, $preventConversion = false)
+    private function getDataObject($d = [], $forceConversion = false, $preventConversion = false)
     {
         if ($preventConversion) {
             return $d;
@@ -1334,7 +1329,7 @@ class Resursbank_Obsolete_Functions
             if (function_exists('json_decode') && function_exists('json_encode')) {
                 return json_decode(json_encode($d));
             }
-            $newArray = array();
+            $newArray = [];
             if (is_array($d) || is_object($d)) {
                 foreach ($d as $itemKey => $itemValue) {
                     if (is_array($itemValue)) {
@@ -1366,7 +1361,7 @@ class Resursbank_Obsolete_Functions
     {
         $hasGet = false;
         if (is_array($returnObject)) {
-            $parsedArray = array();
+            $parsedArray = [];
             foreach ($returnObject as $arrayName => $objectArray) {
                 $classMethods = get_class_methods($objectArray);
                 if (is_array($classMethods)) {
@@ -1392,7 +1387,7 @@ class Resursbank_Obsolete_Functions
             return $parsedArray;
         }
 
-        return array(); /* Fail with empty array, if there is no recursive array  */
+        return []; /* Fail with empty array, if there is no recursive array  */
     }
 
 
@@ -1426,7 +1421,7 @@ class Resursbank_Obsolete_Functions
      * @deprecated 1.0.1 Switching over to a more fresh API
      * @deprecated 1.1.1 Switching over to a more fresh API
      */
-    private function bookHasParameter($parameter = '', $externalParameters = array(), $getValue = false)
+    private function bookHasParameter($parameter = '', $externalParameters = [], $getValue = false)
     {
         if (is_array($externalParameters)) {
             if (isset($externalParameters[$parameter])) {
@@ -1459,7 +1454,7 @@ class Resursbank_Obsolete_Functions
      * @deprecated 1.0.1 Switching over to a more fresh API
      * @deprecated 1.1.1 Switching over to a more fresh API
      */
-    private function getBookParameter($parameter = '', $externalParameters = array())
+    private function getBookParameter($parameter = '', $externalParameters = [])
     {
         return $this->bookHasParameter($parameter, $externalParameters);
     }
@@ -1512,7 +1507,7 @@ class Resursbank_Obsolete_Functions
      */
     private function bookPaymentHosted(
         $paymentMethodId = '',
-        $bookData = array(),
+        $bookData = [],
         $getReturnedObjectAsStd = true,
         $keepReturnObject = false
     ) {
@@ -1566,7 +1561,7 @@ class Resursbank_Obsolete_Functions
      * @deprecated 1.0.2
      * @deprecated 1.1.2
      */
-    private function hostedError($hostedObject = array())
+    private function hostedError($hostedObject = [])
     {
         if (isset($hostedObject) && isset($hostedObject->exception) && isset($hostedObject->message)) {
             return $hostedObject->message;
@@ -1582,7 +1577,7 @@ class Resursbank_Obsolete_Functions
      * @deprecated 1.0.2
      * @deprecated 1.1.2
      */
-    private function hostedErrNo($hostedObject = array())
+    private function hostedErrNo($hostedObject = [])
     {
         if (isset($hostedObject) && isset($hostedObject->exception) && isset($hostedObject->status)) {
             return $hostedObject->status;
@@ -1687,7 +1682,7 @@ class Resursbank_Obsolete_Functions
      * @deprecated 1.1.2
      */
     public function prepareOmniFrame(
-        $bookData = array(),
+        $bookData = [],
         $orderReference = "",
         $omniCallType = RESURS_CHECKOUT_CALL_TYPES::METHOD_PAYMENTS
     ) {
@@ -1741,7 +1736,7 @@ class Resursbank_Obsolete_Functions
      * @deprecated 1.0.1
      * @deprecated 1.1.1
      */
-    public function getOmniFrame($omniResponse = array(), $ocShopInternalHandle = false)
+    public function getOmniFrame($omniResponse = [], $ocShopInternalHandle = false)
     {
         /*
 		 * As we are using TorneLIB Curl Library, the Resurs Checkout iframe will be loaded properly without those checks.
@@ -1833,7 +1828,7 @@ class Resursbank_Obsolete_Functions
      * @deprecated 1.0.2
      * @deprecated 1.1.2
      */
-    private function omniError($omniObject = array())
+    private function omniError($omniObject = [])
     {
         if (isset($omniObject) && isset($omniObject->exception) && isset($omniObject->message)) {
             return $omniObject->message;
@@ -1853,7 +1848,7 @@ class Resursbank_Obsolete_Functions
      * @deprecated 1.0.2
      * @deprecated 1.1.2
      */
-    private function omniErrNo($omniObject = array())
+    private function omniErrNo($omniObject = [])
     {
         if (isset($omniObject) && isset($omniObject->exception) && isset($omniObject->status)) {
             return $omniObject->status;
@@ -1895,7 +1890,7 @@ class Resursbank_Obsolete_Functions
      * @since 1.1.8
      * @deprecated Use updateCheckoutOrderLines() instead
      */
-    public function setCheckoutFrameOrderLines($paymentId = '', $orderLines = array())
+    public function setCheckoutFrameOrderLines($paymentId = '', $orderLines = [])
     {
         return $this->parent->updateCheckoutOrderLines($paymentId, $orderLines);
     }
@@ -1920,7 +1915,8 @@ class Resursbank_Obsolete_Functions
     /**
      * @return mixed
      */
-    public function getSslVerify() {
+    public function getSslVerify()
+    {
         return $this->sslVerify;
     }
 
@@ -1936,6 +1932,4 @@ class Resursbank_Obsolete_Functions
     {
         $this->allowObsoletePHP = $activate;
     }
-
-
 }
