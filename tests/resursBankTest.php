@@ -35,7 +35,6 @@ use TorneLIB\MODULE_SOAP;
 
 // Global test configuration section starts here
 require_once(__DIR__ . "/classes/ResursBankTestClass.php");
-require_once(__DIR__ . "/hooks.php");
 
 // Set up local user agent for identification with webservices
 if (!isset($_SERVER['HTTP_USER_AGENT'])) {
@@ -1215,7 +1214,8 @@ class resursBankTest extends TestCase
      * @test
      * @throws \Exception
      */
-    public function creditSomethingElse() {
+    public function creditSomethingElse()
+    {
         $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
         $paymentid = $payment->paymentId;
 
@@ -1242,7 +1242,7 @@ class resursBankTest extends TestCase
                     'CREDIT' => [
                         'Rabatt',
                         50,
-                    ]
+                    ],
                 ]
             )
         );
