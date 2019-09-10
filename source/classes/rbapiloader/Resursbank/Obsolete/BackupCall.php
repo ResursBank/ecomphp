@@ -3,7 +3,8 @@
 /**
  * Class Resursbank_Obsolete_BackupCall Not in use
  */
-class Resursbank_Obsolete_BackupCall {
+class Resursbank_Obsolete_BackupCall
+{
 
     /**
      * Method calls that should be passed directly to a webservice
@@ -25,7 +26,7 @@ class Resursbank_Obsolete_BackupCall {
      * @deprecated 1.0.8
      * @deprecated 1.1.8
      */
-    public function __call($func = null, $args = array())
+    public function __call($func = null, $args = [])
     {
         // Initializing wsdl if not done is required here
         $this->InitializeServices();
@@ -96,7 +97,7 @@ class Resursbank_Obsolete_BackupCall {
                 /* Issue #62975: Fixes empty responses from requests not containing a return-object */
                 if (empty($returnObject)) {
                     if ($returnAsArray) {
-                        return array();
+                        return [];
                     }
                 } else {
                     if ($returnAsArray) {
@@ -116,5 +117,4 @@ class Resursbank_Obsolete_BackupCall {
 
         return $returnObject;
     }
-
 }
