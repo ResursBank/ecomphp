@@ -402,6 +402,20 @@ class resursBankTest extends TestCase
     }
 
     /**
+     * @test
+     * @throws \Exception
+     */
+    public function getPaymentCached()
+    {
+        $payment = $this->generateSimpleSimplifiedInvoiceOrder(true);
+        if (isset($payment->paymentId)) {
+            $this->TEST->ECOM->getPayment($payment->paymentId, true);
+            $payment = $this->TEST->ECOM->getPayment($payment->paymentId, true);
+            static::assertTrue(isset($payment->cached) ? true : false);
+        }
+    }
+
+    /**
      * Only run this when emulating colliding orders in the woocommerce plugin.
      *
      * @param bool $noAssert

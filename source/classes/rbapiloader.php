@@ -239,6 +239,18 @@ class ResursBank
      */
     private $lastPaymentStored;
 
+    /**
+     * Last time for getPayment (when using cache requests).
+     *
+     * @var int $lastGetPaymentRequest time()
+     */
+    private $lastGetPaymentRequest = 0;
+
+    /**
+     * @var int $lastGetPaymentCacheTime Number of seconds.
+     */
+    private $lastGetPaymentCacheTime = 2;
+
     ///// Package related
     /**
      * Has the necessary services been initialized yet?
@@ -2970,6 +2982,20 @@ class ResursBank
     }
 
     /**
+     * @param int $keepCacheTimeInSeconds
+     */
+    public function setPaymentCacheTime($keepCacheTimeInSeconds = 2) {
+        $this->lastGetPaymentCacheTime = $keepCacheTimeInSeconds;
+    }
+
+    /**
+     * @return int
+     */
+    public function getPaymentCacheTime() {
+        return $this->lastGetPaymentCacheTime;
+    }
+
+    /**
      * getPayment - Retrieves detailed information about a payment
      *
      * As of 1.3.13, SOAP has higher priority than REST. This might be a breaking change, since
@@ -2982,9 +3008,9 @@ class ResursBank
      *      404 is thrown when errors could not be fetched
      *
      * @param string $paymentId
-     *
+     * @param bool $cached Try fetch cached data before going for livedata.
      * @return array|mixed|null
-     * @throws \Exception
+     * @throws \ResursException
      * @since 1.0.1
      * @since 1.1.1
      * @since 1.0.31 Refactored from this version
@@ -2992,9 +3018,18 @@ class ResursBank
      * @since 1.2.4 Refactored from this version
      * @since 1.3.4 Refactored from this version
      */
-    public function getPayment($paymentId = '')
+    public function getPayment($paymentId = '', $cached = false)
     {
         $this->InitializeServices();
+        $rested = false;
+
+        if ($cached && is_object($this->lastPaymentStored)) {
+            $lastRequest = time() - $this->lastGetPaymentRequest;
+            if ($lastRequest <= $this->lastGetPaymentCacheTime) {
+                $this->lastPaymentStored->cached = true;
+                return $this->lastPaymentStored;
+            }
+        }
 
         /**
          * As REST based exceptions is more unsafe than the SOAP responses we use the SOAP as default method to get
@@ -3007,7 +3042,9 @@ class ResursBank
         if ($this->isFlag('GET_PAYMENT_BY_REST') || !$this->SOAP_AVAILABLE) {
             // This will ALWAYS run if SOAP is unavailable
             try {
-                return ($this->lastPaymentStored = $this->getPaymentByRest($paymentId));
+                $rested = true;
+                $this->lastPaymentStored = $this->getPaymentByRest($paymentId);
+                $return = $this->lastPaymentStored;
             } catch (\ResursException $e) {
                 // 3 = The order does not exist, default REST error.
                 // If we for some reason get 404 errors here, the error should be retrown as 3.
@@ -3019,12 +3056,19 @@ class ResursBank
             }
         }
 
-        try {
-            return ($this->lastPaymentStored = $this->getPaymentBySoap($paymentId));
-        } catch (Exception $e) {
-            // 8 = REFERENCED_DATA_DONT_EXISTS
-            throw $e;
+        if (!$rested) {
+            try {
+                $this->lastPaymentStored = $this->getPaymentBySoap($paymentId);
+                $return = $this->lastPaymentStored;
+            } catch (Exception $e) {
+                // 8 = REFERENCED_DATA_DONT_EXISTS
+                throw $e;
+            }
         }
+
+        $this->lastGetPaymentRequest = time();
+
+        return $return;
     }
 
     /**
