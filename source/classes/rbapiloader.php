@@ -8,7 +8,7 @@
  * @author  Resurs Bank Ecommerce
  *          /home/thorne/dev/Resurs/ecomphp/1.1/source/classes/rbapiloader.php<ecommerce.support@resurs.se>
  * @branch  1.3
- * @version 1.3.22
+ * @version 1.3.23
  * @link    https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link    https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @link    https://test.resurs.com/docs/x/KAH1 EComPHP: Bitmasking features
@@ -59,10 +59,10 @@ use TorneLIB\NETCURL_POST_DATATYPES;
 
 // Globals starts here
 if (!defined('ECOMPHP_VERSION')) {
-    define('ECOMPHP_VERSION', '1.3.22');
+    define('ECOMPHP_VERSION', '1.3.23');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20190903');
+    define('ECOMPHP_MODIFY_DATE', '20190909');
 }
 
 /**
@@ -117,7 +117,7 @@ class ResursBank
      *
      * @var array
      */
-    private $wsdlServices = array();
+    private $wsdlServices = [];
 
     ///// Shop related
     /**
@@ -172,6 +172,30 @@ class ResursBank
     private $desiredPaymentMethod;
 
     /**
+     * Keys to purge from a match-session in aftershop.
+     *
+     * @var array
+     * @since 1.3.23
+     */
+    private $getPaymentDefaultPurge = ['totalVatAmount', 'totalAmount', 'quantity', 'id'];
+
+    /**
+     * Notify internally if the keyset has been changed.
+     *
+     * @var bool
+     * @since 1.3.23
+     */
+    private $getPaymentDefaultPurgeSet = false;
+
+    /**
+     * Keys to keep original values for, in a match-session during aftershop.
+     *
+     * @var array
+     * @since 1.3.23
+     */
+    private $getPaymentDefaultUnPurge = [];
+
+    /**
      * Enable the possibility to push over User-Agent from customer into header (debugging related)
      * @var bool
      */
@@ -203,6 +227,12 @@ class ResursBank
      * @var string
      */
     private $realClientName = "EComPHP";
+    /**
+     * Flags up that client name has been set by user/developer/integrator
+     * @var bool
+     * @since 1.3.23
+     */
+    private $userSetClientName = false;
 
     /**
      * @var array Last stored getPayment()
@@ -246,13 +276,13 @@ class ResursBank
      * Handles created during in one http call are collected here
      * @var array
      */
-    private $CURL_HANDLE_COLLECTOR = array();
+    private $CURL_HANDLE_COLLECTOR = [];
     /**
      * Info and statistics from the CURL-client
      *
      * @var array
      */
-    private $curlStats = array();
+    private $curlStats = [];
     /**
      * Class for handling Network related checks
      * @var MODULE_NETWORK
@@ -287,7 +317,7 @@ class ResursBank
      * @since 1.0.1
      * @since 1.1.1
      */
-    private $Payload = array();
+    private $Payload = [];
     /**
      * Historical payload collection
      * @var array
@@ -296,7 +326,7 @@ class ResursBank
      * @since 1.2.4
      * @since 1.3.4
      */
-    private $PayloadHistory = array();
+    private $PayloadHistory = [];
     /**
      * If there is a chosen payment method, the information about it (received from Resurs Ecommerce)
      * will be stored here
@@ -313,7 +343,20 @@ class ResursBank
      * @since 1.0.2
      * @since 1.1.2
      */
-    private $SpecLines = array();
+    private $SpecLines = [];
+
+    /**
+     * Boolean value that has purpose when using addorderlines to customize aftershop.
+     * @var bool $speclineCustomization
+     * @since 1.3.23
+     */
+    private $speclineCustomization = false;
+
+    /**
+     * @var bool
+     * @since 1.3.23
+     */
+    private $skipAfterShopPaymentValidation = true;
 
     /// Environment URLs
     /**
@@ -407,7 +450,7 @@ class ResursBank
      * Internal configurable flags
      * @var array
      */
-    private $internalFlags = array();
+    private $internalFlags = [];
 
     /**
      * Include fraud statuses in orderstatus returns (manual inspection flagged)
@@ -434,7 +477,7 @@ class ResursBank
      * @since 1.0.1
      * @since 1.1.1
      */
-    private $ServiceRequestList = array(
+    private $ServiceRequestList = [
         'getPaymentMethods' => 'SimplifiedShopFlowService',
         'getAddress' => 'SimplifiedShopFlowService',
         'getAnnuityFactors' => 'SimplifiedShopFlowService',
@@ -453,7 +496,7 @@ class ResursBank
         'getRegisteredEventCallback' => 'ConfigurationService',
         'peekInvoiceSequence' => 'ConfigurationService',
         'setInvoiceSequence' => 'ConfigurationService',
-    );
+    ];
 
     /**
      * Validating URLs are made through a third party API and is disabled by default.
@@ -491,13 +534,13 @@ class ResursBank
      * Standard SOAP interface configurables.
      * @var array
      */
-    var $soapOptions = array(
+    var $soapOptions = [
         'exceptions' => 1,
         'connection_timeout' => 60,
         'login' => '',
         'password' => '',
         'trace' => 1,
-    );
+    ];
     /**
      * Don't want to use SSL verifiers in curl mode
      * @var bool
@@ -527,7 +570,7 @@ class ResursBank
      * Callback related variables
      * @var array
      */
-    private $digestKey = array();
+    private $digestKey = [];
     /**
      * Globally set digestive key
      * @var string
@@ -558,7 +601,7 @@ class ResursBank
      * List of available payment method names (for use with getPaymentMethodNames())
      * @var array
      */
-    private $paymentMethodNames = array();
+    private $paymentMethodNames = [];
     /**
      * Defines if the checkout should honor the customer field array
      * @var bool
@@ -606,7 +649,7 @@ class ResursBank
      * soon as transfers been made
      * @var array
      */
-    private $autoDebitableTypes = array();
+    private $autoDebitableTypes = [];
 
     /**
      * Discover payments that probably has been automatically debited - default is active
@@ -806,7 +849,7 @@ class ResursBank
         // suddenly, in some system, this data returns null without any reason
         $streamWrappers = @stream_get_wrappers();
         if (!is_array($streamWrappers)) {
-            $streamWrappers = array();
+            $streamWrappers = [];
         }
         if (!in_array('https', array_map("strtolower", $streamWrappers))) {
             /** @noinspection PhpFullyQualifiedNameUsageInspection */
@@ -842,6 +885,7 @@ class ResursBank
                 $inheritExtendedSoapWarnings = $this->CURL->getFlag('SOAPWARNINGS_EXTEND');
             }
         }
+
         if (!$reInitializeCurl) {
             return null;
         }
@@ -870,10 +914,13 @@ class ResursBank
             $this->CURL->setStoreSessionExceptions(true);
             $this->CURL->setAuthentication($this->soapOptions['login'], $this->soapOptions['password']);
             $this->CURL->setUserAgent($this->myUserAgent);
+            if (($cTimeout = $this->getFlag('CURL_TIMEOUT')) > 0) {
+                $this->CURL->setTimeout($cTimeout);
+            }
             $this->NETWORK = new MODULE_NETWORK();
             $this->BIT = $this->NETWORK->BIT;
         }
-        $this->wsdlServices = array();
+        $this->wsdlServices = [];
         foreach ($this->ServiceRequestList as $reqType => $reqService) {
             $this->wsdlServices[$reqService] = true;
         }
@@ -936,7 +983,7 @@ class ResursBank
      * @param bool $bulk
      * @param bool $reinitialize Get a brand new handle, in case of failures where old handles are inherited the wrong way.
      * @return array|mixed|MODULE_CURL
-     * @throws Exception
+     * @throws \Exception
      * @since 1.0.22
      * @since 1.1.22
      * @since 1.2.0
@@ -1167,6 +1214,10 @@ class ResursBank
      */
     public function setFlag($flagKey = '', $flagValue = null)
     {
+        if (($flagKey === 'CURL_TIMEOUT' || $flagKey === 'NETCURL_TIMEOUT') && intval($flagValue) > 0) {
+            $this->internalFlags[$flagKey] = $flagValue;
+        }
+
         if (is_null($this->CURL)) {
             $this->InitializeServices();
         }
@@ -1212,7 +1263,7 @@ class ResursBank
      */
     public function clearAllFlags()
     {
-        $this->internalFlags = array();
+        $this->internalFlags = [];
     }
 
     /**
@@ -1359,7 +1410,7 @@ class ResursBank
         }
 
         try {
-            $methods = $this->getPaymentMethods(array(), true);
+            $methods = $this->getPaymentMethods([], true);
             // Extra layer control. If there are no payment methods something is terribly wrong.
             if (is_array($methods) && count($methods)) {
                 $result = true;
@@ -1430,11 +1481,11 @@ class ResursBank
         $expectedHttpAcceptCode = "200",
         $expectedHttpErrorCode = "403"
     ) {
-        $this->validateExternalUrl = array(
+        $this->validateExternalUrl = [
             'url' => $url,
             'http_accept' => $expectedHttpAcceptCode,
             'http_error' => $expectedHttpErrorCode,
-        );
+        ];
     }
 
 
@@ -1488,16 +1539,16 @@ class ResursBank
     {
 
         $retp = null;
-        $characterListArray = array(
+        $characterListArray = [
             'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
             'abcdefghijklmnopqrstuvwxyz',
             '0123456789',
             '!@#$%*?',
-        );
+        ];
 
         // Set complexity to no limit if type 5 is requested
         if ($complexity == 5) {
-            $characterListArray = array();
+            $characterListArray = [];
             for ($unlim = 0; $unlim <= 255; $unlim++) {
                 $characterListArray[0] .= chr($unlim);
             }
@@ -1523,8 +1574,8 @@ class ResursBank
         if ($setmax > 0) {
             $max = $setmax;
         }
-        $chars = array();
-        $numchars = array();
+        $chars = [];
+        $numchars = [];
         for ($i = 0; $i < $max; $i++) {
             $charListId = rand(0, count($characterListArray) - 1);
             // Set $numchars[ $charListId ] to a zero a value if not set before.
@@ -1636,28 +1687,28 @@ class ResursBank
      */
     private function getCallbackTypeParameters($callbackType = RESURS_CALLBACK_TYPES::NOT_SET)
     {
-        $return = array();
+        $return = [];
 
         if ($callbackType == RESURS_CALLBACK_TYPES::ANNULMENT) {
-            $return = array('paymentId');
+            $return = ['paymentId'];
         }
         if ($callbackType == RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL) {
-            $return = array('paymentId', 'result');
+            $return = ['paymentId', 'result'];
         }
         if ($callbackType == RESURS_CALLBACK_TYPES::FINALIZATION) {
-            $return = array('paymentId');
+            $return = ['paymentId'];
         }
         if ($callbackType == RESURS_CALLBACK_TYPES::TEST) {
-            $return = array('param1', 'param2', 'param3', 'param4', 'param5');
+            $return = ['param1', 'param2', 'param3', 'param4', 'param5'];
         }
         if ($callbackType == RESURS_CALLBACK_TYPES::UNFREEZE) {
-            $return = array('paymentId');
+            $return = ['paymentId'];
         }
         if ($callbackType == RESURS_CALLBACK_TYPES::UPDATE) {
-            $return = array('paymentId');
+            $return = ['paymentId'];
         }
         if ($callbackType == RESURS_CALLBACK_TYPES::BOOKED) {
-            $return = array('paymentId');
+            $return = ['paymentId'];
         }
 
         return $return;
@@ -1729,7 +1780,7 @@ class ResursBank
      */
     public function getCallBacksByRest($ReturnAsArray = false)
     {
-        $ResursResponse = array();
+        $ResursResponse = [];
         $this->InitializeServices();
         try {
             $callbackResponse = $this->CURL->getParsed($this->CURL->doGet($this->getCheckoutUrl() . "/callbacks"));
@@ -1740,7 +1791,7 @@ class ResursBank
             throw new \ResursException($restException->getMessage(), $restException->getCode());
         }
         if ($ReturnAsArray) {
-            $ResursResponseArray = array();
+            $ResursResponseArray = [];
             if (is_array($ResursResponse) && count($ResursResponse)) {
                 foreach ($ResursResponse as $object) {
                     if (isset($object->eventType)) {
@@ -1798,7 +1849,7 @@ class ResursBank
         // rather than the response itself
         /** @noinspection PhpUndefinedMethodInspection */
         $renderedResponse = $this->CURL->doPost(
-            $getRegisteredCallbackUrl)->getRegisteredEventCallback(array('eventType' => $fetchThisCallback)
+            $getRegisteredCallbackUrl)->getRegisteredEventCallback(['eventType' => $fetchThisCallback]
         );
         $parsedResponse = $this->CURL->getParsed($renderedResponse);
 
@@ -1867,7 +1918,7 @@ class ResursBank
     public function setRegisterCallback(
         $callbackType = RESURS_CALLBACK_TYPES::NOT_SET,
         $callbackUriTemplate = "",
-        $digestData = array(),
+        $digestData = [],
         $basicAuthUserName = null,
         $basicAuthPassword = null
     ) {
@@ -1877,7 +1928,7 @@ class ResursBank
         $this->setRegisterCallbackAddressValidation();
 
         // The final array
-        $renderCallback = array();
+        $renderCallback = [];
 
         // DEFAULT SETUP
         $renderCallback['eventType'] = $this->getCallbackTypeString($callbackType);
@@ -1896,9 +1947,9 @@ class ResursBank
         }
 
         ////// DIGEST CONFIGURATION BEGIN
-        $renderCallback['digestConfiguration'] = array(
+        $renderCallback['digestConfiguration'] = [
             'digestParameters' => $this->getCallbackTypeParameters($callbackType),
-        );
+        ];
 
         if (isset($digestData['digestAlgorithm']) &&
             (
@@ -1998,7 +2049,7 @@ class ResursBank
         if ($isMultiple) {
             $this->BIT = new MODULE_NETBITS();
             $this->BIT->setBitStructure(
-                array(
+                [
                     'UNFREEZE' => RESURS_CALLBACK_TYPES::UNFREEZE,
                     'ANNULMENT' => RESURS_CALLBACK_TYPES::ANNULMENT,
                     'AUTOMATIC_FRAUD_CONTROL' => RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL,
@@ -2006,7 +2057,7 @@ class ResursBank
                     'TEST' => RESURS_CALLBACK_TYPES::TEST,
                     'UPDATE' => RESURS_CALLBACK_TYPES::UPDATE,
                     'BOOKED' => RESURS_CALLBACK_TYPES::BOOKED,
-                )
+                ]
             );
             $callbackTypes = $this->BIT->getBitArray($callbackType);
         }
@@ -2014,10 +2065,10 @@ class ResursBank
         $callbackType = $this->getCallbackTypeString($callbackType);
 
         if (!isset($callbackTypes) || !is_array($callbackTypes)) {
-            $callbackTypes = array($callbackType);
+            $callbackTypes = [$callbackType];
         }
 
-        $unregisteredCallbacks = array();
+        $unregisteredCallbacks = [];
         foreach ($callbackTypes as $callbackType) {
             if (!empty($callbackType)) {
                 if ($this->registerCallbacksViaRest && $callbackType != 'UPDATE') {
@@ -2039,7 +2090,7 @@ class ResursBank
                     /** @noinspection PhpUndefinedMethodInspection */
                     $curlResponse = $this->CURL->doGet(
                         $this->getServiceUrl('unregisterEventCallback'))->unregisterEventCallback(
-                        array('eventType' => $callbackType)
+                        ['eventType' => $callbackType]
                     );
                     $curlCode = $this->CURL->getCode($curlResponse);
                     if ($curlCode >= 200 && $curlCode <= 250) {
@@ -2079,16 +2130,16 @@ class ResursBank
         }
         $serviceUrl = $envUrl . "DeveloperWebService?wsdl";
         $eventRequest = $this->CURL->doGet($serviceUrl);
-        $eventParameters = array(
+        $eventParameters = [
             'eventType' => 'TEST',
-            'param' => array(
+            'param' => [
                 rand(10000, 30000),
                 rand(10000, 30000),
                 rand(10000, 30000),
                 rand(10000, 30000),
                 rand(10000, 30000),
-            ),
-        );
+            ],
+        ];
         try {
             /** @noinspection PhpUndefinedMethodInspection */
             $eventRequest->triggerEvent($eventParameters);
@@ -2247,7 +2298,7 @@ class ResursBank
      * @since 1.1.2
      * @since 1.2.0
      */
-    private function postService($serviceName = "", $resursParameters = array(), $getResponseCode = false)
+    private function postService($serviceName = "", $resursParameters = [], $getResponseCode = false)
     {
         $this->InitializeServices();
         $serviceNameUrl = $this->getServiceUrl($serviceName);
@@ -2395,7 +2446,7 @@ class ResursBank
         if ($initInvoice) {
             // If the requested invoice number is a numeric and over 0, set it as next invoice number
             if (!is_null($firstInvoiceNumber) && is_numeric($firstInvoiceNumber) && $firstInvoiceNumber > 0) {
-                $this->postService("setInvoiceSequence", array('nextInvoiceNumber' => $firstInvoiceNumber));
+                $this->postService("setInvoiceSequence", ['nextInvoiceNumber' => $firstInvoiceNumber]);
                 $invoiceInvokation = true;
             }
         }
@@ -2443,13 +2494,13 @@ class ResursBank
      */
     public function getPaymentInvoices($paymentIdOrPaymentObject = '')
     {
-        $invoices = array();
+        $invoices = [];
         if (is_string($paymentIdOrPaymentObject)) {
             $paymentData = $this->getPayment($paymentIdOrPaymentObject);
         } elseif (is_object($paymentIdOrPaymentObject)) {
             $paymentData = $paymentIdOrPaymentObject;
         } else {
-            return array();
+            return [];
         }
         if (!empty($paymentData) && isset($paymentData->paymentDiffs)) {
             foreach ($paymentData->paymentDiffs as $paymentRow) {
@@ -2485,15 +2536,15 @@ class ResursBank
             $currentInvoiceTest = $this->getNextInvoiceNumber();
         } catch (\Exception $e) {
         }
-        $paymentScanTypes = array('IS_DEBITED', 'IS_CREDITED', 'IS_ANNULLED');
+        $paymentScanTypes = ['IS_DEBITED', 'IS_CREDITED', 'IS_ANNULLED'];
 
         $lastHighestInvoice = 0;
         foreach ($paymentScanTypes as $paymentType) {
-            $paymentScanList = $this->findPayments(array('statusSet' => array($paymentType)), 1, $scanDebitCount,
-                array(
+            $paymentScanList = $this->findPayments(['statusSet' => [$paymentType]], 1, $scanDebitCount,
+                [
                     'ascending' => false,
-                    'sortColumns' => array('FINALIZED_TIME', 'MODIFIED_TIME', 'BOOKED_TIME'),
-                ));
+                    'sortColumns' => ['FINALIZED_TIME', 'MODIFIED_TIME', 'BOOKED_TIME'],
+                ]);
             $lastHighestInvoice = $this->getHighestValueFromPaymentList($paymentScanList, $lastHighestInvoice);
         }
 
@@ -2515,10 +2566,10 @@ class ResursBank
      * @return int|mixed
      * @throws \Exception
      */
-    private function getHighestValueFromPaymentList($paymentList = array(), $lastHighestInvoice = 0)
+    private function getHighestValueFromPaymentList($paymentList = [], $lastHighestInvoice = 0)
     {
         if (is_object($paymentList)) {
-            $paymentList = array($paymentList);
+            $paymentList = [$paymentList];
         }
         if (is_array($paymentList)) {
             foreach ($paymentList as $payments) {
@@ -2552,19 +2603,19 @@ class ResursBank
      * @since 1.1.0
      * @link  https://test.resurs.com/docs/display/ecom/Get+Payment+Methods
      */
-    public function getPaymentMethods($parameters = array(), $getAllMethods = false)
+    public function getPaymentMethods($parameters = [], $getAllMethods = false)
     {
         $this->InitializeServices();
 
-        $paymentMethods = $this->postService("getPaymentMethods", array(
+        $paymentMethods = $this->postService("getPaymentMethods", [
             'customerType' => isset($parameters['customerType']) ? $parameters['customerType'] : null,
             'language' => isset($parameters['language']) ? $parameters['language'] : null,
             'purchaseAmount' => isset($parameters['purchaseAmount']) ? $parameters['purchaseAmount'] : null,
-        ));
+        ]);
         // Make sure this method always returns an array even if it is only one method.
         // Ecommerce will, in case of only one available method return an object instead of an array.
         if (is_object($paymentMethods)) {
-            $paymentMethods = array($paymentMethods);
+            $paymentMethods = [$paymentMethods];
         }
         $realPaymentMethods = $this->sanitizePaymentMethods($paymentMethods, $getAllMethods);
 
@@ -2586,8 +2637,8 @@ class ResursBank
     public function getPaymentMethodsByAnnuity($namesOnly = false)
     {
         $allMethods = $this->getPaymentMethods();
-        $annuitySupported = array('REVOLVING_CREDIT');
-        $annuityMethods = array();
+        $annuitySupported = ['REVOLVING_CREDIT'];
+        $annuityMethods = [];
         foreach ($allMethods as $methodIndex => $methodObject) {
             $t = isset($methodObject->type) ? $methodObject->type : null;
             $s = isset($methodObject->specificType) ? $methodObject->specificType : null;
@@ -2616,9 +2667,9 @@ class ResursBank
      * @since 1.1.24
      * @since 1.2.0
      */
-    public function sanitizePaymentMethods($paymentMethods = array(), $getAllMethods = false)
+    public function sanitizePaymentMethods($paymentMethods = [], $getAllMethods = false)
     {
-        $realPaymentMethods = array();
+        $realPaymentMethods = [];
         $paymentSevice = $this->getPreferredPaymentFlowService();
         if (is_array($paymentMethods) && count($paymentMethods)) {
             foreach ($paymentMethods as $paymentMethodIndex => $paymentMethodData) {
@@ -2755,11 +2806,11 @@ class ResursBank
             $customerIpAddress = $_SERVER['REMOTE_ADDR'];
         }
 
-        return $this->postService("getAddress", array(
+        return $this->postService("getAddress", [
             'governmentId' => $governmentId,
             'customerType' => $customerType,
             'customerIpAddress' => $customerIpAddress,
-        ));
+        ]);
     }
 
     /**
@@ -2778,7 +2829,7 @@ class ResursBank
      */
     public function getAnnuityFactors($paymentMethodId = '')
     {
-        return $this->postService("getAnnuityFactors", array('paymentMethodId' => $paymentMethodId));
+        return $this->postService("getAnnuityFactors", ['paymentMethodId' => $paymentMethodId]);
     }
 
     /**
@@ -2846,7 +2897,7 @@ class ResursBank
      */
     public function getPaymentBySoap($paymentId = '')
     {
-        return $this->postService("getPayment", array('paymentId' => $paymentId));
+        return $this->postService("getPayment", ['paymentId' => $paymentId]);
     }
 
     /**
@@ -2883,7 +2934,7 @@ class ResursBank
     {
         $disabledFunctions = @ini_get('disable_classes');
         $disabledArray = array_map("trim", explode(",", $disabledFunctions));
-        $this->FUNCTIONS_DISABLED = is_array($disabledArray) ? $disabledArray : array();
+        $this->FUNCTIONS_DISABLED = is_array($disabledArray) ? $disabledArray : [];
 
         return $this->FUNCTIONS_DISABLED;
     }
@@ -2994,27 +3045,27 @@ class ResursBank
      */
     public function getMetaData($paymentId = '', $internalMetadata = false, $assoc = false)
     {
-        $metaDataResponse = array();
+        $metaDataResponse = [];
 
         if ($internalMetadata) {
             if (isset($this->Payload['metaData'])) {
                 if ($assoc) {
-                    $newArray = array();
+                    $newArray = [];
                     foreach ($this->Payload['metaData'] as $req) {
                         if (isset($req['key'])) {
                             $newArray[$req['key']] = $req['value'];
                         }
                     }
-                    $metaDataResponse = array(
+                    $metaDataResponse = [
                         'payloadMetaData' => $newArray,
-                    );
+                    ];
                 } else {
-                    $metaDataResponse = array(
+                    $metaDataResponse = [
                         'payloadMetaData' => $this->Payload['metaData'],
-                    );
+                    ];
                 }
             } else {
-                $metaDataResponse = array('payloadMetaData' => array());
+                $metaDataResponse = ['payloadMetaData' => []];
             }
 
         } else {
@@ -3054,7 +3105,7 @@ class ResursBank
      * @since 1.0.2
      * @since 1.1.2
      */
-    private function getCorrectPaymentContent($paymentArrayOrPaymentId = array())
+    private function getCorrectPaymentContent($paymentArrayOrPaymentId = [])
     {
         if (is_string($paymentArrayOrPaymentId) && !empty($paymentArrayOrPaymentId)) {
             return $this->getPayment($paymentArrayOrPaymentId);
@@ -3079,7 +3130,7 @@ class ResursBank
      * @since 1.0.2
      * @since 1.1.2
      */
-    private function getPaymentContent($paymentArrayOrPaymentId = array(), $paymentKey = "")
+    private function getPaymentContent($paymentArrayOrPaymentId = [], $paymentKey = "")
     {
         $Payment = $this->getCorrectPaymentContent($paymentArrayOrPaymentId);
         if (isset($Payment->$paymentKey)) {
@@ -3103,13 +3154,13 @@ class ResursBank
      * @since 1.0.1
      * @since 1.1.1
      */
-    public function findPayments($searchCriteria = array(), $pageNumber = 1, $itemsPerPage = 10, $sortBy = null)
+    public function findPayments($searchCriteria = [], $pageNumber = 1, $itemsPerPage = 10, $sortBy = null)
     {
-        $searchCriterias = array(
+        $searchCriterias = [
             'searchCriteria' => $searchCriteria,
             'pageNumber' => $pageNumber,
             'itemsPerPage' => $itemsPerPage,
-        );
+        ];
         if (!empty($sortBy)) {
             $searchCriterias['sortBy'] = $sortBy;
         }
@@ -3129,7 +3180,7 @@ class ResursBank
     {
         $methods = $this->getPaymentMethods();
         if (is_array($methods)) {
-            $this->paymentMethodNames = array();
+            $this->paymentMethodNames = [];
             foreach ($methods as $objectMethod) {
                 if (isset($objectMethod->id) && !empty($objectMethod->id) && !in_array($objectMethod->id,
                         $this->paymentMethodNames)) {
@@ -3165,8 +3216,8 @@ class ResursBank
             $specificMethodId = $specificMethodId->paymentMethodId;
         }
 
-        $methods = $this->getPaymentMethods(array(), true);
-        $methodArray = array();
+        $methods = $this->getPaymentMethods([], true);
+        $methodArray = [];
         if (is_array($methods)) {
             foreach ($methods as $objectMethod) {
                 if (
@@ -3202,7 +3253,7 @@ class ResursBank
         try {
             $result = $this->CURL->doPut(
                 $url,
-                array('paymentReference' => $to),
+                ['paymentReference' => $to],
                 NETCURL_POST_DATATYPES::DATATYPE_JSON
             );
         } catch (\Exception $e) {
@@ -3214,7 +3265,6 @@ class ResursBank
                     isset($jsonized->errorCode) &&
                     ((int)$jsonized->errorCode > 0 || strlen($jsonized->errorCode) > 3)
                 ) {
-
                     if (isset($jsonized->description)) {
                         $errorMessage = $jsonized->description;
                     } elseif (isset($jsonized->detailedMessage)) {
@@ -3303,11 +3353,11 @@ class ResursBank
         if (!isset($checkPayment->id) && !empty($customErrorMessage)) {
             throw new \ResursException($customErrorMessage);
         }
-        $metaDataArray = array(
+        $metaDataArray = [
             'paymentId' => $paymentId,
             'key' => $metaDataKey,
             'value' => $metaDataValue,
-        );
+        ];
         /** @noinspection PhpUndefinedMethodInspection */
         $metaDataResponse = $this->CURL->doGet($this->getServiceUrl("addMetaData"))->addMetaData($metaDataArray);
         $curlCode = $this->CURL->getCode($metaDataResponse);
@@ -3334,15 +3384,15 @@ class ResursBank
     public function setMetaData($key, $value, $preventDuplicates = true)
     {
         if (!isset($this->Payload['metaData'])) {
-            $this->Payload['metaData'] = array();
+            $this->Payload['metaData'] = [];
         }
 
         if (!$preventDuplicates || !$this->hasMetaDataKey($key)) {
             if (!empty($key)) {
                 if ($this->getPreferredPaymentFlowService() !== RESURS_FLOW_TYPES::HOSTED_FLOW) {
-                    $this->Payload['metaData'][] = array('key' => $key, 'value' => $value);
+                    $this->Payload['metaData'][] = ['key' => $key, 'value' => $value];
                 } else {
-                    $this->Payload['metaData'][] = array($key => $value);
+                    $this->Payload['metaData'][] = [$key => $value];
                 }
             }
         } else {
@@ -3414,12 +3464,12 @@ class ResursBank
      * @since 1.0.0
      * @since 1.1.0
      */
-    public function getSekkiUrls($totalAmount = 0, $paymentMethodID = array(), $URL = '')
+    public function getSekkiUrls($totalAmount = 0, $paymentMethodID = [], $URL = '')
     {
         if (!empty($URL)) {
             return $this->priceAppender($URL, $totalAmount);
         }
-        $currentLegalUrls = array();
+        $currentLegalUrls = [];
         // If not an array (string) or array but empty
         if ((!is_array($paymentMethodID)) || (is_array($paymentMethodID) && !count($paymentMethodID))) {
             $methods = $this->getPaymentMethods();
@@ -3500,10 +3550,10 @@ class ResursBank
         $callCss = 'costofpurchase.css',
         $hrefTarget = "_blank"
     ) {
-        $returnHtml = $this->postService("getCostOfPurchaseHtml", array(
+        $returnHtml = $this->postService("getCostOfPurchaseHtml", [
             'paymentMethodId' => $paymentMethod,
             'amount' => $amount,
-        ));
+        ]);
         // Try to make the target open as a different target, if set. This will not invoke, if not set.
         if (!empty($hrefTarget)) {
             // Check if there are any target set, somewhere in the returned html. If true, we'll consider
@@ -3613,7 +3663,7 @@ class ResursBank
             $UnExpect = $this->validateExternalUrl['http_error'];
             $useUrl = $this->validateExternalUrl['url'];
             $base64url = $this->base64url_encode($useUrl);
-            $ExternalPostData = array('link' => $useUrl, "returnEncoded" => true);
+            $ExternalPostData = ['link' => $useUrl, "returnEncoded" => true];
             try {
                 $this->CURL->doPost($ExternalAPI, $ExternalPostData, NETCURL_POST_DATATYPES::DATATYPE_JSON);
                 $WebResponse = $this->CURL->getParsed();
@@ -3716,9 +3766,9 @@ class ResursBank
      *
      * @return array
      */
-    private function objectsIntoArray($arrObjData, $arrSkipIndices = array())
+    private function objectsIntoArray($arrObjData, $arrSkipIndices = [])
     {
-        $arrData = array();
+        $arrData = [];
         // if input is object, convert into array
         if (is_object($arrObjData)) {
             $arrObjData = get_object_vars($arrObjData);
@@ -3739,67 +3789,110 @@ class ResursBank
     }
 
     /**
-     * Payment spec container cleaner
+     * Quantity Recalculation of a getPayment. Also supports arrays.
      *
-     * TODO: Key on artNo, description, price instead
+     * When ECom gets an article row that needs recalculation on quantity level, this method can be used.
+     * Note: The article row needs to be "completed" from the start, to get a successful recalculation.
+     * By means, you need a prepared "proper" payment already, where you only need to adjust the quantity
+     * values.
      *
-     * @param array $currentArray The current speclineArray
-     * @param array $cleanWith The array with the speclines that should be removed from currentArray
-     * @param bool $keepOpposite Setting this to true, will run the opposite of what the function actually do
+     * @param array|\stdClass $artObject
+     * @param int $quantity
      *
-     * @return array New array
-     * @since 1.0.0
-     * @since 1.1.0
+     * @return mixed
+     * @throws \ResursException
+     * @since 1.3.20
+     * @since 1.0.47
+     * @since 1.1.47
      */
-    private function removeFromArray($currentArray = array(), $cleanWith = array(), $keepOpposite = false)
+    public function getRecalculatedQuantity($artObject, $quantity = -1)
     {
-        $cleanedArray = array();
-        foreach ($currentArray as $currentObject) {
-            if (is_array($cleanWith)) {
-                $foundObject = false;
-                foreach ($cleanWith as $currentCleanObject) {
-                    if (is_object($currentCleanObject)) {
-                        if (!empty($currentObject->artNo)) {
-                            // No longer searching on id, as that is an incremental value rather than a
-                            // dynamically added.
-                            if ($currentObject->artNo == $currentCleanObject->artNo) {
-                                $foundObject = true;
-                                if ($keepOpposite) {
-                                    // This little one does the opposite of what this function normally do:
-                                    // Remove everything from the array except the found row.
-                                    $cleanedArray[] = $currentObject;
-                                }
-                                break;
-                            }
-                        }
-                    } elseif (is_array($currentCleanObject)) {
-                        // This is above, but based on incoming array
-                        if (!empty($currentObject->artNo)) {
-                            // No longer searching on id, as that is an incremental value rather than a
-                            // dynamically added.
-                            if ($currentObject->artNo == $currentCleanObject['artNo']) {
-                                $foundObject = true;
-                                if ($keepOpposite) {
-                                    // This little one does the opposite of what this function normally do:
-                                    // Remove everything from the array except the found row.
-                                    $cleanedArray[] = $currentObject;
-                                }
-                                break;
-                            }
-                        }
-                    }
-                }
-                if (!$keepOpposite) {
-                    if (!$foundObject) {
-                        $cleanedArray[] = $currentObject;
-                    }
-                }
+        // If no quantity passed into this method, try to reuse quantity in the object.
+        if ($quantity === -1) {
+            if (isset($artObject->quantity)) {
+                $quantity = $artObject->quantity;
+            } elseif (isset($artObject['quantity'])) {
+                $quantity = $artObject['quantity'];
             } else {
-                $cleanedArray[] = $currentObject;
+                throw new \ResursException(
+                    'A valid quantity is required for this recalculation.',
+                    \RESURS_EXCEPTIONS::INTERNAL_QUANTITY_EXCEPTION
+                );
             }
         }
 
-        return $cleanedArray;
+        if (is_object($artObject) &&
+            isset($artObject->unitAmountWithoutVat) &&
+            isset($artObject->vatPct) &&
+            isset($artObject->totalVatAmount) &&
+            isset($artObject->totalAmount)
+        ) {
+            $artObject->totalVatAmount = $this->getTotalVatAmount(
+                $artObject->unitAmountWithoutVat,
+                $artObject->vatPct,
+                $quantity
+            );
+            $artObject->totalAmount = $this->getTotalAmount(
+                $artObject->unitAmountWithoutVat,
+                $artObject->vatPct,
+                $quantity
+            );
+            $artObject->quantity = $quantity;
+        }
+
+        // If this one arrives as an array, handle this also.
+        if (is_array($artObject) &&
+            isset($artObject['unitAmountWithoutVat']) &&
+            isset($artObject['vatPct']) &&
+            isset($artObject['totalVatAmount']) &&
+            isset($artObject['totalAmount'])
+        ) {
+            $artObject['totalVatAmount'] = $this->getTotalVatAmount(
+                $artObject['unitAmountWithoutVat'],
+                $artObject['vatPct'],
+                $quantity
+            );
+            $artObject['totalAmount'] = $this->getTotalAmount(
+                $artObject['unitAmountWithoutVat'],
+                $artObject['vatPct'],
+                $quantity
+            );
+            $artObject['quantity'] = $quantity;
+        }
+
+        return $artObject;
+    }
+
+    /**
+     * Lazy calculation of total amounts (make sure the VAT is an integer and not a decimal value).
+     *
+     * @param float $unitAmountWithoutVat
+     * @param int $vatPct
+     * @param int $quantity
+     * @return float|int
+     * @since 1.3.20
+     * @since 1.0.47
+     * @since 1.1.47
+     */
+    public function getTotalVatAmount($unitAmountWithoutVat, $vatPct, $quantity)
+    {
+        return ($unitAmountWithoutVat * $vatPct / 100) * $quantity;
+    }
+
+    /**
+     * Lazy calculation of total amounts (make sure the VAT is an integer and not a decimal value).
+     *
+     * @param $unitAmountWithoutVat
+     * @param $vatPct
+     * @param $quantity
+     * @return float|int
+     * @since 1.3.20
+     * @since 1.0.47
+     * @since 1.1.47
+     */
+    public function getTotalAmount($unitAmountWithoutVat, $vatPct, $quantity)
+    {
+        return ($unitAmountWithoutVat + ($unitAmountWithoutVat * $vatPct / 100)) * $quantity;
     }
 
 
@@ -3851,9 +3944,13 @@ class ResursBank
     public function getCreatedBy()
     {
         // Allow clients to skip clientname (if client name is confusing in paymentadmin) by setting
-        // flag CREATED_BY_NO_CLIENT_NAME. If unset, ecomphp_decimalVesionNumber will be shown.
+        // flag CREATED_BY_NO_CLIENT_NAME. If unset, ecomphp_decimalVersionNumber will be shown.
         if (!$this->isFlag('CREATED_BY_NO_CLIENT_NAME')) {
-            $createdBy = $this->realClientName . "_" . $this->getVersionNumber(true);
+            if (!$this->userSetClientName) {
+                $createdBy = $this->realClientName . "_" . $this->getVersionNumber(true);
+            } else {
+                $createdBy = $this->realClientName;
+            }
 
             // If logged in user is set by client or plugin, add this to the createdBy string.
             if (!empty($this->loggedInuser)) {
@@ -3872,6 +3969,25 @@ class ResursBank
         }
 
         return $createdBy;
+    }
+
+    /**
+     * @param $clientName
+     * @since 1.3.23
+     */
+    public function setRealClientName($clientName)
+    {
+        $this->userSetClientName = true;
+        $this->realClientName = $clientName;
+    }
+
+    /**
+     * @return string
+     * @since 1.3.23
+     */
+    public function getRealClientName()
+    {
+        return $this->realClientName;
     }
 
     /**
@@ -4203,7 +4319,7 @@ class ResursBank
      * @param string $unitMeasure
      * @param string $articleType ORDER_LINE, DISCOUNT, SHIPPING_FEE
      * @param int $quantity
-     *
+     * @throws Exception
      * @since 1.0.2
      * @since 1.1.2
      * @since 1.2.0
@@ -4217,8 +4333,10 @@ class ResursBank
         $articleType = "ORDER_LINE",
         $quantity = 1
     ) {
+        $this->speclineCustomization = true;
+
         if (!is_array($this->SpecLines)) {
-            $this->SpecLines = array();
+            $this->SpecLines = [];
         }
 
         if (is_null($articleType)) {
@@ -4240,7 +4358,7 @@ class ResursBank
             }
         }
         if (!$duplicateArticle) {
-            $specData = array(
+            $specData = [
                 'artNo' => $articleNumberOrId,
                 'description' => $description,
                 'quantity' => $quantity,
@@ -4248,7 +4366,7 @@ class ResursBank
                 'unitAmountWithoutVat' => $unitAmountWithoutVat,
                 'vatPct' => $vatPct,
                 'type' => !empty($articleType) ? $articleType : "",
-            );
+            ];
             $newSpecData = $this->event('ecom_article_data', $specData);
             if (!is_null($newSpecData) && is_array($newSpecData)) {
                 $specData = $newSpecData;
@@ -4264,6 +4382,7 @@ class ResursBank
      * @param int $overrideFlow
      *
      * @return mixed
+     * @throws Exception
      * @since 1.0.2
      * @since 1.1.2
      */
@@ -4273,13 +4392,13 @@ class ResursBank
         if ($overrideFlow !== RESURS_FLOW_TYPES::NOT_SET) {
             $myFlow = $overrideFlow;
         }
-        $paymentSpec = array();
+        $paymentSpec = [];
         if (is_array($this->SpecLines) && count($this->SpecLines)) {
             // Try correctify speclines that have been merged in the wrong way
             if (isset($this->SpecLines['artNo'])) {
-                $this->SpecLines = array(
+                $this->SpecLines = [
                     $this->SpecLines,
-                );
+                ];
             }
             foreach ($this->SpecLines as $specIndex => $specRow) {
                 if (is_array($specRow)) {
@@ -4323,20 +4442,20 @@ class ResursBank
             if ($myFlow === RESURS_FLOW_TYPES::SIMPLIFIED_FLOW) {
                 // Do not forget to pass over $myFlow-overriders to sanitizer as it might be sent from
                 // additionalDebitOfPayment rather than a regular bookPayment sometimes
-                $this->Payload['orderData'] = array(
+                $this->Payload['orderData'] = [
                     'specLines' => $this->sanitizePaymentSpec($this->SpecLines, $myFlow),
                     'totalAmount' => $paymentSpec['totalAmount'],
                     'totalVatAmount' => $paymentSpec['totalVatAmount'],
-                );
+                ];
             }
             if ($myFlow === RESURS_FLOW_TYPES::HOSTED_FLOW) {
                 // Do not forget to pass over $myFlow-overriders to sanitizer as it might be sent from
                 // additionalDebitOfPayment rather than a regular bookPayment sometimes
-                $this->Payload['orderData'] = array(
+                $this->Payload['orderData'] = [
                     'orderLines' => $this->sanitizePaymentSpec($this->SpecLines, $myFlow),
                     'totalAmount' => $paymentSpec['totalAmount'],
                     'totalVatAmount' => $paymentSpec['totalVatAmount'],
-                );
+                ];
             }
             if ($myFlow == RESURS_FLOW_TYPES::RESURS_CHECKOUT) {
                 // Do not forget to pass over $myFlow-overriders to sanitizer as it might be sent from
@@ -4373,7 +4492,7 @@ class ResursBank
      * @since 1.1.2
      * @return array
      */
-    public function createPayment($payment_id_or_method = '', $payload = array())
+    public function createPayment($payment_id_or_method = '', $payload = [])
     {
         if (!$this->hasServicesInitialization) {
             $this->InitializeServices();
@@ -4401,7 +4520,7 @@ class ResursBank
         if ($this->forceExecute) {
             $this->createPaymentExecuteCommand = $payment_id_or_method;
 
-            return array('status' => 'delayed');
+            return ['status' => 'delayed'];
         } else {
             $bookPaymentResult = $this->createPaymentExecute($payment_id_or_method);
         }
@@ -4447,7 +4566,7 @@ class ResursBank
             throw new \ResursException("The use of exshop is no longer supported",
                 \RESURS_EXCEPTIONS::EXSHOP_PROHIBITED);
         }
-        $error = array();
+        $error = [];
         $myFlow = $this->getPreferredPaymentFlowService();
 
         // Using this function to validate that card data info is properly set up
@@ -4481,7 +4600,7 @@ class ResursBank
                 // Do not trust response codes!
                 if (isset($parsedResponse->paymentSessionId)) {
                     $this->paymentSessionId = $parsedResponse->paymentSessionId;
-                    $this->SpecLines = array();
+                    $this->SpecLines = [];
                     //$this->resetPayload();
 
                     /** @noinspection PhpUndefinedFieldInspection */
@@ -4573,7 +4692,7 @@ class ResursBank
      */
     public function bookSignedPayment($paymentId = '')
     {
-        return $this->postService("bookSignedPayment", array('paymentId' => $paymentId));
+        return $this->postService("bookSignedPayment", ['paymentId' => $paymentId]);
     }
 
     /**
@@ -4679,7 +4798,7 @@ class ResursBank
      * @since 1.0.1
      * @since 1.1.1
      */
-    private function preparePayload($payment_id_or_method = '', $payload = array())
+    private function preparePayload($payment_id_or_method = '', $payload = [])
     {
         $this->InitializeServices();
         $this->handlePayload($payload);
@@ -4703,9 +4822,11 @@ class ResursBank
             }
             $payment_id_or_method = $this->preferredId;
         }
-        if (!count($this->Payload)) {
-            throw new \ResursException("No payload are set for this payment",
-                \RESURS_EXCEPTIONS::BOOKPAYMENT_NO_BOOKDATA);
+        if (!count($this->Payload) && !$this->isFlag('USE_AFTERSHOP_RENDERING')) {
+            throw new \ResursException(
+                "No payload are set for this payment",
+                \RESURS_EXCEPTIONS::BOOKPAYMENT_NO_BOOKDATA
+            );
         }
 
         // Obsolete way to handle multidimensional specrows
@@ -4733,7 +4854,7 @@ class ResursBank
             $this->getPreferredPaymentFlowService() === RESURS_FLOW_TYPES::SIMPLIFIED_FLOW
         ) {
             if (!isset($paymentDataPayload ['paymentData'])) {
-                $paymentDataPayload ['paymentData'] = array();
+                $paymentDataPayload ['paymentData'] = [];
             }
             $paymentDataPayload['paymentData']['paymentMethodId'] = $payment_id_or_method;
             $paymentDataPayload['paymentData']['preferredId'] = $this->getPreferredPaymentId();
@@ -4797,25 +4918,20 @@ class ResursBank
                 if (isset($this->Payload['paymentData'])) {
                     unset($this->Payload['paymentData']);
                 }
-                if (!$this->isFlag('KEEP_RCO_BILLING')) {
-                    if (isset($this->Payload['customer']['address'])) {
-                        unset($this->Payload['customer']['address']);
-                    }
-                } else {
-                    // By not removing fields on this kind of exeption means that we need to protect the customer object.
+
+                // By not removing fields on this kind of exeption means that we need to protect the customer object.
+                if (isset($this->Payload['customer']['address'])) {
                     $this->checkoutCustomerFieldSupport = true;
                 }
-                if (!$this->isFlag('KEEP_RCO_DELIVERY')) {
-                    if (isset($this->Payload['customer']['deliveryAddress'])) {
-                        unset($this->Payload['customer']['deliveryAddress']);
-                    }
-                } else {
-                    // By not removing fields on this kind of exeption means that we need to protect the customer object.
+
+                if (isset($this->Payload['customer']['deliveryAddress'])) {
                     $this->checkoutCustomerFieldSupport = true;
                 }
+
                 if ($this->checkoutCustomerFieldSupport === false && isset($this->Payload['customer'])) {
                     unset($this->Payload['customer']);
                 }
+
                 // Making sure sloppy developers uses shopUrl properly.
                 if (!isset($this->Payload['shopUrl'])) {
                     if ($this->validateCheckoutShopUrl) {
@@ -4845,7 +4961,7 @@ class ResursBank
     private function fixPaymentData()
     {
         if (!isset($this->Payload['paymentData'])) {
-            $this->Payload['paymentData'] = array();
+            $this->Payload['paymentData'] = [];
         }
     }
 
@@ -4997,6 +5113,72 @@ class ResursBank
     }
 
     /**
+     * Get paymentSpec key scheme.
+     *
+     * @param string $key checkout, hosted, simplified, minimalistic, tiny (tiny=what Resurs normally use as keying).
+     * @param bool $throwOnFaultyKey
+     * @return array
+     * @throws Exception
+     * @since 1.3.23
+     */
+    public function getPaymentSpecKeyScheme($key = '', $throwOnFaultyKey = false)
+    {
+        $return = [
+            'checkout' => [
+                'artNo',
+                'description',
+                'quantity',
+                'unitMeasure',
+                'unitAmountWithoutVat',
+                'vatPct',
+                'type',
+            ],
+            'hosted' => [
+                'artNo',
+                'description',
+                'quantity',
+                'unitMeasure',
+                'unitAmountWithoutVat',
+                'vatPct',
+                'totalVatAmount',
+                'totalAmount',
+            ],
+            'simplified' => [
+                'id',
+                'artNo',
+                'description',
+                'quantity',
+                'unitMeasure',
+                'unitAmountWithoutVat',
+                'vatPct',
+                'totalVatAmount',
+                'totalAmount',
+            ],
+            'minimalistic' => [
+                'artNo',
+                'description',
+                'unitAmountWithoutVat',
+                'quantity',
+            ],
+            'tiny' => [
+                'artNo',
+                'description',
+                'unitAMountWithoutVat',
+            ],
+        ];
+
+        if (!empty($key) && isset($return[$key])) {
+            return $return[$key];
+        }
+
+        if ($throwOnFaultyKey && !isset($return[$key])) {
+            throw new \Exception('No such paymentSpec key scheme', 500);
+        }
+
+        return $return;
+    }
+
+    /**
      * Make sure that the payment spec only contains the data that each payment flow needs.
      *
      * This function has been created for keeping backwards compatibility from older payment spec renderers. EComPHP is
@@ -5007,63 +5189,27 @@ class ResursBank
      * @param int $myFlowOverrider
      *
      * @return array
+     * @throws Exception
      * @since 1.0.4
      * @since 1.1.4
      */
-    public function sanitizePaymentSpec($specLines = array(), $myFlowOverrider = RESURS_FLOW_TYPES::NOT_SET)
+    public function sanitizePaymentSpec($specLines = [], $myFlowOverrider = RESURS_FLOW_TYPES::NOT_SET)
     {
-        $specRules = array(
-            'checkout' => array(
-                'artNo',
-                'description',
-                'quantity',
-                'unitMeasure',
-                'unitAmountWithoutVat',
-                'vatPct',
-                'type',
-            ),
-            'hosted' => array(
-                'artNo',
-                'description',
-                'quantity',
-                'unitMeasure',
-                'unitAmountWithoutVat',
-                'vatPct',
-                'totalVatAmount',
-                'totalAmount',
-            ),
-            'simplified' => array(
-                'id',
-                'artNo',
-                'description',
-                'quantity',
-                'unitMeasure',
-                'unitAmountWithoutVat',
-                'vatPct',
-                'totalVatAmount',
-                'totalAmount',
-            ),
-            'minimalistic' => array(
-                'artNo',
-                'description',
-                'unitAmountWithoutVat',
-                'quantity',
-            ),
-        );
+        $paymentSpecKeys = $this->getPaymentSpecKeyScheme();
         if (is_array($specLines)) {
             $myFlow = $this->getPreferredPaymentFlowService();
             if ($myFlowOverrider !== RESURS_FLOW_TYPES::NOT_SET) {
                 $myFlow = $myFlowOverrider;
             }
-            $mySpecRules = array();
+            $mySpecRules = [];
             if ($myFlow == RESURS_FLOW_TYPES::SIMPLIFIED_FLOW) {
-                $mySpecRules = $specRules['simplified'];
+                $mySpecRules = $paymentSpecKeys['simplified'];
             } elseif ($myFlow == RESURS_FLOW_TYPES::HOSTED_FLOW) {
-                $mySpecRules = $specRules['hosted'];
+                $mySpecRules = $paymentSpecKeys['hosted'];
             } elseif ($myFlow == RESURS_FLOW_TYPES::RESURS_CHECKOUT) {
-                $mySpecRules = $specRules['checkout'];
+                $mySpecRules = $paymentSpecKeys['checkout'];
             } elseif ($myFlow == RESURS_FLOW_TYPES::MINIMALISTIC) {
-                $mySpecRules = $specRules['minimalistic'];
+                $mySpecRules = $paymentSpecKeys['minimalistic'];
             }
             $hasMeasure = false;
             foreach ($specLines as $specIndex => $specArray) {
@@ -5158,14 +5304,14 @@ class ResursBank
         $postalCode,
         $country
     ) {
-        $ReturnAddress = array(
+        $ReturnAddress = [
             'fullName' => $fullName,
             'firstName' => $firstName,
             'lastName' => $lastName,
             'addressRow1' => $addressRow1,
             'postalArea' => $postalArea,
             'postalCode' => $postalCode,
-        );
+        ];
 
         $trimAddress = trim($addressRow2); // PHP Compatibility
         if (!empty($trimAddress)) {
@@ -5209,11 +5355,11 @@ class ResursBank
      * @since 1.0.2
      * @since 1.1.2
      */
-    private function setPayloadArray($ArrayKey, $ArrayValue = array())
+    private function setPayloadArray($ArrayKey, $ArrayValue = [])
     {
         if ($ArrayKey == "address" || $ArrayKey == "deliveryAddress") {
             if (!isset($this->Payload['customer'])) {
-                $this->Payload['customer'] = array();
+                $this->Payload['customer'] = [];
             }
             $this->Payload['customer'][$ArrayKey] = $ArrayValue;
         } else {
@@ -5387,7 +5533,7 @@ class ResursBank
         $contactgovernmentId = ""
     ) {
         if (!isset($this->Payload['customer'])) {
-            $this->Payload['customer'] = array();
+            $this->Payload['customer'] = [];
         }
         // Set this if not already set by a getAddress()
         if (!isset($this->Payload['customer']['governmentId'])) {
@@ -5505,11 +5651,11 @@ class ResursBank
         $backUrl = null,
         $encodeType = RESURS_URL_ENCODE_TYPES::NONE
     ) {
-        $SigningPayload['signing'] = array(
+        $SigningPayload['signing'] = [
             'successUrl' => $this->getEncodedSigningUrl($successUrl, RESURS_URL_ENCODE_TYPES::SUCCESSURL, $encodeType),
             'failUrl' => $this->getEncodedSigningUrl($failUrl, RESURS_URL_ENCODE_TYPES::FAILURL, $encodeType),
             'forceSigning' => $forceSigning,
-        );
+        ];
         if (!is_null($backUrl)) {
             $SigningPayload['backUrl'] = $this->getEncodedSigningUrl(
                 $backUrl,
@@ -5557,7 +5703,7 @@ class ResursBank
      * @since 1.0.2
      * @since 1.1.2
      */
-    private function handlePayload($userDefinedPayload = array(), $replacePayload = false)
+    private function handlePayload($userDefinedPayload = [], $replacePayload = false)
     {
         $myFlow = $this->getPreferredPaymentFlowService();
         if (is_array($userDefinedPayload) && count($userDefinedPayload)) {
@@ -5660,10 +5806,10 @@ class ResursBank
             // Making sure payloads are returned as they should look
             if (isset($this->Payload)) {
                 if (!is_array($this->Payload)) {
-                    $this->Payload = array();
+                    $this->Payload = [];
                 }
             } else {
-                $this->Payload = array();
+                $this->Payload = [];
             }
 
             $return = $this->Payload;
@@ -5705,7 +5851,7 @@ class ResursBank
     {
         $this->preparePayload();
 
-        return isset($this->Payload['orderData']) ? $this->Payload['orderData'] : array();
+        return isset($this->Payload['orderData']) ? $this->Payload['orderData'] : [];
     }
 
 
@@ -5777,7 +5923,7 @@ class ResursBank
      * @since 1.1.22
      * @since 1.2.0
      */
-    public function updateCheckoutOrderLines($paymentId = '', $orderLines = array())
+    public function updateCheckoutOrderLines($paymentId = '', $orderLines = [])
     {
         if (empty($paymentId)) {
             throw new \ResursException("Payment id not set");
@@ -5802,10 +5948,12 @@ class ResursBank
         } else {
             $outputOrderLines = $orderLines;
         }
-        $sanitizedOutputOrderLines = $this->sanitizePaymentSpec($outputOrderLines,
-            RESURS_FLOW_TYPES::RESURS_CHECKOUT);
+        $sanitizedOutputOrderLines = $this->sanitizePaymentSpec(
+            $outputOrderLines,
+            RESURS_FLOW_TYPES::RESURS_CHECKOUT
+        );
         $updateOrderLinesResponse = $this->CURL->doPut($this->getCheckoutUrl() . "/checkout/payments/" . $paymentId,
-            array('orderLines' => $sanitizedOutputOrderLines), NETCURL_POST_DATATYPES::DATATYPE_JSON);
+            ['orderLines' => $sanitizedOutputOrderLines], NETCURL_POST_DATATYPES::DATATYPE_JSON);
         $updateOrderLinesResponseCode = $this->CURL->getCode($updateOrderLinesResponse);
         if ($updateOrderLinesResponseCode >= 400) {
             throw new \ResursException("Could not update order lines", $updateOrderLinesResponseCode);
@@ -5851,7 +5999,7 @@ class ResursBank
     public function setCardData($cardNumber = null, $cardAmount = null)
     {
         if (!isset($this->Payload['card'])) {
-            $this->Payload['card'] = array();
+            $this->Payload['card'] = [];
         }
         if (!isset($this->Payload['card']['cardNumber'])) {
             $this->Payload['card']['cardNumber'] = trim($cardNumber);
@@ -5876,7 +6024,7 @@ class ResursBank
             isset($this->Payload['orderData']['totalAmount']) &&
             $this->getPreferredPaymentFlowService() == RESURS_FLOW_TYPES::SIMPLIFIED_FLOW
         ) {
-            $cardInfo = isset($this->Payload['card']) ? $this->Payload['card'] : array();
+            $cardInfo = isset($this->Payload['card']) ? $this->Payload['card'] : [];
             if ((isset($cardInfo['cardNumber']) && empty($cardInfo['cardNumber'])) || !isset($cardInfo['cardNumber'])) {
                 if ((isset($cardInfo['amount']) && empty($cardInfo['amount'])) || !isset($cardInfo['amount'])) {
                     // Adding the exact total amount as we do not rule of exchange rates. For example, adding 500
@@ -5895,11 +6043,11 @@ class ResursBank
 
         if (isset($this->Payload['customer'])) {
             // CARD + (NEWCARD, REVOLVING_CREDIT)
-            $mandatoryExtendedCustomerFields = array('governmentId', 'address', 'phone', 'email', 'type');
+            $mandatoryExtendedCustomerFields = ['governmentId', 'address', 'phone', 'email', 'type'];
             if ($specificType == "CARD") {
-                $mandatoryExtendedCustomerFields = array('governmentId');
+                $mandatoryExtendedCustomerFields = ['governmentId'];
             } elseif (($specificType == "REVOLVING_CREDIT" || $specificType == "NEWCARD")) {
-                $mandatoryExtendedCustomerFields = array('governmentId', 'phone', 'email');
+                $mandatoryExtendedCustomerFields = ['governmentId', 'phone', 'email'];
             }
             if (count($mandatoryExtendedCustomerFields)) {
                 foreach ($this->Payload['customer'] as $customerKey => $customerValue) {
@@ -5933,7 +6081,7 @@ class ResursBank
      * @since 1.1.40
      * @since 1.3.13
      */
-    public function isFraud($paymentArrayOrPaymentId = array())
+    public function isFraud($paymentArrayOrPaymentId = [])
     {
         return (bool)$this->getPaymentContent($paymentArrayOrPaymentId, 'fraud');
     }
@@ -5946,7 +6094,7 @@ class ResursBank
      * @since 1.1.40
      * @since 1.3.13
      */
-    public function isFrozen($paymentArrayOrPaymentId = array())
+    public function isFrozen($paymentArrayOrPaymentId = [])
     {
         return (bool)$this->getPaymentContent($paymentArrayOrPaymentId, 'frozen');
     }
@@ -5959,7 +6107,7 @@ class ResursBank
      * @return bool
      * @throws \Exception
      */
-    public function canCredit($paymentArrayOrPaymentId = array())
+    public function canCredit($paymentArrayOrPaymentId = [])
     {
         $status = (array)$this->getPaymentContent($paymentArrayOrPaymentId, 'status');
         // IS_CREDITED - CREDITABLE
@@ -5978,7 +6126,7 @@ class ResursBank
      * @return bool
      * @throws \Exception
      */
-    public function canDebit($paymentArrayOrPaymentId = array())
+    public function canDebit($paymentArrayOrPaymentId = [])
     {
         $status = (array)$this->getPaymentContent($paymentArrayOrPaymentId, 'status');
         // IS_DEBITED - DEBITABLE
@@ -5999,7 +6147,7 @@ class ResursBank
      * @since 1.0.2
      * @since 1.1.2
      */
-    public function canAnnul($paymentArrayOrPaymentId = array())
+    public function canAnnul($paymentArrayOrPaymentId = [])
     {
         return $this->canDebit($paymentArrayOrPaymentId);
     }
@@ -6015,7 +6163,7 @@ class ResursBank
      * @since 1.1.13
      * @since 1.2.0
      */
-    public function getIsDebited($paymentArrayOrPaymentId = array())
+    public function getIsDebited($paymentArrayOrPaymentId = [])
     {
         $Status = (array)$this->getPaymentContent($paymentArrayOrPaymentId, "status");
         if (in_array("IS_DEBITED", $Status)) {
@@ -6036,7 +6184,7 @@ class ResursBank
      * @since 1.1.13
      * @since 1.2.0
      */
-    public function getIsCredited($paymentArrayOrPaymentId = array())
+    public function getIsCredited($paymentArrayOrPaymentId = [])
     {
         $Status = (array)$this->getPaymentContent($paymentArrayOrPaymentId, "status");
         if (in_array("IS_CREDITED", $Status)) {
@@ -6057,7 +6205,7 @@ class ResursBank
      * @since 1.1.13
      * @since 1.2.0
      */
-    public function getIsAnnulled($paymentArrayOrPaymentId = array())
+    public function getIsAnnulled($paymentArrayOrPaymentId = [])
     {
         $Status = (array)$this->getPaymentContent($paymentArrayOrPaymentId, "status");
         if (in_array("IS_ANNULLED", $Status)) {
@@ -6081,7 +6229,7 @@ class ResursBank
     public function getPaymentSpecCount($paymentIdOrPaymentObject)
     {
         $countObject = $this->getPaymentSpecByStatus($paymentIdOrPaymentObject);
-        $returnedCountObject = array();
+        $returnedCountObject = [];
         foreach ($countObject as $status => $theArray) {
             $returnedCountObject[$status] = is_array($theArray) ? count($theArray) : 0;
         }
@@ -6095,69 +6243,449 @@ class ResursBank
      * as is.
      *
      * @param $paymentIdOrPaymentObject
-     *
+     * @param bool $getAsTable
      * @return array
      * @throws \Exception
+     * @since Ever.
+     * @deprecated 1.3.21 Use getPaymentDiffByStatus instead!
      */
-    public function getPaymentSpecByStatus($paymentIdOrPaymentObject)
+    public function getPaymentSpecByStatus($paymentIdOrPaymentObject, $getAsTable = false)
+    {
+        return $this->getPaymentDiffByStatus($paymentIdOrPaymentObject, $getAsTable);
+    }
+
+    /**
+     * Get merged paymentdiff.
+     *
+     * @param $paymentIdOrPaymentObject
+     * @param bool $getAsTable
+     * @return array|mixed
+     * @throws Exception
+     * @since 1.3.21
+     */
+    public function getPaymentDiffByStatus($paymentIdOrPaymentObject, $getAsTable = false)
     {
         $usePayment = $paymentIdOrPaymentObject;
         // Current specs available: AUTHORIZE, DEBIT, CREDIT, ANNUL
-        $orderLinesByStatus = array(
-            'AUTHORIZE' => array(),
-            'DEBIT' => array(),
-            'CREDIT' => array(),
-            'ANNUL' => array(),
-        );
+        $orderLinesByStatus = [
+            'AUTHORIZE' => [],
+            'DEBIT' => [],
+            'CREDIT' => [],
+            'ANNUL' => [],
+        ];
         if (is_string($paymentIdOrPaymentObject)) {
             $usePayment = $this->getPayment($paymentIdOrPaymentObject);
         }
         if (is_object($usePayment) && isset($usePayment->id) && isset($usePayment->paymentDiffs)) {
             $paymentDiff = $usePayment->paymentDiffs;
-            // If the paymentdiff is an array, we'll know that more than one thing has happened to the payment,
-            // and it's probably only an authorization
-            if (is_array($paymentDiff)) {
-                foreach ($paymentDiff as $paymentDiffObject) {
-                    // Initially, let's make sure there is a key for the paymentdiff.
-                    if (!isset($orderLinesByStatus[$paymentDiffObject->type])) {
-                        $orderLinesByStatus[$paymentDiffObject->type] = array();
-                    }
-                    // Second, make sure that the paymentdiffs are collected as one array per
-                    // specType (AUTHORIZE,DEBIT,CREDIT,ANNULL)
-                    if (is_array($paymentDiffObject->paymentSpec->specLines)) {
-                        // Note: array_merge won't work if the initial array is empty. Instead we'll append
-                        // it to the above array. Also note that appending with += may fail when indexes matches
-                        // each other on both sides - in that case not all objects will be attached
-                        // properly to this array.
-                        if (!$this->isFlag('MERGEBYSTATUS_DEPRECATED_METHOD')) {
-                            foreach ($paymentDiffObject->paymentSpec->specLines as $arrayObject) {
-                                $orderLinesByStatus[$paymentDiffObject->type][] = $arrayObject;
-                            }
-                        } else {
-                            $orderLinesByStatus[$paymentDiffObject->type] += $paymentDiffObject->paymentSpec->specLines;
-                        }
-                    } elseif (is_object($paymentDiffObject)) {
-                        $orderLinesByStatus[$paymentDiffObject->type][] = $paymentDiffObject->paymentSpec->specLines;
-                    }
-                }
-            } else {
-                // If the paymentdiff is an object we'd know that only one thing has occured in the order.
-                // Keep in mind that, if an order has been debited, there should be rows both for the debiting and
-                // the authorization (which shows each orderline separated on which steps it went through).
-                if (!isset($orderLinesByStatus[$paymentDiff->type])) {
-                    $orderLinesByStatus[$paymentDiff->type] = array();
-                }
-                if (is_array($paymentDiff->paymentSpec->specLines)) {
-                    // Note: array_merge won't work if the initial array is empty. Instead we'll
-                    // append it to the above array.
-                    $orderLinesByStatus[$paymentDiff->type] += $paymentDiff->paymentSpec->specLines;
-                } elseif (is_object($paymentDiff->paymentSpec->specLines)) {
-                    $orderLinesByStatus[$paymentDiff->type][] = $paymentDiff->paymentSpec->specLines;
+            // Single row diff should be pushed up to a proper array.
+            if (isset($paymentDiff->type)) {
+                $paymentDiff = [$paymentDiff->type => $paymentDiff];
+            }
+            if (is_array($paymentDiff) && count($paymentDiff)) {
+                // Inspired by DataGert.
+                foreach ($paymentDiff as $type => $paymentDiffObject) {
+                    $orderLinesByStatus = $this->getMergedPaymentDiff($paymentDiffObject->paymentSpec->specLines,
+                        $orderLinesByStatus, $paymentDiffObject->type);
                 }
             }
         }
 
+        // We use this table to collect valuable information, like what's left of each object.
+        $asTable = $this->getPaymentDiffAsTable($orderLinesByStatus);
+
+        if ($getAsTable) {
+            return $asTable;
+        }
+
         return $orderLinesByStatus;
+    }
+
+    /**
+     * @param $paymentIdOrPaymentObject
+     * @return array
+     * @throws Exception
+     * @since 1.3.21
+     */
+    public function getPaymentDiffByAbility($paymentIdOrPaymentObject)
+    {
+        $paymentDiffTable = $this->getPaymentDiffByStatus($paymentIdOrPaymentObject, true);
+
+        $orderLinesByStatus = [
+            'DEBIT' => [],
+            'CREDIT' => [],
+            'ANNUL' => [],
+        ];
+
+        foreach ($paymentDiffTable as $row) {
+            $annullable = isset($row['ANNULLABLE']) ? $row['ANNULLABLE'] : 0;
+            $debitable = isset($row['DEBITABLE']) ? $row['DEBITABLE'] : 0;
+            $creditable = isset($row['CREDITABLE']) ? $row['CREDITABLE'] : 0;
+
+            $newOrderRow = $this->getPurgedPaymentRow(
+                $row,
+                [
+                    'AUTHORIZE',
+                    'DEBIT',
+                    'CREDIT',
+                    'ANNUL',
+                    'ANNULLABLE',
+                    'DEBITABLE',
+                    'CREDITABLE',
+                ]
+            );
+
+            $orderLinesByStatus['DEBIT'][] = array_merge($newOrderRow, ['quantity' => $debitable]);
+            $orderLinesByStatus['CREDIT'][] = array_merge($newOrderRow, ['quantity' => $creditable]);
+            $orderLinesByStatus['ANNUL'][] = array_merge($newOrderRow, ['quantity' => $annullable]);
+        }
+
+        $orderLinesByStatus['DEBIT'] = $this->getRecalculatedPaymentDiff($orderLinesByStatus['DEBIT'], true);
+        $orderLinesByStatus['ANNUL'] = $this->getRecalculatedPaymentDiff($orderLinesByStatus['ANNUL'], true);
+        $orderLinesByStatus['CREDIT'] = $this->getRecalculatedPaymentDiff($orderLinesByStatus['CREDIT'], true);
+
+        return $orderLinesByStatus;
+    }
+
+    /**
+     * Pick up each order article and recalculate totalAmount-data. Supports half recursion.
+     *
+     * @param $orderRowArray
+     * @param bool $excludeZeroQuantity
+     * @return array
+     * @since 1.3.21
+     */
+    private function getRecalculatedPaymentDiff($orderRowArray, $excludeZeroQuantity = false)
+    {
+        $return = [];
+
+        if (is_array($orderRowArray) && count($orderRowArray)) {
+            foreach ($orderRowArray as $idx => $row) {
+
+                if (!$row['quantity'] && $excludeZeroQuantity) {
+                    unset($orderRowArray[$idx]);
+                    continue;
+                }
+
+                if (isset($row['artNo'])) {
+                    $orderRowArray[$idx]['totalVatAmount'] = $this->getTotalVatAmount(
+                        $row['unitAmountWithoutVat'],
+                        $row['vatPct'],
+                        $row['quantity']
+                    );
+                    $orderRowArray[$idx]['totalAmount'] = $this->getTotalAmount(
+                        $row['unitAmountWithoutVat'],
+                        $row['vatPct'],
+                        $row['quantity']
+                    );
+                }
+            }
+            // On exclusion we need to resort the indexes.
+            if ($excludeZeroQuantity) {
+                sort($orderRowArray);
+            }
+            $return = $orderRowArray;
+        }
+        return (array)$return;
+    }
+
+    /**
+     * Compile payment status diffs as a horizontal table.
+     *
+     * @param $artRow
+     * @param $orderlineStatuses
+     * @return array
+     * @throws Exception
+     * @since 1.3.21
+     */
+    private function setPaymentDiffTable($artRow, $orderlineStatuses)
+    {
+        if (!is_array($artRow)) {
+            throw new \Exception(
+                sprintf('%s exception: Article row is not an array', __FUNCTION__),
+                500
+            );
+        }
+
+        $debited = $this->getOrderRowMatch($artRow, $orderlineStatuses['DEBIT']);
+        $credited = $this->getOrderRowMatch($artRow, $orderlineStatuses['CREDIT']);
+        $annulled = $this->getOrderRowMatch($artRow, $orderlineStatuses['ANNUL']);
+
+        $return = [
+            'artNo' => $artRow['artNo'],
+            'description' => $artRow['description'],
+            'unitMeasure' => $artRow['unitMeasure'],
+            'unitAmountWithoutVat' => $artRow['unitAmountWithoutVat'],
+            'vatPct' => $artRow['vatPct'],
+            'AUTHORIZE' => isset($artRow['quantity']) ? $artRow['quantity'] : 0,
+            'DEBIT' => isset($debited['quantity']) ? $debited['quantity'] : 0,
+            'CREDIT' => isset($credited['quantity']) ? $credited['quantity'] : 0,
+            'ANNUL' => isset($annulled['quantity']) ? $annulled['quantity'] : 0,
+        ];
+
+        return $return;
+    }
+
+    /**
+     * Render a table with completed data about each orderline.
+     *
+     * @param $orderlineStatuses
+     * @return array
+     * @throws Exception
+     * @since 1.3.21
+     */
+    public function getPaymentDiffAsTable($orderlineStatuses)
+    {
+        $tableStatusList = [];
+
+        if (is_array($orderlineStatuses) && count($orderlineStatuses) && isset($orderlineStatuses['AUTHORIZE'])) {
+            $authorizeObject = $orderlineStatuses['AUTHORIZE'];
+            foreach ($authorizeObject as $artRow) {
+                $tableStatusList[] = $this->setPaymentDiffTable($artRow, $orderlineStatuses);
+            }
+        }
+
+        foreach ($tableStatusList as $idx => $artRow) {
+            $tableStatusList[$idx]['ANNULLABLE'] = $artRow['AUTHORIZE'] - $artRow['DEBIT'] - $artRow['ANNUL'];
+            $tableStatusList[$idx]['DEBITABLE'] = $artRow['AUTHORIZE'] - $artRow['DEBIT'] - $artRow['ANNUL'];
+            $tableStatusList[$idx]['CREDITABLE'] = $artRow['DEBIT'] - $artRow['CREDIT'];
+        }
+
+        $tableStatusList = $this->getMissingPaymentDiffRows($orderlineStatuses, $tableStatusList);
+
+        return $tableStatusList;
+    }
+
+    /**
+     * Find the rest of an order that was added after authorization (like "own credited rows).
+     *
+     * @param $orderlineStatuses
+     * @param $tableStatusList
+     * @return array
+     * @since 1.3.21
+     */
+    private function getMissingPaymentDiffRows($orderlineStatuses, $tableStatusList)
+    {
+        foreach ($orderlineStatuses as $type => $contentArray) {
+            if ($type === "AUTHORIZE") {
+                continue;
+            }
+            foreach ($contentArray as $artRow) {
+                if (!$this->getIsInAuthorize($artRow, $orderlineStatuses['AUTHORIZE'])) {
+                    $setRow = [
+                        'artNo' => $artRow['artNo'],
+                        'description' => $artRow['description'],
+                        'unitMeasure' => $artRow['unitMeasure'],
+                        'unitAmountWithoutVat' => $artRow['unitAmountWithoutVat'],
+                        'vatPct' => $artRow['vatPct'],
+                        'AUTHORIZE' => 0,
+                        'DEBIT' => 0,
+                        'CREDIT' => 0,
+                        'ANNUL' => 0,
+                    ];
+                    $setRow[strtoupper($type)] += $artRow['quantity'];
+                    $tableStatusList[] = $setRow;
+                }
+            }
+        }
+        return $tableStatusList;
+    }
+
+    /**
+     * Check if an article is located in, what we expect, the AUTHORIZE object.
+     *
+     * @param $paymentDiffArtRow
+     * @param $authorizeObject
+     * @return bool
+     * @since 1.3.22
+     */
+    private function getIsInAuthorize($paymentDiffArtRow, $authorizeObject)
+    {
+        $return = false;
+        if ($this->getOrderRowMatch($paymentDiffArtRow, $authorizeObject)) {
+            $return = true;
+        }
+        return $return;
+    }
+
+    /**
+     * Compare two arrays (order rows) and return a full match.
+     *
+     * @param $artRow
+     * @param $matchList
+     * @return array|mixed
+     * @since 1.3.22
+     */
+    private function getOrderRowMatch($artRow, $matchList)
+    {
+        $return = [];
+
+        if (is_array($matchList) && count($matchList)) {
+            foreach ($matchList as $matchRow) {
+                if (!is_array($artRow)) {
+                    // When something went wrong with an expected array.
+                    continue;
+                }
+                $currentArray = array_intersect($this->getPurgedPaymentRow($artRow),
+                    $this->getPurgedPaymentRow($matchRow));
+                if (count($currentArray) === count($this->getPurgedPaymentRow($artRow))) {
+                    $return = $matchRow;
+                    break;
+                }
+            }
+        }
+
+        return $return;
+    }
+
+    /**
+     * @param array $keys
+     * @throws Exception
+     * @since 1.3.23
+     */
+    public function setPurgeGetPaymentKeys($keys = ['totalVatAmount', 'totalAmount', 'quantity', 'id'])
+    {
+        if (is_array($keys)) {
+            // Touch on changes only
+            if (count($keys)) {
+                $this->getPaymentDefaultPurge = $keys;
+                $this->getPaymentDefaultPurgeSet = true;
+            }
+        } else {
+            throw new \Exception(sprintf("Keys sent to %s must be a function!", __FUNCTION__));
+        }
+    }
+
+    /**
+     * Set keys to keep in purger when using aftershop. Setting keys will reverse the way that
+     * setPurgeGetPaymentKeys work, by remove the requested keys and keep the rest for the purger.
+     *
+     * @param array $keepKeys
+     * @return array Confirmation return.
+     * @throws Exception
+     * @since 1.3.23
+     */
+    public function setGetPaymentMatchKeys($keepKeys = ['title', 'description', 'unitAmountWithoutVat'])
+    {
+        $return = [];
+        if (is_string($keepKeys)) {
+            // If this is a string, make sure that the string belongs to a predefined spec.
+            $useKeys = $this->getPaymentSpecKeyScheme($keepKeys, true);
+        } else {
+            if (is_array($keepKeys) && !count($keepKeys)) {
+                $useKeys = $this->getPaymentSpecKeyScheme('tiny');
+            } else {
+                $useKeys = $keepKeys;
+            }
+        }
+
+        $largest = $this->getPaymentSpecKeyScheme('simplified');
+
+        foreach ($largest as $key) {
+            if (!in_array($key, $useKeys)) {
+                $return[] = $key;
+            }
+        }
+
+        // For memory in aftershop.
+        $this->getPaymentDefaultUnPurge = $useKeys;
+        $this->setPurgeGetPaymentKeys($return);
+        return $this->getPaymentDefaultPurge;
+    }
+
+    /**
+     * Private functions made public.
+     *
+     * @return array
+     * @since 1.3.23
+     */
+    public function getPaymentKeysForPurge()
+    {
+        return $this->getPaymentDefaultPurge;
+    }
+
+    /**
+     * Private functions made public.
+     *
+     * @return array
+     * @since 1.3.23
+     */
+    public function getPaymentKeysUnPurgable()
+    {
+        return $this->getPaymentDefaultUnPurge;
+    }
+
+    /**
+     * @param $row
+     * @param array $alsoCleanBy Also include this on special needs.
+     * @param bool $excludeDefaults
+     * @return mixed
+     * @since 1.3.23
+     */
+    private function getPurgedPaymentRow($row, $alsoCleanBy = [], $excludeDefaults = false)
+    {
+        if (!$excludeDefaults) {
+            $cleanBy = array_merge($this->getPaymentDefaultPurge, $alsoCleanBy);
+        } else {
+            $cleanBy = $alsoCleanBy;
+        }
+
+        foreach ($cleanBy as $key) {
+            if (isset($row[$key])) {
+                unset($row[$key]);
+            }
+        }
+        return $row;
+    }
+
+    /**
+     * Merge a "getPayment" by each paymentdiff. This function uses way better keying than the
+     * prior method getPaymentByStatuses() which supports "duplicate articles with diffing prices".
+     *
+     * @param $paymentRows
+     * @param $paymentDiff
+     * @param $paymentType
+     * @return mixed
+     * @since 1.3.22
+     */
+    public function getMergedPaymentDiff($paymentRows, $paymentDiff, $paymentType)
+    {
+        // Convert to correct row, if only one.
+        if (isset($paymentRows->id)) {
+            $paymentRows = [$paymentRows];
+        }
+        if (!isset($paymentDiff[$paymentType])) {
+            $paymentDiff[$paymentType] = [];
+        }
+
+        foreach ($paymentRows as $row) {
+            $isSameArray = [];
+            $currentQuantity = $row->quantity;
+            $currentId = $row->id;
+            // Purge totalVatAmount and totalAmount from this row as the totals are based on the price
+            // and quantity in the current object, which will mismatch on comparation. While merging
+            // the blocks, we don't need those values - they must be recalculated later on. The same rule
+            // is applied to the quantity since either block may have different quantity counts.
+            $rowAsArray = $this->getPurgedPaymentRow((array)$row);
+
+            foreach ($paymentDiff[$paymentType] as $diffIndex => $diffData) {
+                $isSameArray = array_intersect($rowAsArray, $diffData);
+                if (count($isSameArray) === count($rowAsArray)) {
+                    $paymentDiff[$paymentType][$diffIndex]['quantity'] += $currentQuantity;
+                    break;
+                }
+            }
+            if (!count($isSameArray) || count($isSameArray) !== count($rowAsArray)) {
+                // Recreate the quantity and the id, as it was earlier removed to avoid bad keying.
+                $rowAsArray['quantity'] = $currentQuantity;
+                $rowAsArray['id'] = $currentId;
+                $paymentDiff[$paymentType][] = $rowAsArray;
+            }
+        }
+
+        $paymentDiff[$paymentType] = $this->getRecalculatedPaymentDiff($paymentDiff[$paymentType]);
+
+        return $paymentDiff;
     }
 
     /**
@@ -6168,39 +6696,35 @@ class ResursBank
      * @param int $renderType RESURS_AFTERSHOP_RENDER_TYPES as unique type or bitmask
      * @return array
      * @throws \Exception
+     * @since First book of moses.
      */
     public function sanitizeAfterShopSpec(
         $paymentIdOrPaymentObjectData = '',
         $renderType = RESURS_AFTERSHOP_RENDER_TYPES::NONE
     ) {
-        $returnSpecObject = null;
+
+        $returnSpecObject = [];
 
         $this->BIT->setBitStructure(
-            array(
+            [
                 'FINALIZE' => RESURS_AFTERSHOP_RENDER_TYPES::FINALIZE,
                 'CREDIT' => RESURS_AFTERSHOP_RENDER_TYPES::CREDIT,
                 'ANNUL' => RESURS_AFTERSHOP_RENDER_TYPES::ANNUL,
                 'AUTHORIZE' => RESURS_AFTERSHOP_RENDER_TYPES::AUTHORIZE,
-            )
+            ]
         );
 
-        // Get payment spec bulked
-        $paymentIdOrPaymentObject = $this->getPaymentSpecByStatus($paymentIdOrPaymentObjectData);
+        $sanitizedPaymentDiff = $this->getPaymentDiffByAbility($paymentIdOrPaymentObjectData);
+        $canDebitObject = $sanitizedPaymentDiff['DEBIT'];
+        $canCreditObject = $sanitizedPaymentDiff['CREDIT'];
+        $canAnnulObject = $sanitizedPaymentDiff['ANNUL'];
 
         if ($this->BIT->isBit(RESURS_AFTERSHOP_RENDER_TYPES::FINALIZE, $renderType)) {
-            $returnSpecObject = $this->removeFromArray($paymentIdOrPaymentObject['AUTHORIZE'],
-                array_merge($paymentIdOrPaymentObject['DEBIT'], $paymentIdOrPaymentObject['ANNUL'],
-                    $paymentIdOrPaymentObject['CREDIT']));
+            $returnSpecObject = $canDebitObject;
         } elseif ($this->BIT->isBit(RESURS_AFTERSHOP_RENDER_TYPES::CREDIT, $renderType)) {
-            $returnSpecObject = $this->removeFromArray($paymentIdOrPaymentObject['DEBIT'],
-                array_merge($paymentIdOrPaymentObject['ANNUL'], $paymentIdOrPaymentObject['CREDIT']));
+            $returnSpecObject = $canCreditObject;
         } elseif ($this->BIT->isBit(RESURS_AFTERSHOP_RENDER_TYPES::ANNUL, $renderType)) {
-            $returnSpecObject = $this->removeFromArray($paymentIdOrPaymentObject['AUTHORIZE'],
-                array_merge($paymentIdOrPaymentObject['DEBIT'], $paymentIdOrPaymentObject['ANNUL'],
-                    $paymentIdOrPaymentObject['CREDIT']));
-        } else {
-            // If no type is chosen, return all rows
-            $returnSpecObject = $this->removeFromArray($paymentIdOrPaymentObject, array());
+            $returnSpecObject = $canAnnulObject;
         }
 
         return $returnSpecObject;
@@ -6339,7 +6863,6 @@ class ResursBank
             }
             $this->addMetaData($paymentId, "CustomerId", $this->customerId);
         } catch (\Exception $metaResponseException) {
-
         }
 
         return true;
@@ -6380,17 +6903,24 @@ class ResursBank
      */
     private function getAfterShopObjectByPayload(
         $paymentId = "",
-        $customPayloadItemList = array(),
+        $customPayloadItemList = [],
         $payloadType = RESURS_AFTERSHOP_RENDER_TYPES::NONE
     ) {
-        $finalAfterShopSpec = array(
+        $finalAfterShopSpec = [
             'paymentId' => $paymentId,
-        );
+        ];
+
+        // getPaymentDiffByStatus, replaces getPaymentSpecByStatus
+        $specStatus = $this->getPaymentDiffByStatus($paymentId);
+        $specStatusTable = $this->getPaymentDiffAsTable($specStatus);
+
         if (!is_array($customPayloadItemList)) {
             // Make sure this is correct
-            $customPayloadItemList = array();
+            $customPayloadItemList = [];
         }
-
+        if ($this->speclineCustomization && !count($customPayloadItemList)) {
+            $customPayloadItemList = $this->SpecLines;
+        }
         $storedPayment = $this->getPayment($paymentId);
         $paymentMethod = $storedPayment->paymentMethodId;
         $paymentMethodData = $this->getPaymentMethodSpecific($paymentMethod);
@@ -6411,14 +6941,17 @@ class ResursBank
 
         // Rendered order spec, use when customPayloadItemList is not set, to handle full orders
         $actualEcommerceOrderSpec = $this->sanitizeAfterShopSpec($storedPayment, $payloadType);
-
         $finalAfterShopSpec['createdBy'] = $this->getCreatedBy();
         $this->renderPaymentSpec(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
-
         try {
             // Try to fetch internal order data.
             /** @noinspection PhpUnusedLocalVariableInspection */
+            $this->setFlag('USE_AFTERSHOP_RENDERING', true);
             $orderDataArray = $this->getOrderData();
+            $this->deleteFlag('USE_AFTERSHOP_RENDERING');
+            if (!count($orderDataArray)) {
+                $this->SpecLines += $this->objectsIntoArray($actualEcommerceOrderSpec);
+            }
         } catch (\Exception $getOrderDataException) {
             // If there is no payload, make sure we'll render this from the current payment
             if (
@@ -6430,9 +6963,51 @@ class ResursBank
             }
         }
 
+        // Still-Empty Indicator.
+        if (!count($customPayloadItemList)) {
+            // As we currently want to be able to handle partial orders this part tells ecom to use the actual order
+            // spec if the custom payload item list is empty.
+            if (!count($this->SpecLines) &&
+                !count($specStatus['DEBIT']) &&
+                !count($specStatus['CREDIT']) &&
+                !count($specStatus['ANNUL'])
+            ) {
+                $customPayloadItemList = $actualEcommerceOrderSpec;
+            } else {
+                // We should probably give up here and go for the fully merged diff.
+                $customPayloadItemList = $specStatus['AUTHORIZE'];
+            }
+        }
+
         if (count($customPayloadItemList)) {
-            // If there is a customized specrowArray injected, no appending should occur.
-            $this->SpecLines = $this->objectsIntoArray($customPayloadItemList);
+            // Is $customPayloadItemList correctly formatted?
+            switch ($payloadType) {
+                case RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_FINALIZE:
+                    $customPayloadItemListValidated = $this->getValidatedAftershopRows(
+                        $specStatusTable,
+                        $customPayloadItemList,
+                        'debit'
+                    );
+                    break;
+                case RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_ANNUL:
+                    $customPayloadItemListValidated = $this->getValidatedAftershopRows(
+                        $specStatusTable,
+                        $customPayloadItemList,
+                        'annul'
+                    );
+                    break;
+                case RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_CREDIT:
+                    $customPayloadItemListValidated = $this->getValidatedAftershopRows(
+                        $specStatusTable,
+                        $customPayloadItemList,
+                        'credit'
+                    );
+                    break;
+                default:
+                    $customPayloadItemListValidated = $customPayloadItemList;
+            };
+
+            $this->SpecLines = $customPayloadItemListValidated;
         }
         $this->renderPaymentSpec(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
         $this->setFlag('USE_AFTERSHOP_RENDERING', true);
@@ -6461,54 +7036,50 @@ class ResursBank
     }
 
     /**
-     * Clean up payload after usage
+     * Clean up payload after usage.
      *
      * @since 1.1.22
      */
     public function resetPayload()
     {
-        $this->PayloadHistory[] = array(
+        $this->PayloadHistory[] = [
             'Payload' => $this->Payload,
             'SpecLines' => $this->SpecLines,
-        );
+        ];
 
         // Flags that prevents any reset of payloads. Here, it will be just filled.
         if ($this->getFlag('NO_RESET_PAYLOAD')) {
             return;
         }
 
-        $this->SpecLines = array();
-        $this->Payload = array();
-    }
-
-    /**
-     * @param $paymentId
-     */
-    private function setAfterShopPaymentId($paymentId)
-    {
-        if (empty($this->preferredId)) {
-            $this->preferredId = $paymentId;
-        }
+        $this->SpecLines = [];
+        $this->Payload = [];
     }
 
     /**
      * Aftershop Payment Finalization (DEBIT)
      *
-     * Make sure that you are running this with try-catches in cases where failures may occur.
-     *
      * @param $paymentId
      * @param array $customPayloadItemList
      * @param bool $runOnce Only run this once, throw second time
-     *
+     * @param bool $skipSpecValidation Set to true, you're skipping validation of orderrows.
      * @return bool
      * @throws \Exception
      * @since 1.0.22
      * @since 1.1.22
      * @since 1.2.0
      */
-    public function paymentFinalize($paymentId = "", $customPayloadItemList = array(), $runOnce = false)
-    {
-        //$this->setAfterShopPaymentId($paymentId);
+    public function paymentFinalize(
+        $paymentId = "",
+        $customPayloadItemList = [],
+        $runOnce = false,
+        $skipSpecValidation = false
+    ) {
+        if (!is_array($customPayloadItemList)) {
+            $customPayloadItemList = [];
+        }
+
+        $this->setAftershopPaymentValidation($skipSpecValidation);
 
         try {
             $afterShopObject = $this->getAfterShopObjectByPayload(
@@ -6529,6 +7100,7 @@ class ResursBank
             }
             throw $afterShopObjectException;
         }
+
         $cachedPayment = $this->getPaymentCached();
         if (!is_null($cachedPayment) &&
             is_object($cachedPayment) &&
@@ -6576,38 +7148,61 @@ class ResursBank
      *
      * @param string $paymentId
      * @param array $customPayloadItemList
-     *
+     * @param bool $runOnce
+     * @param bool $skipSpecValidation
      * @return bool
-     * @throws \Exception
+     * @throws Exception
      */
-    public function finalizePayment($paymentId = "", $customPayloadItemList = array())
-    {
-        return $this->paymentFinalize($paymentId, $customPayloadItemList);
+    public function finalizePayment(
+        $paymentId = "",
+        $customPayloadItemList = [],
+        $runOnce = false,
+        $skipSpecValidation = false
+    ) {
+        return $this->paymentFinalize($paymentId, $customPayloadItemList, $runOnce, $skipSpecValidation);
     }
 
     /**
      * Aftershop Payment Annulling (ANNUL)
      *
-     * Make sure that you are running this with try-catches in cases where failures may occur.
-     *
      * @param $paymentId
      * @param array $customPayloadItemList
      * @param bool $runOnce Only run this once, throw second time
-     *
+     * @param bool $skipSpecValidation Set to true, you're skipping validation of orderrows.
      * @return bool
      * @throws \Exception
      * @since 1.0.22
      * @since 1.1.22
      * @since 1.2.0
      */
-    public function paymentAnnul($paymentId = "", $customPayloadItemList = array(), $runOnce = false)
-    {
-        //$this->setAfterShopPaymentId($paymentId);
+    public function paymentAnnul(
+        $paymentId = "",
+        $customPayloadItemList = [],
+        $runOnce = false,
+        $skipSpecValidation = false
+    ) {
+        if (!is_array($customPayloadItemList)) {
+            $customPayloadItemList = [];
+        }
 
-        $afterShopObject = $this->getAfterShopObjectByPayload($paymentId, $customPayloadItemList,
-            RESURS_AFTERSHOP_RENDER_TYPES::ANNUL);
+        $this->setAftershopPaymentValidation($skipSpecValidation);
+
+        $afterShopObject = $this->getAfterShopObjectByPayload(
+            $paymentId,
+            $customPayloadItemList,
+            RESURS_AFTERSHOP_RENDER_TYPES::ANNUL
+        );
         $this->aftershopPrepareMetaData($paymentId);
         try {
+            // We did nothing here since there was no orderlines.
+            if (!isset($afterShopObject['specLines']) ||
+                (
+                    is_array($afterShopObject['specLines']) &&
+                    !count($afterShopObject['specLines'])
+                )
+            ) {
+                return false;
+            }
             $afterShopResponseCode = $this->postService("annulPayment", $afterShopObject, true);
             if ($afterShopResponseCode >= 200 && $afterShopResponseCode < 300) {
                 $this->resetPayload();
@@ -6631,13 +7226,18 @@ class ResursBank
      *
      * @param string $paymentId
      * @param array $customPayloadItemList
-     *
+     * @param bool $runOnce
+     * @param bool $skipSpecValidation
      * @return bool
-     * @throws \Exception
+     * @throws Exception
      */
-    public function annulPayment($paymentId = "", $customPayloadItemList = array())
-    {
-        return $this->paymentAnnul($paymentId, $customPayloadItemList);
+    public function annulPayment(
+        $paymentId = "",
+        $customPayloadItemList = [],
+        $runOnce = false,
+        $skipSpecValidation = false
+    ) {
+        return $this->paymentAnnul($paymentId, $customPayloadItemList, $runOnce, $skipSpecValidation);
     }
 
     /**
@@ -6648,21 +7248,41 @@ class ResursBank
      * @param $paymentId
      * @param array $customPayloadItemList
      * @param bool $runOnce Only run this once, throw second time
-     *
+     * @param bool $skipSpecValidation Set to true, you're skipping validation of orderrows.
      * @return bool
      * @throws \Exception
      * @since 1.0.22
      * @since 1.1.22
      * @since 1.2.0
      */
-    public function paymentCredit($paymentId = "", $customPayloadItemList = array(), $runOnce = false)
-    {
-        //$this->setAfterShopPaymentId($paymentId);
+    public function paymentCredit(
+        $paymentId = "",
+        $customPayloadItemList = [],
+        $runOnce = false,
+        $skipSpecValidation = false
+    ) {
+        if (!is_array($customPayloadItemList)) {
+            $customPayloadItemList = [];
+        }
 
-        $afterShopObject = $this->getAfterShopObjectByPayload($paymentId, $customPayloadItemList,
-            RESURS_AFTERSHOP_RENDER_TYPES::CREDIT);
+        $this->setAftershopPaymentValidation($skipSpecValidation);
+
+        $afterShopObject = $this->getAfterShopObjectByPayload(
+            $paymentId,
+            $customPayloadItemList,
+            RESURS_AFTERSHOP_RENDER_TYPES::CREDIT
+        );
         $this->aftershopPrepareMetaData($paymentId);
         try {
+            // We did nothing here since there was no orderlines.
+            if (!isset($afterShopObject['specLines']) ||
+                (
+                    is_array($afterShopObject['specLines']) &&
+                    !count($afterShopObject['specLines'])
+                )
+            ) {
+                return false;
+            }
             $afterShopResponseCode = $this->postService("creditPayment", $afterShopObject, true);
             if ($afterShopResponseCode >= 200 && $afterShopResponseCode < 300) {
                 $this->resetPayload();
@@ -6670,7 +7290,10 @@ class ResursBank
                 return true;
             }
         } catch (\Exception $creditException) {
-            if ($creditException->getCode() == 29 && !$this->isFlag('SKIP_AFTERSHOP_INVOICE_CONTROL') && !$runOnce) {
+            if (
+                $creditException->getCode() == 29 &&
+                !$this->isFlag('SKIP_AFTERSHOP_INVOICE_CONTROL') && !$runOnce
+            ) {
                 $this->getNextInvoiceNumberByDebits(5);
 
                 return $this->paymentCredit($paymentId, $customPayloadItemList, true);
@@ -6686,13 +7309,33 @@ class ResursBank
      *
      * @param string $paymentId
      * @param array $customPayloadItemList
-     *
+     * @param bool $runOnce
+     * @param bool $skipSpecValidation
      * @return bool
-     * @throws \Exception
+     * @throws Exception
      */
-    public function creditPayment($paymentId = "", $customPayloadItemList = array())
+    public function creditPayment(
+        $paymentId = "",
+        $customPayloadItemList = [],
+        $runOnce = false,
+        $skipSpecValidation = false
+    ) {
+        return $this->paymentCredit($paymentId, $customPayloadItemList, $runOnce, $skipSpecValidation);
+    }
+
+    /**
+     * Get configuration of paymentspec validation during aftershop actions.
+     *
+     * @param bool $skipValidationStatus
+     */
+    private function setAftershopPaymentValidation($skipValidationStatus = false)
     {
-        return $this->paymentCredit($paymentId, $customPayloadItemList);
+        // Flag overriders.
+        if ($this->isFlag('SKIP_AFTERSHOP_VALIDATION')) {
+            $skipValidationStatus = true;
+        }
+
+        $this->skipAfterShopPaymentValidation = $skipValidationStatus;
     }
 
     /**
@@ -6701,70 +7344,66 @@ class ResursBank
      * This function cancels a full order depending on the order content. Payloads MAY be customized but on your own
      * risk!
      *
-     * @param $paymentId
+     * @param string $paymentId
      * @param array $customPayloadItemList
-     *
+     * @param bool $skipSpecValidation Set to true, you're skipping validation of orderrows.
      * @return bool
-     * @throws \Exception
+     * @throws Exception
      * @since 1.0.22
      * @since 1.1.22
      * @since 1.2.0
      */
-    public function paymentCancel($paymentId = "", $customPayloadItemList = array())
+    public function paymentCancel($paymentId = "", $customPayloadItemList = [], $skipSpecValidation = false)
     {
-        // Collect the payment
-        $currentPayment = $this->getPayment($paymentId);
-        // Collect the payment sorted by status
-        $currentPaymentSpec = $this->getPaymentSpecByStatus($currentPayment);
+        if (!is_array($customPayloadItemList)) {
+            $customPayloadItemList = [];
+        }
 
-        // Sanitized paymentspec based on what to CREDIT
-        $creditObject = $this->sanitizeAfterShopSpec($currentPayment, RESURS_AFTERSHOP_RENDER_TYPES::CREDIT);
-        // Sanitized paymentspec based on what to ANNUL
-        $annulObject = $this->sanitizeAfterShopSpec($currentPayment, RESURS_AFTERSHOP_RENDER_TYPES::ANNUL);
+        $this->setAftershopPaymentValidation($skipSpecValidation);
+
+        $paymentData = $this->getPayment($paymentId);
+        // Collect the payment sorted by status
+        $currentPaymentTable = $this->getPaymentDiffByStatus($paymentData, true);
+
+        // Sanitized paymentspec based on what CAN be fully ANNULLED (and actually also debited) wit no custom payment load.
+        $fullAnnulObject = $this->sanitizeAfterShopSpec($this->getPayment($paymentId),
+            RESURS_AFTERSHOP_RENDER_TYPES::ANNUL);
+        // Sanitized paymentspec based on what CAN be fully CREDITed with no custom payment load.
+        $fullCreditObject = $this->sanitizeAfterShopSpec($this->getPayment($paymentId),
+            RESURS_AFTERSHOP_RENDER_TYPES::CREDIT);
 
         if (is_array($customPayloadItemList) && count($customPayloadItemList)) {
             $this->SpecLines = array_merge($this->SpecLines, $customPayloadItemList);
         }
         $this->renderPaymentSpec(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
-
         $this->aftershopPrepareMetaData($paymentId);
+        // Render and current orderlines. This may contain customized orderlines.
+        $currentOrderLines = $this->getOrderLines();
+
         try {
-            // Render and check if this is customized
-            $currentOrderLines = $this->getOrderLines();
-
             if (is_array($currentOrderLines) && count($currentOrderLines)) {
-                // If it is customized, we need to render the cancellation differently to specify what's what.
+                // If the orderrows are custom (addOrderLine or "deprecated array mode") we actually don't
+                // need the old section anymore as the "GertFormula" was highly effective, when it came
+                // to recalculate "what's left". However, we should probably leave some kind of validation
+                // to make the requested object legit. For example, if developers are sending other
+                // stuff in that does not cover what's already in the order, such rows should not be
+                // able to pass trough. Also, the formula made this section broken.
 
-                // Validation object - Contains everything that CAN be credited
-                $validatedCreditObject = $this->removeFromArray($currentPaymentSpec['DEBIT'],
-                    array_merge($currentPaymentSpec['ANNUL'], $currentPaymentSpec['CREDIT']));
-                // Validation object - Contains everything that CAN be annulled
-                $validatedAnnulmentObject = $this->removeFromArray($currentPaymentSpec['AUTHORIZE'],
-                    array_merge($currentPaymentSpec['DEBIT'], $currentPaymentSpec['ANNUL'],
-                        $currentPaymentSpec['CREDIT']));
-
-                // Clean up selected rows from the credit element and keep those rows than still can be credited and
-                // matches the orderRow-request
-                $newCreditObject = $this->objectsIntoArray($this->removeFromArray($validatedCreditObject,
-                    $currentOrderLines, true));
-
-                // Clean up selected rows from the credit element and keep those rows than still can be annulled and
-                // matches the orderRow-request
-                $newAnnulObject = $this->objectsIntoArray($this->removeFromArray($validatedAnnulmentObject,
-                    $currentOrderLines, true));
+                $newCreditObject = $this->getValidatedAftershopRows($currentPaymentTable, $currentOrderLines, 'credit');
+                $newAnnulObject = $this->getValidatedAftershopRows($currentPaymentTable, $currentOrderLines, 'annul');
 
                 if (is_array($newCreditObject) && count($newCreditObject)) {
-                    $this->paymentCredit($paymentId, $newCreditObject);
+                    $this->paymentCredit($paymentId, $newCreditObject, $this->skipAfterShopPaymentValidation);
                 }
                 if (is_array($newAnnulObject) && count($newAnnulObject)) {
-                    $this->paymentAnnul($paymentId, $newAnnulObject);
+                    $this->paymentAnnul($paymentId, $newAnnulObject, false, $this->skipAfterShopPaymentValidation);
                 }
             } else {
-                if (is_array($creditObject) && count($creditObject)) {
-                    $this->paymentCredit($paymentId, $creditObject);
+                if (is_array($fullAnnulObject) && count($fullAnnulObject)) {
+                    $this->paymentAnnul($paymentId, $fullAnnulObject, $this->skipAfterShopPaymentValidation);
                 }
-                if (is_array($annulObject) && count($annulObject)) {
-                    $this->paymentAnnul($paymentId, $annulObject);
+                if (is_array($fullCreditObject) && count($fullCreditObject)) {
+                    $this->paymentCredit($paymentId, $fullCreditObject, $this->skipAfterShopPaymentValidation);
                 }
             }
         } catch (\Exception $cancelException) {
@@ -6776,17 +7415,190 @@ class ResursBank
     }
 
     /**
+     * If more than two fields are missing in the requested payment object, this should be considered
+     * an object with missing data.
+     *
+     * @param $duplicateState
+     * @throws Exception
+     * @since 1.3.22
+     */
+    private function checkUnsafePaymentObject($duplicateState)
+    {
+        if ($duplicateState > 2) {
+            throw new \Exception(
+                'There are more articles in this order that has the same article number, but where other content may differ.',
+                400
+            );
+        }
+    }
+
+    /**
+     * Validating of requested aftershop orderrows.
+     *
+     * @param $currentPaymentSpecTable
+     * @param $currentOrderLines
+     * @param $type
+     * @return array
+     * @throws Exception
+     * @since 1.3.21
+     */
+    private function getValidatedAftershopRows($currentPaymentSpecTable, $currentOrderLines, $type)
+    {
+        $return = [];
+        $id = 0;
+
+        foreach ($currentOrderLines as $idx => $orderRow) {
+            // Count unsafe payment objects per row.
+            $isUnsafePaymentObject = 0;
+
+            $realQuantity = null;
+            $realUnitAmount = null;
+            $realVatPct = null;
+
+            $realData = [];
+            if ($this->skipAfterShopPaymentValidation) {
+                foreach ($this->getPaymentDefaultUnPurge as $field) {
+                    if (isset($orderRow[$field])) {
+                        $realData[$field] = $orderRow[$field];
+                    }
+                }
+                $realQuantity = $orderRow['quantity'];
+                $realUnitAmount = $orderRow['unitAmountWithoutVat'];
+                $realVatPct = $orderRow['vatPct'];
+            }
+
+            foreach ($currentPaymentSpecTable as $statusRow) {
+                if ($type === 'credit') {
+                    $quantityMatch = isset($statusRow['CREDITABLE']) ? $statusRow['CREDITABLE'] : 0;
+                } else {
+                    if ($type === 'annul') {
+                        $quantityMatch = isset($statusRow['ANNULLABLE']) ? $statusRow['ANNULLABLE'] : 0;
+                    } else {
+                        if ($type === 'debit') {
+                            $quantityMatch = isset($statusRow['DEBITABLE']) ? $statusRow['DEBITABLE'] : 0;
+                        } else {
+                            if ($type === 'authorize') {
+                                $quantityMatch = isset($statusRow['AUTHORIZE']) ? $statusRow['AUTHORIZE'] : 0;
+                            } else {
+                                $quantityMatch = 0;
+                            }
+                        }
+                    }
+                }
+
+                if (!$quantityMatch) {
+                    continue;
+                }
+
+                // If the requested quantity is legit (below the maximum matchable amount)
+                // we should use the requested quantity.
+                if ($orderRow['quantity'] <= $quantityMatch) {
+                    $useQuantity = $orderRow['quantity'];
+                } else {
+                    // If the requested quantity is set too high (over the maximum matchable amount)
+                    // we should lower the value to the max-allowed quantity instead.
+                    $useQuantity = $quantityMatch;
+                }
+
+                $this->checkUnsafePaymentObject($isUnsafePaymentObject);
+
+                if ((!isset($orderRow['unitAmountWithoutVat']) || empty($orderRow['unitAmountWithoutVat'])) &&
+                    $orderRow['artNo'] == $statusRow['artNo']
+                ) {
+                    $orderRow['unitAmountWithoutVat'] = $statusRow['unitAmountWithoutVat'];
+                    $isUnsafePaymentObject++;
+                }
+
+                if ((!isset($orderRow['description']) || empty($orderRow['description'])) &&
+                    $orderRow['artNo'] == $statusRow['artNo']
+                ) {
+                    $orderRow['description'] = $statusRow['description'];
+                    $isUnsafePaymentObject++;
+                }
+
+                if ($this->skipAfterShopPaymentValidation) {
+                    if (count($realData)) {
+                        foreach ($realData as $key => $value) {
+                            // Protect a few fields from mistakes that is already considered below in the
+                            // validation parts.
+                            if (!in_array($key, ['artNo', 'description', 'quantity'])) {
+                                $orderRow[$key] = $value;
+                            }
+                        }
+                    }
+                    $useQuantity = $realQuantity;
+                    $useUnitAmount = $realUnitAmount;
+                    $useVatPct = $realVatPct;
+                }
+
+                // Validation is based on same article, description and price.
+                // Besides this the validation is also
+                if (
+                    $orderRow['artNo'] == $statusRow['artNo'] &&
+                    $orderRow['description'] == $statusRow['description'] &&
+                    (
+                        $orderRow['unitAmountWithoutVat'] == $statusRow['unitAmountWithoutVat'] ||
+                        $this->skipAfterShopPaymentValidation
+                    ) &&
+                    $useQuantity > 0
+                ) {
+                    $orderRow = $this->getPurgedPaymentRow(
+                        $statusRow,
+                        [
+                            'AUTHORIZE',
+                            'DEBIT',
+                            'CREDIT',
+                            'ANNUL',
+                            'ANNULLABLE',
+                            'DEBITABLE',
+                            'CREDITABLE',
+                        ],
+                        $this->getPaymentDefaultPurgeSet ? true : false
+                    );
+
+                    if (!$this->skipAfterShopPaymentValidation) {
+                        $useUnitAmount = $orderRow['unitAmountWithoutVat'];
+                        $useVatPct = $orderRow['vatPct'];
+                    }
+
+                    // Make sure we use the correct getPaymentData.
+                    $orderRow['id'] = $id;
+                    $orderRow['quantity'] = $useQuantity;
+                    $orderRow['unitAmountWithoutVat'] = $useUnitAmount;
+                    $orderRow['vatPct'] = $useVatPct;
+
+                    $orderRow['totalVatAmount'] = $this->getTotalVatAmount(
+                        $useUnitAmount,
+                        $useVatPct,
+                        $useQuantity
+                    );
+                    $orderRow['totalAmount'] = $this->getTotalAmount(
+                        $useUnitAmount,
+                        $useVatPct,
+                        $useQuantity
+                    );
+                    $return[] = $orderRow;
+                    $id++;
+                }
+            }
+        }
+
+        return $return;
+    }
+
+    /**
      * Shadow function for paymentCancel
      *
      * @param string $paymentId
      * @param array $customPayloadItemList
-     *
+     * @param bool $skipSpecValidation
      * @return bool
-     * @throws \Exception
+     * @throws Exception
+     * @since Forever.
      */
-    public function cancelPayment($paymentId = "", $customPayloadItemList = array())
+    public function cancelPayment($paymentId = "", $customPayloadItemList = [], $skipSpecValidation = false)
     {
-        return $this->paymentCancel($paymentId, $customPayloadItemList);
+        return $this->paymentCancel($paymentId, $customPayloadItemList, $skipSpecValidation);
     }
 
     /**
@@ -6810,11 +7622,11 @@ class ResursBank
             $createdBy = $this->loggedInuser;
         }
         $this->renderPaymentSpec(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
-        $additionalDataArray = array(
+        $additionalDataArray = [
             'paymentId' => $paymentId,
             'paymentSpec' => $this->Payload['orderData'],
             'createdBy' => $createdBy,
-        );
+        ];
         $Result = $this->postService("additionalDebitOfPayment", $additionalDataArray, true);
         if ($Result >= 200 && $Result <= 250) {
             // Reset orderData for each addition
@@ -6841,7 +7653,7 @@ class ResursBank
      * @since 1.1.26
      * @since 1.2.0
      */
-    private function getOrderStatusByPaymentStatuses($paymentData = array(), $paymentMethodObject = null)
+    private function getOrderStatusByPaymentStatuses($paymentData = [], $paymentMethodObject = null)
     {
         $return = RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET;
 
@@ -6921,7 +7733,7 @@ class ResursBank
     public function getOrderStatusByPayment(
         $paymentIdOrPaymentObject = '',
         $byCallbackEvent = RESURS_CALLBACK_TYPES::NOT_SET,
-        $callbackEventDataArrayOrString = array(),
+        $callbackEventDataArrayOrString = [],
         $paymentMethodObject = null
     ) {
 
@@ -7069,7 +7881,7 @@ class ResursBank
      * @since 1.1.41
      * @since 1.3.14
      */
-    public function getInstantFinalizationStatus($paymentData = array(), $paymentMethodObject = null)
+    public function getInstantFinalizationStatus($paymentData = [], $paymentMethodObject = null)
     {
         $return = RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET;
 
@@ -7101,7 +7913,7 @@ class ResursBank
     private function prepareAutoDebitableTypes()
     {
         if (!is_array($this->autoDebitableTypes)) {
-            $this->autoDebitableTypes = array();
+            $this->autoDebitableTypes = [];
         }
     }
 
@@ -7329,7 +8141,7 @@ class ResursBank
      * @return mixed
      * @throws Exception
      */
-    public function __call($func = null, $args = array())
+    public function __call($func = null, $args = [])
     {
         if (class_exists(
                 'Resursbank_Obsolete_Functions',
@@ -7342,7 +8154,7 @@ class ResursBank
             $obsoleteCaller = new Resursbank_Obsolete_Functions($this);
             if (method_exists($obsoleteCaller, $func)) {
                 $this->hasDeprecatedCall = true;
-                return call_user_func_array(array($obsoleteCaller, $func), $args);
+                return call_user_func_array([$obsoleteCaller, $func], $args);
             }
         }
         throw new \ResursException(

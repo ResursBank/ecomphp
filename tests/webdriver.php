@@ -40,10 +40,10 @@ class RESURS_WEBDRIVER
 
         if (is_null($this->CAPABILITIES)) {
             $options = new ChromeOptions();
-            $optionsArray = array(
+            $optionsArray = [
                 '--window-size=1920,1080',
-                '--no-sandbox'
-            );
+                '--no-sandbox',
+            ];
             if ($this->HEADLESS) {
                 $optionsArray[] = '--headless';
             }
