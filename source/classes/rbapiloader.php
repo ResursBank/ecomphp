@@ -5211,20 +5211,17 @@ class ResursBank
             } elseif ($myFlow == RESURS_FLOW_TYPES::MINIMALISTIC) {
                 $mySpecRules = $paymentSpecKeys['minimalistic'];
             }
-            $hasMeasure = false;
             foreach ($specLines as $specIndex => $specArray) {
                 foreach ($specArray as $key => $value) {
-                    if (strtolower($key) === 'unitmeasure' && empty($value)) {
-                        $hasMeasure = true;
-                        $specArray[$key] = $this->defaultUnitMeasure;
-                    }
                     if (!in_array(strtolower($key), array_map("strtolower", $mySpecRules))) {
                         unset($specArray[$key]);
                     }
                 }
-                // Add unit measure if missing
-                if (!$hasMeasure && $myFlow !== RESURS_FLOW_TYPES::MINIMALISTIC) {
-                    $specArray['unitMeasure'] = $this->defaultUnitMeasure;
+                if ($myFlow !== RESURS_FLOW_TYPES::MINIMALISTIC) {
+                    // Reaching this point, realizing the value IS really there and should not be overwritten...
+                    if (!isset($specArray['unitMeasure']) || empty($specArray['unitMeasure'])) {
+                        $specArray['unitMeasure'] = $this->defaultUnitMeasure;
+                    }
                 }
                 $specLines[$specIndex] = $specArray;
             }
