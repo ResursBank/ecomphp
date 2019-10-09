@@ -732,7 +732,7 @@ class resursBankTest extends TestCase
 
         try {
             //$this->TEST->ECOM->setRegisterCallbacksViaRest(false);
-            $this->TEST->ECOM->unregisterEventCallback(255, true);
+            $this->TEST->ECOM->unregisterEventCallback(255, true, true);
         } catch (\Exception $e) {
         }
         $callbacks = $this->TEST->ECOM->getCallBacksByRest(true);
@@ -797,7 +797,7 @@ class resursBankTest extends TestCase
             [
                 'digestAlgorithm' => 'md5',
                 'digestSalt' => uniqid(microtime(true)),
-            ]
+            ], 'testuser', 'testpass'
         )) {
             $cbCount++;
         }
@@ -805,7 +805,10 @@ class resursBankTest extends TestCase
         // Phase 2: Register callback with the globally stored type-based key (see above).
         if ($this->TEST->ECOM->setRegisterCallback(
             RESURS_CALLBACK_TYPES::BOOKED,
-            $templateUrl . "type/booked"
+            $templateUrl . "type/booked",
+            [],
+            'testuser',
+            'testpass'
         )) {
             $cbCount++;
         }
@@ -813,7 +816,10 @@ class resursBankTest extends TestCase
         // Phase 3: Register callback with the absolute global stored key (see above).
         if ($this->TEST->ECOM->setRegisterCallback(
             RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL,
-            $templateUrl . "type/automatic_fraud_control"
+            $templateUrl . "type/automatic_fraud_control",
+            [],
+            'testuser',
+            'testpass'
         )) {
             $cbCount++;
         }
@@ -825,7 +831,9 @@ class resursBankTest extends TestCase
             [
                 'digestAlgorithm' => 'md5',
                 'digestSalt' => uniqid(sha1(md5(microtime(true)))),
-            ]
+            ],
+            'testuser',
+            'testpass'
         )) {
             $cbCount++;
         }
@@ -833,7 +841,10 @@ class resursBankTest extends TestCase
         // Phase 5: Include ANNULLMENT
         if ($this->TEST->ECOM->setRegisterCallback(
             RESURS_CALLBACK_TYPES::ANNULMENT,
-            $templateUrl . "type/annul"
+            $templateUrl . "type/annul",
+            [],
+            'testuser',
+            'testpass'
         )) {
             $cbCount++;
         }
