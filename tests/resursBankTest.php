@@ -1376,7 +1376,9 @@ class resursBankTest extends TestCase
         try {
             $this->TEST->ECOM->updatePaymentReference('not_this', 'not_that');
         } catch (\Exception $e) {
-            static::assertTrue($e->getCode() === 700);
+            // Faultcode 700 = ECom Exception PAYMENT_SESSION_NOT_FOUND.
+            // Faultcode 14 = Payment session does not exist.
+            static::assertTrue($e->getCode() === 700 || $e->getCode() === 14);
         }
     }
 
