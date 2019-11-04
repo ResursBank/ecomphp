@@ -982,7 +982,7 @@ class resursBankTest extends TestCase
     public function proxyByHandle()
     {
         $CURL = $this->TEST->ECOM->getCurlHandle();
-        $CURL->setProxy('10.1.1.55:80', CURLPROXY_HTTP);
+        $CURL->setProxy('proxytest.resurs.it:80', CURLPROXY_HTTP);
         $CURL->setChain();
         try {
             $request = $CURL->doGet('https://identifier.tornevall.net/ip.php');
@@ -1001,7 +1001,7 @@ class resursBankTest extends TestCase
     public function proxyByPaymentMethods()
     {
         $CURL = $this->TEST->ECOM->getCurlHandle();
-        $CURL->setProxy('10.1.1.55:80', CURLPROXY_HTTP);
+        $CURL->setProxy('proxytest.resurs.it:80', CURLPROXY_HTTP);
         $this->TEST->ECOM->setCurlHandle($CURL);
 
         try {
@@ -1026,7 +1026,7 @@ class resursBankTest extends TestCase
     public function proxyByBookSimplified()
     {
         $CURL = $this->TEST->ECOM->getCurlHandle();
-        $CURL->setProxy('10.1.1.55:80', CURLPROXY_HTTP);
+        $CURL->setProxy('proxytest.resurs.it:80', CURLPROXY_HTTP);
         $this->TEST->ECOM->setCurlHandle($CURL);
 
         try {
@@ -1059,7 +1059,7 @@ class resursBankTest extends TestCase
     public function proxyByBookRcoHalfway()
     {
         $CURL = $this->TEST->ECOM->getCurlHandle();
-        $CURL->setProxy('10.1.1.55:80', CURLPROXY_HTTP);
+        $CURL->setProxy('proxytest.resurs.it:80', CURLPROXY_HTTP);
         $this->TEST->ECOM->setCurlHandle($CURL);
 
         try {
@@ -1077,6 +1077,7 @@ class resursBankTest extends TestCase
             $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
             $this->TEST->ECOM->addOrderLine("ProxyArtRequest", "My Proxified Product", 800, 25);
             $iframeRequest = $this->TEST->ECOM->createPayment($this->getMethodId());
+
             static::assertTrue(preg_match('/iframe src/i', $iframeRequest) ? true : false);
         } else {
             static::markTestSkipped('Could not complete proxy test');
