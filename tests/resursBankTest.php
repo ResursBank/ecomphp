@@ -976,6 +976,19 @@ class resursBankTest extends TestCase
     }
 
     /**
+     * @param $addr
+     * @return string|null
+     */
+    private function getProperIp($addr)
+    {
+        $not = ['127.0.0.1'];
+        if (filter_var(trim($addr), FILTER_VALIDATE_IP) && !in_array(trim($addr), $not)) {
+            return trim($addr);
+        }
+        return null;
+    }
+
+    /**
      * @test
      * @throws \Exception
      */
@@ -1012,6 +1025,7 @@ class resursBankTest extends TestCase
         }
 
         if ($this->isProperIp($request['body'])) {
+            $_SERVER['REMOTE_ADDR'] = $this->getProperIp($request['body']);
             static::assertTrue(count($this->TEST->ECOM->getPaymentMethods()) > 0);
         } else {
             static::markTestSkipped('Could not complete proxy test');
@@ -1037,6 +1051,7 @@ class resursBankTest extends TestCase
         }
 
         if ($this->isProperIp($request['body'])) {
+            $_SERVER['REMOTE_ADDR'] = $this->getProperIp($request['body']);
             $customerData = $this->getHappyCustomerData();
             $this->TEST->ECOM->setBillingByGetAddress($customerData);
             $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
@@ -1070,6 +1085,7 @@ class resursBankTest extends TestCase
         }
 
         if ($this->isProperIp($request['body'])) {
+            $_SERVER['REMOTE_ADDR'] = $this->getProperIp($request['body']);
             $customerData = $this->getHappyCustomerData();
             $this->TEST->ECOM->setBillingByGetAddress($customerData);
             $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
