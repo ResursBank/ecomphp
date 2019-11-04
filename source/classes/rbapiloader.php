@@ -8,7 +8,7 @@
  * @author  Resurs Bank Ecommerce
  *          /home/thorne/dev/Resurs/ecomphp/1.1/source/classes/rbapiloader.php<ecommerce.support@resurs.se>
  * @branch  1.3
- * @version 1.3.24
+ * @version 1.3.25
  * @link    https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link    https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @link    https://test.resurs.com/docs/x/KAH1 EComPHP: Bitmasking features
@@ -59,10 +59,10 @@ use TorneLIB\NETCURL_POST_DATATYPES;
 
 // Globals starts here
 if (!defined('ECOMPHP_VERSION')) {
-    define('ECOMPHP_VERSION', '1.3.24');
+    define('ECOMPHP_VERSION', '1.3.25');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20191008');
+    define('ECOMPHP_MODIFY_DATE', '20191104');
 }
 
 /**
@@ -1016,12 +1016,8 @@ class ResursBank
     public function setCurlHandle($newCurlHandle)
     {
         $this->InitializeServices();
-        if ($this->debug) {
-            $this->CURL = $newCurlHandle;
-            $this->CURL_USER_DEFINED = $newCurlHandle;
-        } else {
-            throw new \ResursException("Can't return handle. The module is in wrong state (non-debug mode)", 403);
-        }
+        $this->CURL = $newCurlHandle;
+        $this->CURL_USER_DEFINED = $newCurlHandle;
     }
 
     /**
