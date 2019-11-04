@@ -985,7 +985,7 @@ class resursBankTest extends TestCase
         $CURL->setProxy('proxytest.resurs.it:80', CURLPROXY_HTTP);
         $CURL->setChain();
         try {
-            $request = $CURL->doGet('https://identifier.tornevall.net/ip.php');
+            $request = $CURL->doGet('http://proxytest.resurs.it/ip.php');
             static::assertTrue($this->isProperIp($request->getBody()));
         } catch (\Exception $e) {
             static::markTestSkipped(sprintf('Proxy test skipped (%d): %s', $e->getCode(), $e->getMessage()));
@@ -1005,7 +1005,7 @@ class resursBankTest extends TestCase
         $this->TEST->ECOM->setCurlHandle($CURL);
 
         try {
-            $request = $CURL->doGet('https://identifier.tornevall.net/ip.php');
+            $request = $CURL->doGet('http://proxytest.resurs.it/ip.php');
         } catch (\Exception $e) {
             static::markTestSkipped(sprintf('Proxy test skipped (%d): %s', $e->getCode(), $e->getMessage()));
             return;
@@ -1030,7 +1030,7 @@ class resursBankTest extends TestCase
         $this->TEST->ECOM->setCurlHandle($CURL);
 
         try {
-            $request = $CURL->doGet('https://identifier.tornevall.net/ip.php');
+            $request = $CURL->doGet('http://proxytest.resurs.it/ip.php');
         } catch (\Exception $e) {
             static::markTestSkipped(sprintf('Proxy test skipped (%d): %s', $e->getCode(), $e->getMessage()));
             return;
@@ -1063,7 +1063,7 @@ class resursBankTest extends TestCase
         $this->TEST->ECOM->setCurlHandle($CURL);
 
         try {
-            $request = $CURL->doGet('https://identifier.tornevall.net/ip.php');
+            $request = $CURL->doGet('http://proxytest.resurs.it/ip.php');
         } catch (\Exception $e) {
             static::markTestSkipped(sprintf('Proxy test skipped (%d): %s', $e->getCode(), $e->getMessage()));
             return;
