@@ -7,7 +7,7 @@
  * @package RBEcomPHP
  * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @branch 1.0
- * @version 1.0.49
+ * @version 1.0.50
  * @deprecated Maintenance version only - Use composer based package v1.3 or higher if possible
  * @link https://test.resurs.com/docs/x/BACt Migration from 1.0/1.1 to 1.3 documentation
  * @link https://test.resurs.com/docs/x/TYNM Get started with EComPHP
@@ -53,10 +53,10 @@ use Resursbank\RBEcomPHP\RESURS_DEPRECATED_FLOW;
 
 // Globals starts here
 if (!defined('ECOMPHP_VERSION')) {
-    define('ECOMPHP_VERSION', '1.0.49');
+    define('ECOMPHP_VERSION', '1.0.50');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20191008');
+    define('ECOMPHP_MODIFY_DATE', '20191104');
 }
 
 /**
@@ -1010,12 +1010,8 @@ class ResursBank
     public function setCurlHandle($newCurlHandle)
     {
         $this->InitializeServices();
-        if ($this->debug) {
-            $this->CURL = $newCurlHandle;
-            $this->CURL_USER_DEFINED = $newCurlHandle;
-        } else {
-            throw new \ResursException("Can't return handle. The module is in wrong state (non-debug mode)", 403);
-        }
+        $this->CURL = $newCurlHandle;
+        $this->CURL_USER_DEFINED = $newCurlHandle;
     }
 
     /**
