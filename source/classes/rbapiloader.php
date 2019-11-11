@@ -3,8 +3,9 @@
 /**
  * Resurs Bank API Wrapper - A silent flow normalizer for Resurs Bank.
  *
- * @package RBEcomPHP
- * @author  Resurs Bank Ecommerce <ecommerce.support@resurs.se>
+ * @package Resursbank
+ * @author  Resurs Bank <support@resurs.se>
+ * @author  Tomas Tornevall <tomas.tornevall@resurs.se>
  * @branch  1.3
  * @version 1.3.26
  * @link    https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
