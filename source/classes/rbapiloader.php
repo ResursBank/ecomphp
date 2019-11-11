@@ -1,11 +1,11 @@
 <?php
 
 /**
- * Resurs Bank Passthrough API - A pretty silent ShopFlowSimplifier for Resurs Bank.
- * Compatible with simplifiedFlow, hostedFlow and Resurs Checkout.
+ * Resurs Bank API Wrapper - A silent flow normalizer for Resurs Bank.
  *
- * @package RBEcomPHP
- * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
+ * @package Resursbank
+ * @author  Resurs Bank <support@resurs.se>
+ * @author  Tomas Tornevall <tomas.tornevall@resurs.se>
  * @branch 1.1
  * @version 1.1.50
  * @deprecated Maintenance version only - Use composer based package v1.3 or higher if possible
