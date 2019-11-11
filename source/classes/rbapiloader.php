@@ -4,8 +4,8 @@
  * Compatible with simplifiedFlow, hostedFlow and Resurs Checkout.
  * Differences between 1.0 and 1.1 is the namespacing only.
  *
- * @package RBEcomPHP
- * @author Resurs Bank Ecommerce <ecommerce.support@resurs.se>
+ * @author  Resurs Bank <support@resurs.se>
+ * @author  Tomas Tornevall <tomas.tornevall@resurs.se>
  * @branch 1.0
  * @version 1.0.50
  * @deprecated Maintenance version only - Use composer based package v1.3 or higher if possible
@@ -64,8 +64,6 @@ if (!defined('ECOMPHP_MODIFY_DATE')) {
  *
  * By default Test environment are set. To switch over to production, you explicitly need to tell EComPHP to do
  * this. This a security setup so testings won't be sent into production by mistake.
- *
- * @package Resursbank\RBEcomPHP
  */
 class ResursBank
 {

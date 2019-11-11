@@ -1,12 +1,10 @@
 <?php
 
 /**
- * Resurs Bank EComPHP - Test suite.
- * Some of the tests in this suite is being made to check that the "share data between tests" works properly.
- * As setUp() resets tests to basic each time it runs, we can not share for example payments that we can make more
- * then one test on, with different kind of exepectations.
- * @package EcomPHPTest
- * @author Resurs Bank AB, Tomas Tornevall <tomas.tornevall@resurs.se>
+ * Resurs Bank API Wrapper - A silent flow normalizer for Resurs Bank.
+ *
+ * @package RBEcomPHP
+ * @author  Resurs Bank Ecommerce <ecommerce.support@resurs.se>
  * @version 0.2.0
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://resursbankplugins.atlassian.net/browse/ECOMPHP-214 Rebuilding!
