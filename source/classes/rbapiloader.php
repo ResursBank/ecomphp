@@ -7134,6 +7134,7 @@ class ResursBank
 
                 return $this->paymentFinalize($paymentId, $customPayloadItemList, true);
             }
+
             throw new \ResursException(
                 $finalizationException->getMessage(),
                 $finalizationException->getCode(),
@@ -7408,7 +7409,12 @@ class ResursBank
                 }
             }
         } catch (\Exception $cancelException) {
-            return false;
+            // Last catched exception will be thrown back to the plugin/developer.
+            throw new \ResursException(
+                $cancelException->getMessage(),
+                $cancelException->getCode(),
+                $cancelException
+            );
         }
         $this->resetPayload();
 
