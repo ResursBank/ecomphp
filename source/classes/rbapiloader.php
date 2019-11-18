@@ -68,7 +68,6 @@ if (!defined('ECOMPHP_MODIFY_DATE')) {
  * this. This a security setup so testings won't be sent into production by mistake.
  */
 
-
 /**
  * Class ResursBank
  * @package Resursbank\RBEcomPHP
