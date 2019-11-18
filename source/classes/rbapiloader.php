@@ -55,18 +55,19 @@ use \Exception;
 
 // Globals starts here
 if (!defined('ECOMPHP_VERSION')) {
-    define('ECOMPHP_VERSION', '1.1.50');
+    define('ECOMPHP_VERSION', '1.1.51');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20191104');
+    define('ECOMPHP_MODIFY_DATE', '20191118');
 }
 
 /**
- * Class ResursBank
- *
  * By default Test environment are set. To switch over to production, you explicitly need to tell EComPHP to do
  * this. This a security setup so testings won't be sent into production by mistake.
- *
+ */
+
+/**
+ * Class ResursBank
  * @package Resursbank\RBEcomPHP
  */
 class ResursBank
@@ -7130,6 +7131,7 @@ class ResursBank
 
                 return $this->paymentFinalize($paymentId, $customPayloadItemList, true);
             }
+
             throw new \ResursException(
                 $finalizationException->getMessage(),
                 $finalizationException->getCode(),
@@ -7404,7 +7406,12 @@ class ResursBank
                 }
             }
         } catch (\Exception $cancelException) {
-            return false;
+            // Last catched exception will be thrown back to the plugin/developer.
+            throw new \ResursException(
+                $cancelException->getMessage(),
+                $cancelException->getCode(),
+                $cancelException
+            );
         }
         $this->resetPayload();
 
