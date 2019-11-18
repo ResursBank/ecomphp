@@ -976,16 +976,29 @@ class resursBankTest extends TestCase
     }
 
     /**
+     * @param $addr
+     * @return string|null
+     */
+    private function getProperIp($addr)
+    {
+        $not = ['127.0.0.1'];
+        if (filter_var(trim($addr), FILTER_VALIDATE_IP) && !in_array(trim($addr), $not)) {
+            return trim($addr);
+        }
+        return null;
+    }
+
+    /**
      * @test
      * @throws \Exception
      */
     public function proxyByHandle()
     {
         $CURL = $this->TEST->ECOM->getCurlHandle();
-        $CURL->setProxy('10.1.1.55:80', CURLPROXY_HTTP);
+        $CURL->setProxy('proxytest.resurs.it:80', CURLPROXY_HTTP);
         $CURL->setChain();
         try {
-            $request = $CURL->doGet('https://identifier.tornevall.net/ip.php');
+            $request = $CURL->doGet('http://proxytest.resurs.it/ip.php');
             static::assertTrue($this->isProperIp($request->getBody()));
         } catch (\Exception $e) {
             static::markTestSkipped(sprintf('Proxy test skipped (%d): %s', $e->getCode(), $e->getMessage()));
@@ -1001,17 +1014,18 @@ class resursBankTest extends TestCase
     public function proxyByPaymentMethods()
     {
         $CURL = $this->TEST->ECOM->getCurlHandle();
-        $CURL->setProxy('10.1.1.55:80', CURLPROXY_HTTP);
+        $CURL->setProxy('proxytest.resurs.it:80', CURLPROXY_HTTP);
         $this->TEST->ECOM->setCurlHandle($CURL);
 
         try {
-            $request = $CURL->doGet('https://identifier.tornevall.net/ip.php');
+            $request = $CURL->doGet('http://proxytest.resurs.it/ip.php');
         } catch (\Exception $e) {
             static::markTestSkipped(sprintf('Proxy test skipped (%d): %s', $e->getCode(), $e->getMessage()));
             return;
         }
 
         if ($this->isProperIp($request['body'])) {
+            $_SERVER['REMOTE_ADDR'] = $this->getProperIp($request['body']);
             static::assertTrue(count($this->TEST->ECOM->getPaymentMethods()) > 0);
         } else {
             static::markTestSkipped('Could not complete proxy test');
@@ -1026,17 +1040,18 @@ class resursBankTest extends TestCase
     public function proxyByBookSimplified()
     {
         $CURL = $this->TEST->ECOM->getCurlHandle();
-        $CURL->setProxy('10.1.1.55:80', CURLPROXY_HTTP);
+        $CURL->setProxy('proxytest.resurs.it:80', CURLPROXY_HTTP);
         $this->TEST->ECOM->setCurlHandle($CURL);
 
         try {
-            $request = $CURL->doGet('https://identifier.tornevall.net/ip.php');
+            $request = $CURL->doGet('http://proxytest.resurs.it/ip.php');
         } catch (\Exception $e) {
             static::markTestSkipped(sprintf('Proxy test skipped (%d): %s', $e->getCode(), $e->getMessage()));
             return;
         }
 
         if ($this->isProperIp($request['body'])) {
+            $_SERVER['REMOTE_ADDR'] = $this->getProperIp($request['body']);
             $customerData = $this->getHappyCustomerData();
             $this->TEST->ECOM->setBillingByGetAddress($customerData);
             $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
@@ -1059,17 +1074,18 @@ class resursBankTest extends TestCase
     public function proxyByBookRcoHalfway()
     {
         $CURL = $this->TEST->ECOM->getCurlHandle();
-        $CURL->setProxy('10.1.1.55:80', CURLPROXY_HTTP);
+        $CURL->setProxy('proxytest.resurs.it:80', CURLPROXY_HTTP);
         $this->TEST->ECOM->setCurlHandle($CURL);
 
         try {
-            $request = $CURL->doGet('https://identifier.tornevall.net/ip.php');
+            $request = $CURL->doGet('http://proxytest.resurs.it/ip.php');
         } catch (\Exception $e) {
             static::markTestSkipped(sprintf('Proxy test skipped (%d): %s', $e->getCode(), $e->getMessage()));
             return;
         }
 
         if ($this->isProperIp($request['body'])) {
+            $_SERVER['REMOTE_ADDR'] = $this->getProperIp($request['body']);
             $customerData = $this->getHappyCustomerData();
             $this->TEST->ECOM->setBillingByGetAddress($customerData);
             $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
@@ -1077,6 +1093,7 @@ class resursBankTest extends TestCase
             $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
             $this->TEST->ECOM->addOrderLine("ProxyArtRequest", "My Proxified Product", 800, 25);
             $iframeRequest = $this->TEST->ECOM->createPayment($this->getMethodId());
+
             static::assertTrue(preg_match('/iframe src/i', $iframeRequest) ? true : false);
         } else {
             static::markTestSkipped('Could not complete proxy test');
@@ -1376,7 +1393,9 @@ class resursBankTest extends TestCase
         try {
             $this->TEST->ECOM->updatePaymentReference('not_this', 'not_that');
         } catch (\Exception $e) {
-            static::assertTrue($e->getCode() === 700);
+            // Faultcode 700 = ECom Exception PAYMENT_SESSION_NOT_FOUND.
+            // Faultcode 14 = Payment session does not exist.
+            static::assertTrue($e->getCode() === 700 || $e->getCode() === 14);
         }
     }
 
