@@ -2625,6 +2625,7 @@ class ResursBank
             'purchaseAmount' => isset($parameters['purchaseAmount']) ? $parameters['purchaseAmount'] : null,
         ];
 
+        // Discover changes in request parameters.
         if (isset($this->paymentMethodsCache['params']) && count($this->paymentMethodsCache['methods'])) {
             $currentArray = array_intersect($paymentMethodsParameters, $this->paymentMethodsCache['params']);
             if (count($currentArray) === count($paymentMethodsParameters)) {

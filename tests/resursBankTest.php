@@ -1420,8 +1420,23 @@ class resursBankTest extends TestCase
      */
     public function getPaymentMethodsCache()
     {
-        $methods = $this->TEST->ECOM->getPaymentMethods();
-        $next = $this->TEST->ECOM->getPaymentMethods();
+        $methodArray = [];
+        $counter = 0;
+        $this->TEST->ECOM->getPaymentMethods();
+        $startTime = microtime(true);
+        while ($counter++ <= 20) {
+            $methodArray[] = $this->TEST->ECOM->getPaymentMethods();
+        }
+        $endTime = microtime(true);
+        // Above setup should finish before 5 seconds passed.
+        $diff = $endTime - $startTime;
+        $this->TEST->ECOM->getPaymentMethods(['customerType' => 'NATURAL']);
+        $invoiceCache = $this->TEST->ECOM->getPaymentMethodSpecific('NATURALINVOICE');
+
+        static::assertTrue(
+            ($diff < 5 ? true : false) &&
+            (isset($invoiceCache->id) && $invoiceCache->id === 'NATURALINVOICE')
+        );
     }
 
 
