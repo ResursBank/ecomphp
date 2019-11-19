@@ -407,11 +407,46 @@ class resursBankTest extends TestCase
      */
     public function getPaymentCached()
     {
+        $apiWithoutCache = new ResursBank('a', 'a', null, false, ['setApiCache' => false]);
+        $hasCache = $apiWithoutCache->getApiCache();
+        $hasCacheDefault = $this->TEST->ECOM->getApiCache();
+        $req = [];
+
         $payment = $this->generateSimpleSimplifiedInvoiceOrder(true);
         if (isset($payment->paymentId)) {
-            $this->TEST->ECOM->getPayment($payment->paymentId, true);
-            $payment = $this->TEST->ECOM->getPayment($payment->paymentId, true);
-            static::assertTrue(isset($payment->cached) ? true : false);
+            $req[] = $this->TEST->ECOM->getPayment($payment->paymentId);
+
+            $requestEnd = 0;        // Should end when this reaches 3.
+            $requestStart = time(); // When requests started.
+            $timeTotal = 0;
+
+            // Loop until 4 sec or more.
+            while ($requestEnd < 3) {
+                $requestEnd = time() - $requestStart;
+
+                $currentRequestStartMillis = microtime(true);
+                $req[] = $this->TEST->ECOM->getPayment($payment->paymentId);
+                $currentRequestStopMillis = microtime(true);
+                $currentRequestTimeSpped = $currentRequestStopMillis - $currentRequestStartMillis;
+                $timeTotal += $currentRequestTimeSpped;
+            }
+            $timeMed = $timeTotal / count($req);
+
+            /*
+             * Required test result:
+             *   - The cache should be able to request AT LEAST 10 getPayment in a period of three seconds.
+             *      Initial tests shows that we could make at least 179 requests.
+             *   - Each request should be able to respond under 1 seccond.
+             *   - The first $hasCache was initially disabled via __construct and should be false.
+             *   - The second hasCache is untouched and should be true.
+             */
+            static::assertTrue(
+                count($req) >= 10 ? true : false &&
+                    floatval($timeMed) < 1 &&
+                    !$hasCache
+                    && $hasCacheDefault
+            );
+
         }
     }
 
