@@ -437,6 +437,14 @@ class resursBankTest extends TestCase
             }
             $timeMed = $timeTotal / count($req);
 
+            printf(
+                "Test result: count(req)=%s, timeMed=%s, hasCache=%s, hasCacheDefault=%s",
+                count($req),
+                $timeMed,
+                $hasCache,
+                $hasCacheDefault
+            );
+
             /*
              * Required test result:
              *   - The cache should be able to request AT LEAST 10 getPayment in a period of three seconds.
