@@ -1414,6 +1414,16 @@ class resursBankTest extends TestCase
         );
     }
 
+    /**
+     * @test
+     * @throws \Exception
+     */
+    public function getPaymentMethodsCache()
+    {
+        $methods = $this->TEST->ECOM->getPaymentMethods();
+        $next = $this->TEST->ECOM->getPaymentMethods();
+    }
+
 
     /**
      * @test
