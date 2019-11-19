@@ -4734,8 +4734,10 @@ class ResursBank
             $timeDiff = time() - $lastPaymentExecute;
             if ($timeDiff <= $maxTime) {
                 if ($this->isFlag('PREVENT_EXEC_FLOOD_EXCEPTIONS')) {
-                    throw new \ResursException("You are running createPayment too fast",
-                        \RESURS_EXCEPTIONS::CREATEPAYMENT_TOO_FAST);
+                    throw new \ResursException(
+                        "You are running createPayment too fast",
+                        \RESURS_EXCEPTIONS::CREATEPAYMENT_TOO_FAST
+                    );
                 }
 
                 return false;
@@ -4743,8 +4745,10 @@ class ResursBank
             $this->setSessionVar('lastPaymentExecute', time());
         }
         if (trim(strtolower($this->username)) == "exshop") {
-            throw new \ResursException("The use of exshop is no longer supported",
-                \RESURS_EXCEPTIONS::EXSHOP_PROHIBITED);
+            throw new \ResursException(
+                "The use of exshop is no longer supported",
+                \RESURS_EXCEPTIONS::EXSHOP_PROHIBITED
+            );
         }
         $error = [];
         $myFlow = $this->getPreferredPaymentFlowService();
