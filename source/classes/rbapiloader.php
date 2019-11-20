@@ -129,6 +129,11 @@ class ResursBank
      */
     private $wsdlServices = [];
 
+    /**
+     * @var array $paymentMethodsCache
+     */
+    private $paymentMethodsCache = ['params' => [], 'methods' => []];
+
     ///// Shop related
     /**
      * Always append amount data and ending urls (cost examples)
@@ -2732,17 +2737,31 @@ class ResursBank
     {
         $this->InitializeServices();
 
-        $paymentMethods = $this->postService("getPaymentMethods", [
+        $paymentMethodsParameters = [
             'customerType' => isset($parameters['customerType']) ? $parameters['customerType'] : null,
             'language' => isset($parameters['language']) ? $parameters['language'] : null,
             'purchaseAmount' => isset($parameters['purchaseAmount']) ? $parameters['purchaseAmount'] : null,
-        ]);
+        ];
+
+        // Discover changes in request parameters.
+        if (isset($this->paymentMethodsCache['params']) && count($this->paymentMethodsCache['methods'])) {
+            $currentArray = array_intersect($paymentMethodsParameters, $this->paymentMethodsCache['params']);
+            if (count($currentArray) === count($paymentMethodsParameters)) {
+                return $this->paymentMethodsCache['methods'];
+            }
+        }
+
+        $paymentMethods = $this->postService("getPaymentMethods", $paymentMethodsParameters);
         // Make sure this method always returns an array even if it is only one method.
         // Ecommerce will, in case of only one available method return an object instead of an array.
         if (is_object($paymentMethods)) {
             $paymentMethods = [$paymentMethods];
         }
         $realPaymentMethods = $this->sanitizePaymentMethods($paymentMethods, $getAllMethods);
+        $this->paymentMethodsCache = [
+            'params' => $paymentMethodsParameters,
+            'methods' => $realPaymentMethods,
+        ];
 
         return $realPaymentMethods;
     }
