@@ -689,11 +689,6 @@ class resursBankTest extends TestCase
     public function updateStrangePaymentReference()
     {
         $showFrames = false;
-
-        // Using NO_RESET_PAYLOAD in the test suite may lead to unexpected faults, so
-        // have it disabled, unless you need something very specific out of this test.
-
-        //$this->TEST->ECOM->setFlag('NO_RESET_PAYLOAD');
         $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
         $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
 
@@ -1453,6 +1448,24 @@ class resursBankTest extends TestCase
             ($diff < 5 ? true : false) &&
             (isset($invoiceCache->id) && $invoiceCache->id === 'NATURALINVOICE')
         );
+    }
+
+    /**
+     * @test
+     */
+    public function getAnotherIframe()
+    {
+        $newEcom = new ResursBank('atest', 'atest');
+        $newEcom->setSslSecurityDisabled(true);
+        $newEcom->setEnvRcoUrl('https://checkout-dev.test.resurs.loc/');
+        $newEcom->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
+        $newEcom->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+
+        // First update.
+        $newEcom->addOrderLine("Product-1337", "", 800, 25);
+        $id = $newEcom->getPreferredPaymentId();
+        $iframe = $newEcom->createPayment($id);
+        print_R($iframe);
     }
 
 
