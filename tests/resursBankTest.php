@@ -402,6 +402,65 @@ class resursBankTest extends TestCase
     }
 
     /**
+     * @test
+     * @throws \Exception
+     */
+    public function getPaymentCached()
+    {
+        $apiWithoutCache = new ResursBank('a', 'a', null, false, ['setApiCache' => false]);
+        $hasCache = $apiWithoutCache->getApiCache();
+        $hasCacheDefault = $this->TEST->ECOM->getApiCache();
+        $req = [];
+
+        // Guarantee two different payment ids in this test.
+
+        $this->TEST->ECOM->setPreferredId(uniqid(sha1(microtime(true))));
+        $firstPayment = $this->generateSimpleSimplifiedInvoiceOrder(true);
+        $this->TEST->ECOM->setPreferredId(uniqid(md5(microtime(true))));
+        $secondPayment = $this->generateSimpleSimplifiedInvoiceOrder(true);
+        if (isset($firstPayment->paymentId)) {
+            $req[] = $this->TEST->ECOM->getPayment($firstPayment->paymentId);
+            $req[] = $this->TEST->ECOM->getPayment($secondPayment->paymentId);
+
+            $requestEnd = 0;        // Should end when this reaches 3.
+            $requestStart = time(); // When requests started.
+            $timeTotal = 0;
+
+            // Loop until 4 sec or more.
+            while ($requestEnd < 3) {
+                $requestEnd = time() - $requestStart;
+
+                $currentRequestStartMillis = microtime(true);
+                $req[] = $this->TEST->ECOM->getPayment($firstPayment->paymentId);
+                $req[] = $this->TEST->ECOM->getPayment($secondPayment->paymentId);
+                $currentRequestStopMillis = microtime(true);
+                $currentRequestTimeSpped = $currentRequestStopMillis - $currentRequestStartMillis;
+                $timeTotal += $currentRequestTimeSpped;
+            }
+            $timeMed = $timeTotal / count($req);
+
+            /*
+             * Required test result:
+             *   - The cache should be able to request AT LEAST 10 getPayment in a period of three seconds.
+             *      Initial tests shows that we could make at least 179 requests. NOTE: Pipelines just counted 6 calls.
+             *   - Each request should be able to respond under 1 seccond.
+             *   - The first $hasCache was initially disabled via __construct and should be false.
+             *   - The second hasCache is untouched and should be true.
+             */
+
+            // >= 5 for pipelines.
+            // >= 10 for own tests.
+            static::assertTrue(
+                count($req) >= 5 ? true : false &&
+                    floatval($timeMed) < 1 &&
+                    !$hasCache
+                    && $hasCacheDefault
+            );
+
+        }
+    }
+
+    /**
      * Only run this when emulating colliding orders in the woocommerce plugin.
      *
      * @param bool $noAssert
@@ -494,8 +553,9 @@ class resursBankTest extends TestCase
         $this->TEST->share('happyCustomer', $happyCustomer, false);
         if (!$noAssert) {
             // Call to undefined function mb_strpos() with assertContains in PHP 7.3
-            static::assertTrue(preg_match('/' . $this->flowHappyCustomerName . '/i',
-                $happyCustomer->fullName) ? true : false);
+            static::assertTrue(
+                preg_match('/' . $this->flowHappyCustomerName . '/i', $happyCustomer->fullName) ? true : false
+            );
         }
 
         return $happyCustomer;
@@ -532,8 +592,12 @@ class resursBankTest extends TestCase
         $prePop = $this->TEST->share('paymentMethods');
         $methodGroup = array_pop($prePop);
         foreach ($methodGroup as $curMethod) {
-            if (($curMethod->specificType === $specificType || $curMethod->type === $specificType) && in_array($customerType,
-                    (array)$curMethod->customerType)) {
+            if ((
+                    $curMethod->specificType === $specificType ||
+                    $curMethod->type === $specificType
+                ) &&
+                in_array($customerType, (array)$curMethod->customerType)
+            ) {
                 $this->TEST->share('METHOD_' . $specificType);
                 $return = $curMethod;
                 break;
@@ -796,7 +860,9 @@ class resursBankTest extends TestCase
             [
                 'digestAlgorithm' => 'md5',
                 'digestSalt' => uniqid(microtime(true)),
-            ], 'testuser', 'testpass'
+            ],
+            'testuser',
+            'testpass'
         )) {
             $cbCount++;
         }
@@ -911,56 +977,6 @@ class resursBankTest extends TestCase
             static::assertTrue($code === 8);
         }
     }
-
-    /**
-     * For the future edition of EC where __get is a helper.
-     *
-     * @test
-     */
-    /*public function newGet()
-    {
-        try {
-            $failable = $this->TEST->ECOM->nonExistent && $this->TEST->ECOM['nonExistent'] ? true : false;
-        } catch (\Exception $e) {
-            $failable = true;
-        }
-
-        try {
-            $protectedVariable = $this->TEST->ECOM->version;
-        } catch (\Exception $e) {
-            $protectedVariable = true;
-        }
-
-        $reachableVariable = $this->TEST->ECOM->current_environment;
-        $unsetButReachableVariable = $this->TEST->ECOM->test;
-
-        static::assertTrue($failable && $protectedVariable && $reachableVariable === 1 && $unsetButReachableVariable);
-    }*/
-
-    /**
-     * Special test case where we just create an iframe and then sending updatePaymentReferences via API to see
-     * if any errors are traceable
-     */
-    /*public function ordersWithoutDescription()
-    {
-        ecom_event_register('ecom_article_data', 'destroy_ecom_article_data');
-        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
-        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
-        $this->TEST->ECOM->addOrderLine("Product-1337", "", 800, 25);
-        $hasErrors = false;
-        try {
-            $paymentId = "nodesc_" . sha1(microtime(true));
-            //$newPaymentId = 'PROPER_' . $paymentId;
-            $this->TEST->ECOM->createPayment($paymentId);
-        } catch (\Exception $e) {
-            $hasErrors = true;
-        }
-        ecom_event_unregister('ecom_article_data');
-
-        // Current expectation: Removing description totally from an order still renders
-        // the iframe, even if the order won't be handlable.
-        static::assertFalse($hasErrors);
-    }*/
 
     /**
      * @param $addr
