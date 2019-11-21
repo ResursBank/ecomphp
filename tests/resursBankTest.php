@@ -293,7 +293,7 @@ class resursBankTest extends TestCase
      * @test
      * @throws \Exception
      */
-    public function findPaymentByGovd()
+    public function findPaymentByGovId()
     {
         $payments = $this->TEST->ECOM->findPayments(['governmentId' => '8305147715']);
         static::assertTrue(is_array($payments) && count($payments));
@@ -415,16 +415,17 @@ class resursBankTest extends TestCase
      */
     public function getPaymentCached()
     {
-        $apiWithoutCache = new ResursBank('a', 'a', null, false, ['setApiCache' => false]);
+        $apiWithoutCache = new ResursBank($this->username, $this->password, null, false, ['setApiCache' => false]);
         $hasCache = $apiWithoutCache->getApiCache();
         $hasCacheDefault = $this->TEST->ECOM->getApiCache();
         $req = [];
 
-        // Guarantee two different payment ids in this test.
+        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
 
-        $this->TEST->ECOM->setPreferredId(uniqid(sha1(microtime(true))));
+        // Guarantee two different payment ids in this test.
+        $this->TEST->ECOM->setPreferredId($this->TEST->ECOM->getPreferredPaymentId(25, '', true, true));
         $firstPayment = $this->generateSimpleSimplifiedInvoiceOrder(true);
-        $this->TEST->ECOM->setPreferredId(uniqid(md5(microtime(true))));
+        $this->TEST->ECOM->setPreferredId($this->TEST->ECOM->getPreferredPaymentId(25, '', true, true));
         $secondPayment = $this->generateSimpleSimplifiedInvoiceOrder(true);
         if (isset($firstPayment->paymentId)) {
             $req[] = $this->TEST->ECOM->getPayment($firstPayment->paymentId);
@@ -1488,6 +1489,17 @@ class resursBankTest extends TestCase
                 )
             );
         }
+    }
+
+    /**
+     * @test
+     * @throws \Exception
+     */
+    public function getRegisteredCallbacks()
+    {
+        //$info = $this->TEST->ECOM->getRegisteredEventCallback(RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL);
+        $info = $this->TEST->ECOM->getCallBacksByRest();
+        print_r($info);
     }
 
 
