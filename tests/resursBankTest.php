@@ -65,12 +65,15 @@ class resursBankTest extends TestCase
     /** @var RESURS_TEST_BRIDGE $TEST Used for standard tests and simpler flow setup */
     protected $TEST;
 
-    /** @noinspection PhpUnusedPrivateFieldInspection */
-    /** @var string Username to web services */
+    /** @var string Username to web services. */
     private $username = "ecomphpPipelineTest";
-    /** @noinspection PhpUnusedPrivateFieldInspection */
-    /** @var string Password to web services */
+    /** @var string Password to web services. */
     private $password = "4Em4r5ZQ98x3891D6C19L96TQ72HsisD";
+
+    /** @var string Username to internal RCO. */
+    private $usernameNG = "checkoutwebse";
+    /** @var string Password to internal RCO. */
+    private $passwordNG = "gO9UaWH38D";
 
     private $flowHappyCustomer = "8305147715";
     private $flowHappyCustomerName = "Vincent Williamsson Alexandersson";
@@ -1461,7 +1464,8 @@ class resursBankTest extends TestCase
     public function getAnotherIframe()
     {
         try {
-            $newEcom = new ResursBank('checkoutwebse', 'gO9UaWH38D');
+            $newEcom = new ResursBank($this->usernameNG, $this->passwordNG);
+            // Disable secure SSL and allow self signed certificates in case of that use.
             $newEcom->setSslSecurityDisabled(true);
             $newEcom->setEnvRcoUrl($this->rcoNgUrl);
             $newEcom->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
