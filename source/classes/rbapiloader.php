@@ -446,6 +446,12 @@ class ResursBank
      * @var string
      */
     private $environmentRcoStandardTest = "https://omnitest.resurs.com";
+
+    /**
+     * @var string The next generation checkout URL. Internal only.
+     */
+    private $rcoNgUrl = "http://omnicheckout-webservicefrontend.pte.loc";
+
     /**
      * Default production URL for Resurs Checkout
      *

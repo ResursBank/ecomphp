@@ -82,6 +82,11 @@ class resursBankTest extends TestCase
     private $signUrl = "https://test.resurs.com/signdummy/index.php?isSigningUrl=1";
 
     /**
+     * @var string The next generation checkout URL. Internal only.
+     */
+    private $rcoNgUrl = "http://omnicheckout-webservicefrontend.pte.loc";
+
+    /**
      * Exact match of selenium driver we're running with tests.
      *
      * Add to composer: "facebook/webdriver": "dev-master"
@@ -174,7 +179,7 @@ class resursBankTest extends TestCase
             static::assertTrue(is_array($keys));
 
         } else {
-            static::markTestSkipped("Test has been started without shareDataOut");
+            static::markTestSkipped("Test has been started without shareDataOut.");
         }
     }
 
@@ -1455,17 +1460,30 @@ class resursBankTest extends TestCase
      */
     public function getAnotherIframe()
     {
-        $newEcom = new ResursBank('atest', 'atest');
-        $newEcom->setSslSecurityDisabled(true);
-        $newEcom->setEnvRcoUrl('https://checkout-dev.test.resurs.loc/');
-        $newEcom->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
-        $newEcom->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
-
-        // First update.
-        $newEcom->addOrderLine("Product-1337", "", 800, 25);
-        $id = $newEcom->getPreferredPaymentId();
-        $iframe = $newEcom->createPayment($id);
-        print_R($iframe);
+        try {
+            $newEcom = new ResursBank('checkoutwebse', 'gO9UaWH38D');
+            $newEcom->setSslSecurityDisabled(true);
+            $newEcom->setEnvRcoUrl($this->rcoNgUrl);
+            $newEcom->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
+            $newEcom->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+            $newEcom->addOrderLine("Product-1337", "", 800, 25);
+            $id = $newEcom->getPreferredPaymentId();
+            $iframe = $newEcom->createPayment($id);
+            static::assertTrue(
+                (
+                preg_match('/resurs.loc/i', $iframe) ? true : false ||
+                preg_match('/pte.loc/i', $iframe) ? true : false
+                )
+            );
+        } catch (\Exception $e) {
+            static::markTestSkipped(
+                sprintf(
+                    "Test can not be executed. Probably internal sources (err %s: %s)",
+                    $e->getCode(),
+                    $e->getMessage()
+                )
+            );
+        }
     }
 
 
