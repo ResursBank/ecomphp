@@ -1049,7 +1049,6 @@ class ResursBank
             }
             $this->CURL->setFlag('SOAPCHAIN', false);
 
-            $this->CURL->getSslVerify();
             $this->CURL->setStoreSessionExceptions(true);
             $this->CURL->setAuthentication($this->soapOptions['login'], $this->soapOptions['password']);
             $this->CURL->setUserAgent($this->myUserAgent);
