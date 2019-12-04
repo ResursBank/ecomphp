@@ -130,6 +130,18 @@ class ResursBank
     private $wsdlServices = [];
 
     /**
+     * @var int $getPaymentRequests Debugging only.
+     * @since 1.3.26
+     */
+    private $getPaymentRequests = 0;
+
+    /**
+     * @var int $getCachedPaymentRequests Debugging only.
+     * @since 1.3.26
+     */
+    private $getPaymentCachedRequests = 0;
+
+    /**
      * @var array $paymentMethodsCache
      */
     private $paymentMethodsCache = ['params' => [], 'methods' => []];
@@ -3218,6 +3230,23 @@ class ResursBank
     }
 
     /**
+     * @return int
+     * @since 1.3.26
+     */
+    public function getGetPaymentRequests() {
+        return $this->getPaymentRequests;
+    }
+
+    /**
+     * @return int
+     * @since 1.3.26
+     */
+    public function getGetCachedPaymentRequests() {
+        return $this->getPaymentCachedRequests;
+    }
+
+
+    /**
      * getPayment - Retrieves detailed information about a payment
      *
      * As of 1.3.13, SOAP has higher priority than REST. This might be a breaking change, since
@@ -3245,9 +3274,11 @@ class ResursBank
         $this->InitializeServices();
         $rested = false;
 
+        $this->getPaymentRequests ++;
         if ($requestCached && isset($this->lastPaymentStored[$paymentId]->cached)) {
             $lastRequest = time() - $this->lastPaymentStored[$paymentId]->cached;
             if ($lastRequest <= $this->lastGetPaymentMaxCacheTime) {
+                $this->getPaymentCachedRequests++;
                 return $this->lastPaymentStored[$paymentId];
             }
         }
@@ -7386,7 +7417,7 @@ class ResursBank
             if ($this->isFrozen($cachedPayment)) {
                 // Throw it like Resurs Bank one step earlier. Since we do a getPayment
                 // before the finalization we do not have make an extra call if payment status
-                // is forzen.
+                // is frozen.
                 throw new \ResursException(
                     'EComPHP can not finalize frozen payments',
                     \RESURS_EXCEPTIONS::ECOMMERCEERROR_NOT_ALLOWED_IN_CURRENT_STATE
