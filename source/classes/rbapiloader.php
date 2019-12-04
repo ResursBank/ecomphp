@@ -2739,10 +2739,12 @@ class ResursBank
         }
 
         $properInvoiceNumber = intval($lastHighestInvoice) + 1;
+        $properInvoiceNumber = 1003036;
         if (intval($currentInvoiceTest) > 0 && $currentInvoiceTest > $properInvoiceNumber) {
             $properInvoiceNumber = $currentInvoiceTest;
         }
         $this->getNextInvoiceNumber(true, $properInvoiceNumber);
+        $this->afterShopInvoiceId = $properInvoiceNumber;
 
         return $properInvoiceNumber;
     }
@@ -7207,10 +7209,9 @@ class ResursBank
         if ($paymentSpecificType == "INVOICE") {
             $finalAfterShopSpec['orderDate'] = date('Y-m-d', time());
             $finalAfterShopSpec['invoiceDate'] = date('Y-m-d', time());
-            if (empty($this->afterShopInvoiceId)) {
-                $finalAfterShopSpec['invoiceId'] = $this->getNextInvoiceNumber();
-            }
             $extRef = $this->getAfterShopInvoiceExtRef();
+            $invoiceNumber = $this->getNextInvoiceNumber();
+            $finalAfterShopSpec['invoiceId'] = $invoiceNumber;
             if (!empty($extRef)) {
                 $this->addMetaData($paymentId, 'invoiceExtRef', $extRef);
             }
@@ -7394,6 +7395,9 @@ class ResursBank
         }
         $this->aftershopPrepareMetaData($paymentId);
         try {
+            if ($runOnce) {
+                throw new \Exception('Fail', 29);
+            }
             $afterShopResponseCode = $this->postService("finalizePayment", $afterShopObject, true);
             if ($afterShopResponseCode >= 200 && $afterShopResponseCode < 300) {
                 $this->resetPayload();
@@ -7402,13 +7406,17 @@ class ResursBank
             }
         } catch (\Exception $finalizationException) {
             if (
-                $finalizationException->getCode() == 29 &&
-                !$this->isFlag('SKIP_AFTERSHOP_INVOICE_CONTROL') &&
-                !$runOnce
+            (
+                (int)$finalizationException->getCode() === \RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ||
+                (int)$finalizationException->getCode() === \RESURS_EXCEPTIONS::ECOMMERCEERROR_NOT_ALLOWED_INVOICE_ID
+            ) &&
+                !$this->isFlag('SKIP_AFTERSHOP_INVOICE_CONTROL')
             ) {
-                $this->getNextInvoiceNumberByDebits(5);
+                if (!$runOnce) {
+                    $this->getNextInvoiceNumberByDebits(5);
 
-                return $this->paymentFinalize($paymentId, $customPayloadItemList, true);
+                    return $this->paymentFinalize($paymentId, $customPayloadItemList, true);
+                }
             }
 
             throw new \ResursException(

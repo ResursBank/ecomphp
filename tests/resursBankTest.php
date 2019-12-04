@@ -67,8 +67,10 @@ class resursBankTest extends TestCase
 
     /** @var string Username to web services. */
     private $username = "ecomphpPipelineTest";
+    //private $username = "tornevallnew";
     /** @var string Password to web services. */
     private $password = "4Em4r5ZQ98x3891D6C19L96TQ72HsisD";
+    //private $password = "4191GUqhindCLi33R5004SNlsgYH96Ma";
 
     /** @var string Username to internal RCO. */
     private $usernameNG = "checkoutwebse";
@@ -1256,6 +1258,19 @@ class resursBankTest extends TestCase
                 ]
             )
         );
+    }
+
+    /**
+     * @test
+     * @throws \Exception
+     */
+    public function finalizeWithoutInvoiceId()
+    {
+        $this->TEST->ECOM->resetInvoiceNumber();
+        $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
+        $paymentid = $payment->paymentId;
+
+        $finalizationResponse = $this->TEST->ECOM->finalizePayment($paymentid);
     }
 
     /**
