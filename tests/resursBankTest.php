@@ -135,6 +135,21 @@ class resursBankTest extends TestCase
 
     /**
      * @test
+     * @testdox Put this high in the tests as we reset invoice numbers. The last step in the function will restore it.
+     * @throws \Exception
+     */
+    public function finalizeWithoutInvoiceId()
+    {
+        $this->TEST->ECOM->resetInvoiceNumber();
+        $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
+        $paymentid = $payment->paymentId;
+
+        $finalizationResponse = $this->TEST->ECOM->finalizePayment($paymentid);
+    }
+
+
+    /**
+     * @test
      * @testdox EComPHP throws \Exceptions on credential failures
      * @throws \Exception
      */
@@ -1258,19 +1273,6 @@ class resursBankTest extends TestCase
                 ]
             )
         );
-    }
-
-    /**
-     * @test
-     * @throws \Exception
-     */
-    public function finalizeWithoutInvoiceId()
-    {
-        $this->TEST->ECOM->resetInvoiceNumber();
-        $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
-        $paymentid = $payment->paymentId;
-
-        $finalizationResponse = $this->TEST->ECOM->finalizePayment($paymentid);
     }
 
     /**
