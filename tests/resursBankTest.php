@@ -1508,17 +1508,6 @@ class resursBankTest extends TestCase
         }
     }
 
-    /**
-     * @test
-     * @throws \Exception
-     */
-    public function getRegisteredCallbacks()
-    {
-        //$info = $this->TEST->ECOM->getRegisteredEventCallback(RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL);
-        $info = $this->TEST->ECOM->getCallBacksByRest();
-        print_r($info);
-    }
-
 
     /**
      * @test
