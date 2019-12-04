@@ -53,10 +53,10 @@ use Resursbank\RBEcomPHP\RESURS_DEPRECATED_FLOW;
 
 // Globals starts here
 if (!defined('ECOMPHP_VERSION')) {
-    define('ECOMPHP_VERSION', '1.0.51');
+    define('ECOMPHP_VERSION', '1.0.52');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20191118');
+    define('ECOMPHP_MODIFY_DATE', '20191204');
 }
 
 /**
@@ -83,23 +83,33 @@ class ResursBank
     ///// Debugging, helpers and development
     /**
      * Debug mode on or off
+     *
      * @var bool
      */
     private $debug = false;
 
+    /**
+     * @var bool Cached api calls enabled or disabled.
+     * @since 1.3.26
+     */
+    private $apiCacheActive = true;
+
     ///// Environment and API
     /**
      * Current targeted environment - default is always test, as we don't like that mistakes are going production
+     *
      * @var int
      */
     public $current_environment = self::ENVIRONMENT_TEST;
     /**
      * The username used with the webservices
+     *
      * @var string
      */
     public $username;
     /**
      * The password used with the webservices
+     *
      * @var string
      */
     public $password;
@@ -113,41 +123,65 @@ class ResursBank
      */
     private $wsdlServices = [];
 
+    /**
+     * @var int $getPaymentRequests Debugging only.
+     * @since 1.3.26
+     */
+    private $getPaymentRequests = 0;
+
+    /**
+     * @var int $getCachedPaymentRequests Debugging only.
+     * @since 1.3.26
+     */
+    private $getPaymentCachedRequests = 0;
+
+    /**
+     * @var array $paymentMethodsCache
+     */
+    private $paymentMethodsCache = ['params' => [], 'methods' => []];
+
     ///// Shop related
     /**
      * Always append amount data and ending urls (cost examples)
+     *
      * @var bool
      */
     public $alwaysAppendPriceLast = false;
     /**
      * Customer id used at afterShopFlow
+     *
      * @var string
      */
     private $customerId = "";
     /**
      * If the merchant has PSP methods available in the simplified and hosted flow where it is normally not supported,
      * this should be set to true via setSimplifiedPsp(true)
+     *
      * @var bool
      */
     private $paymentMethodsHasPsp = false;
     /**
      * If the strict control of payment methods vs PSP is set, we will never show any payment method that is based on
      * PAYMENT_PROVIDER - this might be good to use in mixed environments
+     *
      * @var bool
      */
     private $paymentMethodsIsStrictPsp = false;
     /**
      * Setting this to true should help developers have their payment method ids returned in a consistent format
+     *
      * @var bool
      */
     private $paymentMethodIdSanitizing = false;
     /**
      * This setting is true if a flow is about to run through a PSP method
+     *
      * @var bool
      */
     private $paymentMethodIsPsp = false;
     /**
      * Defines if there is a SoapClient available
+     *
      * @var bool
      */
     private $SOAP_AVAILABLE = false;
@@ -191,6 +225,7 @@ class ResursBank
 
     /**
      * Enable the possibility to push over User-Agent from customer into header (debugging related)
+     *
      * @var bool
      */
     private $customerUserAgentPush = false;
@@ -199,16 +234,19 @@ class ResursBank
     ///// Client Specific Settings
     /**
      * The version of this gateway
+     *
      * @var string
      */
     private $version = ECOMPHP_VERSION;
     /**
      * Identify current version release
+     *
      * @var string
      */
     private $lastUpdate = ECOMPHP_MODIFY_DATE;
     /**
      * EComPHP GIT Repo URL
+     *
      * @var string
      */
     private $gitUrl = "https://bitbucket.org/resursbankplugins/resurs-ecomphp";
@@ -218,11 +256,13 @@ class ResursBank
     private $clientName = "EComPHP";
     /**
      * Replacing $clientName on usage of setClientName
+     *
      * @var string
      */
     private $realClientName = "EComPHP";
     /**
      * Flags up that client name has been set by user/developer/integrator
+     *
      * @var bool
      * @since 1.3.23
      */
@@ -231,22 +271,37 @@ class ResursBank
     /**
      * @var array Last stored getPayment()
      */
-    private $lastPaymentStored;
+    private $lastPaymentStored = [];
+
+    /**
+     * Last time for getPayment (when using cache requests).
+     *
+     * @var array $lastGetPaymentRequest time()
+     */
+    private $lastGetPaymentRequest = [];
+
+    /**
+     * @var int $lastGetPaymentMaxCacheTime Number of seconds.
+     */
+    private $lastGetPaymentMaxCacheTime = 3;
 
     ///// Package related
     /**
      * Has the necessary services been initialized yet?
+     *
      * @var bool
      */
     private $hasServicesInitialization = false;
     /**
      * Future functionality to backtrace customer ip address to something else than REMOTE_ADDR (if proxified)
+     *
      * @var bool
      */
     private $preferCustomerProxy = false;
 
     /**
      * Indicates if there was deprecated calls in progress during the use of ECom
+     *
      * @var bool
      */
     private $hasDeprecatedCall = false;
@@ -268,6 +323,7 @@ class ResursBank
 
     /**
      * Handles created during in one http call are collected here
+     *
      * @var array
      */
     private $CURL_HANDLE_COLLECTOR = [];
@@ -279,6 +335,7 @@ class ResursBank
     private $curlStats = [];
     /**
      * Class for handling Network related checks
+     *
      * @var MODULE_NETWORK
      * @since 1.0.1
      * @since 1.1.1
@@ -286,11 +343,13 @@ class ResursBank
     private $NETWORK;
     /**
      * Another way to handle bitmasks (might be deprecated in future releases)
+     *
      * @var MODULE_NETBITS
      */
     private $BIT;
     /**
      * Class for handling data encoding/encryption
+     *
      * @var MODULE_CRYPTO
      * @since 1.0.13
      * @since 1.1.13
@@ -300,6 +359,7 @@ class ResursBank
 
     /**
      * Deprecated flow class (for forms etc)
+     *
      * @var RESURS_DEPRECATED_FLOW
      */
     private $E_DEPRECATED;
@@ -314,6 +374,7 @@ class ResursBank
     private $Payload = [];
     /**
      * Historical payload collection
+     *
      * @var array
      * @since 1.0.31
      * @since 1.1.31
@@ -333,6 +394,7 @@ class ResursBank
     private $PaymentMethod;
     /**
      * Payment spec (orderlines)
+     *
      * @var array
      * @since 1.0.2
      * @since 1.1.2
@@ -341,6 +403,7 @@ class ResursBank
 
     /**
      * Boolean value that has purpose when using addorderlines to customize aftershop.
+     *
      * @var bool $speclineCustomization
      * @since 1.3.23
      */
@@ -355,93 +418,121 @@ class ResursBank
     /// Environment URLs
     /**
      * Chosen environment
+     *
      * @var string
      */
     private $environment;
     /**
      * Default test URL
+     *
      * @var string
      */
     private $env_test = "https://test.resurs.com/ecommerce-test/ws/V4/";
     /**
      * Default production URL
+     *
      * @var string
      */
     private $env_prod = "https://ecommerce.resurs.com/ws/V4/";
     /**
      * Default test URL for hosted flow
+     *
      * @var string
      */
     private $env_hosted_test = "https://test.resurs.com/ecommerce-test/hostedflow/back-channel";
     /**
      * Default production URL for hosted flow
+     *
      * @var string
      */
     private $env_hosted_prod = "https://ecommerce-hosted.resurs.com/back-channel";
     /**
      * Default test URL for Resurs Checkout
+     *
      * @var string
      */
-    private $env_omni_test = "https://omnitest.resurs.com";
+    private $environmentRcoStandardTest = "https://omnitest.resurs.com";
+
+    /**
+     * @var string The next generation checkout URL. Internal only.
+     */
+    private $rcoNgUrl = "http://omnicheckout-webservicefrontend.pte.loc";
+
     /**
      * Default production URL for Resurs Checkout
+     *
      * @var string
      */
-    private $env_omni_prod = "https://checkout.resurs.com";
+    private $environmentRcoStandardProduction = "https://checkout.resurs.com";
     /**
      * Default test URL for Resurs Checkout POS
+     *
      * @var string
      */
-    private $env_omni_pos_test = "https://postest.resurs.com";
+    private $environmentRcoPosTest = "https://postest.resurs.com";
     /**
      * Default production URL for Resurs Checkout POS
+     *
      * @var string
      */
-    private $env_omni_pos_prod = "https://poscheckout.resurs.com";
+    private $environmentRcoPosProuction = "https://poscheckout.resurs.com";
     /**
      * Defines if environment will point at Resurs Checkout POS or not and in that case return the URL for the POS.
      * Set up with setPos() and retrieve the state with getPos()
+     *
      * @var bool
      */
     private $env_omni_pos = false;
     /**
+     * @var string
+     */
+    private $environmentRcoOverrideUrl;
+    /**
      * Country of choice
+     *
      * @var
      */
     private $envCountry;
     /**
      * ShopUrl to use with Resurs Checkout
+     *
      * @var string
      */
     private $checkoutShopUrl = "";
     /**
      * Set to true via setValidateCheckoutShopUrl() if you require validation of a proper shopUrl
+     *
      * @var bool
      */
     private $validateCheckoutShopUrl = false;
     /**
      * Default current environment. Always set to test (security reasons)
+     *
      * @var bool
      */
     private $current_environment_updated = false;
     /**
      * Store ID
+     *
      * @var string
      */
     private $storeId;
     /**
      * EcomPHP session, use for saving data in $_SESSION for EComPHP
+     *
      * @var
      */
     private $ecomSession;
 
     /**
      * EComPHP User-Agent identifier
+     *
      * @var string
      */
     private $myUserAgent = null;
     /**
      * Internal configurable flags
+     *
      * @var array
      */
     private $internalFlags = [];
@@ -495,12 +586,14 @@ class ResursBank
     /**
      * Validating URLs are made through a third party API and is disabled by default.
      * Used for checking reachability of an URL in tests.
+     *
      * @var string
      */
     private $externalApiAddress = "https://api.tornevall.net/3.0/";
     /**
      * An array that defines an url to test and which response codes (OK-200, and
      * errors when for example a digest fails) from the webserver that is expected
+     *
      * @var array
      */
     private $validateExternalUrl = null;
@@ -519,6 +612,7 @@ class ResursBank
 
     /**
      * The choice of using rest instead of a soapclient when registering callbacks
+     *
      * @var bool
      */
     private $registerCallbacksViaRest = true;
@@ -526,6 +620,7 @@ class ResursBank
     /// SOAP and WSDL
     /**
      * Standard SOAP interface configurables.
+     *
      * @var array
      */
     var $soapOptions = [
@@ -537,6 +632,7 @@ class ResursBank
     ];
     /**
      * Don't want to use SSL verifiers in curl mode
+     *
      * @var bool
      */
     private $curlSslValidationDisable = false;
@@ -545,16 +641,19 @@ class ResursBank
     /// Customizable
     /**
      * Eventually a logged in user on the platform using EComPHP (used in aftershopFlow)
+     *
      * @var string
      */
     private $loggedInuser = "";
     /**
      * Get Cost of Purchase Custom HTML - Before html code received from webservices
+     *
      * @var string
      */
     private $getcost_html_before = '';
     /**
      * Get Cost of Purchase Custom HTML - AFter html code received from webservices
+     *
      * @var string
      */
     private $getcost_html_after = '';
@@ -562,11 +661,13 @@ class ResursBank
     /// Callback handling
     /**
      * Callback related variables
+     *
      * @var array
      */
     private $digestKey = [];
     /**
      * Globally set digestive key
+     *
      * @var string
      */
     private $globalDigestKey = "";
@@ -574,16 +675,19 @@ class ResursBank
     /// Shopflow
     /**
      * Defines whether we have detected a hosted flow request or not
+     *
      * @var bool
      */
     private $isHostedFlow = false;
     /**
      * Defines whether we have detected a ResursCheckout flow request or not
+     *
      * @var bool
      */
     private $isOmniFlow = false;
     /**
      * The preferred payment order reference, set in a shopflow. Reachable through getPreferredPaymentId()
+     *
      * @var string
      */
     private $preferredId = null;
@@ -593,11 +697,13 @@ class ResursBank
     private $paymentSessionId;
     /**
      * List of available payment method names (for use with getPaymentMethodNames())
+     *
      * @var array
      */
     private $paymentMethodNames = [];
     /**
      * Defines if the checkout should honor the customer field array
+     *
      * @var bool
      */
     private $checkoutCustomerFieldSupport = false;
@@ -605,21 +711,25 @@ class ResursBank
     /// AfterShop Flow
     /**
      * Preferred transaction id for aftershop
+     *
      * @var string
      */
     private $afterShopPreferredTransactionId = "";
     /**
      * Order id for aftershop
+     *
      * @var string
      */
     private $afterShopOrderId = "";
     /**
      * Invoice id (Optional) for aftershop
+     *
      * @var string
      */
     private $afterShopInvoiceId = "";
     /**
      * Invoice external reference for aftershop
+     *
      * @var string
      */
     private $afterShopInvoiceExtRef = "";
@@ -627,6 +737,7 @@ class ResursBank
     /**
      * Default unit measure. "st" or styck for Sweden. If your plugin is not used for Sweden,
      * use the proper unit for your country.
+     *
      * @var string
      */
     private $defaultUnitMeasure = "st";
@@ -634,6 +745,7 @@ class ResursBank
     /// Resurs Checkout
     /**
      * When using clearOcShop(), the Resurs Checkout tailing script (resizer) will be stored here
+     *
      * @var
      */
     private $ocShopScript;
@@ -641,12 +753,14 @@ class ResursBank
     /**
      * Payment method types (from getPaymentMethods) that probably is automatically debiting as
      * soon as transfers been made
+     *
      * @var array
      */
     private $autoDebitableTypes = [];
 
     /**
      * Discover payments that probably has been automatically debited - default is active
+     *
      * @var bool
      */
     private $autoDebitableTypesActive = true;
@@ -654,6 +768,7 @@ class ResursBank
     /**
      * When instant finalization is used, we normally cache information about the chosen
      * payment method to not overload stuff with calls
+     *
      * @var object
      */
     private $autoDebitablePaymentMethod;
@@ -668,26 +783,29 @@ class ResursBank
      * @param string $login
      * @param string $password
      * @param int $targetEnvironment
-     * @param null $debug Activate debugging immediately on initialization
-     *
-     * @throws \Exception
+     * @param bool $debug
+     * @param array $paramFlagSet
+     * @throws Exception
      */
     function __construct(
         $login = '',
         $password = '',
         $targetEnvironment = RESURS_ENVIRONMENTS::NOT_SET,
-        $debug = null
+        $debug = false,
+        $paramFlagSet = []
     ) {
-        if (isset($_SERVER['HTTP_HOST'])) {
-            $theHost = $_SERVER['HTTP_HOST'];
-        } else {
-            $theHost = "nohost.localhost";
+        if (is_array($paramFlagSet) && count($paramFlagSet)) {
+            $this->preSetEarlyFlags($paramFlagSet);
         }
 
-        $memoryLimit = defined('MEMORY_SAFE_LIMIT') && !empty(MEMORY_SAFE_LIMIT) ? MEMORY_SAFE_LIMIT : -1;
+        $memSafeLimit = -1;
+        if (defined('MEMORY_SAFE_LIMIT')) {
+            $memSafeLimit = MEMORY_SAFE_LIMIT;
+        }
+        $memoryLimit = defined('MEMORY_SAFE_LIMIT') && !empty($memSafeLimit) ? $memSafeLimit : -1;
         $this->getMemoryLimitAdjusted('128M', $memoryLimit);
 
-        if (!is_null($debug) && is_bool($debug)) {
+        if (is_bool($debug) && $debug) {
             $this->debug = $debug;
         }
 
@@ -700,7 +818,7 @@ class ResursBank
         // this can manually be pushed into ECom by using the setAutoDebitableType().
         $this->setAutoDebitableType('SWISH');
 
-        $this->checkoutShopUrl = $this->hasHttps(true) . "://" . $theHost;
+        $this->checkoutShopUrl = $this->hasHttps(true) . "://" . $this->getHostnameByServer();
         $this->soapOptions['cache_wsdl'] = (defined('WSDL_CACHE_BOTH') ? WSDL_CACHE_BOTH : true);
         $this->soapOptions['ssl_method'] = (defined('SOAP_SSL_METHOD_TLS') ? SOAP_SSL_METHOD_TLS : false);
 
@@ -710,6 +828,33 @@ class ResursBank
         }
         $this->setUserAgent();
         $this->E_DEPRECATED = new RESURS_DEPRECATED_FLOW();
+    }
+
+    /**
+     * Pre-ShopUrl if not defined.
+     *
+     * @return string
+     * @since 1.3.26
+     */
+    private function getHostnameByServer()
+    {
+        return isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'local.localhost';
+    }
+
+    /**
+     * @param $flagArray
+     * @throws Exception
+     * @since 1.3.26
+     */
+    private function preSetEarlyFlags($flagArray)
+    {
+        foreach ($flagArray as $key => $value) {
+            $this->setFlag($key, $value);
+            // Simple passthrough setup.
+            if (method_exists($this, $key)) {
+                $this->{$key}($value);
+            }
+        }
     }
 
     /**
@@ -901,10 +1046,15 @@ class ResursBank
                 $this->CURL = new MODULE_CURL();
             }
             $this->CURL->setChain(false);
+            if ($this->getSslSecurityDisabled()) {
+                $this->CURL->setSslVerify(false, false);
+            }
+
             if ($inheritExtendedSoapWarnings) {
                 $this->CURL->setFlag('SOAPWARNINGS_EXTEND', true);
             }
             $this->CURL->setFlag('SOAPCHAIN', false);
+
             $this->CURL->setStoreSessionExceptions(true);
             $this->CURL->setAuthentication($this->soapOptions['login'], $this->soapOptions['password']);
             $this->CURL->setUserAgent($this->myUserAgent);
@@ -975,7 +1125,8 @@ class ResursBank
      * Return the CURL communication handle to the client.
      *
      * @param bool $bulk
-     * @param bool $reinitialize Get a brand new handle, in case of failures where old handles are inherited the wrong way.
+     * @param bool $reinitialize Get a brand new handle, in case of failures where old handles are inherited the wrong
+     *     way.
      * @return array|mixed|MODULE_CURL
      * @throws \Exception
      * @since 1.0.22
@@ -1044,12 +1195,35 @@ class ResursBank
     }
 
     /**
+     * Set overriding url for RCO (mostly used for test).
+     *
+     * @param string $environmentUrl
+     * @since 1.3.27
+     */
+    public function setEnvRcoUrl($environmentUrl = '')
+    {
+        $this->environmentRcoOverrideUrl = $environmentUrl;
+    }
+
+    /**
+     * Return URL info for which is used for the moment in RCO.
+     *
+     * @return string
+     * @since 1.3.27
+     */
+    public function getEnvRcoUrl()
+    {
+        return $this->environmentRcoOverrideUrl;
+    }
+
+    /**
      * Put SSL Validation into relaxed mode (Test and debug only) - this disables SSL certificate validation off
      *
      * @throws \Exception
      * @since 1.0.23
      * @since 1.1.23
      * @since 1.2.0
+     * @deprecated Do not use this weird method.
      */
     public function setSslValidation()
     {
@@ -1062,6 +1236,28 @@ class ResursBank
                 403
             );
         }
+    }
+
+    /**
+     * Enables strict SSL validation or put in "relaxed mode".
+     *
+     * @param bool $enable
+     * @throws Exception
+     * @since 1.3.27
+     */
+    public function setSslSecurityDisabled($disableSecurity = true)
+    {
+        $this->InitializeServices();
+        $this->curlSslValidationDisable = $disableSecurity;
+    }
+
+    /**
+     * @return bool
+     * @since 1.3.27
+     */
+    public function getSslSecurityDisabled()
+    {
+        return $this->curlSslValidationDisable;
     }
 
     /**
@@ -1376,13 +1572,15 @@ class ResursBank
     }
 
     /**
-     * Validate entered credentials. If credentials is initialized via the constructor, no extra parameters are required.
+     * Validate entered credentials. If credentials is initialized via the constructor, no extra parameters are
+     * required.
      *
      * @param int $environment
      * @param string $username
      * @param string $password
      * @return bool
-     * @throws Exception Borrowing 417 (Expectation Failed) here (https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/417)
+     * @throws Exception Borrowing 417 (Expectation Failed) here
+     *     (https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/417)
      * @since 1.1.42
      * @since 1.0.42
      * @since 1.3.15
@@ -1442,14 +1640,14 @@ class ResursBank
         } elseif ($FlowType == RESURS_FLOW_TYPES::HOSTED_FLOW) {
             $this->env_hosted_test = $newUrl;
         } elseif ($FlowType == RESURS_FLOW_TYPES::RESURS_CHECKOUT) {
-            $this->env_omni_test = $newUrl;
+            $this->environmentRcoStandardTest = $newUrl;
         } else {
             /*
              * If this developer wasn't sure of what to change, we'd change all.
              */
             $this->env_test = $newUrl;
             $this->env_hosted_test = $newUrl;
-            $this->env_omni_test = $newUrl;
+            $this->environmentRcoStandardTest = $newUrl;
         }
 
         return $newUrl;
@@ -2605,17 +2803,31 @@ class ResursBank
     {
         $this->InitializeServices();
 
-        $paymentMethods = $this->postService("getPaymentMethods", [
+        $paymentMethodsParameters = [
             'customerType' => isset($parameters['customerType']) ? $parameters['customerType'] : null,
             'language' => isset($parameters['language']) ? $parameters['language'] : null,
             'purchaseAmount' => isset($parameters['purchaseAmount']) ? $parameters['purchaseAmount'] : null,
-        ]);
+        ];
+
+        // Discover changes in request parameters.
+        if (isset($this->paymentMethodsCache['params']) && count($this->paymentMethodsCache['methods'])) {
+            $currentArray = array_intersect($paymentMethodsParameters, $this->paymentMethodsCache['params']);
+            if (count($currentArray) === count($paymentMethodsParameters)) {
+                return $this->paymentMethodsCache['methods'];
+            }
+        }
+
+        $paymentMethods = $this->postService("getPaymentMethods", $paymentMethodsParameters);
         // Make sure this method always returns an array even if it is only one method.
         // Ecommerce will, in case of only one available method return an object instead of an array.
         if (is_object($paymentMethods)) {
             $paymentMethods = [$paymentMethods];
         }
         $realPaymentMethods = $this->sanitizePaymentMethods($paymentMethods, $getAllMethods);
+        $this->paymentMethodsCache = [
+            'params' => $paymentMethodsParameters,
+            'methods' => $realPaymentMethods,
+        ];
 
         return $realPaymentMethods;
     }
@@ -2968,6 +3180,65 @@ class ResursBank
     }
 
     /**
+     * @param int $keepCacheTimeInSeconds Number of seconds we fetch data from cache instead of live after first call.
+     * @since 1.3.26
+     */
+    public function setApiCacheTime($keepCacheTimeInSeconds = 3)
+    {
+        $this->lastGetPaymentMaxCacheTime = $keepCacheTimeInSeconds;
+    }
+
+    /**
+     * @return int Cache time set, in seconds.
+     * @since 1.3.26
+     */
+    public function getApiCacheTime()
+    {
+        return $this->lastGetPaymentMaxCacheTime;
+    }
+
+    /**
+     * Set Api Cache enabled or disabled.
+     *
+     * Function set used to cache the first request during a smaller amount of time to make sure
+     * that, if the request are being sent twice during this period, the cache will reply instead of making
+     * live responses.
+     *
+     * @since 1.3.26
+     */
+    public function setApiCache($enabled = true)
+    {
+        $this->apiCacheActive = $enabled;
+    }
+
+    /**
+     * Get status of Api Cache.
+     *
+     * @since 1.3.26
+     */
+    public function getApiCache()
+    {
+        return $this->apiCacheActive;
+    }
+
+    /**
+     * @return int
+     * @since 1.3.26
+     */
+    public function getGetPaymentRequests() {
+        return $this->getPaymentRequests;
+    }
+
+    /**
+     * @return int
+     * @since 1.3.26
+     */
+    public function getGetCachedPaymentRequests() {
+        return $this->getPaymentCachedRequests;
+    }
+
+
+    /**
      * getPayment - Retrieves detailed information about a payment
      *
      * As of 1.3.13, SOAP has higher priority than REST. This might be a breaking change, since
@@ -2980,9 +3251,9 @@ class ResursBank
      *      404 is thrown when errors could not be fetched
      *
      * @param string $paymentId
-     *
+     * @param bool $requestCached Try fetch cached data before going for livedata.
      * @return array|mixed|null
-     * @throws \Exception
+     * @throws \ResursException
      * @since 1.0.1
      * @since 1.1.1
      * @since 1.0.31 Refactored from this version
@@ -2990,9 +3261,19 @@ class ResursBank
      * @since 1.2.4 Refactored from this version
      * @since 1.3.4 Refactored from this version
      */
-    public function getPayment($paymentId = '')
+    public function getPayment($paymentId = '', $requestCached = true)
     {
         $this->InitializeServices();
+        $rested = false;
+
+        $this->getPaymentRequests ++;
+        if ($requestCached && isset($this->lastPaymentStored[$paymentId]->cached)) {
+            $lastRequest = time() - $this->lastPaymentStored[$paymentId]->cached;
+            if ($lastRequest <= $this->lastGetPaymentMaxCacheTime) {
+                $this->getPaymentCachedRequests++;
+                return $this->lastPaymentStored[$paymentId];
+            }
+        }
 
         /**
          * As REST based exceptions is more unsafe than the SOAP responses we use the SOAP as default method to get
@@ -3005,7 +3286,10 @@ class ResursBank
         if ($this->isFlag('GET_PAYMENT_BY_REST') || !$this->SOAP_AVAILABLE) {
             // This will ALWAYS run if SOAP is unavailable
             try {
-                return ($this->lastPaymentStored = $this->getPaymentByRest($paymentId));
+                $rested = true;
+                $this->lastPaymentStored[$paymentId] = $this->getPaymentByRest($paymentId);
+                $this->lastPaymentStored[$paymentId]->cached = time();
+                $return = $this->lastPaymentStored[$paymentId];
             } catch (\ResursException $e) {
                 // 3 = The order does not exist, default REST error.
                 // If we for some reason get 404 errors here, the error should be retrown as 3.
@@ -3017,12 +3301,18 @@ class ResursBank
             }
         }
 
-        try {
-            return ($this->lastPaymentStored = $this->getPaymentBySoap($paymentId));
-        } catch (Exception $e) {
-            // 8 = REFERENCED_DATA_DONT_EXISTS
-            throw $e;
+        if (!$rested) {
+            try {
+                $this->lastPaymentStored[$paymentId] = $this->getPaymentBySoap($paymentId);
+                $this->lastPaymentStored[$paymentId]->cached = time();
+                $return = $this->lastPaymentStored[$paymentId];
+            } catch (Exception $e) {
+                // 8 = REFERENCED_DATA_DONT_EXISTS
+                throw $e;
+            }
         }
+
+        return $return;
     }
 
     /**
@@ -4552,8 +4842,10 @@ class ResursBank
             $timeDiff = time() - $lastPaymentExecute;
             if ($timeDiff <= $maxTime) {
                 if ($this->isFlag('PREVENT_EXEC_FLOOD_EXCEPTIONS')) {
-                    throw new \ResursException("You are running createPayment too fast",
-                        \RESURS_EXCEPTIONS::CREATEPAYMENT_TOO_FAST);
+                    throw new \ResursException(
+                        "You are running createPayment too fast",
+                        \RESURS_EXCEPTIONS::CREATEPAYMENT_TOO_FAST
+                    );
                 }
 
                 return false;
@@ -4561,8 +4853,10 @@ class ResursBank
             $this->setSessionVar('lastPaymentExecute', time());
         }
         if (trim(strtolower($this->username)) == "exshop") {
-            throw new \ResursException("The use of exshop is no longer supported",
-                \RESURS_EXCEPTIONS::EXSHOP_PROHIBITED);
+            throw new \ResursException(
+                "The use of exshop is no longer supported",
+                \RESURS_EXCEPTIONS::EXSHOP_PROHIBITED
+            );
         }
         $error = [];
         $myFlow = $this->getPreferredPaymentFlowService();
@@ -5867,38 +6161,51 @@ class ResursBank
     }
 
     /**
-     * Retrieve the correct omnicheckout url depending chosen environment
+     * Retrieve the correct omnicheckout url depending chosen environment.
      *
-     * @param int $EnvironmentRequest
+     * @param int $requestedEnvironment
      * @param bool $getCurrentIfSet Always return "current" if it has been set first
-     *
      * @return string
      * @since 1.0.1
      * @since 1.1.1
+     * @todo Make this method less ugly.
      */
-    public function getCheckoutUrl($EnvironmentRequest = RESURS_ENVIRONMENTS::ENVIRONMENT_TEST, $getCurrentIfSet = true)
+    public function getCheckoutUrl($requestedEnvironment = RESURS_ENVIRONMENTS::TEST, $getCurrentIfSet = true)
     {
-        // If current_environment is set, override incoming variable
-        if ($getCurrentIfSet && $this->current_environment_updated) {
-            if ($this->current_environment == RESURS_ENVIRONMENTS::ENVIRONMENT_PRODUCTION) {
-                if ($this->getPos()) {
-                    return $this->env_omni_pos_prod;
-                }
+        // Total overrider. Regardless of prepared environment. Use with caution.
+        if (!empty($this->environmentRcoOverrideUrl)) {
+            return $this->environmentRcoOverrideUrl;
+        }
 
-                return $this->env_omni_prod;
+        if ($getCurrentIfSet && $this->current_environment_updated) {
+            if ($this->current_environment == RESURS_ENVIRONMENTS::PRODUCTION) {
+                if ($this->getPos()) {
+                    return $this->environmentRcoPosProuction;
+                }
+                return $this->environmentRcoStandardProduction;
             } else {
                 if ($this->getPos()) {
-                    return $this->env_omni_pos_test;
+                    return $this->environmentRcoPosTest;
                 }
-
-                return $this->env_omni_test;
+                return $this->environmentRcoStandardTest;
             }
         }
-        if ($EnvironmentRequest == RESURS_ENVIRONMENTS::ENVIRONMENT_PRODUCTION) {
-            return $this->env_omni_prod;
-        } else {
-            return $this->env_omni_test;
+
+        return $this->getUrlRcoStandard($requestedEnvironment);
+    }
+
+    /**
+     * @param $requestedEnvironment
+     * @return string
+     * @since 1.3.27
+     */
+    private function getUrlRcoStandard($requestedEnvironment)
+    {
+        if ($requestedEnvironment == RESURS_ENVIRONMENTS::PRODUCTION) {
+            return $this->environmentRcoStandardProduction;
         }
+
+        return $this->environmentRcoStandardTest;
     }
 
     /**
@@ -7103,7 +7410,7 @@ class ResursBank
             if ($this->isFrozen($cachedPayment)) {
                 // Throw it like Resurs Bank one step earlier. Since we do a getPayment
                 // before the finalization we do not have make an extra call if payment status
-                // is forzen.
+                // is frozen.
                 throw new \ResursException(
                     'EComPHP can not finalize frozen payments',
                     \RESURS_EXCEPTIONS::ECOMMERCEERROR_NOT_ALLOWED_IN_CURRENT_STATE
@@ -7901,6 +8208,7 @@ class ResursBank
 
     /**
      * Prepare automatically debitable payment method types (Internal function to set up destroyed (if) arrays for types
+     *
      * @since 1.0.41
      * @since 1.1.41
      * @since 1.3.14

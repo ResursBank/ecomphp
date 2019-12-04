@@ -60,12 +60,15 @@ class resursBankTest extends TestCase
     /** @var RESURS_TEST_BRIDGE $TEST Used for standard tests and simpler flow setup */
     protected $TEST;
 
-    /** @noinspection PhpUnusedPrivateFieldInspection */
-    /** @var string Username to web services */
+    /** @var string Username to web services. */
     private $username = "ecomphpPipelineTest";
-    /** @noinspection PhpUnusedPrivateFieldInspection */
-    /** @var string Password to web services */
+    /** @var string Password to web services. */
     private $password = "4Em4r5ZQ98x3891D6C19L96TQ72HsisD";
+
+    /** @var string Username to internal RCO. */
+    private $usernameNG = "checkoutwebse";
+    /** @var string Password to internal RCO. */
+    private $passwordNG = "gO9UaWH38D";
 
     private $flowHappyCustomer = "8305147715";
     private $flowHappyCustomerName = "Vincent Williamsson Alexandersson";
@@ -75,6 +78,11 @@ class resursBankTest extends TestCase
 
     /** @var string Landing page for signings */
     private $signUrl = "https://test.resurs.com/signdummy/index.php?isSigningUrl=1";
+
+    /**
+     * @var string The next generation checkout URL. Internal only.
+     */
+    private $rcoNgUrl = "http://omnicheckout-webservicefrontend.pte.loc";
 
     /**
      * Exact match of selenium driver we're running with tests.
@@ -169,7 +177,7 @@ class resursBankTest extends TestCase
             static::assertTrue(is_array($keys));
 
         } else {
-            static::markTestSkipped("Test has been started without shareDataOut");
+            static::markTestSkipped("Test has been started without shareDataOut.");
         }
     }
 
@@ -280,7 +288,7 @@ class resursBankTest extends TestCase
      * @test
      * @throws \Exception
      */
-    public function findPaymentByGovd()
+    public function findPaymentByGovId()
     {
         $payments = $this->TEST->ECOM->findPayments(['governmentId' => '8305147715']);
         static::assertTrue(is_array($payments) && count($payments));
@@ -397,6 +405,66 @@ class resursBankTest extends TestCase
     }
 
     /**
+     * @test
+     * @throws \Exception
+     */
+    public function getPaymentCached()
+    {
+        $apiWithoutCache = new ResursBank($this->username, $this->password, null, false, ['setApiCache' => false]);
+        $hasCache = $apiWithoutCache->getApiCache();
+        $hasCacheDefault = $this->TEST->ECOM->getApiCache();
+        $req = [];
+
+        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
+
+        // Guarantee two different payment ids in this test.
+        $this->TEST->ECOM->setPreferredId($this->TEST->ECOM->getPreferredPaymentId(25, '', true, true));
+        $firstPayment = $this->generateSimpleSimplifiedInvoiceOrder(true);
+        $this->TEST->ECOM->setPreferredId($this->TEST->ECOM->getPreferredPaymentId(25, '', true, true));
+        $secondPayment = $this->generateSimpleSimplifiedInvoiceOrder(true);
+        if (isset($firstPayment->paymentId)) {
+            $req[] = $this->TEST->ECOM->getPayment($firstPayment->paymentId);
+            $req[] = $this->TEST->ECOM->getPayment($secondPayment->paymentId);
+
+            $requestEnd = 0;        // Should end when this reaches 3.
+            $requestStart = time(); // When requests started.
+            $timeTotal = 0;
+
+            // Loop until 4 sec or more.
+            while ($requestEnd < 3) {
+                $requestEnd = time() - $requestStart;
+
+                $currentRequestStartMillis = microtime(true);
+                $req[] = $this->TEST->ECOM->getPayment($firstPayment->paymentId);
+                $req[] = $this->TEST->ECOM->getPayment($secondPayment->paymentId);
+                $currentRequestStopMillis = microtime(true);
+                $currentRequestTimeSpped = $currentRequestStopMillis - $currentRequestStartMillis;
+                $timeTotal += $currentRequestTimeSpped;
+            }
+            $timeMed = $timeTotal / count($req);
+
+            /*
+             * Required test result:
+             *   - The cache should be able to request AT LEAST 10 getPayment in a period of three seconds.
+             *      Initial tests shows that we could make at least 179 requests. NOTE: Pipelines just counted 6 calls.
+             *   - Each request should be able to respond under 1 seccond.
+             *   - The first $hasCache was initially disabled via __construct and should be false.
+             *   - The second hasCache is untouched and should be true.
+             */
+
+            // >= 5 for pipelines.
+            // >= 10 for own tests.
+            static::assertTrue(
+                count($req) >= 5 ? true : false &&
+                    floatval($timeMed) < 1 &&
+                    !$hasCache
+                    && $hasCacheDefault
+            );
+
+        }
+    }
+
+    /**
      * Only run this when emulating colliding orders in the woocommerce plugin.
      *
      * @param bool $noAssert
@@ -489,8 +557,9 @@ class resursBankTest extends TestCase
         $this->TEST->share('happyCustomer', $happyCustomer, false);
         if (!$noAssert) {
             // Call to undefined function mb_strpos() with assertContains in PHP 7.3
-            static::assertTrue(preg_match('/' . $this->flowHappyCustomerName . '/i',
-                $happyCustomer->fullName) ? true : false);
+            static::assertTrue(
+                preg_match('/' . $this->flowHappyCustomerName . '/i', $happyCustomer->fullName) ? true : false
+            );
         }
 
         return $happyCustomer;
@@ -527,8 +596,12 @@ class resursBankTest extends TestCase
         $prePop = $this->TEST->share('paymentMethods');
         $methodGroup = array_pop($prePop);
         foreach ($methodGroup as $curMethod) {
-            if (($curMethod->specificType === $specificType || $curMethod->type === $specificType) && in_array($customerType,
-                    (array)$curMethod->customerType)) {
+            if ((
+                    $curMethod->specificType === $specificType ||
+                    $curMethod->type === $specificType
+                ) &&
+                in_array($customerType, (array)$curMethod->customerType)
+            ) {
                 $this->TEST->share('METHOD_' . $specificType);
                 $return = $curMethod;
                 break;
@@ -620,11 +693,6 @@ class resursBankTest extends TestCase
     public function updateStrangePaymentReference()
     {
         $showFrames = false;
-
-        // Using NO_RESET_PAYLOAD in the test suite may lead to unexpected faults, so
-        // have it disabled, unless you need something very specific out of this test.
-
-        //$this->TEST->ECOM->setFlag('NO_RESET_PAYLOAD');
         $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
         $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
 
@@ -791,7 +859,9 @@ class resursBankTest extends TestCase
             [
                 'digestAlgorithm' => 'md5',
                 'digestSalt' => uniqid(microtime(true)),
-            ], 'testuser', 'testpass'
+            ],
+            'testuser',
+            'testpass'
         )) {
             $cbCount++;
         }
@@ -908,56 +978,6 @@ class resursBankTest extends TestCase
     }
 
     /**
-     * For the future edition of EC where __get is a helper.
-     *
-     * @test
-     */
-    /*public function newGet()
-    {
-        try {
-            $failable = $this->TEST->ECOM->nonExistent && $this->TEST->ECOM['nonExistent'] ? true : false;
-        } catch (\Exception $e) {
-            $failable = true;
-        }
-
-        try {
-            $protectedVariable = $this->TEST->ECOM->version;
-        } catch (\Exception $e) {
-            $protectedVariable = true;
-        }
-
-        $reachableVariable = $this->TEST->ECOM->current_environment;
-        $unsetButReachableVariable = $this->TEST->ECOM->test;
-
-        static::assertTrue($failable && $protectedVariable && $reachableVariable === 1 && $unsetButReachableVariable);
-    }*/
-
-    /**
-     * Special test case where we just create an iframe and then sending updatePaymentReferences via API to see
-     * if any errors are traceable
-     */
-    /*public function ordersWithoutDescription()
-    {
-        ecom_event_register('ecom_article_data', 'destroy_ecom_article_data');
-        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
-        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
-        $this->TEST->ECOM->addOrderLine("Product-1337", "", 800, 25);
-        $hasErrors = false;
-        try {
-            $paymentId = "nodesc_" . sha1(microtime(true));
-            //$newPaymentId = 'PROPER_' . $paymentId;
-            $this->TEST->ECOM->createPayment($paymentId);
-        } catch (\Exception $e) {
-            $hasErrors = true;
-        }
-        ecom_event_unregister('ecom_article_data');
-
-        // Current expectation: Removing description totally from an order still renders
-        // the iframe, even if the order won't be handlable.
-        static::assertFalse($hasErrors);
-    }*/
-
-    /**
      * @param $addr
      * @return bool
      */
@@ -971,16 +991,29 @@ class resursBankTest extends TestCase
     }
 
     /**
+     * @param $addr
+     * @return string|null
+     */
+    private function getProperIp($addr)
+    {
+        $not = ['127.0.0.1'];
+        if (filter_var(trim($addr), FILTER_VALIDATE_IP) && !in_array(trim($addr), $not)) {
+            return trim($addr);
+        }
+        return null;
+    }
+
+    /**
      * @test
      * @throws \Exception
      */
     public function proxyByHandle()
     {
         $CURL = $this->TEST->ECOM->getCurlHandle();
-        $CURL->setProxy('10.1.1.55:80', CURLPROXY_HTTP);
+        $CURL->setProxy('proxytest.resurs.it:80', CURLPROXY_HTTP);
         $CURL->setChain();
         try {
-            $request = $CURL->doGet('https://identifier.tornevall.net/ip.php');
+            $request = $CURL->doGet('http://proxytest.resurs.it/ip.php');
             static::assertTrue($this->isProperIp($request->getBody()));
         } catch (\Exception $e) {
             static::markTestSkipped(sprintf('Proxy test skipped (%d): %s', $e->getCode(), $e->getMessage()));
@@ -996,17 +1029,18 @@ class resursBankTest extends TestCase
     public function proxyByPaymentMethods()
     {
         $CURL = $this->TEST->ECOM->getCurlHandle();
-        $CURL->setProxy('10.1.1.55:80', CURLPROXY_HTTP);
+        $CURL->setProxy('proxytest.resurs.it:80', CURLPROXY_HTTP);
         $this->TEST->ECOM->setCurlHandle($CURL);
 
         try {
-            $request = $CURL->doGet('https://identifier.tornevall.net/ip.php');
+            $request = $CURL->doGet('http://proxytest.resurs.it/ip.php');
         } catch (\Exception $e) {
             static::markTestSkipped(sprintf('Proxy test skipped (%d): %s', $e->getCode(), $e->getMessage()));
             return;
         }
 
         if ($this->isProperIp($request['body'])) {
+            $_SERVER['REMOTE_ADDR'] = $this->getProperIp($request['body']);
             static::assertTrue(count($this->TEST->ECOM->getPaymentMethods()) > 0);
         } else {
             static::markTestSkipped('Could not complete proxy test');
@@ -1021,17 +1055,18 @@ class resursBankTest extends TestCase
     public function proxyByBookSimplified()
     {
         $CURL = $this->TEST->ECOM->getCurlHandle();
-        $CURL->setProxy('10.1.1.55:80', CURLPROXY_HTTP);
+        $CURL->setProxy('proxytest.resurs.it:80', CURLPROXY_HTTP);
         $this->TEST->ECOM->setCurlHandle($CURL);
 
         try {
-            $request = $CURL->doGet('https://identifier.tornevall.net/ip.php');
+            $request = $CURL->doGet('http://proxytest.resurs.it/ip.php');
         } catch (\Exception $e) {
             static::markTestSkipped(sprintf('Proxy test skipped (%d): %s', $e->getCode(), $e->getMessage()));
             return;
         }
 
         if ($this->isProperIp($request['body'])) {
+            $_SERVER['REMOTE_ADDR'] = $this->getProperIp($request['body']);
             $customerData = $this->getHappyCustomerData();
             $this->TEST->ECOM->setBillingByGetAddress($customerData);
             $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
@@ -1054,17 +1089,18 @@ class resursBankTest extends TestCase
     public function proxyByBookRcoHalfway()
     {
         $CURL = $this->TEST->ECOM->getCurlHandle();
-        $CURL->setProxy('10.1.1.55:80', CURLPROXY_HTTP);
+        $CURL->setProxy('proxytest.resurs.it:80', CURLPROXY_HTTP);
         $this->TEST->ECOM->setCurlHandle($CURL);
 
         try {
-            $request = $CURL->doGet('https://identifier.tornevall.net/ip.php');
+            $request = $CURL->doGet('http://proxytest.resurs.it/ip.php');
         } catch (\Exception $e) {
             static::markTestSkipped(sprintf('Proxy test skipped (%d): %s', $e->getCode(), $e->getMessage()));
             return;
         }
 
         if ($this->isProperIp($request['body'])) {
+            $_SERVER['REMOTE_ADDR'] = $this->getProperIp($request['body']);
             $customerData = $this->getHappyCustomerData();
             $this->TEST->ECOM->setBillingByGetAddress($customerData);
             $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
@@ -1072,6 +1108,7 @@ class resursBankTest extends TestCase
             $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
             $this->TEST->ECOM->addOrderLine("ProxyArtRequest", "My Proxified Product", 800, 25);
             $iframeRequest = $this->TEST->ECOM->createPayment($this->getMethodId());
+
             static::assertTrue(preg_match('/iframe src/i', $iframeRequest) ? true : false);
         } else {
             static::markTestSkipped('Could not complete proxy test');
@@ -1390,6 +1427,74 @@ class resursBankTest extends TestCase
             count($purgableByResurs) === 7 &&
             count($purgableByWooCommerce) === 6 ? true : false
         );
+    }
+
+    /**
+     * @test
+     * @throws \Exception
+     */
+    public function getPaymentMethodsCache()
+    {
+        $methodArray = [];
+        $counter = 0;
+        $this->TEST->ECOM->getPaymentMethods();
+        $startTime = microtime(true);
+        while ($counter++ <= 20) {
+            $methodArray[] = $this->TEST->ECOM->getPaymentMethods();
+        }
+        $endTime = microtime(true);
+        // Above setup should finish before 5 seconds passed.
+        $diff = $endTime - $startTime;
+        $this->TEST->ECOM->getPaymentMethods(['customerType' => 'NATURAL']);
+        $invoiceCache = $this->TEST->ECOM->getPaymentMethodSpecific('NATURALINVOICE');
+
+        static::assertTrue(
+            ($diff < 5 ? true : false) &&
+            (isset($invoiceCache->id) && $invoiceCache->id === 'NATURALINVOICE')
+        );
+    }
+
+    /**
+     * @test
+     */
+    public function getAnotherIframe()
+    {
+        try {
+            $newEcom = new ResursBank($this->usernameNG, $this->passwordNG);
+            // Disable secure SSL and allow self signed certificates in case of that use.
+            $newEcom->setSslSecurityDisabled(true);
+            $newEcom->setEnvRcoUrl($this->rcoNgUrl);
+            $newEcom->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
+            $newEcom->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+            $newEcom->addOrderLine("Product-1337", "", 800, 25);
+            $id = $newEcom->getPreferredPaymentId();
+            $iframe = $newEcom->createPayment($id);
+            static::assertTrue(
+                (
+                preg_match('/resurs.loc/i', $iframe) ? true : false ||
+                preg_match('/pte.loc/i', $iframe) ? true : false
+                )
+            );
+        } catch (\Exception $e) {
+            static::markTestSkipped(
+                sprintf(
+                    "Test can not be executed. Probably internal sources (err %s: %s)",
+                    $e->getCode(),
+                    $e->getMessage()
+                )
+            );
+        }
+    }
+
+    /**
+     * @test
+     * @throws \Exception
+     */
+    public function getRegisteredCallbacks()
+    {
+        //$info = $this->TEST->ECOM->getRegisteredEventCallback(RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL);
+        $info = $this->TEST->ECOM->getCallBacksByRest();
+        print_r($info);
     }
 
 
