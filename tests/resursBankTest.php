@@ -217,6 +217,19 @@ class resursBankTest extends TestCase
             (bool)$noErrorStaticRescue === false
         );
 
+        $assertList = [
+            '$finalizationResponseNoInvoice ?true?' => $finalizationResponseNoInvoice,
+            '$finalizationResponseYesInvoice ?true?' => $finalizationResponseYesInvoice,
+            '$finalizationResponseYesInvoiceFailTwice ?false?' => $finalizationResponseYesInvoiceFailTwice,
+            '$finalizationResponseYesInvoiceFailAndRescue ?true?' => $finalizationResponseYesInvoiceFailAndRescue,
+            '$noErrorDynamic ?false?' => $noErrorDynamic,
+            '$noErrorStatic ?false?' => $noErrorStatic,
+            '$noErrorStaticRepeat ?true?' => $noErrorStaticRepeat,
+            '$noErrorStaticRescue ?false?' => $noErrorStaticRescue,
+        ];
+
+        echo json_encode($assertList);
+
         // Final reset.
         $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
     }
