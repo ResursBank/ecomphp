@@ -141,7 +141,9 @@ class resursBankTest extends TestCase
      *  - Default: Set invoice number only if there is no number (null).
      *  - Legacy: Run legacy mode, statically set (detected) invoice id. Increment when necessary.
      *  - Legacy: Run legacy in error mode, statically set where incremental invoices fail (Expect legacy exception).
-     * -  Legacy: Run legacy as above try, but try rescue sequence on second exception (paranoid mode). Expect success.
+     *  - Legacy: Run legacy as above try, but try rescue sequence on second exception (paranoid mode). Expect success.
+     *
+     *  Always require ECom Instance Reset in this one to secure that no conflicts occur.
      *
      * @throws \Exception
      */
@@ -157,46 +159,49 @@ class resursBankTest extends TestCase
         $finalizationResponseYesInvoiceFailTwice = false;
         $finalizationResponseYesInvoiceFailAndRescue = false;
 
+        // Default: Attempt to debit with no invoice set.
+        $this->TEST->ECOM->resetInvoiceNumber();
+
         $payment = [];
         for ($paymentIndex = 1; $paymentIndex <= 4; $paymentIndex++) {
             $this->TEST->ECOM->setPreferredId(uniqid(microtime(true)));
             $payment[$paymentIndex] = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
         }
 
-
-        // Default: Attempt to debit with no invoice set.
-        $this->TEST->ECOM->resetInvoiceNumber();
+        $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
         try {
-            $finalizationResponseNoInvoice = $this->TEST->ECOM->finalizePayment($payment[1]->paymentId);
+            $finalizationResponseNoInvoice = $this->TEST->ECOM->creditPayment($payment[1]->paymentId);
         } catch (\Exception $e) {
             $noErrorDynamic = true;
         }
 
         // Legacy: Run legacy mode, statically set (detected) invoice id. Increment when necessary.
+        $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
         $this->TEST->ECOM->setFlag('AFTERSHOP_STATIC_INVOICE');
         try {
-            $finalizationResponseYesInvoice = $this->TEST->ECOM->finalizePayment($payment[2]->paymentId);
+            $finalizationResponseYesInvoice = $this->TEST->ECOM->creditPayment($payment[2]->paymentId);
         } catch (\Exception $e) {
             $noErrorStatic = true;
         }
 
         // Legacy: Run legacy in error mode, statically set where incremental invoices fail (Expect legacy exception).
+        $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
         $this->TEST->ECOM->setFlag('AFTERSHOP_STATIC_INVOICE');
         $this->TEST->ECOM->setFlag('TEST_INVOICE');
         try {
-            $finalizationResponseYesInvoiceFailTwice = $this->TEST->ECOM->finalizePayment($payment[3]->paymentId);
+            $finalizationResponseYesInvoiceFailTwice = $this->TEST->ECOM->creditPayment($payment[3]->paymentId);
         } catch (\Exception $e) {
             $noErrorStaticRepeat = true;
         }
 
-        $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
         // Legacy: Run legacy as above, but try rescue sequence on second exception (paranoid mode). Expect success.
+        $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
         $this->TEST->ECOM->setFlag('AFTERSHOP_STATIC_INVOICE');
         $this->TEST->ECOM->setFlag('AFTERSHOP_RESCUE_INVOICE');
         $this->TEST->ECOM->setFlag('TEST_INVOICE');
         $this->TEST->ECOM->setFlag('TEST_INVOICE_LAST');
         try {
-            $finalizationResponseYesInvoiceFailAndRescue = $this->TEST->ECOM->finalizePayment($payment[4]->paymentId);
+            $finalizationResponseYesInvoiceFailAndRescue = $this->TEST->ECOM->creditPayment($payment[4]->paymentId);
         } catch (\Exception $e) {
             $noErrorStaticRescue = true;
         }
@@ -211,6 +216,9 @@ class resursBankTest extends TestCase
             (bool)$noErrorStaticRepeat === true &&
             (bool)$noErrorStaticRescue === false
         );
+
+        // Final reset.
+        $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
     }
 
     /**
