@@ -2758,9 +2758,22 @@ class ResursBank
         }
 
         $properInvoiceNumber = intval($lastHighestInvoice) + 1;
-        $properInvoiceNumber = 1003036;
+        if ($this->isFlag('TEST_INVOICE') && $this->current_environment === RESURS_ENVIRONMENTS::TEST) {
+            if ($this->isFlag('DELETE_TEST_INVOICE')) {
+                $this->deleteFlag('TEST_INVOICE');
+            }
+            $this->setFlag('DELETE_TEST_INVOICE');
+            $properInvoiceNumber = 1003036;
+        }
         if (intval($currentInvoiceTest) > 0 && $currentInvoiceTest > $properInvoiceNumber) {
             $properInvoiceNumber = $currentInvoiceTest;
+        }
+        if (!empty($this->afterShopInvoiceId) &&
+            intval($this->afterShopInvoiceId) > 0 &&
+            $this->isFlag('AFTERSHOP_RESCUE_INVOICE')
+        ) {
+            // Welcome to the paranoid mode. This is where we try and double increment numbers when they fail the first time. On demand.
+            $properInvoiceNumber = intval($this->afterShopInvoiceId) + 1;
         }
         $this->getNextInvoiceNumber(true, $properInvoiceNumber);
         $this->afterShopInvoiceId = $properInvoiceNumber;
@@ -7249,7 +7262,15 @@ class ResursBank
             $finalAfterShopSpec['invoiceDate'] = date('Y-m-d', time());
             $extRef = $this->getAfterShopInvoiceExtRef();
             $invoiceNumber = $this->getNextInvoiceNumber();
-            $finalAfterShopSpec['invoiceId'] = $invoiceNumber;
+
+            if ($this->isFlag('TEST_INVOICE') && $this->current_environment === RESURS_ENVIRONMENTS::TEST) {
+                // Make us fail intentionally during test. This ID usually exists at our end.
+                $invoiceNumber = 1003036;
+            }
+
+            if ($this->isFlag('AFTERSHOP_STATIC_INVOICE')) {
+                $finalAfterShopSpec['invoiceId'] = $invoiceNumber;
+            }
             if (!empty($extRef)) {
                 $this->addMetaData($paymentId, 'invoiceExtRef', $extRef);
             }
@@ -7298,21 +7319,21 @@ class ResursBank
         if (count($customPayloadItemList)) {
             // Is $customPayloadItemList correctly formatted?
             switch ($payloadType) {
-                case RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_FINALIZE:
+                case RESURS_AFTERSHOP_RENDER_TYPES::FINALIZE:
                     $customPayloadItemListValidated = $this->getValidatedAftershopRows(
                         $specStatusTable,
                         $customPayloadItemList,
                         'debit'
                     );
                     break;
-                case RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_ANNUL:
+                case RESURS_AFTERSHOP_RENDER_TYPES::ANNUL:
                     $customPayloadItemListValidated = $this->getValidatedAftershopRows(
                         $specStatusTable,
                         $customPayloadItemList,
                         'annul'
                     );
                     break;
-                case RESURS_AFTERSHOP_RENDER_TYPES::AFTERSHOP_CREDIT:
+                case RESURS_AFTERSHOP_RENDER_TYPES::CREDIT:
                     $customPayloadItemListValidated = $this->getValidatedAftershopRows(
                         $specStatusTable,
                         $customPayloadItemList,
@@ -7433,9 +7454,6 @@ class ResursBank
         }
         $this->aftershopPrepareMetaData($paymentId);
         try {
-            if ($runOnce) {
-                throw new \Exception('Fail', 29);
-            }
             $afterShopResponseCode = $this->postService("finalizePayment", $afterShopObject, true);
             if ($afterShopResponseCode >= 200 && $afterShopResponseCode < 300) {
                 $this->resetPayload();
@@ -7454,6 +7472,15 @@ class ResursBank
                     $this->getNextInvoiceNumberByDebits(5);
 
                     return $this->paymentFinalize($paymentId, $customPayloadItemList, true);
+                } else {
+                    // One time failsafe rescue mode.
+                    if ($this->isFlag('AFTERSHOP_RESCUE_INVOICE') && $this->afterShopInvoiceId > 0) {
+                        // Reset after once run.
+                        $this->getNextInvoiceNumberByDebits(5);
+                        $this->deleteFlag('AFTERSHOP_RESCUE_INVOICE');
+
+                        return $this->paymentFinalize($paymentId, $customPayloadItemList, true);
+                    }
                 }
             }
 
