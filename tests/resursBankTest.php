@@ -170,7 +170,7 @@ class resursBankTest extends TestCase
 
         $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
         try {
-            $finalizationResponseNoInvoice = $this->TEST->ECOM->creditPayment($payment[1]->paymentId);
+            $finalizationResponseNoInvoice = $this->TEST->ECOM->finalizePayment($payment[1]->paymentId);
         } catch (\Exception $e) {
             $noErrorDynamic = true;
         }
@@ -179,7 +179,7 @@ class resursBankTest extends TestCase
         $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
         $this->TEST->ECOM->setFlag('AFTERSHOP_STATIC_INVOICE');
         try {
-            $finalizationResponseYesInvoice = $this->TEST->ECOM->creditPayment($payment[2]->paymentId);
+            $finalizationResponseYesInvoice = $this->TEST->ECOM->finalizePayment($payment[2]->paymentId);
         } catch (\Exception $e) {
             $noErrorStatic = true;
         }
@@ -189,7 +189,7 @@ class resursBankTest extends TestCase
         $this->TEST->ECOM->setFlag('AFTERSHOP_STATIC_INVOICE');
         $this->TEST->ECOM->setFlag('TEST_INVOICE');
         try {
-            $finalizationResponseYesInvoiceFailTwice = $this->TEST->ECOM->creditPayment($payment[3]->paymentId);
+            $finalizationResponseYesInvoiceFailTwice = $this->TEST->ECOM->finalizePayment($payment[3]->paymentId);
         } catch (\Exception $e) {
             $noErrorStaticRepeat = true;
         }
@@ -201,7 +201,7 @@ class resursBankTest extends TestCase
         $this->TEST->ECOM->setFlag('TEST_INVOICE');
         $this->TEST->ECOM->setFlag('TEST_INVOICE_LAST');
         try {
-            $finalizationResponseYesInvoiceFailAndRescue = $this->TEST->ECOM->creditPayment($payment[4]->paymentId);
+            $finalizationResponseYesInvoiceFailAndRescue = $this->TEST->ECOM->finalizePayment($payment[4]->paymentId);
         } catch (\Exception $e) {
             $noErrorStaticRescue = true;
         }
