@@ -135,134 +135,6 @@ class resursBankTest extends TestCase
 
     /**
      * @test
-     * @testdox Put this high in the tests as we reset invoice numbers. The last step in the function will restore it.
-     *
-     * Test are running four times:
-     *  - Default: Set invoice number only if there is no number (null).
-     *  - Legacy: Run legacy mode, statically set (detected) invoice id. Increment when necessary.
-     *  - Legacy: Run legacy in error mode, statically set where incremental invoices fail (Expect legacy exception).
-     *  - Legacy: Run legacy as above try, but try rescue sequence on second exception (paranoid mode). Expect success.
-     *
-     *  Always require ECom Instance Reset in this one to secure that no conflicts occur.
-     *
-     * @throws \Exception
-     */
-    public function finalizeWithoutInvoiceId()
-    {
-        $noErrorDynamic = false;
-        $noErrorStatic = false;
-        $noErrorStaticRepeat = false;
-        $noErrorStaticRescue = false;
-
-        $finalizationResponseNoInvoice = false;
-        $finalizationResponseYesInvoice = false;
-        $finalizationResponseYesInvoiceFailTwice = false;
-        $finalizationResponseYesInvoiceFailAndRescue = false;
-
-        // Default: Attempt to debit with no invoice set.
-        $this->TEST->ECOM->resetInvoiceNumber();
-
-        $payment = [];
-        for ($paymentIndex = 1; $paymentIndex <= 4; $paymentIndex++) {
-            $this->TEST->ECOM->setPreferredId(uniqid(microtime(true)));
-            try {
-                $payment[$paymentIndex] = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
-            } catch (\Exception $bookPaymentException) {
-                if ($bookPaymentException->getCode() >= 500) {
-                    static::markTestSkipped('Error >= 500 occurred in test makes us skip this test.');
-                    return;
-                }
-            }
-        }
-
-        $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
-        try {
-            $finalizationResponseNoInvoice = $this->TEST->ECOM->finalizePayment($payment[1]->paymentId);
-        } catch (\Exception $noInvoiceException) {
-            $noErrorDynamic = true;
-            if ($noInvoiceException->getCode() >= 500) {
-                static::markTestSkipped('Error >= 500 occurred in test makes us skip this test.');
-                return;
-            }
-        }
-
-        // Legacy: Run legacy mode, statically set (detected) invoice id. Increment when necessary.
-        $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
-        $this->TEST->ECOM->setFlag('AFTERSHOP_STATIC_INVOICE');
-        try {
-            $finalizationResponseYesInvoice = $this->TEST->ECOM->finalizePayment($payment[2]->paymentId);
-        } catch (\Exception $yesInvoceException) {
-            $noErrorStatic = true;
-            if ($yesInvoceException->getCode() >= 500) {
-                static::markTestSkipped('Error >= 500 occurred in test makes us skip this test.');
-                return;
-            }
-        }
-
-        // Legacy: Run legacy in error mode, statically set where incremental invoices fail (Expect legacy exception).
-        $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
-        $this->TEST->ECOM->setFlag('AFTERSHOP_STATIC_INVOICE');
-        $this->TEST->ECOM->setFlag('TEST_INVOICE');
-        try {
-            $finalizationResponseYesInvoiceFailTwice = $this->TEST->ECOM->finalizePayment($payment[3]->paymentId);
-        } catch (\Exception $failTwiceException) {
-            $noErrorStaticRepeat = true;
-            if ($failTwiceException->getCode() >= 500) {
-                static::markTestSkipped('Error >= 500 occurred in test makes us skip this test.');
-                return;
-            }
-        }
-
-        // Legacy: Run legacy as above, but try rescue sequence on second exception (paranoid mode). Expect success.
-        $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
-        $this->TEST->ECOM->setFlag('AFTERSHOP_STATIC_INVOICE');
-        $this->TEST->ECOM->setFlag('AFTERSHOP_RESCUE_INVOICE');
-        $this->TEST->ECOM->setFlag('TEST_INVOICE');
-        $this->TEST->ECOM->setFlag('TEST_INVOICE_LAST');
-        try {
-            $finalizationResponseYesInvoiceFailAndRescue = $this->TEST->ECOM->finalizePayment($payment[4]->paymentId);
-        } catch (\Exception $failAndRescueException) {
-            if ($failAndRescueException->getCode() >= 500) {
-                static::markTestSkipped('Error >= 500 occurred in test makes us skip this test.');
-                return;
-            }
-            $noErrorStaticRescue = true;
-        }
-
-        $expectedAssertResult = (
-            (bool)$finalizationResponseNoInvoice &&
-            (bool)$finalizationResponseYesInvoice &&
-            (bool)!$finalizationResponseYesInvoiceFailTwice &&
-            (bool)$finalizationResponseYesInvoiceFailAndRescue &&
-            (bool)!$noErrorDynamic &&
-            (bool)!$noErrorStatic &&
-            (bool)$noErrorStaticRepeat &&
-            (bool)!$noErrorStaticRescue
-        ) ? true : false;
-
-        if (!$expectedAssertResult) {
-            // "Debug mode" required for this assertion part as it tend to fail sometimes and sometimes not.
-            $assertList = [
-                '$finalizationResponseNoInvoice ?true?' => $finalizationResponseNoInvoice,
-                '$finalizationResponseYesInvoice ?true?' => $finalizationResponseYesInvoice,
-                '$finalizationResponseYesInvoiceFailTwice ?false?' => $finalizationResponseYesInvoiceFailTwice,
-                '$finalizationResponseYesInvoiceFailAndRescue ?true?' => $finalizationResponseYesInvoiceFailAndRescue,
-                '$noErrorDynamic ?false?' => $noErrorDynamic,
-                '$noErrorStatic ?false?' => $noErrorStatic,
-                '$noErrorStaticRepeat ?true?' => $noErrorStaticRepeat,
-                '$noErrorStaticRescue ?false?' => $noErrorStaticRescue,
-            ];
-            print_r($assertList);
-        }
-
-        static::assertTrue($expectedAssertResult);
-
-        // Final reset.
-        $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
-    }
-
-    /**
-     * @test
      * @testdox EComPHP throws \Exceptions on credential failures
      * @throws \Exception
      */
@@ -1621,7 +1493,134 @@ class resursBankTest extends TestCase
         }
     }
 
+    /**
+     * @test
+     * @testdox Put this high in the tests as we reset invoice numbers. The last step in the function will restore it.
+     *
+     * Test are running four times:
+     *  - Default: Set invoice number only if there is no number (null).
+     *  - Legacy: Run legacy mode, statically set (detected) invoice id. Increment when necessary.
+     *  - Legacy: Run legacy in error mode, statically set where incremental invoices fail (Expect legacy exception).
+     *  - Legacy: Run legacy as above try, but try rescue sequence on second exception (paranoid mode). Expect success.
+     *
+     *  Always require ECom Instance Reset in this one to secure that no conflicts occur.
+     *
+     * @throws \Exception
+     */
+    public function finalizeWithoutInvoiceId()
+    {
+        $noErrorDynamic = false;
+        $noErrorStatic = false;
+        $noErrorStaticRepeat = false;
+        $noErrorStaticRescue = false;
 
+        $finalizationResponseNoInvoice = false;
+        $finalizationResponseYesInvoice = false;
+        $finalizationResponseYesInvoiceFailTwice = false;
+        $finalizationResponseYesInvoiceFailAndRescue = false;
+
+        // Default: Attempt to debit with no invoice set.
+        $this->TEST->ECOM->resetInvoiceNumber();
+
+        $payment = [];
+        for ($paymentIndex = 1; $paymentIndex <= 4; $paymentIndex++) {
+            $this->TEST->ECOM->setPreferredId(uniqid(microtime(true)));
+            try {
+                $payment[$paymentIndex] = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
+            } catch (\Exception $bookPaymentException) {
+                if ($bookPaymentException->getCode() >= 500) {
+                    static::markTestSkipped('Error >= 500 occurred in test makes us skip this test.');
+                    return;
+                }
+            }
+        }
+
+        $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
+        try {
+            $finalizationResponseNoInvoice = $this->TEST->ECOM->finalizePayment($payment[1]->paymentId);
+        } catch (\Exception $noInvoiceException) {
+            $noErrorDynamic = true;
+            if ($noInvoiceException->getCode() >= 500) {
+                static::markTestSkipped('Error >= 500 occurred in test makes us skip this test.');
+                return;
+            }
+        }
+
+        // Legacy: Run legacy mode, statically set (detected) invoice id. Increment when necessary.
+        $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
+        $this->TEST->ECOM->setFlag('AFTERSHOP_STATIC_INVOICE');
+        try {
+            $finalizationResponseYesInvoice = $this->TEST->ECOM->finalizePayment($payment[2]->paymentId);
+        } catch (\Exception $yesInvoceException) {
+            $noErrorStatic = true;
+            if ($yesInvoceException->getCode() >= 500) {
+                static::markTestSkipped('Error >= 500 occurred in test makes us skip this test.');
+                return;
+            }
+        }
+
+        // Legacy: Run legacy in error mode, statically set where incremental invoices fail (Expect legacy exception).
+        $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
+        $this->TEST->ECOM->setFlag('AFTERSHOP_STATIC_INVOICE');
+        $this->TEST->ECOM->setFlag('TEST_INVOICE');
+        try {
+            $finalizationResponseYesInvoiceFailTwice = $this->TEST->ECOM->finalizePayment($payment[3]->paymentId);
+        } catch (\Exception $failTwiceException) {
+            $noErrorStaticRepeat = true;
+            if ($failTwiceException->getCode() >= 500) {
+                static::markTestSkipped('Error >= 500 occurred in test makes us skip this test.');
+                return;
+            }
+        }
+
+        // Legacy: Run legacy as above, but try rescue sequence on second exception (paranoid mode). Expect success.
+        $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
+        $this->TEST->ECOM->setFlag('AFTERSHOP_STATIC_INVOICE');
+        $this->TEST->ECOM->setFlag('AFTERSHOP_RESCUE_INVOICE');
+        $this->TEST->ECOM->setFlag('TEST_INVOICE');
+        $this->TEST->ECOM->setFlag('TEST_INVOICE_LAST');
+        try {
+            $finalizationResponseYesInvoiceFailAndRescue = $this->TEST->ECOM->finalizePayment($payment[4]->paymentId);
+        } catch (\Exception $failAndRescueException) {
+            if ($failAndRescueException->getCode() >= 500) {
+                static::markTestSkipped('Error >= 500 occurred in test makes us skip this test.');
+                return;
+            }
+            $noErrorStaticRescue = true;
+        }
+
+        $expectedAssertResult = (
+            (bool)$finalizationResponseNoInvoice &&
+            (bool)$finalizationResponseYesInvoice &&
+            (bool)!$finalizationResponseYesInvoiceFailTwice &&
+            (bool)$finalizationResponseYesInvoiceFailAndRescue &&
+            (bool)!$noErrorDynamic &&
+            (bool)!$noErrorStatic &&
+            (bool)$noErrorStaticRepeat &&
+            (bool)!$noErrorStaticRescue
+        ) ? true : false;
+
+        if (!$expectedAssertResult) {
+            // "Debug mode" required for this assertion part as it tend to fail sometimes and sometimes not.
+            $assertList = [
+                '$finalizationResponseNoInvoice ?true?' => $finalizationResponseNoInvoice,
+                '$finalizationResponseYesInvoice ?true?' => $finalizationResponseYesInvoice,
+                '$finalizationResponseYesInvoiceFailTwice ?false?' => $finalizationResponseYesInvoiceFailTwice,
+                '$finalizationResponseYesInvoiceFailAndRescue ?true?' => $finalizationResponseYesInvoiceFailAndRescue,
+                '$noErrorDynamic ?false?' => $noErrorDynamic,
+                '$noErrorStatic ?false?' => $noErrorStatic,
+                '$noErrorStaticRepeat ?true?' => $noErrorStaticRepeat,
+                '$noErrorStaticRescue ?false?' => $noErrorStaticRescue,
+            ];
+            print_r($assertList);
+        }
+
+        static::assertTrue($expectedAssertResult);
+
+        // Final reset.
+        $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
+    }
+    
     /**
      * @test
      * @testdox Clean up special test data from share file
