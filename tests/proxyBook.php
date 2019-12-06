@@ -8,7 +8,7 @@
  *     customer included..
  * @throws \Exception
  */
-public function proxyByBookRcoHalfway()
+/*public function proxyByBookRcoHalfway()
 {
     $CURL = $this->TEST->ECOM->getCurlHandle();
     $CURL->setProxy('proxytest.resurs.it:80', CURLPROXY_HTTP);
@@ -35,4 +35,4 @@ public function proxyByBookRcoHalfway()
     } else {
         static::markTestSkipped('Could not complete proxy test');
     }
-}
+}*/
