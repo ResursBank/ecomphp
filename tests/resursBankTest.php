@@ -216,6 +216,7 @@ class resursBankTest extends TestCase
             '$noErrorStaticRepeat ?true?' => $noErrorStaticRepeat,
             '$noErrorStaticRescue ?false?' => $noErrorStaticRescue,
         ];
+        print_r($assertList);
 
         static::assertTrue(
             (
