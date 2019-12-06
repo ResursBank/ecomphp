@@ -206,17 +206,6 @@ class resursBankTest extends TestCase
             $noErrorStaticRescue = true;
         }
 
-        static::assertTrue(
-            (bool)$finalizationResponseNoInvoice === true &&
-            (bool)$finalizationResponseYesInvoice === true &&
-            (bool)$finalizationResponseYesInvoiceFailTwice === false &&
-            (bool)$finalizationResponseYesInvoiceFailAndRescue === true &&
-            (bool)$noErrorDynamic === false &&
-            (bool)$noErrorStatic === false &&
-            (bool)$noErrorStaticRepeat === true &&
-            (bool)$noErrorStaticRescue === false
-        );
-
         $assertList = [
             '$finalizationResponseNoInvoice ?true?' => $finalizationResponseNoInvoice,
             '$finalizationResponseYesInvoice ?true?' => $finalizationResponseYesInvoice,
@@ -228,7 +217,18 @@ class resursBankTest extends TestCase
             '$noErrorStaticRescue ?false?' => $noErrorStaticRescue,
         ];
 
-        echo json_encode($assertList);
+        static::assertTrue(
+            (
+                (bool)$finalizationResponseNoInvoice &&
+                (bool)$finalizationResponseYesInvoice &&
+                (bool)!$finalizationResponseYesInvoiceFailTwice &&
+                (bool)$finalizationResponseYesInvoiceFailAndRescue &&
+                (bool)!$noErrorDynamic &&
+                (bool)!$noErrorStatic &&
+                (bool)$noErrorStaticRepeat &&
+                (bool)!$noErrorStaticRescue
+            ) ? true : false
+        );
 
         // Final reset.
         $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
