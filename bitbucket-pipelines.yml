@@ -17,7 +17,7 @@ pipelines:
           - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
           - composer install
           - composer require phpunit/phpunit ^6
-          - vendor/bin/phpunit --configuration ./phpunit.xml
+          - vendor/bin/phpunit --configuration ./phpunit.xml --teamcity
     - step:
         name: EComPHP 1.3 with PHP 7.3.1
         image: php:7.3.12

@@ -204,6 +204,7 @@ class resursBankTest extends TestCase
             $finalizationResponseYesInvoiceFailAndRescue = $this->TEST->ECOM->finalizePayment($payment[4]->paymentId);
         } catch (\Exception $e) {
             $noErrorStaticRescue = true;
+            print_R($e->getCode() . ":" . $e->getMessage() . "\n");
         }
 
         $assertList = [
