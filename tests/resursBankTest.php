@@ -1021,13 +1021,22 @@ class resursBankTest extends TestCase
      *
      * @throws \Exception
      */
-    public function annulAndDebitedPaymentQuantityOldMethod()
+    public function annulAndDebitPaymentQuantityOldMethod()
     {
-        $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder();
-        $paymentid = $payment->paymentId;
+        try {
+            $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder();
+            $paymentid = $payment->paymentId;
 
-        $this->TEST->ECOM->annulPayment($paymentid, [['artNo' => 'PR01', 'quantity' => 50]]);
-        $this->TEST->ECOM->finalizePayment($paymentid, [['artNo' => 'PR01', 'quantity' => 50]]);
+            $this->TEST->ECOM->annulPayment($paymentid, [['artNo' => 'PR01', 'quantity' => 50]]);
+            $this->TEST->ECOM->finalizePayment($paymentid, [['artNo' => 'PR01', 'quantity' => 50]]);
+        } catch (\Exception $e) {
+            if ($e->getCode() >= 500) {
+                static::markTestSkipped(
+                    sprintf('Test %s failed due to code >= 500 (%s). Skipped!', __FUNCTION__, $e->getCode())
+                );
+                return;
+            }
+        }
 
         static::assertTrue(
             $this->getPaymentStatusQuantity(
@@ -1059,16 +1068,25 @@ class resursBankTest extends TestCase
      */
     public function annulAndDebitedPaymentQuantityProperMethod()
     {
-        // Four orderlines are normally created here.
-        $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
-        $paymentid = $payment->paymentId;
+        try {
+            // Four orderlines are normally created here.
+            $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
+            $paymentid = $payment->paymentId;
 
-        // Annul 50 of PR01.
-        $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 50);
-        $this->TEST->ECOM->annulPayment($paymentid);
-        // Debit the rest of PR01.
-        $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 50);
-        $this->TEST->ECOM->finalizePayment($paymentid);
+            // Annul 50 of PR01.
+            $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 50);
+            $this->TEST->ECOM->annulPayment($paymentid);
+            // Debit the rest of PR01.
+            $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 50);
+            $this->TEST->ECOM->finalizePayment($paymentid);
+        } catch (\Exception $e) {
+            if ($e->getCode() >= 500) {
+                static::markTestSkipped(
+                    sprintf('Test %s failed due to code >= 500 (%s). Skipped!', __FUNCTION__, $e->getCode())
+                );
+                return;
+            }
+        }
 
         static::assertTrue(
             $this->getPaymentStatusQuantity(
@@ -1141,23 +1159,23 @@ class resursBankTest extends TestCase
      */
     public function creditSomethingElse()
     {
-        $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
-        $paymentid = $payment->paymentId;
+        try {
+            $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
+            $paymentid = $payment->paymentId;
 
-        $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 100);
-        $this->TEST->ECOM->finalizePayment($paymentid);
+            $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 100);
+            $this->TEST->ECOM->finalizePayment($paymentid);
 
-        $this->TEST->ECOM->addOrderLine('Rabatt', 'Rabatt', 120, 25, 'st', 'ORDER_LINE', 25);
-        $this->TEST->ECOM->creditPayment($paymentid, null, false, true);
+            $this->TEST->ECOM->addOrderLine('Rabatt', 'Rabatt', 120, 25, 'st', 'ORDER_LINE', 25);
+            $this->TEST->ECOM->creditPayment($paymentid, null, false, true);
 
-        $this->TEST->ECOM->addOrderLine('Rabatt', 'Rabatt', 120, 25, 'st', 'ORDER_LINE', 25);
-        $this->TEST->ECOM->creditPayment($paymentid, null, false, true);
+            $this->TEST->ECOM->addOrderLine('Rabatt', 'Rabatt', 120, 25, 'st', 'ORDER_LINE', 25);
+            $this->TEST->ECOM->creditPayment($paymentid, null, false, true);
 
-        //define('TEST_TRIGGER', 1);
+            // Wait a sec.
+            sleep(1);
 
-        // The new creditec object does not seem to be reflected in its state.
-        static::assertTrue(
-            $this->getPaymentStatusQuantity(
+            $paymentStatusQuantity = $this->getPaymentStatusQuantity(
                 $paymentid,
                 [
                     'DEBIT' => [
@@ -1169,7 +1187,19 @@ class resursBankTest extends TestCase
                         50,
                     ],
                 ]
-            )
+            );
+        } catch (\Exception $e) {
+            if ($e->getCode() >= 500) {
+                static::markTestSkipped(
+                    sprintf('Test %s failed due to code >= 500 (%s). Skipped!', __FUNCTION__, $e->getCode())
+                );
+                return;
+            }
+        }
+
+        // The new creditec object does not seem to be reflected in its state.
+        static::assertTrue(
+            $paymentStatusQuantity
         );
     }
 
@@ -1187,23 +1217,32 @@ class resursBankTest extends TestCase
      */
     public function cancelMixedPayment()
     {
-        $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
-        $paymentid = $payment->paymentId;
+        try {
+            $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
+            $paymentid = $payment->paymentId;
 
-        // Annul 50
-        $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 50);
-        $this->TEST->ECOM->annulPayment($paymentid);
+            // Annul 50
+            $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 50);
+            $this->TEST->ECOM->annulPayment($paymentid);
 
-        // Finalize 50
-        $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 50);
-        $this->TEST->ECOM->finalizePayment($paymentid);
+            // Finalize 50
+            $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 50);
+            $this->TEST->ECOM->finalizePayment($paymentid);
 
-        // Credit 25
-        $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 25);
-        $this->TEST->ECOM->creditPayment($paymentid);
+            // Credit 25
+            $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 25);
+            $this->TEST->ECOM->creditPayment($paymentid);
 
-        // Annul the rest (which gives us another 25 credits on PR01. Credited should at this point be 50.).
-        $this->TEST->ECOM->cancelPayment($paymentid);
+            // Annul the rest (which gives us another 25 credits on PR01. Credited should at this point be 50.).
+            $this->TEST->ECOM->cancelPayment($paymentid);
+        } catch (\Exception $e) {
+            if ($e->getCode() >= 500) {
+                static::markTestSkipped(
+                    sprintf('Test %s failed due to code >= 500 (%s). Skipped!', __FUNCTION__, $e->getCode())
+                );
+                return;
+            }
+        }
 
         static::assertTrue(
             $this->getPaymentStatusQuantity(
@@ -1243,7 +1282,7 @@ class resursBankTest extends TestCase
         // This is from newer releases arrays instead of objects (unfortunately).
         // Mostly because some objects can't be copied as their key values are manipulated
         // in some foreach loops (which is very unwelcome).
-        $statusList = $this->TEST->ECOM->getPaymentSpecByStatus($paymentId);
+        $statusList = $this->TEST->ECOM->getPaymentDiffByStatus($paymentId);
         $statusListTable = $this->TEST->ECOM->getPaymentDiffAsTable($statusList);
         $expectedMatch = count($requestFor);
         $matches = 0;
@@ -1401,10 +1440,16 @@ class resursBankTest extends TestCase
         for ($paymentIndex = 1; $paymentIndex <= 4; $paymentIndex++) {
             $this->TEST->ECOM->setPreferredId(uniqid(microtime(true)));
             try {
-                $payment[$paymentIndex] = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
+                $payment[$paymentIndex] = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715');
             } catch (\Exception $bookPaymentException) {
                 if ($bookPaymentException->getCode() >= 500) {
-                    static::markTestSkipped('Error >= 500 occurred in test makes us skip this test.');
+                    static::markTestSkipped(
+                        sprintf(
+                            'Error >= 500 occurred in %s. Skip the rest (state: %s).',
+                            __FUNCTION__,
+                            'generateSimpleSimplifiedInvoiceQuantityOrder'
+                        )
+                    );
                     return;
                 }
             }
@@ -1416,7 +1461,13 @@ class resursBankTest extends TestCase
         } catch (\Exception $noInvoiceException) {
             $noErrorDynamic = true;
             if ($noInvoiceException->getCode() >= 500) {
-                static::markTestSkipped('Error >= 500 occurred in test makes us skip this test.');
+                static::markTestSkipped(
+                    sprintf(
+                        'Error >= 500 occurred in %s. Skip the rest (state: %s).',
+                        __FUNCTION__,
+                        'finalizePayment[1]'
+                    )
+                );
                 return;
             }
         }
@@ -1429,7 +1480,13 @@ class resursBankTest extends TestCase
         } catch (\Exception $yesInvoceException) {
             $noErrorStatic = true;
             if ($yesInvoceException->getCode() >= 500) {
-                static::markTestSkipped('Error >= 500 occurred in test makes us skip this test.');
+                static::markTestSkipped(
+                    sprintf(
+                        'Error >= 500 occurred in %s. Skip the rest (state: %s).',
+                        __FUNCTION__,
+                        'finalizePayment[1]'
+                    )
+                );
                 return;
             }
         }
@@ -1443,7 +1500,13 @@ class resursBankTest extends TestCase
         } catch (\Exception $failTwiceException) {
             $noErrorStaticRepeat = true;
             if ($failTwiceException->getCode() >= 500) {
-                static::markTestSkipped('Error >= 500 occurred in test makes us skip this test.');
+                static::markTestSkipped(
+                    sprintf(
+                        'Error >= 500 occurred in %s. Skip the rest (state: %s).',
+                        __FUNCTION__,
+                        'finalizePayment[1]'
+                    )
+                );
                 return;
             }
         }
@@ -1452,13 +1515,21 @@ class resursBankTest extends TestCase
         $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
         $this->TEST->ECOM->setFlag('AFTERSHOP_STATIC_INVOICE');
         $this->TEST->ECOM->setFlag('AFTERSHOP_RESCUE_INVOICE');
+        //$this->TEST->ECOM->setFlag('AFTERSHOP_RESCUE_INCREMENT', 10);
         $this->TEST->ECOM->setFlag('TEST_INVOICE');
         $this->TEST->ECOM->setFlag('TEST_INVOICE_LAST');
         try {
             $finalizationResponseYesInvoiceFailAndRescue = $this->TEST->ECOM->finalizePayment($payment[4]->paymentId);
         } catch (\Exception $failAndRescueException) {
+            echo $failAndRescueException->getCode() . ": " . $failAndRescueException->getMessage() . "\n";
             if ($failAndRescueException->getCode() >= 500) {
-                static::markTestSkipped('Error >= 500 occurred in test makes us skip this test.');
+                static::markTestSkipped(
+                    sprintf(
+                        'Error >= 500 occurred in %s. Skip the rest (state: %s).',
+                        __FUNCTION__,
+                        'finalizePayment[1]'
+                    )
+                );
                 return;
             }
             $noErrorStaticRescue = true;
@@ -1494,6 +1565,7 @@ class resursBankTest extends TestCase
 
         // Final reset.
         $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
+        $this->TEST->ECOM->getNextInvoiceNumberByDebits();
     }
 
     /**
