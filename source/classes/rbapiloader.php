@@ -2768,14 +2768,22 @@ class ResursBank
         if (intval($currentInvoiceTest) > 0 && $currentInvoiceTest > $properInvoiceNumber) {
             $properInvoiceNumber = $currentInvoiceTest;
         }
+        $newInvoiceNumber = $this->getNextInvoiceNumber(true, $properInvoiceNumber);
+
+        // Welcome to the paranoid mode. This is where we try and double increment numbers when they fail the first time. On demand.
         if (!empty($this->afterShopInvoiceId) &&
             intval($this->afterShopInvoiceId) > 0 &&
             $this->isFlag('AFTERSHOP_RESCUE_INVOICE')
         ) {
-            // Welcome to the paranoid mode. This is where we try and double increment numbers when they fail the first time. On demand.
-            $properInvoiceNumber = intval($this->afterShopInvoiceId) + 1;
+            if ($newInvoiceNumber > $properInvoiceNumber) {
+                $properInvoiceNumber = $newInvoiceNumber + 1;
+            } else {
+                $properInvoiceNumber++;
+            }
+
+            $this->getNextInvoiceNumber(true, $properInvoiceNumber);
         }
-        $this->getNextInvoiceNumber(true, $properInvoiceNumber);
+
         $this->afterShopInvoiceId = $properInvoiceNumber;
 
         return $properInvoiceNumber;
