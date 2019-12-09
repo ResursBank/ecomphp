@@ -1408,8 +1408,9 @@ class resursBankTest extends TestCase
     }
 
     /**
-     * @test
-     * @testdox Put this high in the tests as we reset invoice numbers. The last step in the function will restore it.
+     * Put this at the lowest row level in the tests reset and play with invoice numbers IF you need to bring it to
+     * autotesting. As it consumes an enormous amount of time, we exclude it per default as long as we runs on a free
+     * pipeline.
      *
      * Test are running four times:
      *  - Default: Set invoice number only if there is no number (null).
