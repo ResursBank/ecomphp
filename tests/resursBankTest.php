@@ -1415,7 +1415,6 @@ class resursBankTest extends TestCase
      *  - Default: Set invoice number only if there is no number (null).
      *  - Legacy: Run legacy mode, statically set (detected) invoice id. Increment when necessary.
      *  - Legacy: Run legacy in error mode, statically set where incremental invoices fail (Expect legacy exception).
-     *  - Legacy: Run legacy as above try, but try rescue sequence on second exception (paranoid mode). Expect success.
      *
      *  Always require ECom Instance Reset in this one to secure that no conflicts occur.
      *
@@ -1511,39 +1510,13 @@ class resursBankTest extends TestCase
             }
         }
 
-        // Legacy: Run legacy as above, but try rescue sequence on second exception (paranoid mode). Expect success.
-        $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
-        $this->TEST->ECOM->setFlag('AFTERSHOP_STATIC_INVOICE');
-        $this->TEST->ECOM->setFlag('AFTERSHOP_RESCUE_INVOICE');
-        //$this->TEST->ECOM->setFlag('AFTERSHOP_RESCUE_INCREMENT', 10);
-        $this->TEST->ECOM->setFlag('TEST_INVOICE');
-        $this->TEST->ECOM->setFlag('TEST_INVOICE_LAST');
-        try {
-            $finalizationResponseYesInvoiceFailAndRescue = $this->TEST->ECOM->finalizePayment($payment[4]->paymentId);
-        } catch (\Exception $failAndRescueException) {
-            echo $failAndRescueException->getCode() . ": " . $failAndRescueException->getMessage() . "\n";
-            if ($failAndRescueException->getCode() >= 500) {
-                static::markTestSkipped(
-                    sprintf(
-                        'Error >= 500 occurred in %s. Skip the rest (state: %s).',
-                        __FUNCTION__,
-                        'finalizePayment[1]'
-                    )
-                );
-                return;
-            }
-            $noErrorStaticRescue = true;
-        }
-
         $expectedAssertResult = (
             (bool)$finalizationResponseNoInvoice &&
             (bool)$finalizationResponseYesInvoice &&
             (bool)!$finalizationResponseYesInvoiceFailTwice &&
-            (bool)$finalizationResponseYesInvoiceFailAndRescue &&
             (bool)!$noErrorDynamic &&
             (bool)!$noErrorStatic &&
-            (bool)$noErrorStaticRepeat &&
-            (bool)!$noErrorStaticRescue
+            (bool)$noErrorStaticRepeat
         ) ? true : false;
 
         if (!$expectedAssertResult) {
