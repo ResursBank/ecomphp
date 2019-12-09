@@ -30,9 +30,9 @@ There might be a slight chance that you also need openssl or similar, as our ser
 
 ### December 9, 2019
 
-    Officially verified  : 5.6 - 7.4
-    Legacy verifications : 5.4 - 5.5
-    Unverified           : 5.3 and lower.
+    Pipelines/Bamboo Verified : 5.6 - 7.4
+                       Legacy : 5.4 - 5.5
+                   Unverified : 5.3 and lower.
 
 
 ## What this library do and do not
