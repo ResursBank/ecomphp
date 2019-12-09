@@ -1408,9 +1408,9 @@ class resursBankTest extends TestCase
     }
 
     /**
-     * Put this at the lowest row level in the tests reset and play with invoice numbers IF you need to bring it to
-     * autotesting. As it consumes an enormous amount of time, we exclude it per default as long as we runs on a free
-     * pipeline.
+     * Put this at the lowest row level in the tests reset and play with invoice numbers
+     * IF you need to bring it to autotesting. As it consumes an enormous amount of time,
+     * we exclude it per default as long as we runs on a free pipeline.
      *
      * Test are running four times:
      *  - Default: Set invoice number only if there is no number (null).
@@ -1426,12 +1426,10 @@ class resursBankTest extends TestCase
         $noErrorDynamic = false;
         $noErrorStatic = false;
         $noErrorStaticRepeat = false;
-        $noErrorStaticRescue = false;
 
         $finalizationResponseNoInvoice = false;
         $finalizationResponseYesInvoice = false;
         $finalizationResponseYesInvoiceFailTwice = false;
-        $finalizationResponseYesInvoiceFailAndRescue = false;
 
         // Default: Attempt to debit with no invoice set.
         $this->TEST->ECOM->resetInvoiceNumber();
@@ -1526,11 +1524,9 @@ class resursBankTest extends TestCase
                 '$finalizationResponseNoInvoice ?true?' => $finalizationResponseNoInvoice,
                 '$finalizationResponseYesInvoice ?true?' => $finalizationResponseYesInvoice,
                 '$finalizationResponseYesInvoiceFailTwice ?false?' => $finalizationResponseYesInvoiceFailTwice,
-                '$finalizationResponseYesInvoiceFailAndRescue ?true?' => $finalizationResponseYesInvoiceFailAndRescue,
                 '$noErrorDynamic ?false?' => $noErrorDynamic,
                 '$noErrorStatic ?false?' => $noErrorStatic,
-                '$noErrorStaticRepeat ?true?' => $noErrorStaticRepeat,
-                '$noErrorStaticRescue ?false?' => $noErrorStaticRescue,
+                '$noErrorStaticRepeat ?true?' => $noErrorStaticRepeat
             ];
             print_r($assertList);
         }
