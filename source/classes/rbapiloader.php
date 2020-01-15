@@ -8084,9 +8084,9 @@ class ResursBank
             );
 
             // Occurs when PAYMENT_COMPLETED and finalization status falsely returns with PAYMENT_STATUS_COULD_NOT_BE_SET.
-            if ($return > 0 &&
-                ($return & RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET) &&
-                $return !== RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET
+            if (($return & RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET) &&
+                $return !== RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET &&
+                $return > 0
             ) {
                 $return -= RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET;
             }
@@ -8195,9 +8195,9 @@ class ResursBank
                 );
 
                 // Occurs when PAYMENT_COMPLETED and finalization status falsely returns with PAYMENT_STATUS_COULD_NOT_BE_SET.
-                if ($return > 0 &&
-                    ($return & RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET) &&
-                    $return !== RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET
+                if (($return & RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET) &&
+                    $return !== RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET &&
+                    $return > 0
                 ) {
                     $return -= RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET;
                 }
