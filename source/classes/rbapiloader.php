@@ -462,7 +462,7 @@ class ResursBank
     /**
      * @var string The next generation checkout URL. Internal only.
      */
-    private $rcoNgUrl = "http://omnicheckout-webservicefrontend.pte.loc";
+    private $rcoNgUrl = "https://web-integration-mock-checkout.integration.resurs.com";
 
     /**
      * Default production URL for Resurs Checkout
