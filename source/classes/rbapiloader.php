@@ -1579,7 +1579,14 @@ class ResursBank
                 $numchars[$charListId] = 0;
             }
             $numchars[$charListId]++;
-            $chars[] = $characterListArray[$charListId]{mt_rand(0, (strlen($characterListArray[$charListId]) - 1))};
+            $chars[] = $characterListArray[$charListId][mt_rand(
+                0,
+                (
+                    strlen(
+                        $characterListArray[$charListId]
+                    ) - 1
+                )
+            )];
         }
         shuffle($chars);
         $retp = implode("", $chars);
