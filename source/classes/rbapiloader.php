@@ -8082,14 +8082,6 @@ class ResursBank
             $return = (RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED |
                 $this->getInstantFinalizationStatus($paymentData, $paymentMethodObject)
             );
-
-            // Occurs when PAYMENT_COMPLETED and finalization status falsely returns with PAYMENT_STATUS_COULD_NOT_BE_SET.
-            if (($return & RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET) &&
-                $return !== RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET &&
-                $return > 0
-            ) {
-                $return -= RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET;
-            }
         }
 
         if ($this->getIsAnnulled($paymentData) && !$this->getIsCredited($paymentData) && $resursTotalAmount == 0) {
@@ -8108,10 +8100,31 @@ class ResursBank
             } else {
                 $return += RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_MANUAL_INSPECTION;
             }
-
         }
 
-        // Return generic
+        if ($this->isFrozen($paymentData)) {
+            $return = RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING;
+        }
+
+        return $this->resetFailBit($return);
+    }
+
+    /**
+     * Is status set but Ecom clains that it could not set it?
+     *
+     * @param $return
+     * @return int
+     * @since 1.3.28
+     */
+    private function resetFailBit($return) {
+        // Occurs when PAYMENT_COMPLETED and finalization status falsely returns with PAYMENT_STATUS_COULD_NOT_BE_SET.
+        if (($return & RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET) &&
+            $return !== RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET &&
+            $return > 0
+        ) {
+            $return -= RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET;
+        }
+
         return $return;
     }
 
@@ -8194,15 +8207,7 @@ class ResursBank
                     $this->getInstantFinalizationStatus($paymentData, $paymentMethodObject)
                 );
 
-                // Occurs when PAYMENT_COMPLETED and finalization status falsely returns with PAYMENT_STATUS_COULD_NOT_BE_SET.
-                if (($return & RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET) &&
-                    $return !== RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET &&
-                    $return > 0
-                ) {
-                    $return -= RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET;
-                }
-
-                return $return;
+                return $this->resetFailBit($return);
             case $byCallbackEvent & (RESURS_CALLBACK_TYPES::UNFREEZE):
                 return RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PROCESSING;
             case $byCallbackEvent & (RESURS_CALLBACK_TYPES::UPDATE):
