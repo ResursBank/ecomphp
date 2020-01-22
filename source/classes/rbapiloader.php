@@ -8069,6 +8069,10 @@ class ResursBank
     {
         $return = RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET;
 
+        if ($this->isFrozen($paymentData)) {
+            $return = RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING;
+        }
+
         /** @noinspection PhpUndefinedFieldInspection */
         $resursTotalAmount = $paymentData->totalAmount;
         if ($this->canDebit($paymentData)) {
@@ -8100,10 +8104,6 @@ class ResursBank
             } else {
                 $return += RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_MANUAL_INSPECTION;
             }
-        }
-
-        if ($this->isFrozen($paymentData)) {
-            $return = RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING;
         }
 
         return $this->resetFailBit($return);
