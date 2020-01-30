@@ -1406,6 +1406,21 @@ class resursBankTest extends TestCase
     }
 
     /**
+     * @test
+     */
+    public function getPriceInfo()
+    {
+        $getCostOfPriceInfoUrl = $this->TEST->ECOM->getCostOfPriceInformation($this->getMethodId(), 1000);
+        $getCostOfPriceInfoData = $this->TEST->ECOM->getCostOfPriceInformation($this->getMethodId(), 1000, true);
+
+        static::assertTrue(
+            preg_match('/^http/', $getCostOfPriceInfoUrl) ? true: false &&
+            preg_match('/\<html\>/is', $getCostOfPriceInfoData) ? true: false
+        );
+    }
+
+
+    /**
      * Put this at the lowest row level in the tests reset and play with invoice numbers
      * IF you need to bring it to autotesting. As it consumes an enormous amount of time,
      * we exclude it per default as long as we runs on a free pipeline.

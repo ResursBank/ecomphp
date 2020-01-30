@@ -3970,6 +3970,44 @@ class ResursBank
     }
 
     /**
+     * @param string $paymentMethod
+     * @param int $amount
+     * @param bool $fetch
+     * @return string|null
+     * @throws Exception
+     * @since 1.3.30
+     */
+    public function getCostOfPriceInformation(
+        $paymentMethod = '',
+        $amount = 0,
+        $fetch = false
+    ) {
+        $return = '';
+        $urlData = $this->getSekkiUrls($amount, $paymentMethod);
+        $finder = ['priceinfo', 'authorizedBankproductId'];
+
+        foreach ($urlData as $urlObj) {
+            if (isset($urlObj->url) && isset($urlObj->appendPriceLast)) {
+                foreach ($finder as $findWord) {
+                    if (preg_match('/' . $findWord . '/', $urlObj->url)) {
+                        $return = $urlObj->url;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if ($fetch && !empty($return)) {
+            $curlRequest = $this->CURL->doGet($return . $amount);
+            if (!empty($curlRequest)) {
+                $return = $this->CURL->getBody();
+            }
+        }
+
+        return $return;
+    }
+
+    /**
      * While generating a getCostOfPurchase where $returnBody is true, this function adds custom html before the
      * returned html-code from Resurs Bank
      *
