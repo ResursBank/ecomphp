@@ -3863,7 +3863,10 @@ class ResursBank
                 }
             }
             if (!empty($paymentMethodID)) {
-                return $currentLegalUrls[$paymentMethodID];
+                if (is_string($paymentMethodID) && isset($currentLegalUrls[$paymentMethodID])) {
+                    return $currentLegalUrls[$paymentMethodID];
+                }
+                return []; // Nothing.
             } else {
                 return $currentLegalUrls;
             }
@@ -3970,6 +3973,71 @@ class ResursBank
     }
 
     /**
+     * @return array
+     * @since 1.3.30
+     */
+    private function getTemplatePriceInfoBlocks()
+    {
+        $template = [];
+
+        // costofpriceinfo - entire tab block
+        // priceinfotab - each clickable tab
+        // priceinfoblock - html content of priceinfo (Wants $methodHtml)
+        $templates = [
+            'costofpriceinfo',
+            'priceinfotab',
+            'priceinfoblock'
+        ];
+
+        $template = [];
+        // Prepare template files
+        foreach ($templates as $htmlFile) {
+            $template[$htmlFile] = $htmlFile;
+        }
+        return $template;
+    }
+
+    /**
+     * @param $method
+     * @param $amount
+     * @param bool $fetch
+     * @return array
+     * @throws Exception
+     * @since 1.3.30
+     */
+    private function getRenderedPriceInfoTemplates($method, $amount, $fetch = false)
+    {
+        $return = [
+            'tabs' => '',
+            'block' => '',
+        ];
+        if (!isset($method->id)) {
+            return $return;
+        }
+        $template = $this->getTemplatePriceInfoBlocks();
+        $methodUrl = $this->getPriceInformationUrl($amount, $method->id);
+        if (!empty($methodUrl)) {
+            $priceInfoHtml = '';
+            if ($fetch) {
+                $curlRequest = $this->CURL->doGet($methodUrl . $amount);
+                if (!empty($curlRequest)) {
+                    $priceInfoHtml = $this->CURL->getBody();
+                }
+            }
+            $vars = [
+                'methodHash' => md5($method->id),
+                'methodHtml' => $priceInfoHtml,
+                'methodName' => isset($method->description) ? $method->description : $method->id,
+                'priceInfoUrl' => $methodUrl,
+            ];
+            $return['tabs'] .= $this->getHtmlTemplate($template['priceinfotab'], $vars);
+            $return['block'] .= $this->getHtmlTemplate($template['priceinfoblock'], $vars);
+        }
+
+        return $return;
+    }
+
+    /**
      * @param string $paymentMethod
      * @param int $amount
      * @param bool $fetch
@@ -3983,6 +4051,95 @@ class ResursBank
         $fetch = false
     ) {
         $return = '';
+        // If the request contains no specified method, an asterisk or an array of methods
+        // we presume the payment information should be "tabbed" with many.
+        if (empty($paymentMethod) || $paymentMethod === '*' || is_array($paymentMethod)) {
+            $template = $this->getTemplatePriceInfoBlocks();
+            if (is_array($paymentMethod)) {
+                $methodList = $paymentMethod;
+            } else {
+                $methodList = $this->getPaymentMethods();
+            }
+
+            $tab = '';
+            $block = '';
+            $hasUrls = false;
+            foreach ($methodList as $method) {
+                $infoObject = $this->getRenderedPriceInfoTemplates($method, $amount, $fetch);
+                if (!empty($infoObject['tabs'])) {
+                    $tab .= $infoObject['tabs'];
+                    $block .= $infoObject['block'];
+                    $hasUrls = true;
+                }
+            }
+
+            if ($hasUrls) {
+                $vars = [
+                    'priceInfoTabs' => $tab,
+                    'priceInfoBlocks' => $block
+                ];
+
+                $return = $this->getHtmlTemplate($template['costofpriceinfo'], $vars);
+            }
+        } else {
+            $return = $this->getPriceInformationUrl($amount, $paymentMethod);
+
+            if ($fetch && !empty($return)) {
+                $curlRequest = $this->CURL->doGet($return . $amount);
+                if (!empty($curlRequest)) {
+                    $return = $this->CURL->getBody();
+                }
+            }
+        }
+
+        return $return;
+    }
+
+    /**
+     * @param $templateName
+     * @param bool $isHtml
+     * @param array $assignedVariables
+     * @return false|string
+     * @since 1.3.30
+     */
+    private function getHtmlTemplate($templateName, $isHtml = false, $assignedVariables = [])
+    {
+        $extension = 'php';
+
+        if (is_object($isHtml) || is_array($isHtml)) {
+            $assignedVariables = $isHtml;
+        } else {
+            if ($isHtml) {
+                $extension = 'html';
+            }
+        }
+        foreach ($assignedVariables as $key => $value) {
+            if (preg_match('/^\$/', $key)) {
+                $key = substr($key, 1);
+            }
+            ${$key} = $value;
+        }
+        $templateFile = sprintf('%s/%s.%s', __DIR__ . '/../templates', $templateName, $extension);
+        if (file_exists($templateFile)) {
+            ob_start();
+            @include($templateFile);
+            $templateHtml = ob_get_clean();
+        } else {
+            $templateHtml = 'Not a valid page.';
+        }
+        return $templateHtml;
+    }
+
+    /**
+     * @param $amount
+     * @param $paymentMethod
+     * @return string
+     * @throws Exception
+     * @since 1.3.30
+     */
+    private function getPriceInformationUrl($amount, $paymentMethod) {
+        $return = '';
+
         $urlData = $this->getSekkiUrls($amount, $paymentMethod);
         $finder = ['priceinfo', 'authorizedBankproductId'];
 
@@ -3997,15 +4154,9 @@ class ResursBank
             }
         }
 
-        if ($fetch && !empty($return)) {
-            $curlRequest = $this->CURL->doGet($return . $amount);
-            if (!empty($curlRequest)) {
-                $return = $this->CURL->getBody();
-            }
-        }
-
         return $return;
     }
+
 
     /**
      * While generating a getCostOfPurchase where $returnBody is true, this function adds custom html before the
