@@ -1369,6 +1369,31 @@ class resursBankTest extends TestCase
     }
 
     /**
+     * @test
+     */
+    public function getPriceInfo()
+    {
+        $myMethods = $this->TEST->ECOM->getPaymentMethods();
+
+        // Normal one method.
+        $getCostOfPriceInfoUrl = $this->TEST->ECOM->getCostOfPriceInformation($this->getMethodId(), 1000);
+        // Fetched one method.
+        $getCostOfPriceInfoData = $this->TEST->ECOM->getCostOfPriceInformation($this->getMethodId(), 1000, true);
+        // Tabbed all methods.
+        $priceInfoHtml = $this->TEST->ECOM->getCostOfPriceInformation($myMethods, 1000);
+
+        // Priceinfo is fetchable too, but will destroy the layout as the CSS is located at Resurs Bank, not locally
+        // stored.
+        //$priceInfoHtmlFetched = $this->TEST->ECOM->getCostOfPriceInformation($myMethods, 1000, true);
+
+        static::assertTrue(
+            preg_match('/^http/', $getCostOfPriceInfoUrl) ? true : false &&
+            preg_match('/\<html\>/is', $getCostOfPriceInfoData) ? true : false,
+            preg_match('/\<html\>/is', $priceInfoHtml) ? true : false
+        );
+    }
+
+    /**
      * Put this at the lowest row level in the tests reset and play with invoice numbers
      * IF you need to bring it to autotesting. As it consumes an enormous amount of time,
      * we exclude it per default as long as we runs on a free pipeline.
