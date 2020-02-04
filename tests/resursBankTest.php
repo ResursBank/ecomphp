@@ -85,11 +85,6 @@ class resursBankTest extends TestCase
     private $signUrl = "https://test.resurs.com/signdummy/index.php?isSigningUrl=1";
 
     /**
-     * @var string The next generation checkout URL. Internal only.
-     */
-    private $rcoNgUrl = "http://omnicheckout-webservicefrontend.pte.loc";
-
-    /**
      * Exact match of selenium driver we're running with tests.
      *
      * Add to composer: "facebook/webdriver": "dev-master"
@@ -1371,38 +1366,6 @@ class resursBankTest extends TestCase
             ($diff < 5 ? true : false) &&
             (isset($invoiceCache->id) && $invoiceCache->id === 'NATURALINVOICE')
         );
-    }
-
-    /**
-     * @test
-     */
-    public function getAnotherIframe()
-    {
-        try {
-            $newEcom = new ResursBank($this->usernameNG, $this->passwordNG);
-            // Disable secure SSL and allow self signed certificates in case of that use.
-            $newEcom->setSslSecurityDisabled(true);
-            $newEcom->setEnvRcoUrl($this->rcoNgUrl);
-            $newEcom->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
-            $newEcom->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
-            $newEcom->addOrderLine("Product-1337", "", 800, 25);
-            $id = $newEcom->getPreferredPaymentId();
-            $iframe = $newEcom->createPayment($id);
-            static::assertTrue(
-                (
-                preg_match('/resurs.loc/i', $iframe) ? true : false ||
-                preg_match('/pte.loc/i', $iframe) ? true : false
-                )
-            );
-        } catch (\Exception $e) {
-            static::markTestSkipped(
-                sprintf(
-                    "Test can not be executed. Probably internal sources (err %s: %s)",
-                    $e->getCode(),
-                    $e->getMessage()
-                )
-            );
-        }
     }
 
     /**
