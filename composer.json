@@ -3,7 +3,6 @@
     "description": "ECommerce Library for Resurs Bank shop flows",
     "license": "Apache-2.0",
     "require": {
-        "php": ">=5.4",
         "ext-soap": "*",
         "ext-curl": "*",
         "tornevall/tornelib-php-crypto": "6.0.*",
