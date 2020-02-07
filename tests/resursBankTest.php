@@ -1507,7 +1507,7 @@ class resursBankTest extends TestCase
                 '$finalizationResponseYesInvoiceFailTwice ?false?' => $finalizationResponseYesInvoiceFailTwice,
                 '$noErrorDynamic ?false?' => $noErrorDynamic,
                 '$noErrorStatic ?false?' => $noErrorStatic,
-                '$noErrorStaticRepeat ?true?' => $noErrorStaticRepeat
+                '$noErrorStaticRepeat ?true?' => $noErrorStaticRepeat,
             ];
             print_r($assertList);
         }
@@ -1517,6 +1517,28 @@ class resursBankTest extends TestCase
         // Final reset.
         $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
         $this->TEST->ECOM->getNextInvoiceNumberByDebits();
+    }
+
+    /**
+     * @test
+     * @testdox Quicktest of the iframe.
+     * @throws \Exception
+     */
+    public function getRcoFrame()
+    {
+        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
+        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+
+        // First update.
+        $this->TEST->ECOM->addOrderLine("Product-1337", "", 800, 25);
+        $id = $this->TEST->ECOM->getPreferredPaymentId();
+        $fIframe = $this->TEST->ECOM->createPayment($id);
+        $rcoResponse = $this->TEST->ECOM->getFullCheckoutResponse();
+        static::assertTrue((
+        preg_match('/<iframe/is', $fIframe) ? true : false &&
+        count($rcoResponse) >= 3 ? true : false &&
+            (isset($rcoResponse->script) && !empty($rcoResponse->script))
+        ));
     }
 
     /**
