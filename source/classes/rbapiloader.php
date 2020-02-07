@@ -7,7 +7,7 @@
  * @author  Resurs Bank <support@resurs.se>
  * @author  Tomas Tornevall <tomas.tornevall@resurs.se>
  * @branch 1.1
- * @version 1.1.50
+ * @version 1.1.52
  * @deprecated Maintenance version only - Use composer based package v1.3 or higher if possible
  * @link https://test.resurs.com/docs/x/BACt Migration from 1.0/1.1 to 1.3 documentation
  * @link https://test.resurs.com/docs/x/TYNM Get started with EComPHP
@@ -16,7 +16,8 @@
 
 namespace Resursbank\RBEcomPHP;
 
-// This is a global setter but it has to be set before the inclusions.
+// This is a global setter but it has to be set before the inclusions. Why?
+// It's a result of a legacy project that's not adapted to proper PSR standards.
 if (!defined('ECOM_SKIP_AUTOLOAD')) {
     define('ECOM_CLASS_EXISTS_AUTOLOAD', true);
 } else {
@@ -455,7 +456,6 @@ class ResursBank
      * @var string
      */
     private $environmentRcoStandardTest = "https://omnitest.resurs.com";
-
     /**
      * Default production URL for Resurs Checkout
      *
@@ -485,6 +485,10 @@ class ResursBank
      * @var string
      */
     private $environmentRcoOverrideUrl;
+    /**
+     * @var string
+     */
+    private $fullCheckoutResponse;
     /**
      * Country of choice
      *
@@ -5154,6 +5158,7 @@ class ResursBank
                 );
                 $parsedResponse = $this->CURL->getParsed($checkoutResponse);
                 $responseCode = $this->CURL->getCode($checkoutResponse);
+                $this->fullCheckoutResponse = $parsedResponse;
                 // Do not trust response codes!
                 if (isset($parsedResponse->paymentSessionId)) {
                     $this->paymentSessionId = $parsedResponse->paymentSessionId;
@@ -5207,6 +5212,15 @@ class ResursBank
     }
 
     /**
+     * Get full checkout response from RCO.
+     *
+     * @return string
+     */
+    public function getFullCheckoutResponse() {
+        return $this->fullCheckoutResponse;
+    }
+
+    /**
      * Handle post errors and extract eventual errors from a http body
      *
      * @param $e
@@ -5254,6 +5268,7 @@ class ResursBank
 
     /**
      * @return string
+     * @throws Exception
      */
     public function getOrderLineHash()
     {
