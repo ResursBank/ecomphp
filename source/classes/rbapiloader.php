@@ -458,7 +458,6 @@ class ResursBank
      * @var string
      */
     private $environmentRcoStandardTest = "https://omnitest.resurs.com";
-
     /**
      * Default production URL for Resurs Checkout
      *
@@ -488,6 +487,10 @@ class ResursBank
      * @var string
      */
     private $environmentRcoOverrideUrl;
+    /**
+     * @var string
+     */
+    private $fullCheckoutResponse;
     /**
      * Country of choice
      *
@@ -5157,6 +5160,7 @@ class ResursBank
                 );
                 $parsedResponse = $this->CURL->getParsed($checkoutResponse);
                 $responseCode = $this->CURL->getCode($checkoutResponse);
+                $this->fullCheckoutResponse = $parsedResponse;
                 // Do not trust response codes!
                 if (isset($parsedResponse->paymentSessionId)) {
                     $this->paymentSessionId = $parsedResponse->paymentSessionId;
@@ -5210,6 +5214,15 @@ class ResursBank
     }
 
     /**
+     * Get full checkout response from RCO.
+     *
+     * @return string
+     */
+    public function getFullCheckoutResponse() {
+        return $this->fullCheckoutResponse;
+    }
+
+    /**
      * Handle post errors and extract eventual errors from a http body
      *
      * @param $e
@@ -5257,6 +5270,7 @@ class ResursBank
 
     /**
      * @return string
+     * @throws Exception
      */
     public function getOrderLineHash()
     {
