@@ -67,7 +67,7 @@ Then you may go with something like this in your first born code:
     ?>
 
 
-## Deploying (composer)
+## Bundling deployments with composer
 
 Deployment with composer usually only requires an installation. However, if you need to bundle the composer package with all dependencies in a installation package that is not built for using composer you need to set up your package, so that the included extra repos is considered "a part of the package". Such deployment script may look like this:
 
