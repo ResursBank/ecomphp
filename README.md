@@ -34,6 +34,8 @@ There might be a slight chance that you also need openssl or similar, as our ser
                        Legacy : 5.4 - 5.5
                    Unverified : 5.3 and lower.
 
+Take a look at [this page](https://www.php.net/supported-versions.php) if you're unsure which PHP versions that are still supported by the PHP team.
+As of february 2020, only 7.3 and 7.4 have full support open. 7.2 still do have security patch support, but is on deprecation. All older versions are completely unsupported and should probably get upgrade by you also.
 
 ## What this library do and do not
 
