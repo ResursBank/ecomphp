@@ -485,6 +485,11 @@ class ResursBank
      */
     private $env_omni_pos = false;
     /**
+     * Contains a possible origin source after RCO has loaded a frame.
+     * @var string $iframeOrigin
+     */
+    private $iframeOrigin;
+    /**
      * @var string
      */
     private $environmentRcoOverrideUrl;
@@ -5166,9 +5171,21 @@ class ResursBank
                 if (isset($parsedResponse->paymentSessionId)) {
                     $this->paymentSessionId = $parsedResponse->paymentSessionId;
                     $this->SpecLines = [];
-                    //$this->resetPayload();
 
-                    /** @noinspection PhpUndefinedFieldInspection */
+                    try {
+                        @preg_match_all('/iframe.*src=\"(http(.*?))\"/', $parsedResponse->html, $matches);
+                        if (isset($matches[1]) && isset($matches[1][0])) {
+                            $urls = $this->NETWORK->getUrlsFromHtml($parsedResponse->html);
+                            if (is_array($urls) && count($urls)) {
+                                $iFrameOrigindata = $this->NETWORK->getUrlDomain($urls[0]);
+                                $this->iframeOrigin = sprintf('%s://%s', $iFrameOrigindata[1], $iFrameOrigindata[0]);
+                            }
+                        }
+                    }
+                    catch (\Exception $e) {
+                        // Ignore on internal errors.
+                    }
+
                     return $parsedResponse->html;
                 } else {
                     if (isset($parsedResponse->error)) {
@@ -5212,6 +5229,16 @@ class ResursBank
         }
 
         throw new \ResursException(__FUNCTION__ . "exception: Flow unmatched during execution", 500);
+    }
+
+    /**
+     * Returns a possible origin source from the iframe request.
+     *
+     * @return string
+     * @since 1.3.30
+     */
+    public function getIframeOrigin() {
+        return $this->iframeOrigin;
     }
 
     /**
