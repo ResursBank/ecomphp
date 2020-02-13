@@ -5245,6 +5245,7 @@ class ResursBank
      * Get full checkout response from RCO.
      *
      * @return string
+     * @since 1.1.30
      */
     public function getFullCheckoutResponse() {
         return $this->fullCheckoutResponse;
