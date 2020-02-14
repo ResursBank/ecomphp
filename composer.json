@@ -1,6 +1,6 @@
 {
     "name": "resursbank/ecomphp",
-    "description": "ECommerce Library for Resurs Bank shop flows",
+    "description": "ECommerce Library for Resurs Bank AB",
     "license": "Apache-2.0",
     "require": {
         "ext-soap": "*",
