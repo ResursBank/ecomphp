@@ -59,7 +59,7 @@ if (!defined('ECOMPHP_VERSION')) {
     define('ECOMPHP_VERSION', '1.1.52');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20200122');
+    define('ECOMPHP_MODIFY_DATE', '20200217');
 }
 
 /**
@@ -481,6 +481,11 @@ class ResursBank
      * @var bool
      */
     private $env_omni_pos = false;
+    /**
+     * Contains a possible origin source after RCO has loaded a frame.
+     * @var string $iframeOrigin
+     */
+    private $iframeOrigin;
     /**
      * @var string
      */
@@ -5163,9 +5168,24 @@ class ResursBank
                 if (isset($parsedResponse->paymentSessionId)) {
                     $this->paymentSessionId = $parsedResponse->paymentSessionId;
                     $this->SpecLines = [];
-                    //$this->resetPayload();
 
-                    /** @noinspection PhpUndefinedFieldInspection */
+                    try {
+                        if ($this->isFlag('STORE_ORIGIN')) {
+                            @preg_match_all('/iframe.*src=\"(http(.*?))\"/', $parsedResponse->html, $matches);
+                            if (isset($matches[1]) && isset($matches[1][0])) {
+                                $urls = $this->NETWORK->getUrlsFromHtml($parsedResponse->html);
+                                if (is_array($urls) && count($urls)) {
+                                    $iFrameOrigindata = $this->NETWORK->getUrlDomain($urls[0]);
+                                    $this->iframeOrigin = sprintf('%s://%s', $iFrameOrigindata[1],
+                                        $iFrameOrigindata[0]);
+                                }
+                            }
+                        }
+                    }
+                    catch (\Exception $e) {
+                        // Ignore on internal errors.
+                    }
+
                     return $parsedResponse->html;
                 } else {
                     if (isset($parsedResponse->error)) {
@@ -5212,9 +5232,20 @@ class ResursBank
     }
 
     /**
+     * Returns a possible origin source from the iframe request.
+     *
+     * @return string
+     * @since 1.3.30
+     */
+    public function getIframeOrigin() {
+        return $this->iframeOrigin;
+    }
+
+    /**
      * Get full checkout response from RCO.
      *
      * @return string
+     * @since 1.1.30
      */
     public function getFullCheckoutResponse() {
         return $this->fullCheckoutResponse;
