@@ -5173,12 +5173,15 @@ class ResursBank
                     $this->SpecLines = [];
 
                     try {
-                        @preg_match_all('/iframe.*src=\"(http(.*?))\"/', $parsedResponse->html, $matches);
-                        if (isset($matches[1]) && isset($matches[1][0])) {
-                            $urls = $this->NETWORK->getUrlsFromHtml($parsedResponse->html);
-                            if (is_array($urls) && count($urls)) {
-                                $iFrameOrigindata = $this->NETWORK->getUrlDomain($urls[0]);
-                                $this->iframeOrigin = sprintf('%s://%s', $iFrameOrigindata[1], $iFrameOrigindata[0]);
+                        if ($this->isFlag('STORE_ORIGIN')) {
+                            @preg_match_all('/iframe.*src=\"(http(.*?))\"/', $parsedResponse->html, $matches);
+                            if (isset($matches[1]) && isset($matches[1][0])) {
+                                $urls = $this->NETWORK->getUrlsFromHtml($parsedResponse->html);
+                                if (is_array($urls) && count($urls)) {
+                                    $iFrameOrigindata = $this->NETWORK->getUrlDomain($urls[0]);
+                                    $this->iframeOrigin = sprintf('%s://%s', $iFrameOrigindata[1],
+                                        $iFrameOrigindata[0]);
+                                }
                             }
                         }
                     }
