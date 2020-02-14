@@ -5,17 +5,18 @@ Resurs EComPHP Gateway for Resurs Bank shopflows, with functionality enough to g
 As EComPHP is continuously developed, you should take a look at our bitbucket repo to keep this information updated. It can be found at https://bitbucket.org/resursbankplugins/resurs-ecomphp
 
 
-## Regular requirements and dependencies
+## Regular requirements, dependencies and information
 
-* For EComPHP 1.0 (With no namespaces) at least PHP 5.2
-* For EComPHP 1.1 (With namespaces) at least PHP 5.3
-* For EComPHP 1.3 at least PHP 5.3 (Requires composer for dependencies)
-* For EComPHP 2.0 at least PHP 5.3 (Requires composer for dependencies)
-* [OpenSSL](https://www.openssl.org): For reaching Resurs Bank REST/SOAP
-* [curl](https://curl.haxx.se): php-curl with SSL support
-* php-xml and streams (For the SOAP parts)
-* EComPHP uses [NetCURL](https://www.netcurl.org) for calls via both SOAP and REST. The packagist component is located [here](https://www.netcurl.org/packagist)
-* If you plan to ONLY use Resurs Checkout based functions there should be no need for SoapClient. However, there are functions in EComPHP that utilizes the SOAP-based flow before the REST-services (Callback UPDATE, getPaymentMethods, etc)
+* For EComPHP 1.0 (With no namespaces) at least PHP 5.6.
+* For EComPHP 1.1 (With namespaces) at least PHP 5.6.
+* For EComPHP 1.3 at least PHP 5.6 (Use composer!)
+* [OpenSSL](https://www.openssl.org) - or similar. SSL drivers are *required* for communication with Resurs Bank.
+* [curl](https://curl.haxx.se): php-curl with SSL support (Make sure the above SSL requirement is fulfilled!).
+* php-xml and streams (For the SOAP parts).
+* EComPHP uses [NetCURL](https://www.netcurl.org) for "mixed calls" (SOAP vs REST). The packagist component is located [here](https://www.netcurl.org/packagist).
+* If you plan to *ONLY* use Resurs Checkout (checkout only, with no aftershop, callbacks or needs of listing payment methods etc) - there should be no need for SoapClient.
+
+_EComPHP 2.0 is currently revoked._
 
 ### Installing curl, xml, soapclient, etc
 
@@ -34,6 +35,8 @@ There might be a slight chance that you also need openssl or similar, as our ser
                        Legacy : 5.4 - 5.5
                    Unverified : 5.3 and lower.
 
+Take a look at [this page](https://www.php.net/supported-versions.php) if you're unsure which PHP versions that are still supported by the PHP team.
+As of february 2020, only 7.3 and 7.4 have full support open. 7.2 still do have security patch support, but is on deprecation. All older versions are completely unsupported and should probably get upgrade by you also.
 
 ## What this library do and do not
 
@@ -67,7 +70,7 @@ Then you may go with something like this in your first born code:
     ?>
 
 
-## Deploying (composer)
+## Bundling deployments with composer
 
 Deployment with composer usually only requires an installation. However, if you need to bundle the composer package with all dependencies in a installation package that is not built for using composer you need to set up your package, so that the included extra repos is considered "a part of the package". Such deployment script may look like this:
 

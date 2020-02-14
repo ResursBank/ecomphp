@@ -61,7 +61,7 @@ if (!defined('ECOMPHP_VERSION')) {
     define('ECOMPHP_VERSION', '1.3.30');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20200123');
+    define('ECOMPHP_MODIFY_DATE', '20200217');
 }
 
 /**
@@ -459,7 +459,6 @@ class ResursBank
      * @var string
      */
     private $environmentRcoStandardTest = "https://omnitest.resurs.com";
-
     /**
      * Default production URL for Resurs Checkout
      *
@@ -486,9 +485,18 @@ class ResursBank
      */
     private $env_omni_pos = false;
     /**
+     * Contains a possible origin source after RCO has loaded a frame.
+     * @var string $iframeOrigin
+     */
+    private $iframeOrigin;
+    /**
      * @var string
      */
     private $environmentRcoOverrideUrl;
+    /**
+     * @var string
+     */
+    private $fullCheckoutResponse;
     /**
      * Country of choice
      *
@@ -5158,13 +5166,29 @@ class ResursBank
                 );
                 $parsedResponse = $this->CURL->getParsed($checkoutResponse);
                 $responseCode = $this->CURL->getCode($checkoutResponse);
+                $this->fullCheckoutResponse = $parsedResponse;
                 // Do not trust response codes!
                 if (isset($parsedResponse->paymentSessionId)) {
                     $this->paymentSessionId = $parsedResponse->paymentSessionId;
                     $this->SpecLines = [];
-                    //$this->resetPayload();
 
-                    /** @noinspection PhpUndefinedFieldInspection */
+                    try {
+                        if ($this->isFlag('STORE_ORIGIN')) {
+                            @preg_match_all('/iframe.*src=\"(http(.*?))\"/', $parsedResponse->html, $matches);
+                            if (isset($matches[1]) && isset($matches[1][0])) {
+                                $urls = $this->NETWORK->getUrlsFromHtml($parsedResponse->html);
+                                if (is_array($urls) && count($urls)) {
+                                    $iFrameOrigindata = $this->NETWORK->getUrlDomain($urls[0]);
+                                    $this->iframeOrigin = sprintf('%s://%s', $iFrameOrigindata[1],
+                                        $iFrameOrigindata[0]);
+                                }
+                            }
+                        }
+                    }
+                    catch (\Exception $e) {
+                        // Ignore on internal errors.
+                    }
+
                     return $parsedResponse->html;
                 } else {
                     if (isset($parsedResponse->error)) {
@@ -5208,6 +5232,26 @@ class ResursBank
         }
 
         throw new \ResursException(__FUNCTION__ . "exception: Flow unmatched during execution", 500);
+    }
+
+    /**
+     * Returns a possible origin source from the iframe request.
+     *
+     * @return string
+     * @since 1.3.30
+     */
+    public function getIframeOrigin() {
+        return $this->iframeOrigin;
+    }
+
+    /**
+     * Get full checkout response from RCO.
+     *
+     * @return string
+     * @since 1.1.30
+     */
+    public function getFullCheckoutResponse() {
+        return $this->fullCheckoutResponse;
     }
 
     /**
@@ -5258,6 +5302,7 @@ class ResursBank
 
     /**
      * @return string
+     * @throws Exception
      */
     public function getOrderLineHash()
     {
