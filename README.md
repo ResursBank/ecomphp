@@ -5,6 +5,11 @@ Resurs EComPHP Gateway for Resurs Bank shopflows, with functionality enough to g
 As EComPHP is continuously developed, you should take a look at our bitbucket repo to keep this information updated. It can be found at https://bitbucket.org/resursbankplugins/resurs-ecomphp
 
 
+## Development repo
+
+Current primary development repo is pointed at develop/1.3 - when changes are committed, they will also merge with 1.1 and 1.0 by a simple cut and paste of the primary class in rbapiloader to the other release. As they are built the same way this is the simplest way to keep all versions maintained (at least until a new better major shows up).
+
+
 ## Regular requirements, dependencies and information
 
 * For EComPHP 1.0 (With no namespaces) at least PHP 5.6.
