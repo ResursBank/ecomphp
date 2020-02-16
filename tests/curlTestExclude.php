@@ -25,12 +25,23 @@ class curlTest extends TestCase {
 	private $wsdl = "https://test.resurs.com/ecommerce-test/ws/V4/SimplifiedShopFlowService?wsdl";
 
 	/**
+	 * @throws \Exception
+	 */
+	function __setUp()
+	{
+		error_reporting(E_ALL);
+		$this->CURL = new MODULE_CURL();
+	}
+
+	/**
 	 * @test
 	 * @testdox Testing an error type that comes from this specific service - testing if we can catch previous error
 	 *          instead of the current
 	 * @throws \Exception
 	 */
-	public function soapFaultstring() {
+	public function soapFaultstring()
+	{
+		$this->__setUp();
 		$this->disableSslVerifyByPhpVersions(true);
 		try {
 			$wsdl = $this->CURL->doGet($this->wsdl);
@@ -53,7 +64,7 @@ class curlTest extends TestCase {
 
 			static::assertTrue(
 				isset($previousException->faultstring) &&
-				! empty($previousException->faultstring) &&
+				!empty($previousException->faultstring) &&
 				preg_match(
 					"/unauthorized/i",
 					$e->getMessage()
@@ -69,8 +80,11 @@ class curlTest extends TestCase {
 	 * some PHP releases, which we'd like to primary disable.
 	 *
 	 * @param bool $always
+	 * @throws \Exception
 	 */
-	private function disableSslVerifyByPhpVersions($always = false) {
+	private function disableSslVerifyByPhpVersions($always = false)
+	{
+		$this->__setUp();
 		if (version_compare(PHP_VERSION, '5.5.0', '<=')) {
 			$this->CURL->setSslVerify(false, false);
 		} elseif ($always) {
@@ -83,7 +97,9 @@ class curlTest extends TestCase {
 	 * @testdox Testing unauthorized request by regular request (should give the same repsonse as soapFaultString)
 	 * @throws \Exception
 	 */
-	public function soapUnauthorizedSoapUnauthorized() {
+	public function soapUnauthorizedSoapUnauthorized()
+	{
+		$this->__setUp();
 		try {
 			$this->disableSslVerifyByPhpVersions();
 			$wsdl = $this->CURL->doGet($this->wsdl);
@@ -91,7 +107,7 @@ class curlTest extends TestCase {
 			$wsdl->getPaymentMethods();
 		} catch (\Exception $e) {
 			$exMessage = $e->getMessage();
-			$exCode    = $e->getCode();
+			$exCode = $e->getCode();
 
 			$isUnCode = $exCode == 401 ? true : false;
 			$isUnText = preg_match("/unauthorized/i", $exMessage) ? true : false;
@@ -117,7 +133,9 @@ class curlTest extends TestCase {
 	 * @testdox Test soapfaults when authentication are set up (as this generates other errors than without auth set)
 	 * @throws \Exception
 	 */
-	public function soapAuthErrorInitialSoapFaultsWsdl() {
+	public function soapAuthErrorInitialSoapFaultsWsdl()
+	{
+		$this->__setUp();
 		if (version_compare(PHP_VERSION, '5.4.0', '<')) {
 			$this->CURL->setChain(false);
 			$this->CURL->setFlag('SOAPCHAIN', false);
@@ -131,7 +149,7 @@ class curlTest extends TestCase {
 			$wsdl->getPaymentMethods();
 		} catch (\Exception $e) {
 			$errorMessage = $e->getMessage();
-			$errorCode    = $e->getCode();
+			$errorCode = $e->getCode();
 
 			if (preg_match('/this when not in object context/i', $errorMessage)) {
 				static::markTestSkipped('This test might not support chaining: ' . $errorMessage);
@@ -163,7 +181,9 @@ class curlTest extends TestCase {
 	 * @testdox Post as SOAP, without the wsdl prefix
 	 * @throws \Exception
 	 */
-	public function soapAuthErrorInitialSoapFaultsNoWsdl() {
+	public function soapAuthErrorInitialSoapFaultsNoWsdl()
+	{
+		$this->__setUp();
 		$this->disableSslVerifyByPhpVersions();
 		$this->CURL->setSoapTryOnce(false);
 		$this->CURL->setAuthentication("fail", "fail");
@@ -176,7 +196,7 @@ class curlTest extends TestCase {
 			$wsdl->getPaymentMethods();
 		} catch (\Exception $e) {
 			$errorMessage = $e->getMessage();
-			$errorCode    = $e->getCode();
+			$errorCode = $e->getCode();
 
 			if (preg_match('/this when not in object context/i', $errorMessage)) {
 				static::markTestSkipped('This test might not support chaining: ' . $errorMessage);
@@ -209,7 +229,9 @@ class curlTest extends TestCase {
 	 * @testdox Running "old style failing authentication mode" should generate blind errors like here
 	 * @throws \Exception
 	 */
-	public function soapAuthErrorWithoutProtectiveFlag() {
+	public function soapAuthErrorWithoutProtectiveFlag()
+	{
+		$this->__setUp();
 		$this->CURL->setAuthentication("fail", "fail");
 		$this->CURL->setFlag("NOSOAPWARNINGS");
 		try {
@@ -233,7 +255,9 @@ class curlTest extends TestCase {
 	 * @testdox
 	 * @throws \Exception
 	 */
-	public function soapAuthErrorNoInitialSoapFaultsNoWsdl() {
+	public function soapAuthErrorNoInitialSoapFaultsNoWsdl()
+	{
+		$this->__setUp();
 		$this->disableSslVerifyByPhpVersions();
 		$this->CURL->setAuthentication("fail", "fail");
 		try {
@@ -244,7 +268,7 @@ class curlTest extends TestCase {
 		} catch (\Exception $e) {
 			// As of 6.0.16, this is the default behaviour even when SOAPWARNINGS are not active by setFlag
 			$errorMessage = $e->getMessage();
-			$errorCode    = $e->getCode();
+			$errorCode = $e->getCode();
 
 			if (preg_match('/this when not in object context/i', $errorMessage)) {
 				static::markTestSkipped('This test might not support chaining: ' . $errorMessage);
@@ -277,7 +301,9 @@ class curlTest extends TestCase {
 	 * @testdox Test invalid function
 	 * @throws \Exception
 	 */
-	public function rbFailSoapChain() {
+	public function rbFailSoapChain()
+	{
+		$this->__setUp();
 		$this->CURL->setFlag("SOAPCHAIN");
 		$this->CURL->setAuthentication($this->username, $this->password);
 		try {
@@ -295,7 +321,9 @@ class curlTest extends TestCase {
 	 * @throws \Exception
 	 * @since 6.0.20
 	 */
-	public function rbSoapChain() {
+	public function rbSoapChain()
+	{
+		$this->__setUp();
 		$this->disableSslVerifyByPhpVersions();
 		$this->CURL->setFlag("SOAPCHAIN");
 		$this->CURL->setAuthentication($this->username, $this->password);
@@ -308,7 +336,9 @@ class curlTest extends TestCase {
 		}
 	}
 
-	public function rbSimpleXml() {
+	public function rbSimpleXml()
+	{
+		$this->__setUp();
 		try {
 			$this->CURL->setAuthentication($this->username, $this->password);
 			$this->CURL->setFlag('XMLSOAP', true);
@@ -322,13 +352,4 @@ class curlTest extends TestCase {
 			static::fail($e->getMessage());
 		}
 	}
-
-	/**
-	 * @throws \Exception
-	 */
-	function setUp() {
-		error_reporting(E_ALL);
-		$this->CURL = new MODULE_CURL();
-	}
-
 }
