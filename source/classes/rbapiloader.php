@@ -2283,12 +2283,12 @@ class ResursBank
                     $serviceUrl = $this->getCheckoutUrl() . "/callbacks";
                     $renderCallbackUrl = $serviceUrl . "/" . $callbackType;
                     try {
-                        $curlResponse = $this->CURL->doDelete($renderCallbackUrl);
+                        $curlResponse = $this->CURL->doDelete($renderCallbackUrl, [], NETCURL_POST_DATATYPES::DATATYPE_JSON);
                         $curlCode = $this->CURL->getCode($curlResponse);
                     } catch (\Exception $e) {
                         // If this one suddenly starts throwing exceptions.
-                        $curlCode = $e->getCode();
-                    }
+cd tests
+                    q}
                     if ($curlCode >= 200 && $curlCode <= 250) {
                         if (!$isMultiple) {
                             return true;
