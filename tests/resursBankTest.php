@@ -70,11 +70,6 @@ class resursBankTest extends TestCase
     /** @var string Password to web services. */
     private $password = "4Em4r5ZQ98x3891D6C19L96TQ72HsisD";
 
-    /** @var string Username to internal RCO. */
-    private $usernameNG = "checkoutwebse";
-    /** @var string Password to internal RCO. */
-    private $passwordNG = "gO9UaWH38D";
-
     private $flowHappyCustomer = "8305147715";
     private $flowHappyCustomerName = "Vincent Williamsson Alexandersson";
     /** @noinspection PhpUnusedPrivateFieldInspection */
