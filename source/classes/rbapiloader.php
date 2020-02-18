@@ -3990,7 +3990,7 @@ class ResursBank
         $templates = [
             'costofpriceinfo',
             'priceinfotab',
-            'priceinfoblock'
+            'priceinfoblock',
         ];
 
         $template = [];
@@ -4087,7 +4087,7 @@ class ResursBank
             if ($hasUrls) {
                 $vars = [
                     'priceInfoTabs' => $tab,
-                    'priceInfoBlocks' => $block
+                    'priceInfoBlocks' => $block,
                 ];
 
                 $return = $this->getHtmlTemplate($template['costofpriceinfo'], $vars);
@@ -4153,7 +4153,8 @@ class ResursBank
      * @throws Exception
      * @since 1.3.30
      */
-    private function getPriceInformationUrl($amount, $paymentMethod) {
+    private function getPriceInformationUrl($amount, $paymentMethod)
+    {
         $return = '';
 
         $urlData = $this->getSekkiUrls($amount, $paymentMethod);
@@ -5184,8 +5185,7 @@ class ResursBank
                                 }
                             }
                         }
-                    }
-                    catch (\Exception $e) {
+                    } catch (\Exception $e) {
                         // Ignore on internal errors.
                     }
 
@@ -5240,7 +5240,8 @@ class ResursBank
      * @return string
      * @since 1.3.30
      */
-    public function getIframeOrigin() {
+    public function getIframeOrigin()
+    {
         return $this->iframeOrigin;
     }
 
@@ -5250,7 +5251,8 @@ class ResursBank
      * @return string
      * @since 1.1.30
      */
-    public function getFullCheckoutResponse() {
+    public function getFullCheckoutResponse()
+    {
         return $this->fullCheckoutResponse;
     }
 
@@ -8358,7 +8360,8 @@ class ResursBank
      * @return int
      * @since 1.3.28
      */
-    private function resetFailBit($return) {
+    private function resetFailBit($return)
+    {
         // Occurs when PAYMENT_COMPLETED and finalization status falsely returns with PAYMENT_STATUS_COULD_NOT_BE_SET.
         if (($return & RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET) &&
             $return !== RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET &&
