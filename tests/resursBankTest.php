@@ -882,7 +882,7 @@ class resursBankTest extends TestCase
      *
      * @throws \Exception
      */
-    public function setRegisterCallback()
+    public function setRegisterCallback($noAssert = false)
     {
         $this->__setUp();
         $this->TEST->ECOM->setCallbackDigestSalt(
@@ -957,7 +957,25 @@ class resursBankTest extends TestCase
             $cbCount++;
         }
 
-        static::assertTrue($cbCount === 5);
+        if (!$noAssert) {
+            static::assertTrue($cbCount === 5);
+        }
+    }
+
+    /**
+     * @test
+     * @throws \Exception
+     */
+    public function unregisterCallbacksViaRest()
+    {
+        $this->setRegisterCallback(true);
+
+        try {
+            $this->TEST->ECOM->unregisterEventCallback(255, true, false);
+        } catch (\Exception $e) {
+        }
+        $callbacks = $this->TEST->ECOM->getCallBacksByRest(true);
+        static::assertTrue(is_array($callbacks) && !count($callbacks) ? true : false);
     }
 
     /**
