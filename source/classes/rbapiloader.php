@@ -4047,11 +4047,16 @@ class ResursBank
     }
 
     /**
-     * @param string $paymentMethod
-     * @param int $amount
-     * @param bool $fetch
-     * @param bool $iframe
-     * @return string|null
+     * Like getCostOfPurchaseHtml but for priceInfo instead (which is located in legalInfoLinks in getPaymentMethods).
+     *
+     * On multiple methods, the iframe is used by default!
+     *
+     * @param string $paymentMethod Payment method as string or object (multiple methods allowed, due to DK).
+     * @param int $amount The amount to show the priceInformation with.
+     * @param bool $fetch If ecom should try to download the content from the priceinfolink.
+     * @param bool $iframe Pushes the priceinfolink into an iframe. You should preferrably have $fetch false here.
+     * @param bool $limitByMinMax By default, ecom only shows priceinformation based on the $amount.
+     * @return false|mixed|string|null
      * @throws Exception
      * @since 1.3.30
      */
@@ -4059,9 +4064,16 @@ class ResursBank
         $paymentMethod = '',
         $amount = 0,
         $fetch = false,
-        $iframe = false
+        $iframe = false,
+        $limitByMinMax = true
     ) {
         $return = '';
+
+        if ($iframe) {
+            // Anti collider. If iframe is requested, content does not have to be fetched.
+            $fetch = false;
+        }
+
         // If the request contains no specified method, an asterisk or an array of methods
         // we presume the payment information should be "tabbed" with many.
         if (empty($paymentMethod) || $paymentMethod === '*' || is_array($paymentMethod)) {
@@ -4076,11 +4088,18 @@ class ResursBank
             $block = '';
             $hasUrls = false;
             foreach ($methodList as $method) {
-                $infoObject = $this->getRenderedPriceInfoTemplates($method, $amount, $fetch);
-                if (!empty($infoObject['tabs'])) {
-                    $tab .= $infoObject['tabs'];
-                    $block .= $infoObject['block'];
-                    $hasUrls = true;
+                if ((
+                        $limitByMinMax &&
+                        $this->getMinMax($amount, $method->minLimit, $method->maxLimit)
+                    ) ||
+                    !$limitByMinMax
+                ) {
+                    $infoObject = $this->getRenderedPriceInfoTemplates($method, $amount, $fetch);
+                    if (!empty($infoObject['tabs'])) {
+                        $tab .= $infoObject['tabs'];
+                        $block .= $infoObject['block'];
+                        $hasUrls = true;
+                    }
                 }
             }
 
@@ -4106,6 +4125,24 @@ class ResursBank
                     }
                 }
             }
+        }
+
+        return $return;
+    }
+
+    /**
+     * If payment amount is within allowed limits of payment method
+     *
+     * @param $totalAmount
+     * @param $min
+     * @param $max
+     * @return bool
+     */
+    public function getMinMax($totalAmount, $min, $max)
+    {
+        $return = false;
+        if ($totalAmount >= $min && $totalAmount <= $max) {
+            $return = true;
         }
 
         return $return;
