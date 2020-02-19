@@ -4116,6 +4116,7 @@ class ResursBank
                 $return = $this->getHtmlTemplate($template['costofpriceinfo'], $vars);
             }
         } else {
+            // We do not run the getMinMax-check on single method view.
             $return = $this->getPriceInformationUrl($amount, $paymentMethod);
             $infoObject = $this->getRenderedPriceInfoTemplates($paymentMethod, $amount, $fetch, $iframe);
 
