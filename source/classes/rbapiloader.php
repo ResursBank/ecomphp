@@ -4074,7 +4074,7 @@ class ResursBank
         $return = '';
 
         if ($iframe) {
-            // Anti collider. If iframe is requested, content does not have to be fetched.
+            // Anti collider. If iframe is requested, content don't have to be fetched.
             $fetch = false;
         }
 
