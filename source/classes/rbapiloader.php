@@ -3871,6 +3871,10 @@ class ResursBank
                 }
             }
             if (!empty($paymentMethodID)) {
+                if (is_object($paymentMethodID)) {
+                    // Extract the id when payment method data is returned as a final object.
+                    $paymentMethodID = $paymentMethodID->id;
+                }
                 if (is_string($paymentMethodID) && isset($currentLegalUrls[$paymentMethodID])) {
                     return $currentLegalUrls[$paymentMethodID];
                 }
@@ -4053,7 +4057,8 @@ class ResursBank
     /**
      * Like getCostOfPurchaseHtml but for priceInfo instead (which is located in legalInfoLinks in getPaymentMethods).
      *
-     * On multiple methods, the iframe is used by default!
+     * On multiple methods, the iframe is used by default! If fetch is false and no iframe is requested, this method
+     * will instead return the URL directly to the requested.
      *
      * @param string $paymentMethod Payment method as string or object (multiple methods allowed, due to DK).
      * @param int $amount The amount to show the priceInformation with.
@@ -4116,17 +4121,36 @@ class ResursBank
                 $return = $this->getHtmlTemplate($template['costofpriceinfo'], $vars);
             }
         } else {
-            // We do not run the getMinMax-check on single method view.
-            $return = $this->getPriceInformationUrl($amount, $paymentMethod);
-            $infoObject = $this->getRenderedPriceInfoTemplates($paymentMethod, $amount, $fetch, $iframe);
+            if (is_string($paymentMethod)) {
+                $paymentMethod = $this->getPaymentMethodSpecific($paymentMethod);
+                if (!isset($paymentMethod->minLimit)) {
+                    throw new \ResursException(
+                        sprintf(
+                            '%s exception: Payment method does not support limits!',
+                            __FUNCTION__
+                        ),
+                        400
+                    );
+                }
+            }
 
-            if ($fetch && !empty($return)) {
-                if ($iframe) {
-                    $return = $infoObject['block'];
-                } else {
-                    $curlRequest = $this->CURL->doGet($return . $amount);
-                    if (!empty($curlRequest)) {
-                        $return = $this->CURL->getBody();
+            if ((
+                    $limitByMinMax &&
+                    $this->getMinMax($amount, $paymentMethod->minLimit, $paymentMethod->maxLimit)
+                ) ||
+                !$limitByMinMax
+            ) {
+                $return = $this->getPriceInformationUrl($amount, $paymentMethod);
+                $infoObject = $this->getRenderedPriceInfoTemplates($paymentMethod, $amount, $fetch, $iframe);
+
+                if ($fetch && !empty($return)) {
+                    if ($iframe) {
+                        $return = $infoObject['block'];
+                    } else {
+                        $curlRequest = $this->CURL->doGet($return . $amount);
+                        if (!empty($curlRequest)) {
+                            $return = $this->CURL->getBody();
+                        }
                     }
                 }
             }
