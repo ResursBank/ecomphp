@@ -1,6 +1,6 @@
 {
     "name": "resursbank/ecomphp",
-    "description": "Resurs Bank AB ecommerce library",
+    "description": "Resurs Bank AB ecommerce library for PHP.",
     "license": "Apache-2.0",
     "minimum-stability": "dev",
     "require": {
