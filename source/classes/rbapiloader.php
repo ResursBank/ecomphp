@@ -7547,6 +7547,8 @@ class ResursBank
         try {
             if (empty($this->customerId)) {
                 $this->customerId = "-";
+                // For tests.
+                //if (!Flags::_isFlag('SKIP_CID')) {}
             }
             $this->addMetaData($paymentId, "CustomerId", $this->customerId);
         } catch (\Exception $metaResponseException) {

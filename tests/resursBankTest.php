@@ -419,6 +419,27 @@ class resursBankTest extends TestCase
         }
     }
 
+    /*public function finalizeWithAndWithoutCustomerId()
+    {
+        try {
+            $firstPayment = $this->generateSimpleSimplifiedInvoiceOrder(true, '198305147715');
+            $this->TEST->ECOM->finalizePayment($firstPayment->paymentId);
+            $secondPayment = $this->generateSimpleSimplifiedInvoiceOrder(true, '198305147715');
+            //Flags::_setFlag('SKIP_CID');
+            $this->TEST->ECOM->setFlag('SKIP_CID');
+            $this->TEST->ECOM->finalizePayment($secondPayment->paymentId);
+            //Flags::deleteFlag('SKIP_CID');
+        } catch (\Exception $e) {
+            static::markTestSkipped(
+                sprintf(
+                    'Test failed due to code %s (%s). Skipped!',
+                    $e->getCode(),
+                    $e->getMessage()
+                )
+            );
+        }
+    }*/
+
     /**
      * @test
      * @throws \Exception
