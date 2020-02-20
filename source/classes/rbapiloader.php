@@ -5161,15 +5161,16 @@ class ResursBank
     }
 
     /**
-     * @param string $payment_id_or_method
+     * Internal function that is normally used by createPayment. However, if you choose to use createPaymentDelay()
+     * you need to be able to execute the creation yourself. From 1.3.32, this function will be open for this.
      *
+     * @param string $payment_id_or_method
      * @return array|mixed
      * @throws \Exception
      * @since 1.0.2
      * @since 1.1.2
-     * @todo SPLIT!
      */
-    private function createPaymentExecute($payment_id_or_method = '')
+    public function createPaymentExecute($payment_id_or_method = '')
     {
         /**
          * @since 1.0.29
