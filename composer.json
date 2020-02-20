@@ -3,7 +3,6 @@
     "description": "Resurs Bank AB ecommerce library",
     "license": "Apache-2.0",
     "minimum-stability": "dev",
-    "prefer-stable": true,
     "require": {
         "ext-soap": "*",
         "ext-curl": "*",
