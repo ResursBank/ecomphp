@@ -8,7 +8,7 @@
         "ext-curl": "*",
         "tornevall/tornelib-php-crypto": "^6.0",
         "tornevall/tornelib-php-netcurl": "^6.0"
-    }
+    },
     "authors": [
         {
             "name": "Tomas Tornevall",
