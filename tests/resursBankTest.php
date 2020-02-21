@@ -1639,6 +1639,21 @@ class resursBankTest extends TestCase
 
     /**
      * @test
+     * @throws \Exception
+     */
+    public function norwaySimple()
+    {
+        $ec = new ResursBank('phpapitestno', 'fqjuF7XL6v1GsykO46muHZvJzo8eHwqx');
+        $response = $ec->getAddressByPhone('40000010', 'NATURAL', '127.0.0.1', true);
+        static::assertTrue(
+            isset($response->fullName) &&
+            $response->fullName !== '' &&
+            strlen($response->fullName) > 5
+        );
+    }
+
+    /**
+     * @test
      * @testdox Clean up special test data from share file
      */
     public function finalTest()
