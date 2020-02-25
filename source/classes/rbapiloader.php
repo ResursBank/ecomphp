@@ -2253,6 +2253,7 @@ class ResursBank
         $isMultiple = false,
         $forceSoap = false
     ) {
+        $callbackArray = [];
         if ($isMultiple) {
             $this->BIT = new MODULE_NETBITS();
             $this->BIT->setBitStructure(
