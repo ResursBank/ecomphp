@@ -2267,6 +2267,9 @@ class ResursBank
                 ]
             );
             $callbackTypes = $this->BIT->getBitArray($callbackType);
+            // Fetch list of current callbacks. If this is a multi request, we could skip callbacks that is not
+            // present in the current callback list.
+            $callbackArray = $this->getCallBacksByRest(true);
         }
 
         $callbackType = $this->getCallbackTypeString($callbackType);
@@ -2277,6 +2280,11 @@ class ResursBank
 
         $unregisteredCallbacks = [];
         foreach ($callbackTypes as $callbackType) {
+            if ($isMultiple && is_array($callbackArray) && !isset($callbackArray[$callbackType])) {
+                // Skip this callback as it is not found in the array of already registered callbacks.
+                continue;
+            }
+
             if (!empty($callbackType)) {
                 if ($this->registerCallbacksViaRest && $callbackType !== 'UPDATE' && !$forceSoap) {
                     $this->InitializeServices();
