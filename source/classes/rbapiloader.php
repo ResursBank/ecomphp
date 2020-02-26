@@ -575,6 +575,7 @@ class ResursBank
     private $ServiceRequestList = [
         'getPaymentMethods' => 'SimplifiedShopFlowService',
         'getAddress' => 'SimplifiedShopFlowService',
+        'getAddressByPhone' => 'SimplifiedShopFlowService',
         'getAnnuityFactors' => 'SimplifiedShopFlowService',
         'getCostOfPurchaseHtml' => 'SimplifiedShopFlowService',
         'bookPayment' => 'SimplifiedShopFlowService',
@@ -3079,10 +3080,11 @@ class ResursBank
     }
 
     /**
+     * Get customer address by government id.
+     *
      * @param string $governmentId
      * @param string $customerType
      * @param string $customerIpAddress
-     *
      * @return array|mixed|null
      * @throws \Exception
      * @since 1.0.1
@@ -3096,6 +3098,29 @@ class ResursBank
 
         return $this->postService("getAddress", [
             'governmentId' => $governmentId,
+            'customerType' => $customerType,
+            'customerIpAddress' => $customerIpAddress,
+        ]);
+    }
+
+    /**
+     * Get customer address by phone number Currently only works in norway.
+     *
+     * @param string $phoneNumber
+     * @param string $customerType
+     * @param string $customerIpAddress
+     * @return int|null
+     * @throws Exception
+     * @since 1.3.32
+     */
+    public function getAddressByPhone($phoneNumber = '', $customerType = 'NATURAL', $customerIpAddress = "")
+    {
+        if (!empty($customerIpAddress) && isset($_SERVER['REMOTE_ADDR'])) {
+            $customerIpAddress = $_SERVER['REMOTE_ADDR'];
+        }
+
+        return $this->postService("getAddressByPhone", [
+            'phoneNumber' => $phoneNumber,
             'customerType' => $customerType,
             'customerIpAddress' => $customerIpAddress,
         ]);
