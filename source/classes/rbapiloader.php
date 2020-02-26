@@ -2268,8 +2268,7 @@ class ResursBank
                 ]
             );
             $callbackTypes = $this->BIT->getBitArray($callbackType);
-            // Fetch list of current callbacks. If this is a multi request, we could skip callbacks that is not
-            // present in the current callback list.
+            // Fetch list of currently present callbacks at Resurs Bank.
             $callbackArray = $this->getCallBacksByRest(true);
         }
 
@@ -2282,7 +2281,8 @@ class ResursBank
         $unregisteredCallbacks = [];
         foreach ($callbackTypes as $callbackType) {
             if ($isMultiple && is_array($callbackArray) && !isset($callbackArray[$callbackType])) {
-                // Skip this callback as it is not found in the array of already registered callbacks.
+                // Skip this callback request if it's not present at Resurs Bank and no errors occurred
+                // during first request.
                 continue;
             }
 
