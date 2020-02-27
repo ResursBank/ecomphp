@@ -2254,6 +2254,7 @@ class ResursBank
         $isMultiple = false,
         $forceSoap = false
     ) {
+        $callbackArray = [];
         if ($isMultiple) {
             $this->BIT = new MODULE_NETBITS();
             $this->BIT->setBitStructure(
@@ -2268,6 +2269,8 @@ class ResursBank
                 ]
             );
             $callbackTypes = $this->BIT->getBitArray($callbackType);
+            // Fetch list of currently present callbacks at Resurs Bank.
+            $callbackArray = $this->getCallBacksByRest(true);
         }
 
         $callbackType = $this->getCallbackTypeString($callbackType);
@@ -2278,6 +2281,12 @@ class ResursBank
 
         $unregisteredCallbacks = [];
         foreach ($callbackTypes as $callbackType) {
+            if ($isMultiple && is_array($callbackArray) && !isset($callbackArray[$callbackType])) {
+                // Skip this callback request if it's not present at Resurs Bank and no errors occurred
+                // during first request.
+                continue;
+            }
+
             if (!empty($callbackType)) {
                 if ($this->registerCallbacksViaRest && $callbackType !== 'UPDATE' && !$forceSoap) {
                     $this->InitializeServices();

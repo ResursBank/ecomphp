@@ -836,6 +836,8 @@ class resursBankTest extends TestCase
 
         try {
             // Running unreg through rest as of 1.3.31
+            $this->setRegisterCallback(true);
+            $this->TEST->ECOM->unregisterEventCallback(76, true);
             $this->TEST->ECOM->unregisterEventCallback(255, true);
         } catch (\Exception $e) {
         }
