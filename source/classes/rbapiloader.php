@@ -7,7 +7,7 @@
  * @author  Resurs Bank <support@resurs.se>
  * @author  Tomas Tornevall <tomas.tornevall@resurs.se>
  * @branch  1.3
- * @version 1.3.31
+ * @version 1.3.32
  * @link    https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link    https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @link    https://test.resurs.com/docs/x/KAH1 EComPHP: Bitmasking features
@@ -58,10 +58,10 @@ use TorneLIB\NETCURL_POST_DATATYPES;
 
 // Globals starts here
 if (!defined('ECOMPHP_VERSION')) {
-    define('ECOMPHP_VERSION', '1.3.31');
+    define('ECOMPHP_VERSION', '1.3.32');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20200220');
+    define('ECOMPHP_MODIFY_DATE', '20200227');
 }
 
 /**
@@ -575,6 +575,7 @@ class ResursBank
     private $ServiceRequestList = [
         'getPaymentMethods' => 'SimplifiedShopFlowService',
         'getAddress' => 'SimplifiedShopFlowService',
+        'getAddressByPhone' => 'SimplifiedShopFlowService',
         'getAnnuityFactors' => 'SimplifiedShopFlowService',
         'getCostOfPurchaseHtml' => 'SimplifiedShopFlowService',
         'bookPayment' => 'SimplifiedShopFlowService',
@@ -2253,6 +2254,7 @@ class ResursBank
         $isMultiple = false,
         $forceSoap = false
     ) {
+        $callbackArray = [];
         if ($isMultiple) {
             $this->BIT = new MODULE_NETBITS();
             $this->BIT->setBitStructure(
@@ -2267,6 +2269,8 @@ class ResursBank
                 ]
             );
             $callbackTypes = $this->BIT->getBitArray($callbackType);
+            // Fetch list of currently present callbacks at Resurs Bank.
+            $callbackArray = $this->getCallBacksByRest(true);
         }
 
         $callbackType = $this->getCallbackTypeString($callbackType);
@@ -2277,8 +2281,14 @@ class ResursBank
 
         $unregisteredCallbacks = [];
         foreach ($callbackTypes as $callbackType) {
+            if ($isMultiple && is_array($callbackArray) && !isset($callbackArray[$callbackType])) {
+                // Skip this callback request if it's not present at Resurs Bank and no errors occurred
+                // during first request.
+                continue;
+            }
+
             if (!empty($callbackType)) {
-                if ($this->registerCallbacksViaRest && $callbackType != 'UPDATE' && !$forceSoap) {
+                if ($this->registerCallbacksViaRest && $callbackType !== 'UPDATE' && !$forceSoap) {
                     $this->InitializeServices();
                     $serviceUrl = $this->getCheckoutUrl() . "/callbacks";
                     $renderCallbackUrl = $serviceUrl . "/" . $callbackType;
@@ -3079,10 +3089,11 @@ class ResursBank
     }
 
     /**
+     * Get customer address by government id.
+     *
      * @param string $governmentId
      * @param string $customerType
      * @param string $customerIpAddress
-     *
      * @return array|mixed|null
      * @throws \Exception
      * @since 1.0.1
@@ -3096,6 +3107,29 @@ class ResursBank
 
         return $this->postService("getAddress", [
             'governmentId' => $governmentId,
+            'customerType' => $customerType,
+            'customerIpAddress' => $customerIpAddress,
+        ]);
+    }
+
+    /**
+     * Get customer address by phone number Currently only works in norway.
+     *
+     * @param string $phoneNumber
+     * @param string $customerType
+     * @param string $customerIpAddress
+     * @return int|null
+     * @throws Exception
+     * @since 1.3.32
+     */
+    public function getAddressByPhone($phoneNumber = '', $customerType = 'NATURAL', $customerIpAddress = "")
+    {
+        if (!empty($customerIpAddress) && isset($_SERVER['REMOTE_ADDR'])) {
+            $customerIpAddress = $_SERVER['REMOTE_ADDR'];
+        }
+
+        return $this->postService("getAddressByPhone", [
+            'phoneNumber' => $phoneNumber,
             'customerType' => $customerType,
             'customerIpAddress' => $customerIpAddress,
         ]);
@@ -5161,15 +5195,16 @@ class ResursBank
     }
 
     /**
-     * @param string $payment_id_or_method
+     * Internal function that is normally used by createPayment. However, if you choose to use createPaymentDelay()
+     * you need to be able to execute the creation yourself. From 1.3.32, this function will be open for this.
      *
+     * @param string $payment_id_or_method
      * @return array|mixed
      * @throws \Exception
      * @since 1.0.2
      * @since 1.1.2
-     * @todo SPLIT!
      */
-    private function createPaymentExecute($payment_id_or_method = '')
+    public function createPaymentExecute($payment_id_or_method = '')
     {
         /**
          * @since 1.0.29

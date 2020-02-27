@@ -835,8 +835,10 @@ class resursBankTest extends TestCase
         $this->__setUp();
 
         try {
-            //$this->TEST->ECOM->setRegisterCallbacksViaRest(false);
-            $this->TEST->ECOM->unregisterEventCallback(255, true, true);
+            // Running unreg through rest as of 1.3.31
+            $this->setRegisterCallback(true);
+            $this->TEST->ECOM->unregisterEventCallback(76, true);
+            $this->TEST->ECOM->unregisterEventCallback(255, true);
         } catch (\Exception $e) {
         }
         $callbacks = $this->TEST->ECOM->getCallBacksByRest(true);
@@ -1635,6 +1637,22 @@ class resursBankTest extends TestCase
         count($rcoResponse) >= 3 ? true : false &&
             (isset($rcoResponse->script) && !empty($rcoResponse->script))
         ));
+    }
+
+    /**
+     * @test
+     * @throws \Exception
+     */
+    public function norwaySimple()
+    {
+        $ec = new ResursBank('phpapitestno', 'fqjuF7XL6v1GsykO46muHZvJzo8eHwqx');
+        $response = $ec->getAddressByPhone('40000010', 'NATURAL', '127.0.0.1');
+
+        static::assertTrue(
+            isset($response->fullName) &&
+            $response->fullName !== '' &&
+            strlen($response->fullName) > 5
+        );
     }
 
     /**
