@@ -1003,13 +1003,13 @@ class ResursBank
             $streamWrappers = [];
         }
         if (!in_array('https', array_map("strtolower", $streamWrappers))) {
-	        throw new \ResursException(
-		        sprintf(
-			        '%s exception: HTTPS wrapper can not be found.',
-			        __FUNCTION__
-		        ),
-		        \RESURS_EXCEPTIONS::SSL_WRAPPER_MISSING
-	        );
+            throw new \ResursException(
+                sprintf(
+                    '%s exception: HTTPS wrapper can not be found.',
+                    __FUNCTION__
+                ),
+                \RESURS_EXCEPTIONS::SSL_WRAPPER_MISSING
+            );
         }
     }
 
@@ -1603,28 +1603,28 @@ class ResursBank
     {
         $result = false;
 
-	    if (empty($username) && empty($password) && empty($this->username) && empty($this->password)) {
-		    throw new \ResursException(
-			    'Validating credentials means you have to defined credentials before ' .
-			    'validating them. Use setAuthentication() or push your credentials into this method directly.',
-			    417
-		    );
-	    }
+        if (empty($username) && empty($password) && empty($this->username) && empty($this->password)) {
+            throw new \ResursException(
+                'Validating credentials means you have to defined credentials before ' .
+                'validating them. Use setAuthentication() or push your credentials into this method directly.',
+                417
+            );
+        }
         if (!empty($username)) {
             $this->setAuthentication($username, $password);
         }
 
         try {
-	        $methods = $this->getPaymentMethods([], true);
-	        // Extra layer control. If there are no payment methods something is terribly wrong.
-	        if (is_array($methods) && count($methods)) {
-		        $result = true;
-	        } else {
-		        throw new \ResursException(
-			        'Validating credentials was successful, but not payment methods found.',
-			        417
-		        );
-	        }
+            $methods = $this->getPaymentMethods([], true);
+            // Extra layer control. If there are no payment methods something is terribly wrong.
+            if (is_array($methods) && count($methods)) {
+                $result = true;
+            } else {
+                throw new \ResursException(
+                    'Validating credentials was successful, but not payment methods found.',
+                    417
+                );
+            }
         } catch (\Exception $ignoreMyException) {
 
         }
@@ -2146,13 +2146,13 @@ class ResursBank
         // DEFAULT SETUP
         $renderCallback['eventType'] = $this->getCallbackTypeString($callbackType);
         if (empty($renderCallback['eventType'])) {
-	        throw new \ResursException(
-		        sprintf(
-			        '%s exception: The callback type you are trying to register is not supported by EComPHP',
-			        __FUNCTION__
-		        ),
-		        \RESURS_EXCEPTIONS::CALLBACK_TYPE_UNSUPPORTED
-	        );
+            throw new \ResursException(
+                sprintf(
+                    '%s exception: The callback type you are trying to register is not supported by EComPHP',
+                    __FUNCTION__
+                ),
+                \RESURS_EXCEPTIONS::CALLBACK_TYPE_UNSUPPORTED
+            );
         }
         $renderCallback['uriTemplate'] = $callbackUriTemplate;
 
@@ -2196,7 +2196,7 @@ class ResursBank
 
         if (empty($renderCallback['digestConfiguration']['digestSalt'])) {
             throw new \ResursException(
-            	'Digest salt key is missing. Unable to continue.',
+                'Digest salt key is missing. Unable to continue.',
                 \RESURS_EXCEPTIONS::CALLBACK_SALTDIGEST_MISSING
             );
         }
@@ -2241,15 +2241,15 @@ class ResursBank
             return true;
         }
 
-	    throw new \ResursException(
-		    sprintf(
-			    '%s exception %d: Could not register callback event %s via service %s.',
-			    __FUNCTION__,
-			    $code,
-			    isset($renderCallback['eventType']) ? $renderCallback['eventType'] : 'Unknown eventType',
-			    $registerBy
-		    )
-	    );
+        throw new \ResursException(
+            sprintf(
+                '%s exception %d: Could not register callback event %s via service %s.',
+                __FUNCTION__,
+                $code,
+                isset($renderCallback['eventType']) ? $renderCallback['eventType'] : 'Unknown eventType',
+                $registerBy
+            )
+        );
     }
 
     /**
@@ -5345,13 +5345,13 @@ class ResursBank
             }
         }
 
-	    throw new \ResursException(
-		    sprintf(
-			    '%s exception: Flow unmatched during execution.',
-			    __FUNCTION__
-		    ),
-		    500
-	    );
+        throw new \ResursException(
+            sprintf(
+                '%s exception: Flow unmatched during execution.',
+                __FUNCTION__
+            ),
+            500
+        );
     }
 
     /**
@@ -5393,17 +5393,17 @@ class ResursBank
         if (is_string($bodyTest) && !empty($bodyTest)) {
             $bodyErrTest = json_decode($bodyTest);
             if (is_object($bodyErrTest)) {
-	            if (isset($bodyErrTest->message) && isset($bodyErrTest->status)) {
-		            throw new \ResursException(
-			            $bodyErrTest->message,
-			            $bodyErrTest->status
-		            );
-	            } elseif (isset($bodyErrTest->description)) {
-		            throw new \ResursException(
-			            $bodyErrTest->description,
-			            isset($bodyErrTest->errorCode) ? $bodyErrTest->errorCode : 500
-		            );
-	            }
+                if (isset($bodyErrTest->message) && isset($bodyErrTest->status)) {
+                    throw new \ResursException(
+                        $bodyErrTest->message,
+                        $bodyErrTest->status
+                    );
+                } elseif (isset($bodyErrTest->description)) {
+                    throw new \ResursException(
+                        $bodyErrTest->description,
+                        isset($bodyErrTest->errorCode) ? $bodyErrTest->errorCode : 500
+                    );
+                }
             }
         }
         if (method_exists($e, 'getMessage')) {
@@ -5550,10 +5550,10 @@ class ResursBank
 
         if ($this->getPreferredPaymentFlowService() === RESURS_FLOW_TYPES::RESURS_CHECKOUT) {
             if (empty($payment_id_or_method) && empty($this->preferredId)) {
-	            throw new \ResursException(
-		            'A payment method or payment id must be defined.',
-		            \RESURS_EXCEPTIONS::CREATEPAYMENT_NO_ID_SET
-	            );
+                throw new \ResursException(
+                    'A payment method or payment id must be defined.',
+                    \RESURS_EXCEPTIONS::CREATEPAYMENT_NO_ID_SET
+                );
             }
             $payment_id_or_method = $this->preferredId;
         }
@@ -6294,10 +6294,10 @@ class ResursBank
 
         } else {
             // We don't guess on customer types
-	        throw new \ResursException(
-		        'No customer type has been set. Use NATURAL or LEGAL to proceed',
-		        \RESURS_EXCEPTIONS::BOOK_CUSTOMERTYPE_MISSING
-	        );
+            throw new \ResursException(
+                'No customer type has been set. Use NATURAL or LEGAL to proceed',
+                \RESURS_EXCEPTIONS::BOOK_CUSTOMERTYPE_MISSING
+            );
         }
         if (!empty($contactgovernmentId)) {
             $this->Payload['customer']['contactGovernmentId'] = $contactgovernmentId;
@@ -6602,11 +6602,11 @@ class ResursBank
         if (!empty($this->ocShopScript)) {
             return trim($this->ocShopScript);
         }
-	    throw new \ResursException(
-		    sprintf(
-			    '%s exception: could not fetch th ocShopScript from iframe.'
-		    )
-	    );
+        throw new \ResursException(
+            sprintf(
+                '%s exception: could not fetch th ocShopScript from iframe.'
+            )
+        );
     }
 
     /**
@@ -6707,10 +6707,10 @@ class ResursBank
             ['orderLines' => $sanitizedOutputOrderLines], NETCURL_POST_DATATYPES::DATATYPE_JSON);
         $updateOrderLinesResponseCode = $this->CURL->getCode($updateOrderLinesResponse);
         if ($updateOrderLinesResponseCode >= 400) {
-	        throw new \ResursException(
-		        'Could not update order lines.',
-		        $updateOrderLinesResponseCode
-	        );
+            throw new \ResursException(
+                'Could not update order lines.',
+                $updateOrderLinesResponseCode
+            );
         }
         if ($updateOrderLinesResponseCode >= 200 && $updateOrderLinesResponseCode < 300) {
             return true;
@@ -8975,12 +8975,12 @@ class ResursBank
                 return call_user_func_array([$obsoleteCaller, $func], $args);
             }
         }
-	    // 501 NOT IMPLEMENTED
-	    throw new \ResursException(
-		    sprintf(
-			    'Method "%s" not found in ECom Library, neither in the current release nor in the deprecation library.',
-			    $func
-		    ), 501
-	    );
+        // 501 NOT IMPLEMENTED
+        throw new \ResursException(
+            sprintf(
+                'Method "%s" not found in ECom Library, neither in the current release nor in the deprecation library.',
+                $func
+            ), 501
+        );
     }
 }
