@@ -4192,14 +4192,13 @@ class ResursBank
                 $infoObject = $this->getRenderedPriceInfoTemplates($paymentMethod, $amount, $fetch, $iframe);
 
                 if ($fetch && !empty($return)) {
-                    if ($iframe) {
-                        $return = $infoObject['block'];
-                    } else {
-                        $curlRequest = $this->CURL->doGet($return . $amount);
-                        if (!empty($curlRequest)) {
-                            $return = $this->CURL->getBody();
-                        }
+                    $curlRequest = $this->CURL->doGet($return . $amount);
+                    if (!empty($curlRequest)) {
+                        $return = $this->CURL->getBody();
                     }
+
+                } else {
+                    $return = $infoObject['block'];
                 }
             }
         }
