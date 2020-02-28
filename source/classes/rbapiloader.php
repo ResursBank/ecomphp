@@ -2230,12 +2230,15 @@ class ResursBank
             return true;
         }
 
-        throw new \ResursException(
-            'setRegisterCallbackException (' . $code . '): Could not register callback event ' .
-            $renderCallback['eventType'] .
-            ' (service: ' . $registerBy . ')',
-            $code
-        );
+	    throw new \ResursException(
+		    sprintf(
+			    '%s exception %d: Could not register callback event %s via service %s.',
+			    __FUNCTION__,
+			    $code,
+			    isset($renderCallback['eventType']) ? $renderCallback['eventType'] : 'Unknown eventType',
+			    $registerBy
+		    )
+	    );
     }
 
     /**
