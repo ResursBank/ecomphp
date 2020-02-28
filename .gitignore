@@ -12,3 +12,4 @@ tests/test.json
 source/classes/cookies
 tests/selenium.jar
 tests/startwebdriver
+tests/chromedriver
