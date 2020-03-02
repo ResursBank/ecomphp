@@ -1068,8 +1068,11 @@ class resursBankTest extends TestCase
     {
         $this->__setUp();
         $isNotValid = $this->TEST->ECOM->validateCredentials(RESURS_ENVIRONMENTS::TEST, 'fail', 'fail');
-        $isValid = $this->TEST->ECOM->validateCredentials(RESURS_ENVIRONMENTS::TEST, $this->username,
-            $this->password);
+        $isValid = $this->TEST->ECOM->validateCredentials(
+            RESURS_ENVIRONMENTS::TEST,
+            $this->username,
+            $this->password
+        );
         $onInit = new ResursBank();
         // Using this function on setAuthentication should immediately throw exception if not valid.
         $onInitOk = $onInit->setAuthentication($this->username, $this->password, true);
@@ -1641,6 +1644,19 @@ class resursBankTest extends TestCase
 
     /**
      * @test
+     */
+    public function obsoletion()
+    {
+        $this->__setUp();
+        try {
+            $this->TEST->ECOM->obsoleteMissingMethod();
+        } catch (\Exception $e) {
+            static::assertTrue($e->getCode() === 501);
+        }
+    }
+
+    /**
+     * @test
      * @throws \Exception
      */
     public function norwaySimple()
@@ -1653,6 +1669,31 @@ class resursBankTest extends TestCase
             $response->fullName !== '' &&
             strlen($response->fullName) > 5
         );
+    }
+
+    /**
+     * @test
+     * @throws \Exception
+     */
+    public function getPaymentByRest()
+    {
+        $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
+        $this->TEST->ECOM->setFlag('GET_PAYMENT_BY_REST');
+        try {
+            $paymentInfo = $this->TEST->ECOM->getPayment($payment->paymentId);
+        } catch (\Exception $e) {
+            // Special problems with SSL certificates and SoapClient is absent.
+            if ($e->getCode() === 51) {
+                static::markTestSkipped(
+                    sprintf(
+                        'Skipping test on error %s: %s',
+                        $e->getCode(),
+                        $e->getMessage()
+                    )
+                );
+            }
+        }
+        $this->TEST->ECOM->deleteFlag('GET_PAYMENT_BY_REST');
     }
 
     /**
