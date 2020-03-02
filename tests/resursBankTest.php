@@ -1464,6 +1464,7 @@ class resursBankTest extends TestCase
         $this->__setUp();
         $myMethods = $this->TEST->ECOM->getPaymentMethods();
 
+        $bajs = true;
         // Normal one method.
         $getCostOfPriceInfoUrl = $this->TEST->ECOM->getCostOfPriceInformation($this->getMethodId(), 1000);
         // Fetched one method.
