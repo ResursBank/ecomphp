@@ -1669,7 +1669,7 @@ class resursBankTest extends TestCase
         try {
             $paymentInfo = $this->TEST->ECOM->getPayment($payment->paymentId);
         } catch (\Exception $e) {
-            // Special problems with SSL certificates and soapclient is absent.
+            // Special problems with SSL certificates and SoapClient is absent.
             if ($e->getCode() === 51) {
                 static::markTestSkipped(
                     sprintf(
