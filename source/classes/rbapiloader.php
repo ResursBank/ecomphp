@@ -4201,7 +4201,9 @@ class ResursBank
                     }
 
                 } else {
-                    $return = $infoObject['block'];
+                    if ($iframe) {
+                        $return = $infoObject['block'];
+                    }
                 }
             }
         }
