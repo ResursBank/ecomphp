@@ -1472,8 +1472,7 @@ class resursBankTest extends TestCase
 
         static::assertTrue(
             preg_match('/^http/', $getCostOfPriceInfoUrl) ? true : false &&
-            preg_match('/\<html\>/is',
-                $getCostOfPriceInfoData) ? true : false,
+            preg_match('/\<html\>/is', $getCostOfPriceInfoData) ? true : false,
             preg_match('/\<html\>/is', $priceInfoHtml) ? true : false
         );
     }

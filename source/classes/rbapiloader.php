@@ -7,7 +7,7 @@
  * @author  Resurs Bank <support@resurs.se>
  * @author  Tomas Tornevall <tomas.tornevall@resurs.se>
  * @branch 1.0
- * @version 1.0.52
+ * @version 1.0.54
  * @deprecated Maintenance version only - Use composer based package v1.3 or higher if possible
  * @link https://test.resurs.com/docs/x/BACt Migration from 1.0/1.1 to 1.3 documentation
  * @link https://test.resurs.com/docs/x/TYNM Get started with EComPHP
@@ -54,10 +54,10 @@ use Resursbank\RBEcomPHP\RESURS_DEPRECATED_FLOW;
 
 // Globals starts here
 if (!defined('ECOMPHP_VERSION')) {
-    define('ECOMPHP_VERSION', '1.0.53');
+    define('ECOMPHP_VERSION', '1.0.54');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20200220');
+    define('ECOMPHP_MODIFY_DATE', '20200302');
 }
 
 /**
@@ -4195,7 +4195,9 @@ class ResursBank
                     }
 
                 } else {
-                    $return = $infoObject['block'];
+                    if ($iframe) {
+                        $return = $infoObject['block'];
+                    }
                 }
             }
         }
