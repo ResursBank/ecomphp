@@ -3411,10 +3411,10 @@ class ResursBank
         if ($this->isFlag('GET_PAYMENT_BY_REST') || !$this->SOAP_AVAILABLE) {
             // This will ALWAYS run if SOAP is unavailable
             try {
+                $rested = true;
                 $this->lastPaymentStored[$paymentId] = $this->getPaymentByRest($paymentId);
                 $this->lastPaymentStored[$paymentId]->cached = time();
                 $return = $this->lastPaymentStored[$paymentId];
-                $rested = true;
             } catch (\ResursException $e) {
                 // 3 = The order does not exist, default REST error.
                 // If we for some reason get 404 errors here, the error should be retrown as 3.
