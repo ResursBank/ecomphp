@@ -1644,6 +1644,19 @@ class resursBankTest extends TestCase
 
     /**
      * @test
+     */
+    public function obsoletion()
+    {
+        $this->__setUp();
+        try {
+            $this->TEST->ECOM->obsoleteMissingMethod();
+        } catch (\Exception $e) {
+            static::assertTrue($e->getCode() === 501);
+        }
+    }
+
+    /**
+     * @test
      * @throws \Exception
      */
     public function norwaySimple()
