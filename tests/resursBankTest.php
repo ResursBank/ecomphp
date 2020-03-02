@@ -1464,6 +1464,7 @@ class resursBankTest extends TestCase
         $this->__setUp();
         $myMethods = $this->TEST->ECOM->getPaymentMethods();
 
+        $bajs = true;
         // Normal one method.
         $getCostOfPriceInfoUrl = $this->TEST->ECOM->getCostOfPriceInformation($this->getMethodId(), 1000);
         // Fetched one method.
@@ -1477,8 +1478,7 @@ class resursBankTest extends TestCase
 
         static::assertTrue(
             preg_match('/^http/', $getCostOfPriceInfoUrl) ? true : false &&
-            preg_match('/\<html\>/is',
-                $getCostOfPriceInfoData) ? true : false,
+            preg_match('/\<html\>/is', $getCostOfPriceInfoData) ? true : false,
             preg_match('/\<html\>/is', $priceInfoHtml) ? true : false
         );
     }
