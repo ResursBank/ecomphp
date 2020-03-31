@@ -5300,9 +5300,14 @@ class ResursBank
                             if (isset($matches[1]) && isset($matches[1][0])) {
                                 $urls = $this->NETWORK->getUrlsFromHtml($parsedResponse->html);
                                 if (is_array($urls) && count($urls)) {
-                                    $iFrameOrigindata = $this->NETWORK->getUrlDomain($urls[0]);
-                                    $this->iframeOrigin = sprintf('%s://%s', $iFrameOrigindata[1],
-                                        $iFrameOrigindata[0]);
+                                    $iFrameOrigindata = $this->NETWORK->getUrlDomain(
+                                        $urls[0]
+                                    );
+                                    $this->iframeOrigin = sprintf(
+                                        '%s://%s',
+                                        $iFrameOrigindata[1],
+                                        $iFrameOrigindata[0]
+                                    );
                                 }
                             }
                         }
@@ -5363,12 +5368,27 @@ class ResursBank
     /**
      * Returns a possible origin source from the iframe request.
      *
+     * @param string $extractFrom
+     * @param bool $useOwn
      * @return string
+     * @throws Exception
      * @since 1.3.30
      */
-    public function getIframeOrigin()
+    public function getIframeOrigin($extractFrom = '', $useOwn = false)
     {
-        return $this->iframeOrigin;
+        $return = $this->iframeOrigin;
+
+        if ((empty($this->iframeOrigin) && !empty($extractFrom)) || (!empty($extractFrom) && $useOwn)) {
+            $iFrameOrigindata = $this->NETWORK->getUrlDomain(
+                $extractFrom
+            );
+            $return = sprintf(
+                '%s://%s',
+                $iFrameOrigindata[1],
+                $iFrameOrigindata[0]
+            );
+        }
+        return $return;
     }
 
     /**
