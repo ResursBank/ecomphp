@@ -1068,8 +1068,11 @@ class resursBankTest extends TestCase
     {
         $this->__setUp();
         $isNotValid = $this->TEST->ECOM->validateCredentials(RESURS_ENVIRONMENTS::TEST, 'fail', 'fail');
-        $isValid = $this->TEST->ECOM->validateCredentials(RESURS_ENVIRONMENTS::TEST, $this->username,
-            $this->password);
+        $isValid = $this->TEST->ECOM->validateCredentials(
+            RESURS_ENVIRONMENTS::TEST,
+            $this->username,
+            $this->password
+        );
         $onInit = new ResursBank();
         // Using this function on setAuthentication should immediately throw exception if not valid.
         $onInitOk = $onInit->setAuthentication($this->username, $this->password, true);
@@ -1474,9 +1477,8 @@ class resursBankTest extends TestCase
 
         static::assertTrue(
             preg_match('/^http/', $getCostOfPriceInfoUrl) ? true : false &&
-            preg_match('/\<html\>/is',
-                $getCostOfPriceInfoData) ? true : false,
-            preg_match('/\<html\>/is', $priceInfoHtml) ? true : false
+            preg_match('/<html>(.*?)<\/html>/is', $getCostOfPriceInfoData) ? true : false,
+            preg_match('/<html>(.*?)<\/html>/is', $priceInfoHtml) ? true : false
         );
     }
 
@@ -1665,6 +1667,55 @@ class resursBankTest extends TestCase
             isset($response->fullName) &&
             $response->fullName !== '' &&
             strlen($response->fullName) > 5
+        );
+    }
+
+    /**
+     * @test
+     * @throws \Exception
+     */
+    public function getPaymentByRest()
+    {
+        $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
+        $this->TEST->ECOM->setFlag('GET_PAYMENT_BY_REST');
+        try {
+            $paymentInfo = $this->TEST->ECOM->getPayment($payment->paymentId);
+        } catch (\Exception $e) {
+            // Special problems with SSL certificates and SoapClient is absent.
+            if ($e->getCode() === 51) {
+                static::markTestSkipped(
+                    sprintf(
+                        'Skipping test on error %s: %s',
+                        $e->getCode(),
+                        $e->getMessage()
+                    )
+                );
+            }
+        }
+        $this->TEST->ECOM->deleteFlag('GET_PAYMENT_BY_REST');
+    }
+
+    /**
+     * @test
+     * @testdox Get iframeorigin from source or extract it from a session variable.
+     * @throws \Exception
+     */
+    public function getOwnOrigin() {
+        $this->__setUp();
+        $this->TEST->ECOM->setFlag('STORE_ORIGIN');
+        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
+        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+        $this->TEST->ECOM->addOrderLine("Product-1337", "", 800, 25);
+        $id = $this->TEST->ECOM->getPreferredPaymentId();
+        $this->TEST->ECOM->createPayment($id);
+
+        $extractFrom = 'https://omni-other.resurs.com/hello-world.js';
+        $expect = 'https://omni-other.resurs.com';
+        $realOrigin = $this->TEST->ECOM->getIframeOrigin();
+        $notRealOrigin = $this->TEST->ECOM->getIframeOrigin($extractFrom, true);
+        static::assertTrue(
+            ($realOrigin === 'https://omnitest.resurs.com' &&
+            $notRealOrigin === $expect) ? true : false
         );
     }
 
