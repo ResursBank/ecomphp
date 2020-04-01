@@ -1692,6 +1692,30 @@ class resursBankTest extends TestCase
 
     /**
      * @test
+     * @testdox Get iframeorigin from source or extract it from a session variable.
+     * @throws \Exception
+     */
+    public function getOwnOrigin() {
+        $this->__setUp();
+        $this->TEST->ECOM->setFlag('STORE_ORIGIN');
+        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
+        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+        $this->TEST->ECOM->addOrderLine("Product-1337", "", 800, 25);
+        $id = $this->TEST->ECOM->getPreferredPaymentId();
+        $this->TEST->ECOM->createPayment($id);
+
+        $extractFrom = 'https://omni-other.resurs.com/hello-world.js';
+        $expect = 'https://omni-other.resurs.com';
+        $realOrigin = $this->TEST->ECOM->getIframeOrigin();
+        $notRealOrigin = $this->TEST->ECOM->getIframeOrigin($extractFrom, true);
+        static::assertTrue(
+            ($realOrigin === 'https://omnitest.resurs.com' &&
+                $notRealOrigin === $expect) ? true : false
+        );
+    }
+
+    /**
+     * @test
      * @testdox Clean up special test data from share file
      */
     public function finalTest()

@@ -7,7 +7,7 @@
  * @author  Resurs Bank <support@resurs.se>
  * @author  Tomas Tornevall <tomas.tornevall@resurs.se>
  * @branch 1.0
- * @version 1.0.54
+ * @version 1.0.55
  * @deprecated Maintenance version only - Use composer based package v1.3 or higher if possible
  * @link https://test.resurs.com/docs/x/BACt Migration from 1.0/1.1 to 1.3 documentation
  * @link https://test.resurs.com/docs/x/TYNM Get started with EComPHP
@@ -54,10 +54,10 @@ use Resursbank\RBEcomPHP\RESURS_DEPRECATED_FLOW;
 
 // Globals starts here
 if (!defined('ECOMPHP_VERSION')) {
-    define('ECOMPHP_VERSION', '1.0.54');
+    define('ECOMPHP_VERSION', '1.0.55');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20200302');
+    define('ECOMPHP_MODIFY_DATE', '20200401');
 }
 
 /**
@@ -5294,9 +5294,14 @@ class ResursBank
                             if (isset($matches[1]) && isset($matches[1][0])) {
                                 $urls = $this->NETWORK->getUrlsFromHtml($parsedResponse->html);
                                 if (is_array($urls) && count($urls)) {
-                                    $iFrameOrigindata = $this->NETWORK->getUrlDomain($urls[0]);
-                                    $this->iframeOrigin = sprintf('%s://%s', $iFrameOrigindata[1],
-                                        $iFrameOrigindata[0]);
+                                    $iFrameOrigindata = $this->NETWORK->getUrlDomain(
+                                        $urls[0]
+                                    );
+                                    $this->iframeOrigin = sprintf(
+                                        '%s://%s',
+                                        $iFrameOrigindata[1],
+                                        $iFrameOrigindata[0]
+                                    );
                                 }
                             }
                         }
@@ -5357,12 +5362,27 @@ class ResursBank
     /**
      * Returns a possible origin source from the iframe request.
      *
+     * @param string $extractFrom
+     * @param bool $useOwn
      * @return string
+     * @throws Exception
      * @since 1.3.30
      */
-    public function getIframeOrigin()
+    public function getIframeOrigin($extractFrom = '', $useOwn = false)
     {
-        return $this->iframeOrigin;
+        $return = $this->iframeOrigin;
+
+        if ((empty($this->iframeOrigin) && !empty($extractFrom)) || (!empty($extractFrom) && $useOwn)) {
+            $iFrameOrigindata = $this->NETWORK->getUrlDomain(
+                $extractFrom
+            );
+            $return = sprintf(
+                '%s://%s',
+                $iFrameOrigindata[1],
+                $iFrameOrigindata[0]
+            );
+        }
+        return $return;
     }
 
     /**
