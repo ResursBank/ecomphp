@@ -7,7 +7,7 @@
  * @author  Resurs Bank <support@resurs.se>
  * @author  Tomas Tornevall <tomas.tornevall@resurs.se>
  * @branch 1.1
- * @version 1.1.53
+ * @version 1.1.54
  * @deprecated Maintenance version only - Use composer based package v1.3 or higher if possible
  * @link https://test.resurs.com/docs/x/BACt Migration from 1.0/1.1 to 1.3 documentation
  * @link https://test.resurs.com/docs/x/TYNM Get started with EComPHP
@@ -16,7 +16,8 @@
 
 namespace Resursbank\RBEcomPHP;
 
-// This is a global setter but it has to be set before the inclusions.
+// This is a global setter but it has to be set before the inclusions. Why?
+// It's a result of a legacy project that's not adapted to proper PSR standards.
 if (!defined('ECOM_SKIP_AUTOLOAD')) {
     define('ECOM_CLASS_EXISTS_AUTOLOAD', true);
 } else {
@@ -55,10 +56,10 @@ use Exception;
 
 // Globals starts here
 if (!defined('ECOMPHP_VERSION')) {
-    define('ECOMPHP_VERSION', '1.1.53');
+    define('ECOMPHP_VERSION', '1.1.54');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20200401');
+    define('ECOMPHP_MODIFY_DATE', '20200302');
 }
 
 /**

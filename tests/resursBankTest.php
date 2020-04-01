@@ -1478,8 +1478,7 @@ class resursBankTest extends TestCase
 
         static::assertTrue(
             preg_match('/^http/', $getCostOfPriceInfoUrl) ? true : false &&
-            preg_match('/<html>(.*?)<\/html>/is',
-                $getCostOfPriceInfoData) ? true : false,
+            preg_match('/<html>(.*?)<\/html>/is', $getCostOfPriceInfoData) ? true : false,
             preg_match('/<html>(.*?)<\/html>/is', $priceInfoHtml) ? true : false
         );
     }
@@ -1702,8 +1701,7 @@ class resursBankTest extends TestCase
      * @testdox Get iframeorigin from source or extract it from a session variable.
      * @throws \Exception
      */
-    public function getOwnOrigin()
-    {
+    public function getOwnOrigin() {
         $this->__setUp();
         $this->TEST->ECOM->setFlag('STORE_ORIGIN');
         $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
