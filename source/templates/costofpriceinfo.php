@@ -1,3 +1,6 @@
+<?php
+    if (!isset($bodyOnly)) {
+?>
 <!DOCTYPE html>
 <html>
 <head>
@@ -6,14 +9,14 @@
         body {font-family: Arial;}
 
         /* Style the tab */
-        .tab {
+        .costOfPriceInfoTab {
             overflow: hidden;
             border: 1px solid #ccc;
             background-color: #f1f1f1;
         }
 
         /* Style the buttons inside the tab */
-        .tab button {
+        .costOfPriceInfoTab button {
             background-color: inherit;
             float: left;
             border: none;
@@ -25,12 +28,12 @@
         }
 
         /* Change background color of buttons on hover */
-        .tab button:hover {
+        .costOfPriceInfoTab button:hover {
             background-color: #ddd;
         }
 
         /* Create an active/current tablink class */
-        .tab button.active {
+        .costOfPriceInfoTab button.active {
             background-color: #ccc;
         }
 
@@ -44,11 +47,12 @@
     </style>
 </head>
 <body>
+<?php } ?>
 
 <!--<h2>Tabs</h2>
 <p>Click on the buttons inside the tabbed menu:</p>
 -->
-<div class="tab">
+<div class="costOfPriceInfoTab">
     <?php echo $priceInfoTabs ?>
 </div>
 
@@ -81,5 +85,10 @@
     }
 </script>
 
+<?php
+if (!isset($bodyOnly)) {
+?>
+
 </body>
 </html>
+<?php } ?>
