@@ -59,6 +59,14 @@
 <?php echo $priceInfoBlocks ?>
 
 <script>
+    /**
+     * openPriceInfo (global).
+     *
+     * With Magento2 adaptions.
+     *
+     * @param evt
+     * @param methodName
+     */
     function openPriceInfo(evt, methodName) {
         var i, tabcontent, priceinfotablink;
         tabcontent = document.getElementsByClassName("priceinfotab");
@@ -69,9 +77,21 @@
         for (i = 0; i < priceinfotablink.length; i++) {
             priceinfotablink[i].className = priceinfotablink[i].className.replace(" active", "");
         }
-        document.getElementById(methodName).style.display = "block";
-        evt.currentTarget.className += " active";
+        // This part may receive an object instead of an element id, so if we have an element
+        // ready on the function call, we should use that one instead of looking for it.
+        if (typeof methodName === 'string') {
+            document.getElementById(methodName).style.display = "block";
+            if (null !== evt) {
+                evt.currentTarget.className += " active";
+            }
+        } else {
+            methodName.style.display = "block";
+            if (null !== evt) {
+                evt.currentTarget.className += " active";
+            }
+        }
     }
+
     window.onload = function() {
         var tabcontent = document.getElementsByClassName("priceinfotab");
         var currentID;
