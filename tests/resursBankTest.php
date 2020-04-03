@@ -815,39 +815,6 @@ class resursBankTest extends TestCase
 
     /**
      * @test
-     * @testdox Expect arrays regardless of response
-     * @throws \Exception
-     */
-    public function getEmptyCallbacksList()
-    {
-        /**
-         * Standard request returns:
-         *   array(
-         *      [index-1] => stdObject
-         *      [index-2] => stdObject
-         *   )
-         *   asArrayRequest returns:
-         *   array(
-         *      [keyCallbackName1] => URL
-         *      [keyCallbackName2] => URL
-         *   )
-         * Standard request when empty should return array()
-         */
-        $this->__setUp();
-
-        try {
-            // Running unreg through rest as of 1.3.31
-            $this->setRegisterCallback(true);
-            $this->TEST->ECOM->unregisterEventCallback(76, true);
-            $this->TEST->ECOM->unregisterEventCallback(255, true);
-        } catch (\Exception $e) {
-        }
-        $callbacks = $this->TEST->ECOM->getCallBacksByRest(true);
-        static::assertTrue(is_array($callbacks) && !count($callbacks) ? true : false);
-    }
-
-    /**
-     * @test
      */
     public function bitMaskControl()
     {
@@ -1718,6 +1685,39 @@ class resursBankTest extends TestCase
             ($realOrigin === 'https://omnitest.resurs.com' &&
                 $notRealOrigin === $expect) ? true : false
         );
+    }
+
+    /**
+     * @test
+     * @testdox Expect arrays regardless of response
+     * @throws \Exception
+     */
+    public function getEmptyCallbacksList()
+    {
+        /**
+         * Standard request returns:
+         *   array(
+         *      [index-1] => stdObject
+         *      [index-2] => stdObject
+         *   )
+         *   asArrayRequest returns:
+         *   array(
+         *      [keyCallbackName1] => URL
+         *      [keyCallbackName2] => URL
+         *   )
+         * Standard request when empty should return array()
+         */
+        $this->__setUp();
+
+        try {
+            // Running unreg through rest as of 1.3.31
+            $this->setRegisterCallback(true);
+            $this->TEST->ECOM->unregisterEventCallback(76, true);
+            $this->TEST->ECOM->unregisterEventCallback(255, true);
+        } catch (\Exception $e) {
+        }
+        $callbacks = $this->TEST->ECOM->getCallBacksByRest(true);
+        static::assertTrue(is_array($callbacks) && !count($callbacks) ? true : false);
     }
 
     /**

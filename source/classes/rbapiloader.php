@@ -7,7 +7,7 @@
  * @author  Resurs Bank <support@resurs.se>
  * @author  Tomas Tornevall <tomas.tornevall@resurs.se>
  * @branch 1.1
- * @version 1.1.55
+ * @version 1.1.56
  * @deprecated Maintenance version only - Use composer based package v1.3 or higher if possible
  * @link https://test.resurs.com/docs/x/BACt Migration from 1.0/1.1 to 1.3 documentation
  * @link https://test.resurs.com/docs/x/TYNM Get started with EComPHP
@@ -56,10 +56,10 @@ use Exception;
 
 // Globals starts here
 if (!defined('ECOMPHP_VERSION')) {
-    define('ECOMPHP_VERSION', '1.1.55');
+    define('ECOMPHP_VERSION', '1.1.56');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20200401');
+    define('ECOMPHP_MODIFY_DATE', '20200403');
 }
 
 /**
@@ -4115,8 +4115,9 @@ class ResursBank
      * @param bool $fetch If ecom should try to download the content from the priceinfolink.
      * @param bool $iframe Pushes the priceinfolink into an iframe. You should preferrably have $fetch false here.
      * @param bool $limitByMinMax By default, ecom only shows priceinformation based on the $amount.
+     * @param bool $bodyOnly
      * @return false|mixed|string|null
-     * @throws Exception
+     * @throws \ResursException
      * @since 1.3.30
      */
     public function getCostOfPriceInformation(
@@ -4124,7 +4125,8 @@ class ResursBank
         $amount = 0,
         $fetch = false,
         $iframe = false,
-        $limitByMinMax = true
+        $limitByMinMax = true,
+        $bodyOnly = false
     ) {
         $return = '';
 
@@ -4166,6 +4168,7 @@ class ResursBank
                 $vars = [
                     'priceInfoTabs' => $tab,
                     'priceInfoBlocks' => $block,
+                    'bodyOnly' => $bodyOnly
                 ];
 
                 $return = $this->getHtmlTemplate($template['costofpriceinfo'], $vars);
@@ -4725,6 +4728,7 @@ class ResursBank
             $this->checkoutShopUrl = $shopUrl;
         }
         if ($validateFormat) {
+            $this->isNetWork();
             $shopUrlValidate = $this->NETWORK->getUrlDomain($this->checkoutShopUrl);
             $this->checkoutShopUrl = $shopUrlValidate[1] . "://" . $shopUrlValidate[0];
         }
@@ -5293,6 +5297,7 @@ class ResursBank
 
                     try {
                         if ($this->isFlag('STORE_ORIGIN')) {
+                            $this->isNetWork();
                             @preg_match_all('/iframe.*src=\"(http(.*?))\"/', $parsedResponse->html, $matches);
                             if (isset($matches[1]) && isset($matches[1][0])) {
                                 $urls = $this->NETWORK->getUrlsFromHtml($parsedResponse->html);
@@ -5376,6 +5381,8 @@ class ResursBank
         $return = $this->iframeOrigin;
 
         if ((empty($this->iframeOrigin) && !empty($extractFrom)) || (!empty($extractFrom) && $useOwn)) {
+            $this->isNetWork();
+
             $iFrameOrigindata = $this->NETWORK->getUrlDomain(
                 $extractFrom
             );
