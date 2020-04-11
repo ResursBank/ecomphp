@@ -847,6 +847,9 @@ class resursBankTest extends TestCase
         try {
             $this->TEST->ECOM->unregisterEventCallback(255, true);
         } catch (\Exception $e) {
+            if ($e->getCode() === 1008) {
+                throw $e;
+            }
         }
         $callbacks = $this->TEST->ECOM->getCallBacksByRest();
         static::assertTrue(is_array($callbacks) && !count($callbacks) ? true : false);
