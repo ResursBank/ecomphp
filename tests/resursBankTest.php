@@ -198,9 +198,10 @@ class resursBankTest extends TestCase
         $this->TEST->ECOM->getAddress($this->flowHappyCustomer);
         /** @var MODULE_CURL $lastCurlHandle */
 
+        $lastCurlHandle = $this->TEST->ECOM->getCurlHandle(true);
+
         if (defined('TORNELIB_NETCURL_RELEASE') && version_compare(TORNELIB_NETCURL_RELEASE, '6.0.20', '<')) {
             // In versions prior to 6.0.20, you need to first extract the SOAP body from simpleSoap itself (via getLibResponse).
-            $lastCurlHandle = $this->TEST->ECOM->getCurlHandle(true);
             /** @var MODULE_SOAP $lastCurlHandle */
             $soapLibResponse = $lastCurlHandle->getSoapResponse();
             $selfParser = new MODULE_IO();
@@ -214,18 +215,26 @@ class resursBankTest extends TestCase
             return;
         }
 
-        // The XML parser in the IO MODULE should give the same response as the direct curl handle
-        // From NetCURL 6.0.20 and the IO library, this could be extracted directly from the curl handle
-        $selfParser = new MODULE_IO();
+        if (defined('NETCURL_VERSION') &&
+            version_compare(
+                NETCURL_VERSION,
+                '6.1',
+                '>='
+            )
+        ) {
+            $curlResponse = $lastCurlHandle->getParsed();
+            static::assertTrue(
+                $curlResponse->fullName == $this->flowHappyCustomerName
+            );
+            return;
+        }
+
         // Get the curl handle without bulk request
         $lastCurlHandle = $this->TEST->ECOM->getCurlHandle();
-
-        $byIo = $selfParser->getFromXml($lastCurlHandle->getBody(), true);
         $byHandle = $lastCurlHandle->getParsed();
 
         /** @noinspection PhpUndefinedFieldInspection */
         static::assertTrue(
-            $byIo->fullName == $this->flowHappyCustomerName &&
             $byHandle->fullName == $this->flowHappyCustomerName
         );
     }
