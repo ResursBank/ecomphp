@@ -50,9 +50,9 @@ if (file_exists(__DIR__ . "/../../vendor/autoload.php")) {
 }
 
 use Exception;
+use TorneLIB\Module\Bit;
 use TorneLIB\MODULE_CRYPTO;
 use TorneLIB\MODULE_CURL;
-use TorneLIB\MODULE_NETBITS;
 use TorneLIB\MODULE_NETWORK;
 use TorneLIB\NETCURL_POST_DATATYPES;
 
@@ -351,7 +351,7 @@ class ResursBank
     /**
      * Another way to handle bitmasks (might be deprecated in future releases)
      *
-     * @var MODULE_NETBITS
+     * @var Bit
      */
     private $BIT;
     /**
@@ -2270,7 +2270,7 @@ class ResursBank
     ) {
         $callbackArray = [];
         if ($isMultiple) {
-            $this->BIT = new MODULE_NETBITS();
+            $this->BIT = new Bit();
             $this->BIT->setBitStructure(
                 [
                     'UNFREEZE' => RESURS_CALLBACK_TYPES::UNFREEZE,
@@ -2549,6 +2549,8 @@ class ResursBank
             $this->CURL->setFlag("SOAPWARNINGS", true);
             $Service = $this->CURL->doGet($serviceNameUrl);
             try {
+                // Using call_user_func_array requires the parameters at this level to be pushed into an array.
+                //$RequestService = call_user_func_array(array($Service, $serviceName), [$resursParameters]);
                 $RequestService = $Service->$serviceName($resursParameters);
             } catch (\Exception $serviceRequestException) {
                 // Try to fetch previous exception (This is what we actually want)
@@ -5200,7 +5202,6 @@ class ResursBank
                 }
             }
         } catch (\Exception $e) {
-
         }
         $this->preparePayload($payment_id_or_method, $payload);
         if ($this->paymentMethodIsPsp) {
