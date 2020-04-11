@@ -717,8 +717,8 @@ class resursBankTest extends TestCase
     }
 
     /**
-     * @todo Countable issue linked to an IO event
      * @throws \Exception
+     * @todo Countable issue linked to an IO event
      */
     public function findPaymentsXmlBody()
     {
@@ -1676,7 +1676,8 @@ class resursBankTest extends TestCase
      * @testdox Get iframeorigin from source or extract it from a session variable.
      * @throws \Exception
      */
-    public function getOwnOrigin() {
+    public function getOwnOrigin()
+    {
         $this->__setUp();
         $this->TEST->ECOM->setFlag('STORE_ORIGIN');
         $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
@@ -1690,8 +1691,10 @@ class resursBankTest extends TestCase
         $realOrigin = $this->TEST->ECOM->getIframeOrigin();
         $notRealOrigin = $this->TEST->ECOM->getIframeOrigin($extractFrom, true);
         static::assertTrue(
-            ($realOrigin === 'https://omnitest.resurs.com' &&
-            $notRealOrigin === $expect) ? true : false
+            (
+                $realOrigin === 'https://omnitest.resurs.com' &&
+                $notRealOrigin === $expect
+            ) ? true : false
         );
     }
 
