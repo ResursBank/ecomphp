@@ -52,8 +52,8 @@ if (file_exists(__DIR__ . "/../../vendor/autoload.php")) {
 use Exception;
 use TorneLIB\MODULE_CRYPTO;
 use TorneLIB\MODULE_CURL;
-use TorneLIB\MODULE_NETBITS;
 use TorneLIB\MODULE_NETWORK;
+use TorneLIB\Module\Bit;
 use TorneLIB\NETCURL_POST_DATATYPES;
 
 // Globals starts here
@@ -351,7 +351,7 @@ class ResursBank
     /**
      * Another way to handle bitmasks (might be deprecated in future releases)
      *
-     * @var MODULE_NETBITS
+     * @var Bit
      */
     private $BIT;
     /**
@@ -2270,7 +2270,7 @@ class ResursBank
     ) {
         $callbackArray = [];
         if ($isMultiple) {
-            $this->BIT = new MODULE_NETBITS();
+            $this->BIT = new Bit();
             $this->BIT->setBitStructure(
                 [
                     'UNFREEZE' => RESURS_CALLBACK_TYPES::UNFREEZE,
