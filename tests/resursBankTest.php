@@ -96,6 +96,12 @@ class resursBankTest extends TestCase
         $this->API = new ResursBank();
         $this->API->setDebug(true);
         $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
+
+        // How to destroy tests: Inject cached wsdl.
+        //$CH = $this->TEST->ECOM->getCurlHandle();
+        //$CH->setCurlOpt(['cache_wsdl' => 3]);
+        //$this->TEST->ECOM->setCurlHandle($CH);
+
         $this->WEBDRIVER = new \RESURS_WEBDRIVER();
         if (!empty($this->webdriverFile) && file_exists(__DIR__ . '/' . $this->webdriverFile)) {
             $this->WEBDRIVER->init();
@@ -199,7 +205,6 @@ class resursBankTest extends TestCase
         /** @var MODULE_CURL $lastCurlHandle */
 
         $lastCurlHandle = $this->TEST->ECOM->getCurlHandle(true);
-
         if (defined('TORNELIB_NETCURL_RELEASE') && version_compare(TORNELIB_NETCURL_RELEASE, '6.0.20', '<')) {
             // In versions prior to 6.0.20, you need to first extract the SOAP body from simpleSoap itself (via getLibResponse).
             /** @var MODULE_SOAP $lastCurlHandle */
@@ -624,7 +629,6 @@ class resursBankTest extends TestCase
      *
      * @param string $specificType
      * @param string $customerType
-     *
      * @return mixed
      * @throws \Exception
      */
@@ -654,9 +658,7 @@ class resursBankTest extends TestCase
     /**
      * @test
      * @testdox Test if getPaymentMethods work and in the same time cache it for future use
-     *
      * @param bool $noAssert
-     *
      * @throws \Exception
      */
     public function getPaymentMethods($noAssert = false)
