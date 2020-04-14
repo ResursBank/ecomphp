@@ -1074,8 +1074,7 @@ class ResursBank
             if (($cTimeout = $this->getFlag('CURL_TIMEOUT')) > 0) {
                 $this->CURL->setTimeout($cTimeout);
             }
-            $this->NETWORK = new MODULE_NETWORK();
-            $this->BIT = $this->NETWORK->BIT;
+            $this->BIT = new Bit();
         }
         $this->wsdlServices = [];
         foreach ($this->ServiceRequestList as $reqType => $reqService) {
@@ -4420,17 +4419,7 @@ class ResursBank
     private function getCustomerIp()
     {
         $this->isNetWork();
-
         $primaryAddress = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : "127.0.0.1";
-        // Warning: This is untested and currently returns an array instead of a string, which may break ecommerce
-        if (
-            $this->preferCustomerProxy &&
-            !empty($this->NETWORK) &&
-            is_array($this->NETWORK->getProxyHeaders()) &&
-            count($this->NETWORK->getProxyHeaders())
-        ) {
-            $primaryAddress = $this->NETWORK->getProxyHeaders();
-        }
 
         return $primaryAddress;
     }
