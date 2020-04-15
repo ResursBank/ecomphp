@@ -50,9 +50,9 @@ if (file_exists(__DIR__ . "/../../vendor/autoload.php")) {
 }
 
 use Exception;
+use TorneLIB\Module\Bit;
 use TorneLIB\MODULE_CRYPTO;
 use TorneLIB\MODULE_CURL;
-use TorneLIB\MODULE_NETBITS;
 use TorneLIB\MODULE_NETWORK;
 use TorneLIB\NETCURL_POST_DATATYPES;
 
@@ -351,7 +351,7 @@ class ResursBank
     /**
      * Another way to handle bitmasks (might be deprecated in future releases)
      *
-     * @var MODULE_NETBITS
+     * @var Bit
      */
     private $BIT;
     /**
@@ -1074,8 +1074,7 @@ class ResursBank
             if (($cTimeout = $this->getFlag('CURL_TIMEOUT')) > 0) {
                 $this->CURL->setTimeout($cTimeout);
             }
-            $this->NETWORK = new MODULE_NETWORK();
-            $this->BIT = $this->NETWORK->BIT;
+            $this->BIT = new Bit();
         }
         $this->wsdlServices = [];
         foreach ($this->ServiceRequestList as $reqType => $reqService) {
@@ -2270,7 +2269,7 @@ class ResursBank
     ) {
         $callbackArray = [];
         if ($isMultiple) {
-            $this->BIT = new MODULE_NETBITS();
+            $this->BIT = new Bit();
             $this->BIT->setBitStructure(
                 [
                     'UNFREEZE' => RESURS_CALLBACK_TYPES::UNFREEZE,
@@ -2549,6 +2548,8 @@ class ResursBank
             $this->CURL->setFlag("SOAPWARNINGS", true);
             $Service = $this->CURL->doGet($serviceNameUrl);
             try {
+                // Using call_user_func_array requires the parameters at this level to be pushed into an array.
+                //$RequestService = call_user_func_array(array($Service, $serviceName), [$resursParameters]);
                 $RequestService = $Service->$serviceName($resursParameters);
             } catch (\Exception $serviceRequestException) {
                 // Try to fetch previous exception (This is what we actually want)
@@ -4418,17 +4419,7 @@ class ResursBank
     private function getCustomerIp()
     {
         $this->isNetWork();
-
         $primaryAddress = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : "127.0.0.1";
-        // Warning: This is untested and currently returns an array instead of a string, which may break ecommerce
-        if (
-            $this->preferCustomerProxy &&
-            !empty($this->NETWORK) &&
-            is_array($this->NETWORK->getProxyHeaders()) &&
-            count($this->NETWORK->getProxyHeaders())
-        ) {
-            $primaryAddress = $this->NETWORK->getProxyHeaders();
-        }
 
         return $primaryAddress;
     }
@@ -5200,7 +5191,6 @@ class ResursBank
                 }
             }
         } catch (\Exception $e) {
-
         }
         $this->preparePayload($payment_id_or_method, $payload);
         if ($this->paymentMethodIsPsp) {

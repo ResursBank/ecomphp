@@ -20,7 +20,7 @@ pipelines:
           - vendor/bin/phpunit --configuration ./phpunit.xml
     - step:
         name: EComPHP 1.3 with PHP 7.3.1
-        image: php:7.3.12
+        image: php:7.3
         caches:
           - composer
         script:
@@ -46,7 +46,7 @@ pipelines:
           - vendor/bin/phpunit --configuration ./phpunit.xml
     - step:
         name: EComPHP 1.3 with PHP 7.1.26
-        image: php:7.1.26
+        image: php:7.1
         caches:
           - composer
         script:
@@ -59,7 +59,7 @@ pipelines:
           - vendor/bin/phpunit --configuration ./phpunit.xml
     - step:
         name: EComPHP 1.3 with PHP 5.6.40
-        image: php:5.6.40
+        image: php:5.6
         caches:
           - composer
         script:
