@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Copyright 2018 Tomas Tornevall & Tornevall Networks
  *
@@ -20,17 +19,17 @@
  * major version too.
  *
  * @package TorneLIB
- * @version 6.0.24RC1
+ * @version 6.0.27
  */
 
 namespace Resursbank\RBEcomPHP;
 
 // Library Release Information
 if (!defined('NETCURL_RELEASE')) {
-    define('NETCURL_RELEASE', '6.0.24');
+    define('NETCURL_RELEASE', '6.0.27');
 }
 if (!defined('NETCURL_MODIFY')) {
-    define('NETCURL_MODIFY', '20191009');
+    define('NETCURL_MODIFY', '20200419');
 }
 if (!defined('TORNELIB_NETCURL_RELEASE')) {
     // Compatibility constant
@@ -75,9 +74,9 @@ if (file_exists(__DIR__ . '/../../vendor/autoload.php') &&
     require_once(__DIR__ . '/../../vendor/autoload.php');
 }
 
-if (!interface_exists('NETCURL_DRIVERS_INTERFACE',
-        NETCURL_CLASS_EXISTS_AUTOLOAD) && !interface_exists('TorneLIB\NETCURL_DRIVERS_INTERFACE',
-        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
+if (!interface_exists('NETCURL_DRIVERS_INTERFACE', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
+    !interface_exists('TorneLIB\NETCURL_DRIVERS_INTERFACE', NETCURL_CLASS_EXISTS_AUTOLOAD)
+) {
     interface NETCURL_DRIVERS_INTERFACE
     {
 
@@ -113,195 +112,216 @@ if (!interface_exists('NETCURL_DRIVERS_INTERFACE',
             $postMethod = NETCURL_POST_METHODS::METHOD_GET,
             $postDataType = NETCURL_POST_DATATYPES::DATATYPE_NOT_SET
         );
-
     }
 }
-if ( ! class_exists( 'NETCURL_DRIVER_GUZZLEHTTP', NETCURL_CLASS_EXISTS_AUTOLOAD ) && ! class_exists( 'Resursbank\RBEcomPHP\NETCURL_DRIVER_GUZZLEHTTP', NETCURL_CLASS_EXISTS_AUTOLOAD ) ) {
-	/**
-	 * Class NETCURL_DRIVER_GUZZLEHTTP Network communications driver detection
-     *
+
+if (!class_exists('NETCURL_DRIVER_GUZZLEHTTP', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
+    !class_exists('TorneLIB\NETCURL_DRIVER_GUZZLEHTTP', NETCURL_CLASS_EXISTS_AUTOLOAD)
+) {
+    /**
+     * Class NETCURL_DRIVER_GUZZLEHTTP Network communications driver detection
      * Inspections for classes and namespaces is ignored as they are dynamically loaded when they do exist.
-	 *
-	 * @package TorneLIB
-	 */
-	class NETCURL_DRIVER_GUZZLEHTTP implements NETCURL_DRIVERS_INTERFACE {
+     *
+     * @package TorneLIB
+     */
+    class NETCURL_DRIVER_GUZZLEHTTP implements NETCURL_DRIVERS_INTERFACE
+    {
 
-		/** @var NETCURL_NETWORK_DRIVERS $DRIVER_ID */
-		private $DRIVER_ID = NETCURL_NETWORK_DRIVERS::DRIVER_NOT_SET;
+        /** @var NETCURL_NETWORK_DRIVERS $DRIVER_ID */
+        private $DRIVER_ID = NETCURL_NETWORK_DRIVERS::DRIVER_NOT_SET;
 
-		/** @var array Inbound parameters in the format array, object or whatever this driver takes */
-		private $PARAMETERS = array();
+        /** @var array Inbound parameters in the format array, object or whatever this driver takes */
+        private $PARAMETERS = [];
 
         /** @noinspection PhpUndefinedClassInspection */
         /** @noinspection PhpUndefinedNamespaceInspection */
         /** @var \GuzzleHttp\Client $DRIVER The class for where everything happens */
-		private $DRIVER;
+        private $DRIVER;
 
-		/** @var MODULE_NETWORK $NETWORK Network driver for using exceptions, etc */
-		private $NETWORK;
+        /** @var MODULE_NETWORK $NETWORK Network driver for using exceptions, etc */
+        private $NETWORK;
 
-		/** @var string $POST_CONTENT_TYPE Content type */
-		private $POST_CONTENT_TYPE = '';
+        /** @var string $POST_CONTENT_TYPE Content type */
+        private $POST_CONTENT_TYPE = '';
 
-		/** @var string $REQUEST_URL */
-		private $REQUEST_URL = '';
+        /** @var string $REQUEST_URL */
+        private $REQUEST_URL = '';
 
-		/** @var NETCURL_POST_METHODS */
-		private $POST_METHOD = NETCURL_POST_METHODS::METHOD_GET;
+        /** @var NETCURL_POST_METHODS */
+        private $POST_METHOD = NETCURL_POST_METHODS::METHOD_GET;
 
-		/** @var array $POST_DATA ... or string, or object, etc */
-		private $POST_DATA;
+        /** @var array $POST_DATA ... or string, or object, etc */
+        private $POST_DATA;
 
-		/** @var NETCURL_POST_DATATYPES */
-		private $POST_DATA_TYPE = NETCURL_POST_DATATYPES::DATATYPE_NOT_SET;
+        /** @var NETCURL_POST_DATATYPES */
+        private $POST_DATA_TYPE = NETCURL_POST_DATATYPES::DATATYPE_NOT_SET;
 
-		/** @var $WORKER_DATA */
-		private $WORKER_DATA = array();
+        /** @var $WORKER_DATA */
+        private $WORKER_DATA = [];
 
-		/** @var int $HTTP_STATUS */
-		private $HTTP_STATUS = 0;
+        /** @var int $HTTP_STATUS */
+        private $HTTP_STATUS = 0;
 
-		/** @var string $HTTP_MESSAGE */
-		private $HTTP_MESSAGE = '';
+        /** @var string $HTTP_MESSAGE */
+        private $HTTP_MESSAGE = '';
 
-		/** @var bool $HAS_AUTHENTICATION Set if there's authentication configured */
-		private $HAS_AUTHENTICATION = false;
+        /** @var bool $HAS_AUTHENTICATION Set if there's authentication configured */
+        private $HAS_AUTHENTICATION = false;
 
-		/**
-		 * @var array $POST_AUTH_DATA
-		 */
-		private $POST_AUTH_DATA = array();
+        /**
+         * @var array $POST_AUTH_DATA
+         */
+        private $POST_AUTH_DATA = [];
 
-		/** @var string $RESPONSE_RAW */
-		private $RESPONSE_RAW = '';
+        /** @var string $RESPONSE_RAW */
+        private $RESPONSE_RAW = '';
 
-		/** @var array $GUZZLE_POST_OPTIONS Post options for Guzzle */
-		private $GUZZLE_POST_OPTIONS;
-
-
-		public function __construct( $parameters = null ) {
-			$this->NETWORK = new MODULE_NETWORK();
-			if ( ! is_null( $parameters ) ) {
-				$this->setParameters( $parameters );
-			}
-		}
-
-		public function setDriverId( $driverId = NETCURL_NETWORK_DRIVERS::DRIVER_NOT_SET ) {
-			$this->DRIVER_ID = $driverId;
-		}
-
-		public function setParameters( $parameters = array() ) {
-			$this->PARAMETERS = $parameters;
-		}
+        /** @var array $GUZZLE_POST_OPTIONS Post options for Guzzle */
+        private $GUZZLE_POST_OPTIONS;
 
 
-		private function initializeClass() {
-			if ( $this->DRIVER_ID == NETCURL_NETWORK_DRIVERS::DRIVER_GUZZLEHTTP ) {
-				if ( class_exists( 'GuzzleHttp\Client', NETCURL_CLASS_EXISTS_AUTOLOAD ) ) {
+        public function __construct($parameters = null)
+        {
+            $this->NETWORK = new MODULE_NETWORK();
+            if (!is_null($parameters)) {
+                $this->setParameters($parameters);
+            }
+        }
+
+        public function setDriverId($driverId = NETCURL_NETWORK_DRIVERS::DRIVER_NOT_SET)
+        {
+            $this->DRIVER_ID = $driverId;
+        }
+
+        public function setParameters($parameters = [])
+        {
+            $this->PARAMETERS = $parameters;
+        }
+
+
+        private function initializeClass()
+        {
+            if ($this->DRIVER_ID == NETCURL_NETWORK_DRIVERS::DRIVER_GUZZLEHTTP) {
+                if (class_exists('GuzzleHttp\Client', NETCURL_CLASS_EXISTS_AUTOLOAD)) {
                     /** @noinspection PhpUndefinedClassInspection */
                     /** @noinspection PhpUndefinedNamespaceInspection */
                     $this->DRIVER = new \GuzzleHttp\Client;
-				}
-			} else if ( $this->DRIVER_ID === NETCURL_NETWORK_DRIVERS::DRIVER_GUZZLEHTTP_STREAM ) {
-				if ( class_exists( 'GuzzleHttp\Handler\StreamHandler', NETCURL_CLASS_EXISTS_AUTOLOAD ) ) {
+                }
+            } elseif ($this->DRIVER_ID === NETCURL_NETWORK_DRIVERS::DRIVER_GUZZLEHTTP_STREAM) {
+                if (class_exists('GuzzleHttp\Handler\StreamHandler', NETCURL_CLASS_EXISTS_AUTOLOAD)) {
                     /** @noinspection PhpUndefinedClassInspection */
                     /** @noinspection PhpUndefinedNamespaceInspection */
                     /** @var \GuzzleHttp\Handler\StreamHandler $streamHandler */
-					$streamHandler = new \GuzzleHttp\Handler\StreamHandler();
+                    $streamHandler = new \GuzzleHttp\Handler\StreamHandler();
                     /** @noinspection PhpUndefinedClassInspection */
                     /** @noinspection PhpUndefinedNamespaceInspection */
                     /** @var \GuzzleHttp\Client */
-					$this->DRIVER = new \GuzzleHttp\Client( array( 'handler' => $streamHandler ) );
-				}
-			}
-		}
+                    $this->DRIVER = new \GuzzleHttp\Client(['handler' => $streamHandler]);
+                }
+            }
+        }
 
-		public function getContentType() {
-			return $this->POST_CONTENT_TYPE;
-		}
+        public function getContentType()
+        {
+            return $this->POST_CONTENT_TYPE;
+        }
 
-		public function setContentType( $setContentTypeString = 'application/json; charset=utf-8' ) {
-			$this->POST_CONTENT_TYPE = $setContentTypeString;
-		}
+        public function setContentType($setContentTypeString = 'application/json; charset=utf-8')
+        {
+            $this->POST_CONTENT_TYPE = $setContentTypeString;
+        }
 
-		/**
-		 * @param null $Username
-		 * @param null $Password
-		 * @param int $AuthType
-		 */
-		public function setAuthentication( $Username = null, $Password = null, $AuthType = NETCURL_AUTH_TYPES::AUTHTYPE_BASIC ) {
-			$this->POST_AUTH_DATA['Username'] = $Username;
-			$this->POST_AUTH_DATA['Password'] = $Password;
-			$this->POST_AUTH_DATA['Type']     = $AuthType;
-		}
+        /**
+         * @param null $Username
+         * @param null $Password
+         * @param int $AuthType
+         */
+        public function setAuthentication(
+            $Username = null,
+            $Password = null,
+            $AuthType = NETCURL_AUTH_TYPES::AUTHTYPE_BASIC
+        ) {
+            $this->POST_AUTH_DATA['Username'] = $Username;
+            $this->POST_AUTH_DATA['Password'] = $Password;
+            $this->POST_AUTH_DATA['Type'] = $AuthType;
+        }
 
-		/**
-		 * @return array
-		 */
-		public function getAuthentication() {
-			return $this->POST_AUTH_DATA;
-		}
+        /**
+         * @return array
+         */
+        public function getAuthentication()
+        {
+            return $this->POST_AUTH_DATA;
+        }
 
-		/**
-		 * @return array
-		 */
-		public function getWorker() {
-			return $this->WORKER_DATA;
-		}
+        /**
+         * @return array
+         */
+        public function getWorker()
+        {
+            return $this->WORKER_DATA;
+        }
 
-		/**
-		 * @return int
-		 */
-		public function getStatusCode() {
-			return $this->HTTP_STATUS;
-		}
+        /**
+         * @return int
+         */
+        public function getStatusCode()
+        {
+            return $this->HTTP_STATUS;
+        }
 
-		/**
-		 * @return string
-		 */
-		public function getStatusMessage() {
-			return $this->HTTP_MESSAGE;
-		}
+        /**
+         * @return string
+         */
+        public function getStatusMessage()
+        {
+            return $this->HTTP_MESSAGE;
+        }
 
-		/**
-		 * Guzzle Renderer
-		 * @return $this|NETCURL_DRIVER_GUZZLEHTTP
-		 * @throws \Exception
-		 */
-		private function getGuzzle() {
+        /**
+         * Guzzle Renderer
+         *
+         * @return $this|NETCURL_DRIVER_GUZZLEHTTP
+         * @throws \Exception
+         */
+        private function getGuzzle()
+        {
             /** @noinspection PhpUndefinedClassInspection */
             /** @noinspection PhpUndefinedNamespaceInspection */
             /** @var $gResponse \GuzzleHttp\Psr7\Response */
-			$gResponse          = null;
-			$this->RESPONSE_RAW = null;
-			$gBody              = null;
+            $gResponse = null;
+            $this->RESPONSE_RAW = null;
+            $gBody = null;
 
-			$this->GUZZLE_POST_OPTIONS = $this->getPostOptions();
+            $this->GUZZLE_POST_OPTIONS = $this->getPostOptions();
 
-			$gRequest = $this->getGuzzleRequest();
-			if ( ! is_null( $gRequest ) ) {
-				$this->getRenderedGuzzleResponse( $gRequest );
-			} else {
-				throw new \Exception( NETCURL_CURL_CLIENTNAME . " streams for guzzle is probably missing as I can't find the request method in the current class", $this->NETWORK->getExceptionCode( 'NETCURL_GUZZLESTREAM_MISSING' ) );
-			}
+            $gRequest = $this->getGuzzleRequest();
+            if (!is_null($gRequest)) {
+                $this->getRenderedGuzzleResponse($gRequest);
+            } else {
+                throw new \Exception(
+                    NETCURL_CURL_CLIENTNAME . " streams for guzzle is probably missing as I can't find the request method in the current class",
+                    $this->NETWORK->getExceptionCode('NETCURL_GUZZLESTREAM_MISSING')
+                );
+            }
 
-			return $this;
-		}
+            return $this;
+        }
 
         /**
          * @param $gRequest
-         *
          * @return NETCURL_DRIVER_GUZZLEHTTP
          * @throws \Exception
          */
-		private function getRenderedGuzzleResponse($gRequest) {
-			$this->WORKER_DATA  = array( 'worker' => $this->DRIVER, 'request' => $gRequest );
-			if (method_exists($gRequest, 'getHeaders')) {
-                $gHeaders           = $gRequest->getHeaders();
+        private function getRenderedGuzzleResponse($gRequest)
+        {
+            $this->WORKER_DATA = ['worker' => $this->DRIVER, 'request' => $gRequest];
+            if (method_exists($gRequest, 'getHeaders')) {
+                $gHeaders = $gRequest->getHeaders();
                 /** @noinspection PhpUndefinedMethodInspection */
-                $gBody              = $gRequest->getBody()->getContents();
+                $gBody = $gRequest->getBody()->getContents();
                 /** @noinspection PhpUndefinedMethodInspection */
-                $this->HTTP_STATUS  = $gRequest->getStatusCode();
+                $this->HTTP_STATUS = $gRequest->getStatusCode();
                 /** @noinspection PhpUndefinedMethodInspection */
                 $this->HTTP_MESSAGE = $gRequest->getReasonPhrase();
                 /** @noinspection PhpUndefinedMethodInspection */
@@ -327,223 +347,266 @@ if ( ! class_exists( 'NETCURL_DRIVER_GUZZLEHTTP', NETCURL_CLASS_EXISTS_AUTOLOAD 
                     return $this->getGuzzle();
                 }
             } else {
-                throw new \Exception( NETCURL_CURL_CLIENTNAME . "-".__FUNCTION__." exception: Guzzle driver missing proper methods like getHeaders(), can not render response", $this->NETWORK->getExceptionCode( 'NETCURL_GUZZLE_RESPONSE_EXCEPTION' ) );
+                throw new \Exception(
+                    NETCURL_CURL_CLIENTNAME . "-" . __FUNCTION__ . " exception: Guzzle driver missing proper methods like getHeaders(), can not render response",
+                    $this->NETWORK->getExceptionCode('NETCURL_GUZZLE_RESPONSE_EXCEPTION')
+                );
             }
-			return $this;
-		}
+            return $this;
+        }
 
-		/**
-		 * Render postdata
-		 */
-		private function getPostOptions() {
-			$postOptions            = array();
-			$postOptions['headers'] = array();
-			$contentType            = $this->getContentType();
+        /**
+         * Render postdata
+         */
+        private function getPostOptions()
+        {
+            $postOptions = [];
+            $postOptions['headers'] = [];
+            $contentType = $this->getContentType();
 
-			if ( $this->POST_DATA_TYPE == NETCURL_POST_DATATYPES::DATATYPE_JSON ) {
-				$postOptions['headers']['Content-Type'] = 'application/json; charset=utf-8';
-				if ( is_string( $this->POST_DATA ) ) {
-					$jsonPostData = @json_decode( $this->POST_DATA );
-					if ( is_object( $jsonPostData ) ) {
-						$this->POST_DATA = $jsonPostData;
-					}
-				}
-				$postOptions['json'] = $this->POST_DATA;
-			} else {
-				if ( is_array( $this->POST_DATA ) ) {
-					$postOptions['form_params'] = $this->POST_DATA;
-				}
-			}
+            if ($this->POST_DATA_TYPE == NETCURL_POST_DATATYPES::DATATYPE_JSON) {
+                $postOptions['headers']['Content-Type'] = 'application/json; charset=utf-8';
+                if (is_string($this->POST_DATA)) {
+                    $jsonPostData = @json_decode($this->POST_DATA);
+                    if (is_object($jsonPostData)) {
+                        $this->POST_DATA = $jsonPostData;
+                    }
+                }
+                $postOptions['json'] = $this->POST_DATA;
+            } else {
+                if (is_array($this->POST_DATA)) {
+                    $postOptions['form_params'] = $this->POST_DATA;
+                }
+            }
 
-			if ( isset( $this->POST_AUTH_DATA['Username'] ) ) {
-				$this->HAS_AUTHENTICATION = true;
-				if ( $this->POST_AUTH_DATA['Type'] == NETCURL_AUTH_TYPES::AUTHTYPE_BASIC ) {
-					$postOptions['headers']['Accept'] = '*/*';
-					if ( ! empty( $contentType ) ) {
-						$postOptions['headers']['Content-Type'] = $contentType;
-					}
-					$postOptions['auth'] = array(
-						$this->POST_AUTH_DATA['Username'],
-						$this->POST_AUTH_DATA['Password']
-					);
-				}
-			}
-			return $postOptions;
-		}
+            if (isset($this->POST_AUTH_DATA['Username'])) {
+                $this->HAS_AUTHENTICATION = true;
+                if ($this->POST_AUTH_DATA['Type'] == NETCURL_AUTH_TYPES::AUTHTYPE_BASIC) {
+                    $postOptions['headers']['Accept'] = '*/*';
+                    if (!empty($contentType)) {
+                        $postOptions['headers']['Content-Type'] = $contentType;
+                    }
+                    $postOptions['auth'] = [
+                        $this->POST_AUTH_DATA['Username'],
+                        $this->POST_AUTH_DATA['Password'],
+                    ];
+                }
+            }
+            return $postOptions;
+        }
 
-		/** @noinspection PhpUndefinedClassInspection */
+        /** @noinspection PhpUndefinedClassInspection */
         /** @noinspection PhpUndefinedNamespaceInspection */
         /**
          * @return \Psr\Http\Message\ResponseInterface
          * @throws \Exception
          */
-        private function getGuzzleRequest() {
+        private function getGuzzleRequest()
+        {
             /** @noinspection PhpUndefinedClassInspection */
             /** @noinspection PhpUndefinedNamespaceInspection */
             /** @var \Psr\Http\Message\ResponseInterface $gRequest */
-			$gRequest = null;
-			if ( method_exists( $this->DRIVER, 'request' ) ) {
-				if ( $this->POST_METHOD == NETCURL_POST_METHODS::METHOD_GET ) {
-					$gRequest = $this->DRIVER->request( 'GET', $this->REQUEST_URL, $this->GUZZLE_POST_OPTIONS );
-				} else if ( $this->POST_METHOD == NETCURL_POST_METHODS::METHOD_POST ) {
-					$gRequest = $this->DRIVER->request( 'POST', $this->REQUEST_URL, $this->GUZZLE_POST_OPTIONS );
-				} else if ( $this->POST_METHOD == NETCURL_POST_METHODS::METHOD_PUT ) {
-					$gRequest = $this->DRIVER->request( 'PUT', $this->REQUEST_URL, $this->GUZZLE_POST_OPTIONS );
-				} else if ( $this->POST_METHOD == NETCURL_POST_METHODS::METHOD_DELETE ) {
-					$gRequest = $this->DRIVER->request( 'DELETE', $this->REQUEST_URL, $this->GUZZLE_POST_OPTIONS );
-				} else if ( $this->POST_METHOD == NETCURL_POST_METHODS::METHOD_HEAD ) {
-					$gRequest = $this->DRIVER->request( 'HEAD', $this->REQUEST_URL, $this->GUZZLE_POST_OPTIONS );
-				}
-			} else {
-				throw new \Exception( NETCURL_CURL_CLIENTNAME . " streams for guzzle is probably missing as I can't find the request method in the current class", $this->NETWORK->getExceptionCode( 'NETCURL_GUZZLESTREAM_MISSING' ) );
-			}
-			return $gRequest;
-		}
+            $gRequest = null;
+            if (method_exists($this->DRIVER, 'request')) {
+                if ($this->POST_METHOD == NETCURL_POST_METHODS::METHOD_GET) {
+                    $gRequest = $this->DRIVER->request('GET', $this->REQUEST_URL, $this->GUZZLE_POST_OPTIONS);
+                } elseif ($this->POST_METHOD == NETCURL_POST_METHODS::METHOD_POST) {
+                    $gRequest = $this->DRIVER->request('POST', $this->REQUEST_URL, $this->GUZZLE_POST_OPTIONS);
+                } elseif ($this->POST_METHOD == NETCURL_POST_METHODS::METHOD_PUT) {
+                    $gRequest = $this->DRIVER->request('PUT', $this->REQUEST_URL, $this->GUZZLE_POST_OPTIONS);
+                } elseif ($this->POST_METHOD == NETCURL_POST_METHODS::METHOD_DELETE) {
+                    $gRequest = $this->DRIVER->request('DELETE', $this->REQUEST_URL, $this->GUZZLE_POST_OPTIONS);
+                } elseif ($this->POST_METHOD == NETCURL_POST_METHODS::METHOD_HEAD) {
+                    $gRequest = $this->DRIVER->request('HEAD', $this->REQUEST_URL, $this->GUZZLE_POST_OPTIONS);
+                }
+            } else {
+                throw new \Exception(
+                    NETCURL_CURL_CLIENTNAME . " streams for guzzle is probably missing as I can't find the request method in the current class",
+                    $this->NETWORK->getExceptionCode('NETCURL_GUZZLESTREAM_MISSING')
+                );
+            }
+            return $gRequest;
+        }
 
-		/**
-		 * @return string
-		 */
-		public function getRawResponse() {
-			return $this->RESPONSE_RAW;
-		}
+        /**
+         * @return string
+         */
+        public function getRawResponse()
+        {
+            return $this->RESPONSE_RAW;
+        }
 
         /**
          * @param string $url
-         * @param array  $postData
-         * @param int    $postMethod
-         * @param int    $postDataType
-         *
+         * @param array $postData
+         * @param int $postMethod
+         * @param int $postDataType
          * @return NETCURL_DRIVER_GUZZLEHTTP
          * @throws \Exception
          */
-        public function executeNetcurlRequest( $url = '', $postData = array(), $postMethod = NETCURL_POST_METHODS::METHOD_GET, $postDataType = NETCURL_POST_DATATYPES::DATATYPE_NOT_SET ) {
-			$this->REQUEST_URL    = $url;
-			$this->POST_DATA      = $postData;
-			$this->POST_METHOD    = $postMethod;
-			$this->POST_DATA_TYPE = $postDataType;
+        public function executeNetcurlRequest(
+            $url = '',
+            $postData = [],
+            $postMethod = NETCURL_POST_METHODS::METHOD_GET,
+            $postDataType = NETCURL_POST_DATATYPES::DATATYPE_NOT_SET
+        ) {
+            $this->REQUEST_URL = $url;
+            $this->POST_DATA = $postData;
+            $this->POST_METHOD = $postMethod;
+            $this->POST_DATA_TYPE = $postDataType;
 
-			$this->initializeClass();
-			if ( is_null( $this->DRIVER ) ) {
-				throw new \Exception( $this->ModuleName . " setDriverException: Classes for GuzzleHttp does not exists (DriverIdMissing: " . $this->DRIVER_ID . ")", $this->NETWORK->getExceptionCode( 'NETCURL_EXTERNAL_DRIVER_MISSING' ) );
-			}
+            $this->initializeClass();
+            if (is_null($this->DRIVER)) {
+                throw new \Exception(
+                    $this->ModuleName . " setDriverException: Classes for GuzzleHttp does not exists (DriverIdMissing: " . $this->DRIVER_ID . ")",
+                    $this->NETWORK->getExceptionCode('NETCURL_EXTERNAL_DRIVER_MISSING')
+                );
+            }
 
-			return $this->getGuzzle();
-		}
+            return $this->getGuzzle();
+        }
 
-	}
+    }
 }
-if ( ! class_exists( 'NETCURL_DRIVER_WORDPRESS', NETCURL_CLASS_EXISTS_AUTOLOAD ) && ! class_exists( 'Resursbank\RBEcomPHP\NETCURL_DRIVER_WORDPRESS', NETCURL_CLASS_EXISTS_AUTOLOAD ) ) {
-	/**
-	 * Class NETCURL_DRIVERS Network communications driver detection
-	 *
-	 * @package TorneLIB
-	 * @since 6.0.20
-	 */
-	class NETCURL_DRIVER_WORDPRESS implements NETCURL_DRIVERS_INTERFACE {
+use Exception;
 
-		/** @var MODULE_NETWORK $NETWORK */
-		private $NETWORK;
+if (!class_exists('NETCURL_DRIVER_WORDPRESS',
+        NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('TorneLIB\NETCURL_DRIVER_WORDPRESS',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)
+) {
+    /**
+     * Class NETCURL_DRIVERS Network communications driver detection
+     *
+     * @package TorneLIB
+     * @since 6.0.20
+     */
+    class NETCURL_DRIVER_WORDPRESS implements NETCURL_DRIVERS_INTERFACE
+    {
 
-		/** @var MODULE_IO */
-		private $IO;
+        /** @var MODULE_NETWORK $NETWORK */
+        private $NETWORK;
 
-		/** @var NETCURL_NETWORK_DRIVERS $DRIVER_ID */
-		private $DRIVER_ID = NETCURL_NETWORK_DRIVERS::DRIVER_WORDPRESS;
+        /** @var MODULE_IO */
+        private $IO;
 
-		/** @var array Inbound parameters in the format array, object or whatever this driver takes */
-		private $PARAMETERS = array();
+        /** @var NETCURL_NETWORK_DRIVERS $DRIVER_ID */
+        private $DRIVER_ID = NETCURL_NETWORK_DRIVERS::DRIVER_WORDPRESS;
+
+        /** @var array Inbound parameters in the format array, object or whatever this driver takes */
+        private $PARAMETERS = [];
 
         /** @noinspection PhpUndefinedClassInspection */
         /** @var \WP_Http $DRIVER When this class exists, it should be referred to WP_Http */
-		private $DRIVER;
+        private $DRIVER;
 
-		/** @var \stdClass $TRANSPORT Wordpress transport layer */
-		private $TRANSPORT;
+        /** @var \stdClass $TRANSPORT Wordpress transport layer */
+        private $TRANSPORT;
 
-		/** @var string $POST_CONTENT_TYPE Content type */
-		private $POST_CONTENT_TYPE = '';
+        /** @var string $POST_CONTENT_TYPE Content type */
+        private $POST_CONTENT_TYPE = '';
 
-		/**
-		 * @var array $POST_AUTH_DATA
-		 */
-		private $POST_AUTH_DATA = array();
+        /**
+         * @var array $POST_AUTH_DATA
+         */
+        private $POST_AUTH_DATA = [];
 
-		/** @var $WORKER_DATA */
-		private $WORKER_DATA = array();
+        /** @var $WORKER_DATA */
+        private $WORKER_DATA = [];
 
-		/** @var int $HTTP_STATUS */
-		private $HTTP_STATUS = 0;
+        /** @var int $HTTP_STATUS */
+        private $HTTP_STATUS = 0;
 
-		/** @var string $HTTP_MESSAGE */
-		private $HTTP_MESSAGE = '';
+        /** @var string $HTTP_MESSAGE */
+        private $HTTP_MESSAGE = '';
 
-		/** @var string $RESPONSE_RAW */
-		private $RESPONSE_RAW = '';
+        /** @var string $RESPONSE_RAW */
+        private $RESPONSE_RAW = '';
 
-		/** @var string $REQUEST_URL */
-		private $REQUEST_URL = '';
+        /** @var string $REQUEST_URL */
+        private $REQUEST_URL = '';
 
-		/** @var NETCURL_POST_METHODS */
-		private $POST_METHOD = NETCURL_POST_METHODS::METHOD_GET;
+        /** @var NETCURL_POST_METHODS */
+        private $POST_METHOD = NETCURL_POST_METHODS::METHOD_GET;
 
-		/** @var array $POST_DATA ... or string, or object, etc */
-		private $POST_DATA;
+        /** @var array $POST_DATA ... or string, or object, etc */
+        private $POST_DATA;
 
-		/** @var NETCURL_POST_DATATYPES */
-		private $POST_DATA_TYPE = NETCURL_POST_DATATYPES::DATATYPE_NOT_SET;
+        /** @var NETCURL_POST_DATATYPES */
+        private $POST_DATA_TYPE = NETCURL_POST_DATATYPES::DATATYPE_NOT_SET;
 
+        /** @var */
+        private $WP_PARAMS;
 
-		public function __construct( $parameters = null ) {
-			$this->NETWORK = new MODULE_NETWORK();
-			$this->IO      = new MODULE_IO();
-		}
+        /**
+         * NETCURL_DRIVER_WORDPRESS constructor.
+         * @param null $parameters
+         */
+        public function __construct($parameters = null)
+        {
+            $this->WP_PARAMS = $parameters;
+            $this->NETWORK = new MODULE_NETWORK();
+            $this->IO = new MODULE_IO();
+        }
 
-		public function setDriverId( $driverId = NETCURL_NETWORK_DRIVERS::DRIVER_NOT_SET ) {
-			$this->DRIVER_ID = $driverId;
-		}
+        public function setDriverId($driverId = NETCURL_NETWORK_DRIVERS::DRIVER_NOT_SET)
+        {
+            $this->DRIVER_ID = $driverId;
+        }
 
-		public function setParameters( $parameters = array() ) {
-			$this->PARAMETERS = $parameters;
-		}
+        public function setParameters($parameters = [])
+        {
+            $this->PARAMETERS = $parameters;
+        }
 
-		public function setContentType( $setContentTypeString = 'application/json; charset=utf-8' ) {
-			$this->POST_CONTENT_TYPE = $setContentTypeString;
-		}
+        public function setContentType($setContentTypeString = 'application/json; charset=utf-8')
+        {
+            $this->POST_CONTENT_TYPE = $setContentTypeString;
+        }
 
-		public function getContentType() {
-			return $this->POST_CONTENT_TYPE;
-		}
+        public function getContentType()
+        {
+            return $this->POST_CONTENT_TYPE;
+        }
 
-		/**
-		 * @param null $Username
-		 * @param null $Password
-		 * @param int $AuthType
-		 */
-		public function setAuthentication( $Username = null, $Password = null, $AuthType = NETCURL_AUTH_TYPES::AUTHTYPE_BASIC ) {
-			$this->POST_AUTH_DATA['Username'] = $Username;
-			$this->POST_AUTH_DATA['Password'] = $Password;
-			$this->POST_AUTH_DATA['Type']     = $AuthType;
-		}
+        /**
+         * @param null $Username
+         * @param null $Password
+         * @param int $AuthType
+         */
+        public function setAuthentication(
+            $Username = null,
+            $Password = null,
+            $AuthType = NETCURL_AUTH_TYPES::AUTHTYPE_BASIC
+        ) {
+            $this->POST_AUTH_DATA['Username'] = $Username;
+            $this->POST_AUTH_DATA['Password'] = $Password;
+            $this->POST_AUTH_DATA['Type'] = $AuthType;
+        }
 
-		public function getAuthentication() {
-			return $this->POST_AUTH_DATA;
-		}
+        public function getAuthentication()
+        {
+            return $this->POST_AUTH_DATA;
+        }
 
-		public function getWorker() {
-			return $this->WORKER_DATA;
-		}
+        public function getWorker()
+        {
+            return $this->WORKER_DATA;
+        }
 
-		public function getRawResponse() {
-			return $this->RESPONSE_RAW;
-		}
+        public function getRawResponse()
+        {
+            return $this->RESPONSE_RAW;
+        }
 
-		public function getStatusCode() {
-			return $this->HTTP_STATUS;
-		}
+        public function getStatusCode()
+        {
+            return $this->HTTP_STATUS;
+        }
 
-		public function getStatusMessage() {
-			return $this->HTTP_MESSAGE;
-		}
+        public function getStatusMessage()
+        {
+            return $this->HTTP_MESSAGE;
+        }
 
         /**
          * @throws \Exception
@@ -553,10 +616,15 @@ if ( ! class_exists( 'NETCURL_DRIVER_WORDPRESS', NETCURL_CLASS_EXISTS_AUTOLOAD )
             /** @noinspection PhpUndefinedClassInspection */
             $this->DRIVER = new \WP_Http();
             if (method_exists($this->DRIVER, '_get_first_available_transport')) {
-                $this->TRANSPORT = $this->DRIVER->_get_first_available_transport(array());
+                $this->TRANSPORT = $this->DRIVER->_get_first_available_transport([]);
             }
             if (empty($this->TRANSPORT)) {
-                throw new \Exception(NETCURL_CURL_CLIENTNAME . " " . __FUNCTION__ . " exception: Could not find any available transport for WordPress Driver",
+                throw new Exception(
+                    sprintf(
+                        '%s %s exception: Could not find any available transport for WordPress Driver',
+                        NETCURL_CURL_CLIENTNAME,
+                        __FUNCTION__
+                    ),
                     $this->NETWORK->getExceptionCode('NETCURL_WP_TRANSPORT_ERROR'));
             }
         }
@@ -565,31 +633,53 @@ if ( ! class_exists( 'NETCURL_DRIVER_WORDPRESS', NETCURL_CLASS_EXISTS_AUTOLOAD )
          * @return $this
          * @throws \Exception
          */
-		private function getWp() {
-			$postThis = array( 'body' => $this->POST_DATA );
-			if ( $this->POST_DATA_TYPE == NETCURL_POST_DATATYPES::DATATYPE_JSON ) {
-				$postThis['headers'] = array( "content-type" => "application-json" );
-				$postThis['body']    = $this->IO->renderJson( $this->POST_DATA );
-			}
+        private function getWp()
+        {
+            $postThis = ['body' => $this->POST_DATA];
+            $postThis['headers'] = [];
+            $authData = $this->getAuthentication();
+            $hasAuthentication = false;
+            if (isset($authData['Password']) && !empty($authData['Password'])) {
+                $hasAuthentication = true;
+                $wpAuthHeader = [
+                    'Authorization' => sprintf(
+                        'Basic %s',
+                        base64_encode(sprintf('%s:%s', $authData['Username'], $authData['Password']))
+                    ),
+                ];
 
-			$wpResponse = $this->getWpResponse($postThis);
+                $postThis['headers'] = array_merge($postThis['headers'], $wpAuthHeader);
+            }
+
+            if ($this->POST_DATA_TYPE == NETCURL_POST_DATATYPES::DATATYPE_JSON) {
+                $postThis['headers']['content-type'] = 'application-json';
+                $postThis['body'] = $this->IO->renderJson($this->POST_DATA);
+            }
+
+            $wpResponse = $this->getWpResponse($postThis);
             /** @noinspection PhpUndefinedClassInspection */
 
             /** @var $httpResponse \WP_HTTP_Requests_Response */
-			$httpResponse = $wpResponse['http_response'];
+            $httpResponse = $wpResponse['http_response'];
 
-			if (method_exists($httpResponse, 'get_response_object')) {
+            if (method_exists($httpResponse, 'get_response_object')) {
                 /** @noinspection PhpUndefinedClassInspection */
                 /** @var $httpReponseObject \Requests_Response */
                 $httpResponseObject = $httpResponse->get_response_object();
                 $this->RESPONSE_RAW = isset($httpResponseObject->raw) ? $httpResponseObject->raw : null;
             } else {
-                throw new \Exception(NETCURL_CURL_CLIENTNAME . " " . __FUNCTION__ . " exception: Wordpress driver seem to miss get_response_object",
-                    $this->NETWORK->getExceptionCode('NETCURL_WP_REQUEST_ERROR'));
+                throw new Exception(
+                    sprintf(
+                        '%s %s exception: Wordpress driver seem to miss get_response_object',
+                        NETCURL_CURL_CLIENTNAME,
+                        __FUNCTION__
+                    ),
+                    $this->NETWORK->getExceptionCode('NETCURL_WP_REQUEST_ERROR')
+                );
             }
 
-			return $this;
-		}
+            return $this;
+        }
 
         /**
          * @param $postData
@@ -622,24 +712,29 @@ if ( ! class_exists( 'NETCURL_DRIVER_WORDPRESS', NETCURL_CLASS_EXISTS_AUTOLOAD )
 
         /**
          * @param string $url
-         * @param array  $postData
-         * @param int    $postMethod
-         * @param int    $postDataType
+         * @param array $postData
+         * @param int $postMethod
+         * @param int $postDataType
          *
          * @return NETCURL_DRIVER_WORDPRESS
          * @throws \Exception
          */
-		public function executeNetcurlRequest( $url = '', $postData = array(), $postMethod = NETCURL_POST_METHODS::METHOD_GET, $postDataType = NETCURL_POST_DATATYPES::DATATYPE_NOT_SET ) {
-			$this->REQUEST_URL    = $url;
-			$this->POST_DATA      = $postData;
-			$this->POST_METHOD    = $postMethod;
-			$this->POST_DATA_TYPE = $postDataType;
+        public function executeNetcurlRequest(
+            $url = '',
+            $postData = [],
+            $postMethod = NETCURL_POST_METHODS::METHOD_GET,
+            $postDataType = NETCURL_POST_DATATYPES::DATATYPE_NOT_SET
+        ) {
+            $this->REQUEST_URL = $url;
+            $this->POST_DATA = $postData;
+            $this->POST_METHOD = $postMethod;
+            $this->POST_DATA_TYPE = $postDataType;
 
-			$this->initializeClass();
+            $this->initializeClass();
 
-			return $this->getWp();
-		}
-	}
+            return $this->getWp();
+        }
+    }
 }
 if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
     !class_exists('TorneLIB\NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD)
@@ -648,6 +743,7 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
      * Class NETCURL_PARSER Network communications driver detection
      *
      * @package TorneLIB
+     * @deprecated netcurl 6.1 is rewritten without the guessing games.
      */
     class NETCURL_PARSER
     {
@@ -681,8 +777,7 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * @param string $htmlContent
          * @param string $contentType
          * @param array $flags
-         *
-         * @throws \Exception
+         * @throws Exception
          * @since 6.0.0
          */
         public function __construct($htmlContent = '', $contentType = '', $flags = [])
@@ -704,7 +799,6 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param bool $returnAsIs
-         *
          * @return null|string
          * @since 6.0.0
          */
@@ -716,7 +810,7 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
                 }
 
                 return $this->getNull($this->IO->getFromJson($this->PARSE_CONTAINER));
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
             }
 
             return null;
@@ -726,7 +820,6 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Enable/disable the parsing of Dom content
          *
          * @param bool $domContentProhibit
-         *
          * @since 6.0.3
          */
         public function setDomContentParser($domContentProhibit = false)
@@ -747,7 +840,6 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param bool $returnAsIs
-         *
          * @return null|string
          * @since 6.0.0
          */
@@ -759,7 +851,7 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
                 }
 
                 return $this->getNull($this->IO->getFromXml($this->PARSE_CONTAINER));
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
             }
 
             return null;
@@ -767,7 +859,6 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param bool $returnAsIs
-         *
          * @return null|string
          * @since 6.0.0
          */
@@ -779,7 +870,7 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
                 }
 
                 return $this->getNull($this->IO->getFromYaml($this->PARSE_CONTAINER));
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
             }
 
             return null;
@@ -787,27 +878,84 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param bool $returnAsIs
-         *
          * @return null|string
          * @since 6.0.0
+         * @deprecated This function is not supported in version 6.1.0 and above.
          */
         public function getContentBySerial($returnAsIs = false)
         {
+            $return = null;
+
             try {
                 if ($returnAsIs) {
-                    return $this->IO->getFromSerializerInternal($this->PARSE_CONTAINER);
+                    return $this->getFromSerializerInternal($this->PARSE_CONTAINER);
                 }
 
-                return $this->getNull($this->IO->getFromSerializerInternal($this->PARSE_CONTAINER));
-            } catch (\Exception $e) {
+                return $this->getNull($this->getFromSerializerInternal($this->PARSE_CONTAINER));
+            } catch (Exception $e) {
             }
 
-            return null;
+            return $return;
+        }
+
+        /**
+         * Return serialized-by-php content. Not supported in the IO-package from v6.1 so we're taking it home.
+         *
+         * @param string $serialInput
+         * @param bool $assoc
+         * @return mixed|null
+         * @throws Exception
+         * @since 6.0.26
+         * @deprecated This function is not supported in version 6.1.0 and above.
+         */
+        public function getFromSerializerInternal($serialInput = '', $assoc = false)
+        {
+            // Skip this if there's nothing to serialize, as some error handlers might pick up errors even if we
+            // suppress them.
+            $trimData = trim($serialInput);
+            if (empty($trimData)) {
+                return null;
+            }
+            if (!$assoc) {
+                return @unserialize($serialInput);
+            } else {
+                return $this->arrayObjectToStdClass(@unserialize($serialInput));
+            }
+        }
+
+        /**
+         * @param array $objectArray
+         * @return mixed|null
+         * @throws Exception
+         */
+        public function arrayObjectToStdClass($objectArray = [])
+        {
+            /**
+             * If json_decode and json_encode exists as function, do it the simple way.
+             * http://php.net/manual/en/function.json-encode.php
+             */
+            if (function_exists('json_decode') &&
+                function_exists('json_encode')) {
+                return json_decode(json_encode($objectArray));
+            }
+            $newArray = null;
+            if (is_array($objectArray) || is_object($objectArray)) {
+                foreach ($objectArray as $itemKey => $itemValue) {
+                    if (is_array($itemValue)) {
+                        $newArray[$itemKey] = (array)$this->arrayObjectToStdClass($itemValue);
+                    } elseif (is_object($itemValue)) {
+                        $newArray[$itemKey] = (object)(array)$this->arrayObjectToStdClass($itemValue);
+                    } else {
+                        $newArray[$itemKey] = $itemValue;
+                    }
+                }
+            }
+
+            return $newArray;
         }
 
         /**
          * @param string $testData
-         *
          * @return null|string
          * @since 6.0.0
          */
@@ -822,7 +970,7 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @return array|null|string
-         * @throws \Exception
+         * @throws Exception
          * @since 6.0.0
          */
         private function getContentByTest()
@@ -831,24 +979,14 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
             if (!is_null($respond = $this->getContentByJson())) {
                 $returnNonNullValue = $respond;
-            } else {
-                if (!is_null($respond = $this->getContentBySerial())) {
-                    $returnNonNullValue = $respond;
-                } else {
-                    if (!is_null($respond = $this->getContentByXml())) {
-                        $returnNonNullValue = $respond;
-                    } else {
-                        if (!is_null($respond = $this->getContentByYaml())) {
-                            $returnNonNullValue = $respond;
-                        } else {
-                            if (!$this->NETCURL_PROHIBIT_DOMCONTENT_PARSE &&
-                                !is_null($response = $this->getDomElements())
-                            ) {
-                                return $response;
-                            }
-                        }
-                    }
-                }
+            } elseif (!is_null($respond = $this->getContentBySerial())) {
+                $returnNonNullValue = $respond;
+            } elseif (!is_null($respond = $this->getContentByXml())) {
+                $returnNonNullValue = $respond;
+            } elseif (!is_null($respond = $this->getContentByYaml())) {
+                $returnNonNullValue = $respond;
+            } elseif (!$this->NETCURL_PROHIBIT_DOMCONTENT_PARSE && !is_null($response = $this->getDomElements())) {
+                return $response;
             }
 
             return $returnNonNullValue;
@@ -860,7 +998,6 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          *
          * @param array $childNode
          * @param string $getAs
-         *
          * @return array
          * @since 6.0.0
          */
@@ -1002,7 +1139,8 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 }
 
 if (!class_exists('NETCURL_DRIVER_CONTROLLER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\NETCURL_DRIVER_CONTROLLER', NETCURL_CLASS_EXISTS_AUTOLOAD)) {
+    !class_exists('TorneLIB\NETCURL_DRIVER_CONTROLLER', NETCURL_CLASS_EXISTS_AUTOLOAD)
+) {
     /**
      * Class NETCURL_DRIVERS Network communications driver detection
      *
@@ -1183,7 +1321,6 @@ if (!class_exists('NETCURL_DRIVER_CONTROLLER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Get status of disabled function
          *
          * @param string $functionName
-         *
          * @return bool
          */
         public function getIsDisabled($functionName = '')
@@ -1216,7 +1353,6 @@ if (!class_exists('NETCURL_DRIVER_CONTROLLER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * @param int $driverId
          * @param array $parameters
          * @param null $ownClass Defines own class to use
-         *
          * @return NETCURL_DRIVERS_INTERFACE
          */
         private function getDriverByClass(
@@ -1283,7 +1419,6 @@ if (!class_exists('NETCURL_DRIVER_CONTROLLER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param int $driverNameConstans
-         *
          * @return bool
          */
         public function getIsDriver($driverNameConstans = NETCURL_NETWORK_DRIVERS::DRIVER_CURL)
@@ -1301,7 +1436,6 @@ if (!class_exists('NETCURL_DRIVER_CONTROLLER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * @param int $netDriver
          * @param null $parameters
          * @param null $ownClass
-         *
          * @return int|NETCURL_DRIVERS_INTERFACE
          * @throws \Exception
          */
@@ -1319,7 +1453,6 @@ if (!class_exists('NETCURL_DRIVER_CONTROLLER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * @param int $netDriver
          * @param null $parameters
          * @param null $ownClass
-         *
          * @return int|NETCURL_DRIVERS_INTERFACE
          * @throws \Exception
          */
@@ -1385,7 +1518,6 @@ if (!class_exists('NETCURL_DRIVER_CONTROLLER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Check if SOAP exists in system
          *
          * @param bool $extendedSearch Extend search for SOAP (unsafe method, looking for constants defined as SOAP_*)
-         *
          * @return bool
          */
         public function hasSoap($extendedSearch = false)
@@ -1415,10 +1547,8 @@ if (!class_exists('NETCURL_DRIVER_CONTROLLER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 }
 
 if (!class_exists('MODULE_SSL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\MODULE_SSL',
-        NETCURL_CLASS_EXISTS_AUTOLOAD)
+    !class_exists('TorneLIB\MODULE_SSL', NETCURL_CLASS_EXISTS_AUTOLOAD)
 ) {
-
     if (!defined('NETCURL_SSL_RELEASE')) {
         define('NETCURL_SSL_RELEASE', '6.0.0');
     }
@@ -1454,6 +1584,9 @@ if (!class_exists('MODULE_SSL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
         /** @var MODULE_NETWORK $NETWORK */
         private $NETWORK;
 
+        /**
+         * @var array Options.
+         */
         private $sslopt = [];
 
         /**
@@ -1510,6 +1643,7 @@ if (!class_exists('MODULE_SSL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Returns true if no errors occured in the control
          *
          * @return bool
+         * @deprecated Removed from 6.1
          */
         public static function hasSsl()
         {
@@ -1525,9 +1659,9 @@ if (!class_exists('MODULE_SSL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          *
          * @param bool $checkSafeMode If true, we will also check if safe_mode is active
          * @param bool $mockSafeMode If true, NetCurl will pretend safe_mode is true (for testing)
-         *
          * @return bool If true, PHP is in secure mode and won't allow things like follow-redirects and setting up different paths for certificates, etc
          * @since 6.0.20
+         * @deprecated Replaced with getSecureMode in 6.1
          */
         public function getIsSecure($checkSafeMode = true, $mockSafeMode = false)
         {
@@ -1551,8 +1685,8 @@ if (!class_exists('MODULE_SSL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Get safe_mode status (mockable)
          *
          * @param bool $mockedSafeMode When active, this always returns true
-         *
          * @return bool
+         * @deprecated Moved to external security library.
          */
         private function getSafeMode($mockedSafeMode = false)
         {
@@ -1574,6 +1708,7 @@ if (!class_exists('MODULE_SSL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * @param bool $forceChecking
          * @return string
          * @since 6.0.0
+         * @deprecated Removed in 6.1 - context will be handed over to the developer.
          */
         public function getSslCertificateBundle($forceChecking = false)
         {
@@ -1624,6 +1759,7 @@ if (!class_exists('MODULE_SSL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * @return bool
          * @throws \Exception
          * @since 6.0.20
+         * @deprecated Removed in 6.1 - context will be handed over to the developer.
          */
         public function setPemLocation($pemLocationData = [])
         {
@@ -1654,6 +1790,10 @@ if (!class_exists('MODULE_SSL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
             return true;
         }
 
+        /**
+         * @return array
+         * @deprecated Removed in 6.1 - context will be handed over to the developer.
+         */
         public function getPemLocations()
         {
             return $this->sslPemLocations;
@@ -1664,8 +1804,8 @@ if (!class_exists('MODULE_SSL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          *
          * @param bool $strictCertificateVerification
          * @param bool $prohibitSelfSigned This only covers streams
-         *
          * @since 6.0.0
+         * @deprecated Input variables will change in 6.1
          */
         public function setStrictVerification($strictCertificateVerification = true, $prohibitSelfSigned = true)
         {
@@ -1678,6 +1818,7 @@ if (!class_exists('MODULE_SSL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          *
          * @return bool
          * @since 6.0.0
+         * @deprecated Replaced by getContext in 6.1
          */
         public function getStrictVerification()
         {
@@ -1685,8 +1826,8 @@ if (!class_exists('MODULE_SSL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
         }
 
         /**
-         *
          * @return bool|null
+         * @deprecated Removed from 6.1
          */
         public function getStrictSelfSignedVerification()
         {
@@ -1700,8 +1841,8 @@ if (!class_exists('MODULE_SSL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Replacement for allowSslUnverified setup
          *
          * @param bool $sslFailoverEnabled *
-         *
          * @since 6.0.0
+         * @deprecated Removed from 6.1
          */
         public function setStrictFallback($sslFailoverEnabled = false)
         {
@@ -1711,6 +1852,7 @@ if (!class_exists('MODULE_SSL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
         /**
          * @return bool
          * @since 6.0.0
+         * @deprecated Removed from 6.1
          */
         public function getStrictFallback()
         {
@@ -1721,8 +1863,8 @@ if (!class_exists('MODULE_SSL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Prepare context stream for SSL
          *
          * @return array
-         *
          * @since 6.0.0
+         * @deprecated Rewritten in 6.1
          */
         public function getSslStreamContext()
         {
@@ -1751,6 +1893,7 @@ if (!class_exists('MODULE_SSL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          *
          * @return array
          * @since 6.0.0
+         * @deprecated Removed from 6.1
          */
         public function getSslStream($optionsArray = [], $addonContextData = [])
         {
@@ -1778,425 +1921,481 @@ if (!class_exists('MODULE_SSL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
     }
 }
 
-if ( ! defined( 'NETCURL_NETBITS_RELEASE' ) ) {
-	define( 'NETCURL_NETBITS_RELEASE', '6.0.1' );
+if (!defined('NETCURL_NETBITS_RELEASE')) {
+    define('NETCURL_NETBITS_RELEASE', '6.0.1');
 }
-if ( ! defined( 'NETCURL_NETBITS_MODIFY' ) ) {
-	define( 'NETCURL_NETBITS_MODIFY', '20180320' );
+if (!defined('NETCURL_NETBITS_MODIFY')) {
+    define('NETCURL_NETBITS_MODIFY', '20180320');
 }
 
 // Check if there is a packagist release already loaded, since this network standalone release is deprecated as of 20180320.
-if ( ! class_exists( 'MODULE_NETBITS', NETCURL_CLASS_EXISTS_AUTOLOAD ) && ! class_exists( 'Resursbank\RBEcomPHP\MODULE_NETBITS', NETCURL_CLASS_EXISTS_AUTOLOAD ) ) {
-	/**
-	 * Class TorneLIB_NetBits Netbits Library for calculations with bitmasks
-	 *
-	 * @package TorneLIB
-	 * @version 6.0.1
-	 */
-	class MODULE_NETBITS {
-		/** @var array Standard bitmask setup */
-		private $BIT_SETUP;
-		private $maxBits = 8;
+if (!class_exists('MODULE_NETBITS', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
+    !class_exists('TorneLIB\MODULE_NETBITS', NETCURL_CLASS_EXISTS_AUTOLOAD)
+) {
+    /**
+     * Class TorneLIB_NetBits Netbits Library for calculations with bitmasks
+     *
+     * @package TorneLIB
+     * @version 6.0.1
+     * @deprecated Use tornevall/tornelib-php-bitmask instead!
+     */
+    class MODULE_NETBITS
+    {
+        /** @var array Standard bitmask setup */
+        private $BIT_SETUP;
+        private $maxBits = 8;
 
-		function __construct( $bitStructure = array() ) {
-			$this->BIT_SETUP = array(
-				'OFF'     => 0,
-				'BIT_1'   => 1,
-				'BIT_2'   => 2,
-				'BIT_4'   => 4,
-				'BIT_8'   => 8,
-				'BIT_16'  => 16,
-				'BIT_32'  => 32,
-				'BIT_64'  => 64,
-				'BIT_128' => 128
-			);
-			if ( is_array($bitStructure) && count( $bitStructure ) ) {
-				$this->BIT_SETUP = $this->validateBitStructure( $bitStructure );
-			}
-		}
+        function __construct($bitStructure = [])
+        {
+            $this->BIT_SETUP = [
+                'OFF' => 0,
+                'BIT_1' => 1,
+                'BIT_2' => 2,
+                'BIT_4' => 4,
+                'BIT_8' => 8,
+                'BIT_16' => 16,
+                'BIT_32' => 32,
+                'BIT_64' => 64,
+                'BIT_128' => 128,
+            ];
+            if (is_array($bitStructure) && count($bitStructure)) {
+                $this->BIT_SETUP = $this->validateBitStructure($bitStructure);
+            }
+        }
 
-		public function setMaxBits( $maxBits = 8 ) {
-			$this->maxBits = $maxBits;
-			$this->validateBitStructure( $maxBits );
-		}
+        public function setMaxBits($maxBits = 8)
+        {
+            $this->maxBits = $maxBits;
+            $this->validateBitStructure($maxBits);
+        }
 
-		public function getMaxBits() {
-			return $this->maxBits;
-		}
+        public function getMaxBits()
+        {
+            return $this->maxBits;
+        }
 
-		private function getRequiredBits( $maxBits = 8 ) {
-			$requireArray = array();
-			if ( $this->maxBits != $maxBits ) {
-				$maxBits = $this->maxBits;
-			}
-			for ( $curBit = 0; $curBit <= $maxBits; $curBit ++ ) {
-				$requireArray[] = (int) pow( 2, $curBit );
-			}
+        private function getRequiredBits($maxBits = 8)
+        {
+            $requireArray = [];
+            if ($this->maxBits != $maxBits) {
+                $maxBits = $this->maxBits;
+            }
+            for ($curBit = 0; $curBit <= $maxBits; $curBit++) {
+                $requireArray[] = (int)pow(2, $curBit);
+            }
 
-			return $requireArray;
-		}
+            return $requireArray;
+        }
 
-		private function validateBitStructure( $bitStructure = array() ) {
-			if ( is_numeric( $bitStructure ) ) {
-				$newBitStructure = array(
-					'OFF' => 0
-				);
-				for ( $bitIndex = 0; $bitIndex <= $bitStructure; $bitIndex ++ ) {
-					$powIndex                              = pow( 2, $bitIndex );
-					$newBitStructure[ "BIT_" . $powIndex ] = $powIndex;
-				}
-				$bitStructure    = $newBitStructure;
-				$this->BIT_SETUP = $bitStructure;
-			}
-			$require                  = $this->getRequiredBits( count( $bitStructure ) );
-			$validated                = array();
-			$newValidatedBitStructure = array();
-			$valueKeys                = array();
-			foreach ( $bitStructure as $key => $value ) {
-				if ( in_array( $value, $require ) ) {
-					$newValidatedBitStructure[ $key ] = $value;
-					$valueKeys[ $value ]              = $key;
-					$validated[]                      = $value;
-				}
-			}
-			foreach ( $require as $bitIndex ) {
-				if ( ! in_array( $bitIndex, $validated ) ) {
-					if ( $bitIndex == "0" ) {
-						$newValidatedBitStructure["OFF"] = $bitIndex;
-					} else {
-						$bitIdentificationName                              = "BIT_" . $bitIndex;
-						$newValidatedBitStructure[ $bitIdentificationName ] = $bitIndex;
-					}
-				} else {
-					if ( isset( $valueKeys[ $bitIndex ] ) && ! empty( $valueKeys[ $bitIndex ] ) ) {
-						$bitIdentificationName                              = $valueKeys[ $bitIndex ];
-						$newValidatedBitStructure[ $bitIdentificationName ] = $bitIndex;
-					}
-				}
-			}
-			asort( $newValidatedBitStructure );
-			$this->BIT_SETUP = $newValidatedBitStructure;
+        private function validateBitStructure($bitStructure = [])
+        {
+            if (is_numeric($bitStructure)) {
+                $newBitStructure = [
+                    'OFF' => 0,
+                ];
+                for ($bitIndex = 0; $bitIndex <= $bitStructure; $bitIndex++) {
+                    $powIndex = pow(2, $bitIndex);
+                    $newBitStructure["BIT_" . $powIndex] = $powIndex;
+                }
+                $bitStructure = $newBitStructure;
+                $this->BIT_SETUP = $bitStructure;
+            }
+            $require = $this->getRequiredBits(count($bitStructure));
+            $validated = [];
+            $newValidatedBitStructure = [];
+            $valueKeys = [];
+            foreach ($bitStructure as $key => $value) {
+                if (in_array($value, $require)) {
+                    $newValidatedBitStructure[$key] = $value;
+                    $valueKeys[$value] = $key;
+                    $validated[] = $value;
+                }
+            }
+            foreach ($require as $bitIndex) {
+                if (!in_array($bitIndex, $validated)) {
+                    if ($bitIndex == "0") {
+                        $newValidatedBitStructure["OFF"] = $bitIndex;
+                    } else {
+                        $bitIdentificationName = "BIT_" . $bitIndex;
+                        $newValidatedBitStructure[$bitIdentificationName] = $bitIndex;
+                    }
+                } else {
+                    if (isset($valueKeys[$bitIndex]) && !empty($valueKeys[$bitIndex])) {
+                        $bitIdentificationName = $valueKeys[$bitIndex];
+                        $newValidatedBitStructure[$bitIdentificationName] = $bitIndex;
+                    }
+                }
+            }
+            asort($newValidatedBitStructure);
+            $this->BIT_SETUP = $newValidatedBitStructure;
 
-			return $newValidatedBitStructure;
-		}
+            return $newValidatedBitStructure;
+        }
 
-		public function setBitStructure( $bitStructure = array() ) {
-			$this->validateBitStructure( $bitStructure );
-		}
+        public function setBitStructure($bitStructure = [])
+        {
+            $this->validateBitStructure($bitStructure);
+        }
 
-		public function getBitStructure() {
-			return $this->BIT_SETUP;
-		}
+        public function getBitStructure()
+        {
+            return $this->BIT_SETUP;
+        }
 
-		/**
-		 * Finds out if a bitmasked value is located in a bitarray
-		 *
-		 * @param int $requestedExistingBit
-		 * @param int $requestedBitSum
-		 *
-		 * @return bool
-		 */
-		public function isBit( $requestedExistingBit = 0, $requestedBitSum = 0 ) {
-			$return = false;
-			if ( is_array( $requestedExistingBit ) ) {
-				foreach ( $requestedExistingBit as $bitKey ) {
-					if ( ! $this->isBit( $bitKey, $requestedBitSum ) ) {
-						return false;
-					}
-				}
+        /**
+         * Finds out if a bitmasked value is located in a bitarray
+         *
+         * @param int $requestedExistingBit
+         * @param int $requestedBitSum
+         * @return bool
+         */
+        public function isBit($requestedExistingBit = 0, $requestedBitSum = 0)
+        {
+            $return = false;
+            if (is_array($requestedExistingBit)) {
+                foreach ($requestedExistingBit as $bitKey) {
+                    if (!$this->isBit($bitKey, $requestedBitSum)) {
+                        return false;
+                    }
+                }
 
-				return true;
-			}
+                return true;
+            }
 
-			// Solution that works with unlimited bits
-			for ( $bitCount = 0; $bitCount < count( $this->getBitStructure() ); $bitCount ++ ) {
-				if ( $requestedBitSum & pow( 2, $bitCount ) ) {
-					if ( $requestedExistingBit == pow( 2, $bitCount ) ) {
-						$return = true;
-					}
-				}
-			}
+            // Solution that works with unlimited bits
+            for ($bitCount = 0; $bitCount < count($this->getBitStructure()); $bitCount++) {
+                if ($requestedBitSum & pow(2, $bitCount)) {
+                    if ($requestedExistingBit == pow(2, $bitCount)) {
+                        $return = true;
+                    }
+                }
+            }
 
-			// Solution that works with bits up to 8
-			/*
-			$sum = 0;
-			preg_match_all("/\d/", sprintf("%08d", decbin( $requestedBitSum)), $bitArray);
-			for ($bitCount = count($bitArray[0]); $bitCount >= 0; $bitCount--) {
-				if (isset($bitArray[0][$bitCount])) {
-					if ( $requestedBitSum & pow(2, $bitCount)) {
-						if ( $requestedExistingBit == pow(2, $bitCount)) {
-							$return = true;
-						}
-					}
-				}
-			}
-			*/
+            // Solution that works with bits up to 8
+            /*
+            $sum = 0;
+            preg_match_all("/\d/", sprintf("%08d", decbin( $requestedBitSum)), $bitArray);
+            for ($bitCount = count($bitArray[0]); $bitCount >= 0; $bitCount--) {
+                if (isset($bitArray[0][$bitCount])) {
+                    if ( $requestedBitSum & pow(2, $bitCount)) {
+                        if ( $requestedExistingBit == pow(2, $bitCount)) {
+                            $return = true;
+                        }
+                    }
+                }
+            }
+            */
 
-			return $return;
-		}
+            return $return;
+        }
 
-		/**
-		 * Get active bits in an array
-		 *
-		 * @param int $bitValue
-		 *
-		 * @return array
-		 */
-		public function getBitArray( $bitValue = 0 ) {
-			$returnBitList = array();
-			foreach ( $this->BIT_SETUP as $key => $value ) {
-				if ( $this->isBit( $value, $bitValue ) ) {
-					$returnBitList[] = $key;
-				}
-			}
+        /**
+         * Get active bits in an array
+         *
+         * @param int $bitValue
+         * @return array
+         */
+        public function getBitArray($bitValue = 0)
+        {
+            $returnBitList = [];
+            foreach ($this->BIT_SETUP as $key => $value) {
+                if ($this->isBit($value, $bitValue)) {
+                    $returnBitList[] = $key;
+                }
+            }
 
-			return $returnBitList;
-		}
-
-	}
+            return $returnBitList;
+        }
+    }
 }
 
-if ( ! class_exists( 'TorneLIB_NetBits', NETCURL_CLASS_EXISTS_AUTOLOAD ) && ! class_exists( 'Resursbank\RBEcomPHP\TorneLIB_NetBits', NETCURL_CLASS_EXISTS_AUTOLOAD ) ) {
-	/**
-	 * Class TorneLIB_NetBits
-	 *
-	 * @package    TorneLIB
-	 * @deprecated Use MODULE_NETBITS
-	 */
-	class TorneLIB_NetBits extends MODULE_NETBITS {
-		function __construct( array $bitStructure = array() ) {
-			parent::__construct( $bitStructure );
-		}
-	}
+if (!class_exists('TorneLIB_NetBits', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
+    !class_exists('TorneLIB\TorneLIB_NetBits', NETCURL_CLASS_EXISTS_AUTOLOAD)
+) {
+    /**
+     * Class TorneLIB_NetBits
+     *
+     * @package    TorneLIB
+     * @deprecated Use MODULE_NETBITS
+     */
+    class TorneLIB_NetBits extends MODULE_NETBITS
+    {
+        function __construct(array $bitStructure = [])
+        {
+            parent::__construct($bitStructure);
+        }
+    }
 }
 
-if ( ! class_exists( 'TorneLIB_NETCURL_EXCEPTIONS', NETCURL_CLASS_EXISTS_AUTOLOAD ) && ! class_exists( 'Resursbank\RBEcomPHP\TorneLIB_NETCURL_EXCEPTIONS', NETCURL_CLASS_EXISTS_AUTOLOAD ) ) {
-	/**
-	 * Class NETCURL_EXCEPTIONS
-	 *
-	 * @package TorneLIB
-	 */
-	abstract class NETCURL_EXCEPTIONS {
-		const NETCURL_NO_ERROR = 0;
-		const NETCURL_EXCEPTION_IT_WORKS = 1;
+if (!class_exists('TorneLIB_NETCURL_EXCEPTIONS', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
+    !class_exists('TorneLIB\TorneLIB_NETCURL_EXCEPTIONS', NETCURL_CLASS_EXISTS_AUTOLOAD)
+) {
+    /**
+     * Class NETCURL_EXCEPTIONS
+     *
+     * @package TorneLIB
+     */
+    abstract class NETCURL_EXCEPTIONS
+    {
+        const NETCURL_NO_ERROR = 0;
+        const NETCURL_EXCEPTION_IT_WORKS = 1;
         const NETCURL_EXCEPTION_IT_DOESNT_WORK = 500;
 
 
-		/**
-		 * @deprecated
-		 */
-		const NETCURL_CURL_MISSING = 1000;
-		const NETCURL_SETFLAG_KEY_EMPTY = 1001;
+        /**
+         * @deprecated
+         */
+        const NETCURL_CURL_MISSING = 1000;
+        const NETCURL_SETFLAG_KEY_EMPTY = 1001;
 
-		/**
-		 * @deprecated
-		 */
-		const NETCURL_COOKIEPATH_SETUP_FAIL = 1002;
-		const NETCURL_IPCONFIG_NOT_VALID = 1003;
+        /**
+         * @deprecated
+         */
+        const NETCURL_COOKIEPATH_SETUP_FAIL = 1002;
+        const NETCURL_IPCONFIG_NOT_VALID = 1003;
 
-		/**
-		 * @deprecated
-		 */
-		const NETCURL_SETSSLVERIFY_UNVERIFIED_NOT_SET = 1004;
-		const NETCURL_DOMDOCUMENT_CLASS_MISSING = 1005;
-		const NETCURL_GETPARSEDVALUE_KEY_NOT_FOUND = 1006;
-		const NETCURL_SOAPCLIENT_CLASS_MISSING = 1007;
-		const NETCURL_SIMPLESOAP_GETSOAP_CREATE_FAIL = 1008;
-		const NETCURL_WP_TRANSPORT_ERROR = 1009;
-		const NETCURL_CURL_DISABLED = 1010;
+        /**
+         * @deprecated
+         */
+        const NETCURL_SETSSLVERIFY_UNVERIFIED_NOT_SET = 1004;
+        const NETCURL_DOMDOCUMENT_CLASS_MISSING = 1005;
+        const NETCURL_GETPARSEDVALUE_KEY_NOT_FOUND = 1006;
+        const NETCURL_SOAPCLIENT_CLASS_MISSING = 1007;
+        const NETCURL_SIMPLESOAP_GETSOAP_CREATE_FAIL = 1008;
+        const NETCURL_WP_TRANSPORT_ERROR = 1009;
+        const NETCURL_CURL_DISABLED = 1010;
 
-		/**
-		 * @deprecated
-		 */
-		const NETCURL_NOCOMM_DRIVER = 1011;
-		/**
-		 * @deprecated
-		 */
-		const NETCURL_EXTERNAL_DRIVER_MISSING = 1012;
+        /**
+         * @deprecated
+         */
+        const NETCURL_NOCOMM_DRIVER = 1011;
+        /**
+         * @deprecated
+         */
+        const NETCURL_EXTERNAL_DRIVER_MISSING = 1012;
 
-		const NETCURL_GUZZLESTREAM_MISSING = 1013;
-		const NETCURL_HOSTVALIDATION_FAIL = 1014;
-		const NETCURL_PEMLOCATIONDATA_FORMAT_ERROR = 1015;
-		const NETCURL_DOMDOCUMENT_EMPTY = 1016;
-		const NETCURL_NO_DRIVER_AVAILABLE_NOT_EVEN_CURL = 1017;
-		const NETCURL_UNEXISTENT_FUNCTION = 1018;
-		const NETCURL_PARSE_XML_FAILURE = 1019;
-		const NETCURL_IO_PARSER_MISSING = 1020;
+        const NETCURL_GUZZLESTREAM_MISSING = 1013;
+        const NETCURL_HOSTVALIDATION_FAIL = 1014;
+        const NETCURL_PEMLOCATIONDATA_FORMAT_ERROR = 1015;
+        const NETCURL_DOMDOCUMENT_EMPTY = 1016;
+        const NETCURL_NO_DRIVER_AVAILABLE_NOT_EVEN_CURL = 1017;
+        const NETCURL_UNEXISTENT_FUNCTION = 1018;
+        const NETCURL_PARSE_XML_FAILURE = 1019;
+        const NETCURL_IO_PARSER_MISSING = 1020;
         const NETCURL_GUZZLE_RESPONSE_EXCEPTION = 1021;
         const NETCURL_WP_REQUEST_ERROR = 1022;
-	}
+    }
 }
 
-if ( ! class_exists( 'TorneLIB_NETCURL_EXCEPTIONS', NETCURL_CLASS_EXISTS_AUTOLOAD ) && ! class_exists( 'Resursbank\RBEcomPHP\TorneLIB_NETCURL_EXCEPTIONS', NETCURL_CLASS_EXISTS_AUTOLOAD ) ) {
-	/**
-	 * Class TORNELIB_NETCURL_EXCEPTIONS
-	 *
-	 * @package    TorneLIB
-	 * @deprecated Use NETCURL_EXCEPTIONS
-	 */
-	abstract class TORNELIB_NETCURL_EXCEPTIONS extends NETCURL_EXCEPTIONS {
-	}
+if (!class_exists('TorneLIB_NETCURL_EXCEPTIONS', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
+    !class_exists('TorneLIB\TorneLIB_NETCURL_EXCEPTIONS', NETCURL_CLASS_EXISTS_AUTOLOAD)
+) {
+    /**
+     * Class TORNELIB_NETCURL_EXCEPTIONS
+     *
+     * @package    TorneLIB
+     * @deprecated Use NETCURL_EXCEPTIONS
+     */
+    abstract class TORNELIB_NETCURL_EXCEPTIONS extends NETCURL_EXCEPTIONS
+    {
+    }
 }
-if ( ! class_exists( 'NETCURL_AUTH_TYPES', NETCURL_CLASS_EXISTS_AUTOLOAD ) && ! class_exists( 'Resursbank\RBEcomPHP\NETCURL_AUTH_TYPES', NETCURL_CLASS_EXISTS_AUTOLOAD ) ) {
-	/**
-	 * Class CURL_AUTH_TYPES Available authentication types for use with password protected sites
-	 *
-	 * The authentication types listed in this section defines what is fully supported by the module. In other cases you might be on your own.
-	 *
-	 * @package TorneLIB
-	 * @since   6.0.20
-	 */
-	abstract class NETCURL_AUTH_TYPES {
-		const AUTHTYPE_NONE = 0;
-		const AUTHTYPE_BASIC = 1;
-	}
+if (!class_exists('NETCURL_AUTH_TYPES', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
+    !class_exists('TorneLIB\NETCURL_AUTH_TYPES', NETCURL_CLASS_EXISTS_AUTOLOAD)
+) {
+    /**
+     * Class CURL_AUTH_TYPES Available authentication types for use with password protected sites
+     * The authentication types listed in this section defines what is fully supported by the module. In other cases you might be on your own.
+     *
+     * @package TorneLIB
+     * @since   6.0.20
+     */
+    abstract class NETCURL_AUTH_TYPES
+    {
+        const AUTHTYPE_NONE = 0;
+        const AUTHTYPE_BASIC = 1;
+    }
 }
-if ( ! class_exists( 'CURL_AUTH_TYPES', NETCURL_CLASS_EXISTS_AUTOLOAD ) && ! class_exists( 'Resursbank\RBEcomPHP\CURL_AUTH_TYPES', NETCURL_CLASS_EXISTS_AUTOLOAD ) ) {
-	/**
-	 * @package    TorneLIB
-	 * @deprecated 6.0.20 Use NETCURL_AUTH_TYPES
-	 */
-	abstract class CURL_AUTH_TYPES extends NETCURL_AUTH_TYPES {
-	}
+if (!class_exists('CURL_AUTH_TYPES', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
+    !class_exists('TorneLIB\CURL_AUTH_TYPES', NETCURL_CLASS_EXISTS_AUTOLOAD)
+) {
+    /**
+     * @package    TorneLIB
+     * @deprecated 6.0.20 Use NETCURL_AUTH_TYPES
+     */
+    abstract class CURL_AUTH_TYPES extends NETCURL_AUTH_TYPES
+    {
+    }
 }
-if ( ! class_exists( 'NETCURL_HTTP_OBJECT', NETCURL_CLASS_EXISTS_AUTOLOAD ) && ! class_exists( 'Resursbank\RBEcomPHP\NETCURL_HTTP_OBJECT', NETCURL_CLASS_EXISTS_AUTOLOAD ) ) {
-	/**
-	 * Class NETCURL_CURLOBJECT
-	 *
-	 * @package TorneLIB
-	 * @since   6.0.20
-	 */
-	class NETCURL_HTTP_OBJECT {
+if (!class_exists('NETCURL_HTTP_OBJECT', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
+    !class_exists('TorneLIB\NETCURL_HTTP_OBJECT', NETCURL_CLASS_EXISTS_AUTOLOAD)
+) {
+    /**
+     * Class NETCURL_CURLOBJECT
+     *
+     * @package TorneLIB
+     * @since   6.0.20
+     */
+    class NETCURL_HTTP_OBJECT
+    {
 
-		private $NETCURL_HEADER;
-		private $NETCURL_BODY;
-		private $NETCURL_CODE;
-		private $NETCURL_PARSED;
-		private $NETCURL_URL;
-		private $NETCURL_IP;
+        private $NETCURL_HEADER;
+        private $NETCURL_BODY;
+        private $NETCURL_CODE;
+        private $NETCURL_PARSED;
+        private $NETCURL_URL;
+        private $NETCURL_IP;
 
-		public function __construct( $header = array(), $body = '', $code = 0, $parsed = '', $url = '', $ip = '' ) {
-			$this->NETCURL_HEADER = $header;
-			$this->NETCURL_BODY   = $body;
-			$this->NETCURL_CODE   = $code;
-			$this->NETCURL_PARSED = $parsed;
-			$this->NETCURL_URL    = $url;
-			$this->NETCURL_IP     = $ip;
-		}
+        public function __construct($header = [], $body = '', $code = 0, $parsed = '', $url = '', $ip = '')
+        {
+            $this->NETCURL_HEADER = $header;
+            $this->NETCURL_BODY = $body;
+            $this->NETCURL_CODE = $code;
+            $this->NETCURL_PARSED = $parsed;
+            $this->NETCURL_URL = $url;
+            $this->NETCURL_IP = $ip;
+        }
 
-		public function getHeader() {
-			return $this->NETCURL_HEADER;
-		}
+        public function getHeader()
+        {
+            return $this->NETCURL_HEADER;
+        }
 
-		public function getBody() {
-			return $this->NETCURL_BODY;
-		}
+        public function getBody()
+        {
+            return $this->NETCURL_BODY;
+        }
 
-		public function getCode() {
-			return $this->NETCURL_CODE;
-		}
+        public function getCode()
+        {
+            return $this->NETCURL_CODE;
+        }
 
-		public function getParsed() {
-			return $this->NETCURL_PARSED;
-		}
+        public function getParsed()
+        {
+            return $this->NETCURL_PARSED;
+        }
 
-		public function getUrl() {
-			$this->NETCURL_URL;
-		}
+        public function getUrl()
+        {
+            $this->NETCURL_URL;
+        }
 
-		public function getIp() {
-			return $this->NETCURL_IP;
-		}
-
-	}
+        public function getIp()
+        {
+            return $this->NETCURL_IP;
+        }
+    }
 }
-if ( ! class_exists( 'TORNELIB_CURLOBJECT', NETCURL_CLASS_EXISTS_AUTOLOAD ) && ! class_exists( 'Resursbank\RBEcomPHP\TORNELIB_CURLOBJECT', NETCURL_CLASS_EXISTS_AUTOLOAD ) ) {
-	/**
-	 * Class TORNELIB_CURLOBJECT
-	 *
-	 * @package    TorneLIB
-	 * @deprecated 6.0.20 Use NETCURL_HTTP_OBJECT
-	 */
-	class TORNELIB_CURLOBJECT extends NETCURL_HTTP_OBJECT {
-		public $header;
-		public $body;
-		public $code;
-		public $parsed;
-		public $url;
-		public $ip;
-	}
-}
-if ( ! class_exists( 'NETCURL_POST_DATATYPES', NETCURL_CLASS_EXISTS_AUTOLOAD ) && ! class_exists( 'Resursbank\RBEcomPHP\NETCURL_POST_DATATYPES', NETCURL_CLASS_EXISTS_AUTOLOAD ) ) {
-	/**
-	 * Class NETCURL_POST_DATATYPES Prepared formatting for POST-content in this library (Also available from for example PUT)
-	 *
-	 * @package TorneLIB
-	 * @since   6.0.20
-	 */
-	abstract class NETCURL_POST_DATATYPES {
-		const DATATYPE_NOT_SET = 0;
-		const DATATYPE_JSON = 1;
-		const DATATYPE_SOAP = 2;
-		const DATATYPE_XML = 3;
-		const DATATYPE_SOAP_XML = 4;
-	}
-}
-if ( ! class_exists( 'CURL_POST_AS', NETCURL_CLASS_EXISTS_AUTOLOAD ) && ! class_exists( 'Resursbank\RBEcomPHP\CURL_POST_AS', NETCURL_CLASS_EXISTS_AUTOLOAD ) ) {
-	/**
-	 * @package    TorneLIB
-	 * @deprecated 6.0.20 Use NETCURL_POST_DATATYPES
-	 */
-	abstract class CURL_POST_AS extends NETCURL_POST_DATATYPES {
-		/**
-		 * @deprecated Use NETCURL_POST_DATATYPES::DATATYPE_DEFAULT
-		 */
-		const POST_AS_NORMAL = 0;
-		/**
-		 * @deprecated Use NETCURL_POST_DATATYPES::DATATYPE_JSON
-		 */
-		const POST_AS_JSON = 1;
-		/**
-		 * @deprecated Use NETCURL_POST_DATATYPES::DATATYPE_SOAP
-		 */
-		const POST_AS_SOAP = 2;
-	}
-}
-if ( ! class_exists( 'NETCURL_NETWORK_DRIVERS', NETCURL_CLASS_EXISTS_AUTOLOAD ) && ! class_exists( 'Resursbank\RBEcomPHP\NETCURL_NETWORK_DRIVERS', NETCURL_CLASS_EXISTS_AUTOLOAD ) ) {
-	/**
-	 * Class NETCURL_NETWORK_DRIVERS Supported network Addons
-	 *
-	 * @package TorneLIB
-	 * @since   6.0.20
-	 */
-	abstract class NETCURL_NETWORK_DRIVERS {
-		const DRIVER_NOT_SET = 0;
-		const DRIVER_CURL = 1;
-		const DRIVER_WORDPRESS = 1000;
-		const DRIVER_GUZZLEHTTP = 1001;
-		const DRIVER_GUZZLEHTTP_STREAM = 1002;
 
-		/**
-		 * @deprecated Internal driver should be named DRIVER_CURL
-		 */
-		const DRIVER_INTERNAL = 1;
-		const DRIVER_SOAPCLIENT = 2;
-
-		/** @var int Using the class itself */
-		const DRIVER_OWN_EXTERNAL = 100;
-
-	}
+if (!class_exists('TORNELIB_CURLOBJECT', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
+    !class_exists('TorneLIB\TORNELIB_CURLOBJECT', NETCURL_CLASS_EXISTS_AUTOLOAD)
+) {
+    /**
+     * Class TORNELIB_CURLOBJECT
+     *
+     * @package    TorneLIB
+     * @deprecated 6.0.20 Use NETCURL_HTTP_OBJECT
+     */
+    class TORNELIB_CURLOBJECT extends NETCURL_HTTP_OBJECT
+    {
+        public $header;
+        public $body;
+        public $code;
+        public $parsed;
+        public $url;
+        public $ip;
+    }
 }
-if ( ! class_exists( 'TORNELIB_CURL_DRIVERS', NETCURL_CLASS_EXISTS_AUTOLOAD ) && ! class_exists( 'Resursbank\RBEcomPHP\TORNELIB_CURL_DRIVERS', NETCURL_CLASS_EXISTS_AUTOLOAD ) ) {
-	/**
-	 * Class TORNELIB_CURL_DRIVERS
-	 *
-	 * @package    TorneLIB
-	 * @deprecated .0.20 Use NETCURL_NETWORK_DRIVERS
-	 */
-	abstract class TORNELIB_CURL_DRIVERS extends NETCURL_NETWORK_DRIVERS {
-	}
+
+if (!class_exists('NETCURL_POST_DATATYPES', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
+    !class_exists('TorneLIB\NETCURL_POST_DATATYPES', NETCURL_CLASS_EXISTS_AUTOLOAD)
+) {
+    /**
+     * Class NETCURL_POST_DATATYPES
+     * Prepared formatting for POST-content in this library (Also available from for example PUT)
+     *
+     * @package TorneLIB
+     * @since 6.0.20
+     */
+    abstract class NETCURL_POST_DATATYPES
+    {
+        const DATATYPE_NOT_SET = 0;
+        const DATATYPE_JSON = 1;
+        const DATATYPE_SOAP = 2;
+        const DATATYPE_XML = 3;
+        const DATATYPE_SOAP_XML = 4;
+    }
 }
-if ( ! class_exists('NETCURL_ENVIRONMENT', NETCURL_CLASS_EXISTS_AUTOLOAD) && ! class_exists('TorneLIB\NETCURL_ENVIRONMENT', NETCURL_CLASS_EXISTS_AUTOLOAD)) {
+if (!class_exists('CURL_POST_AS', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
+    !class_exists('TorneLIB\CURL_POST_AS', NETCURL_CLASS_EXISTS_AUTOLOAD)
+) {
+    /**
+     * @package TorneLIB
+     * @deprecated 6.0.20 Use NETCURL_POST_DATATYPES
+     */
+    abstract class CURL_POST_AS extends NETCURL_POST_DATATYPES
+    {
+        /**
+         * @deprecated Use NETCURL_POST_DATATYPES::DATATYPE_DEFAULT
+         */
+        const POST_AS_NORMAL = 0;
+        /**
+         * @deprecated Use NETCURL_POST_DATATYPES::DATATYPE_JSON
+         */
+        const POST_AS_JSON = 1;
+        /**
+         * @deprecated Use NETCURL_POST_DATATYPES::DATATYPE_SOAP
+         */
+        const POST_AS_SOAP = 2;
+    }
+}
+if (!class_exists('NETCURL_NETWORK_DRIVERS', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
+    !class_exists('TorneLIB\NETCURL_NETWORK_DRIVERS', NETCURL_CLASS_EXISTS_AUTOLOAD)
+) {
+    /**
+     * Class NETCURL_NETWORK_DRIVERS Supported network Addons
+     *
+     * @package TorneLIB
+     * @since   6.0.20
+     */
+    abstract class NETCURL_NETWORK_DRIVERS
+    {
+        const DRIVER_NOT_SET = 0;
+        const DRIVER_CURL = 1;
+        const DRIVER_WORDPRESS = 1000;
+        const DRIVER_GUZZLEHTTP = 1001;
+        const DRIVER_GUZZLEHTTP_STREAM = 1002;
+
+        /**
+         * @deprecated Internal driver should be named DRIVER_CURL
+         */
+        const DRIVER_INTERNAL = 1;
+        const DRIVER_SOAPCLIENT = 2;
+
+        /** @var int Using the class itself */
+        const DRIVER_OWN_EXTERNAL = 100;
+
+    }
+}
+
+if (!class_exists('TORNELIB_CURL_DRIVERS', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
+    !class_exists('TorneLIB\TORNELIB_CURL_DRIVERS', NETCURL_CLASS_EXISTS_AUTOLOAD)
+) {
+    /**
+     * Class TORNELIB_CURL_DRIVERS
+     *
+     * @package    TorneLIB
+     * @deprecated .0.20 Use NETCURL_NETWORK_DRIVERS
+     */
+    abstract class TORNELIB_CURL_DRIVERS extends NETCURL_NETWORK_DRIVERS
+    {
+    }
+}
+
+if (!class_exists('NETCURL_ENVIRONMENT', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
+    !class_exists('TorneLIB\NETCURL_ENVIRONMENT', NETCURL_CLASS_EXISTS_AUTOLOAD)
+) {
     /**
      * Class NETCURL_ENVIRONMENT Unittest helping class
      *
@@ -2211,7 +2410,9 @@ if ( ! class_exists('NETCURL_ENVIRONMENT', NETCURL_CLASS_EXISTS_AUTOLOAD) && ! c
     }
 }
 
-if ( ! class_exists('TORNELIB_CURL_ENVIRONMENT', NETCURL_CLASS_EXISTS_AUTOLOAD) && ! class_exists('TorneLIB\TORNELIB_CURL_ENVIRONMENT', NETCURL_CLASS_EXISTS_AUTOLOAD)) {
+if (!class_exists('TORNELIB_CURL_ENVIRONMENT', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
+    !class_exists('TorneLIB\TORNELIB_CURL_ENVIRONMENT', NETCURL_CLASS_EXISTS_AUTOLOAD)
+) {
     /** @noinspection PhpDeprecationInspection */
 
     /**
@@ -2226,7 +2427,10 @@ if ( ! class_exists('TORNELIB_CURL_ENVIRONMENT', NETCURL_CLASS_EXISTS_AUTOLOAD) 
     {
     }
 }
-if ( ! class_exists('NETCURL_IP_PROTOCOLS', NETCURL_CLASS_EXISTS_AUTOLOAD) && ! class_exists('TorneLIB\NETCURL_IP_PROTOCOLS', NETCURL_CLASS_EXISTS_AUTOLOAD)) {
+
+if (!class_exists('NETCURL_IP_PROTOCOLS', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
+    !class_exists('TorneLIB\NETCURL_IP_PROTOCOLS', NETCURL_CLASS_EXISTS_AUTOLOAD)
+) {
     /**
      * Class NETCURL_IP_PROTOCOLS IP Address Types class
      *
@@ -2241,7 +2445,9 @@ if ( ! class_exists('NETCURL_IP_PROTOCOLS', NETCURL_CLASS_EXISTS_AUTOLOAD) && ! 
     }
 
 }
-if ( ! class_exists('TorneLIB_Network_IP', NETCURL_CLASS_EXISTS_AUTOLOAD) && ! class_exists('TorneLIB\TorneLIB_Network_IP', NETCURL_CLASS_EXISTS_AUTOLOAD)) {
+if (!class_exists('TorneLIB_Network_IP', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
+    !class_exists('TorneLIB\TorneLIB_Network_IP', NETCURL_CLASS_EXISTS_AUTOLOAD)
+) {
     /**
      * Class TorneLIB_Network_IP
      *
@@ -2256,7 +2462,9 @@ if ( ! class_exists('TorneLIB_Network_IP', NETCURL_CLASS_EXISTS_AUTOLOAD) && ! c
     }
 }
 
-if ( ! class_exists('TorneLIB_Network_IP_Protocols', NETCURL_CLASS_EXISTS_AUTOLOAD) && ! class_exists('TorneLIB\TorneLIB_Network_IP_Protocols', NETCURL_CLASS_EXISTS_AUTOLOAD)) {
+if (!class_exists('TorneLIB_Network_IP_Protocols', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
+    !class_exists('TorneLIB\TorneLIB_Network_IP_Protocols', NETCURL_CLASS_EXISTS_AUTOLOAD)
+) {
     /** @noinspection PhpDeprecationInspection */
 
     /**
@@ -2269,77 +2477,99 @@ if ( ! class_exists('TorneLIB_Network_IP_Protocols', NETCURL_CLASS_EXISTS_AUTOLO
     {
     }
 }
-if ( ! class_exists( 'NETCURL_POST_METHODS', NETCURL_CLASS_EXISTS_AUTOLOAD ) && ! class_exists( 'Resursbank\RBEcomPHP\NETCURL_POST_METHODS', NETCURL_CLASS_EXISTS_AUTOLOAD ) ) {
-	/**
-	 * Class NETCURL_POST_METHODS List of methods available in this library
-	 *
-	 * @package TorneLIB
-	 * @since   6.0.20
-	 */
-	abstract class NETCURL_POST_METHODS {
-		const METHOD_GET = 0;
-		const METHOD_POST = 1;
-		const METHOD_PUT = 2;
-		const METHOD_DELETE = 3;
-		const METHOD_HEAD = 4;
-		const METHOD_REQUEST = 5;
-	}
+
+if (!class_exists('NETCURL_POST_METHODS', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
+    !class_exists('TorneLIB\NETCURL_POST_METHODS', NETCURL_CLASS_EXISTS_AUTOLOAD)
+) {
+    /**
+     * Class NETCURL_POST_METHODS List of methods available in this library
+     *
+     * @package TorneLIB
+     * @since   6.0.20
+     */
+    abstract class NETCURL_POST_METHODS
+    {
+        const METHOD_GET = 0;
+        const METHOD_POST = 1;
+        const METHOD_PUT = 2;
+        const METHOD_DELETE = 3;
+        const METHOD_HEAD = 4;
+        const METHOD_REQUEST = 5;
+    }
 }
 
-if ( ! class_exists( 'CURL_METHODS', NETCURL_CLASS_EXISTS_AUTOLOAD ) && ! class_exists( 'Resursbank\RBEcomPHP\CURL_METHODS', NETCURL_CLASS_EXISTS_AUTOLOAD ) ) {
-	/**
-	 * @package    TorneLIB
-	 * @deprecated 6.0.20 Use NETCURL_POST_METHODS
-	 */
-	abstract class CURL_METHODS extends NETCURL_POST_METHODS {
-	}
-}
-if ( ! class_exists( 'NETCURL_RESOLVER', NETCURL_CLASS_EXISTS_AUTOLOAD ) && ! class_exists( 'Resursbank\RBEcomPHP\NETCURL_RESOLVER', NETCURL_CLASS_EXISTS_AUTOLOAD ) ) {
-	/**
-	 * Class NETCURL_RESOLVER Class definitions on how to resolve things on lookups
-	 *
-	 * @package TorneLIB
-	 * @since   6.0.20
-	 */
-	abstract class NETCURL_RESOLVER {
-		const RESOLVER_DEFAULT = 0;
-		const RESOLVER_IPV4 = 1;
-		const RESOLVER_IPV6 = 2;
-	}
+if (!class_exists('CURL_METHODS', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
+    !class_exists('TorneLIB\CURL_METHODS', NETCURL_CLASS_EXISTS_AUTOLOAD)
+) {
+    /**
+     * @package    TorneLIB
+     * @deprecated 6.0.20 Use NETCURL_POST_METHODS
+     */
+    abstract class CURL_METHODS extends NETCURL_POST_METHODS
+    {
+    }
 }
 
-if ( ! class_exists( 'CURL_RESOLVER', NETCURL_CLASS_EXISTS_AUTOLOAD ) && ! class_exists( 'Resursbank\RBEcomPHP\CURL_RESOLVER', NETCURL_CLASS_EXISTS_AUTOLOAD ) ) {
-	/**
-	 * @package    TorneLIB
-	 * @deprecated 6.0.20 Use NETCURL_RESOLVER
-	 */
-	abstract class CURL_RESOLVER extends NETCURL_RESOLVER {
-	}
+if (!class_exists('NETCURL_RESOLVER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
+    !class_exists('TorneLIB\NETCURL_RESOLVER', NETCURL_CLASS_EXISTS_AUTOLOAD)
+) {
+    /**
+     * Class NETCURL_RESOLVER Class definitions on how to resolve things on lookups
+     *
+     * @package TorneLIB
+     * @since   6.0.20
+     */
+    abstract class NETCURL_RESOLVER
+    {
+        const RESOLVER_DEFAULT = 0;
+        const RESOLVER_IPV4 = 1;
+        const RESOLVER_IPV6 = 2;
+    }
 }
-if ( ! class_exists( 'NETCURL_RESPONSETYPE', NETCURL_CLASS_EXISTS_AUTOLOAD ) && ! class_exists( 'Resursbank\RBEcomPHP\NETCURL_RESPONSETYPE', NETCURL_CLASS_EXISTS_AUTOLOAD ) ) {
-	/**
-	 * Class NETCURL_RESPONSETYPE Assoc or object?
-	 *
-	 * @package TorneLIB
-	 * @since   6.0.20
-	 */
-	abstract class NETCURL_RESPONSETYPE {
-		const RESPONSETYPE_ARRAY = 0;
-		const RESPONSETYPE_OBJECT = 1;
-	}
 
-	if ( ! class_exists( 'TORNELIB_CURL_RESPONSETYPE', NETCURL_CLASS_EXISTS_AUTOLOAD ) && ! class_exists( 'Resursbank\RBEcomPHP\TORNELIB_CURL_RESPONSETYPE', NETCURL_CLASS_EXISTS_AUTOLOAD ) ) {
-
-		/**
-		 * Class TORNELIB_CURL_RESPONSETYPE
-		 *
-		 * @package    TorneLIB
-		 * @deprecated 6.0.20 Use NETCURL_RESPONSETYPE
-		 */
-		abstract class TORNELIB_CURL_RESPONSETYPE extends NETCURL_RESPONSETYPE {
-		}
-	}
+if (!class_exists('CURL_RESOLVER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
+    !class_exists('TorneLIB\CURL_RESOLVER', NETCURL_CLASS_EXISTS_AUTOLOAD)
+) {
+    /**
+     * @package    TorneLIB
+     * @deprecated 6.0.20 Use NETCURL_RESOLVER
+     */
+    abstract class CURL_RESOLVER extends NETCURL_RESOLVER
+    {
+    }
 }
+
+if (!class_exists('NETCURL_RESPONSETYPE', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
+    !class_exists('TorneLIB\NETCURL_RESPONSETYPE', NETCURL_CLASS_EXISTS_AUTOLOAD)
+) {
+    /**
+     * Class NETCURL_RESPONSETYPE Assoc or object?
+     *
+     * @package TorneLIB
+     * @since   6.0.20
+     */
+    abstract class NETCURL_RESPONSETYPE
+    {
+        const RESPONSETYPE_ARRAY = 0;
+        const RESPONSETYPE_OBJECT = 1;
+    }
+
+    if (!class_exists('TORNELIB_CURL_RESPONSETYPE', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
+        !class_exists('TorneLIB\TORNELIB_CURL_RESPONSETYPE', NETCURL_CLASS_EXISTS_AUTOLOAD)
+    ) {
+
+        /**
+         * Class TORNELIB_CURL_RESPONSETYPE
+         *
+         * @package    TorneLIB
+         * @deprecated 6.0.20 Use NETCURL_RESPONSETYPE
+         */
+        abstract class TORNELIB_CURL_RESPONSETYPE extends NETCURL_RESPONSETYPE
+        {
+        }
+    }
+}
+
 if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
     !class_exists('TorneLIB\MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD)
 ) {
@@ -2352,13 +2582,11 @@ if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
     /**
      * Library for handling network related things (currently not sockets). A conversion of a legacy PHP library called "TorneEngine" and family.
-     *
      * Class MODULE_NETWORK
      *
      * @link    https://phpdoc.tornevall.net/TorneLIBv5/class-TorneLIB.TorneLIB_Network.html PHPDoc/Staging - TorneLIB_Network
      * @link    https://docs.tornevall.net/x/KQCy TorneLIB (PHP) Landing documentation
      * @link    https://bitbucket.tornevall.net/projects/LIB/repos/tornelib-php/browse Sources of TorneLIB
-     *
      * @package TorneLIB
      */
     class MODULE_NETWORK
@@ -2405,12 +2633,10 @@ if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * Get an exception code from internal abstract
-         *
          * If the exception constant name does not exist, or the abstract class is not included in this package,
          * a generic unknown error, based on internal server error, will be returned (500).
          *
          * @param string $exceptionConstantName Constant name (make sure it exists before use)
-         *
          * @return int
          */
         public function getExceptionCode($exceptionConstantName = 'NETCURL_NO_ERROR')
@@ -2563,7 +2789,6 @@ if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
         /**
          * @param string $myVersion
          * @param string $gitUrl
-         *
          * @return array
          * @throws \Exception
          * @since 6.0.4
@@ -2586,7 +2811,6 @@ if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          *
          * @param string $myVersion
          * @param string $gitUrl
-         *
          * @return bool
          * @throws \Exception
          * @since 6.0.4
@@ -2602,13 +2826,11 @@ if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * Extract domain from URL-based string.
-         *
          * To make a long story short: This is a very unclever function from the birth of the developer (in a era when documentation was not "necessary" to read and stupidity ruled the world).
          * As some functions still uses this, we chose to keep it, but do it "right".
          *
          * @param string $requestedUrlHost
          * @param bool $validateHost Validate that the hostname do exist
-         *
          * @return array
          * @throws \Exception
          */
@@ -2651,7 +2873,6 @@ if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * @param int $urlLimit
          * @param array $protocols
          * @param bool $preventDuplicates
-         *
          * @return array
          */
         public function getUrlsFromHtml(
@@ -2717,7 +2938,6 @@ if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * @param string $name
          * @param string $value
          * @param string $expire
-         *
          * @return bool
          */
         public function setCookie($name = '', $value = '', $expire = '')
@@ -2813,7 +3033,6 @@ if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Return correct data on https-detection
          *
          * @param bool $returnProtocol
-         *
          * @return bool|string
          * @since 6.0.3
          */
@@ -2859,7 +3078,6 @@ if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param bool $returnProtocol
-         *
          * @return bool|string
          * @since 6.0.15
          */
@@ -2891,7 +3109,6 @@ if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Extract domain name (zone name) from hostname
          *
          * @param string $useHost Alternative hostname than the HTTP_HOST
-         *
          * @return string
          * @throws \Exception
          * @since 5.0.0
@@ -2923,7 +3140,6 @@ if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * base64_encode
          *
          * @param $data
-         *
          * @return string
          */
         public function base64url_encode($data)
@@ -2935,7 +3151,6 @@ if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * base64_decode
          *
          * @param $data
-         *
          * @return string
          */
         public function base64url_decode($data)
@@ -2949,7 +3164,6 @@ if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          *
          * @param string $ipAddr
          * @param bool $returnIpType
-         *
          * @return int|string
          */
         public function getArpaFromAddr($ipAddr = '', $returnIpType = false)
@@ -2986,7 +3200,6 @@ if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Get IP range from netmask
          *
          * @param null $mask
-         *
          * @return array
          */
         public function getRangeFromMask($mask = null)
@@ -3008,7 +3221,6 @@ if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          *
          * @param $IP
          * @param $CIDR
-         *
          * @return bool
          */
         public function isIpInRange($IP, $CIDR)
@@ -3026,7 +3238,6 @@ if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Translate ipv6 address to reverse octets
          *
          * @param string $ipAddr
-         *
          * @return string
          */
         public function getArpaFromIpv6($ipAddr = '::')
@@ -3044,7 +3255,6 @@ if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Translate ipv4 address to reverse octets
          *
          * @param string $ipAddr
-         *
          * @return string
          */
         public function getArpaFromIpv4($ipAddr = '127.0.0.1')
@@ -3060,7 +3270,6 @@ if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Translate ipv6 reverse octets to ipv6 address
          *
          * @param string $arpaOctets
-         *
          * @return string
          */
         public function getIpv6FromOctets(
@@ -3134,10 +3343,10 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
     !class_exists('TorneLIB\MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD)
 ) {
     if (!defined('NETCURL_CURL_RELEASE')) {
-        define('NETCURL_CURL_RELEASE', '6.0.24');
+        define('NETCURL_CURL_RELEASE', '6.0.26');
     }
     if (!defined('NETCURL_CURL_MODIFY')) {
-        define('NETCURL_CURL_MODIFY', '20191009');
+        define('NETCURL_CURL_MODIFY', '20200418');
     }
     if (!defined('NETCURL_CURL_CLIENTNAME')) {
         define('NETCURL_CURL_CLIENTNAME', 'MODULE_CURL');
@@ -3152,17 +3361,27 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
      * @link    https://docs.tornevall.net/x/KwCy Network & Curl v5 and v6 Library usage
      * @link    https://docs.tornevall.net/x/FoBU TorneLIB Full documentation
      * @since   6.0.20
+     * @deprecated MODULE_CURL is still present in v6.1 but will be raised as a backward compatible module.
      */
     class MODULE_CURL
     {
-
         //// PUBLIC VARIABLES
         /**
          * Default settings when initializing our curlsession.
-         *
          * Since v6.0.2 no urls are followed by default, it is set internally by first checking PHP security before
          * setting this up. The reason of the change is not only the security, it is also about inheritage of options
          * to SOAPClient.
+         *
+         * $curlopt will return in 6.1 but in WrapperConfig with a proper setup instead.
+         *
+         * This array is not in use and seems to be unused for a long time (discovered in april 2020). The discovery
+         * is based on the fact that CURLOPT_SSLVERSION was set to the value 4 (CURL_SSLVERSION_TLSv1_0) which
+         * should've not worked properly with for example omnitest.resurs.com. Instead of using TLS 1.0, netcurl
+         * is configuring everything on fly and is actually no longer using this part of the module. Instead,
+         * CURLOPT_SSLVERSION is set to CURL_SSLVERSION_DEFAULT which means that curl tries to automatically
+         * discover which TLS version that should be used. This is why the TLS connectivity "always" works.
+         *
+         * 0=CURL_SSLVERSION_DEFAULT, some systems will throw exceptions when lost.
          *
          * @var array
          */
@@ -3175,15 +3394,16 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
             CURLOPT_TIMEOUT => 10,
             CURLOPT_USERAGENT => 'TorneLIB-PHPcURL',
             CURLOPT_POST => true,
-            CURLOPT_SSLVERSION => 4,
+            CURLOPT_SSLVERSION => 0,
             CURLOPT_FOLLOWLOCATION => false,
             CURLOPT_HTTPHEADER => ['Accept-Language: en'],
         ];
+
         /** @var array User set SSL Options */
         private $sslopt = [];
 
         /** @var string $netCurlUrl Where to find NetCurl */
-        private $netCurlUrl = 'http://www.netcurl.org/';
+        private $netCurlUrl = 'https://www.netcurl.org/';
 
         /** @var array $NETCURL_POST_DATA Could also be a string */
         private $NETCURL_POST_DATA = [];
@@ -3261,7 +3481,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * Die on use of proxy/tunnel on first try (Incomplete).
-         *
          * This function is supposed to stop if the proxy fails on connection, so the library won't continue looking for a preferred exit point, since that will reveal the current unproxified address.
          *
          * @var bool
@@ -3375,6 +3594,16 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
         private $CURL_RETRY_TYPES = ['resolve' => 0, 'sslunverified' => 0];
         /** @var string Custom User-Agent sent in the HTTP-HEADER */
         private $HTTP_USER_AGENT;
+
+        /**
+         * @var string
+         * @since 6.0.25
+         */
+        private $HTTP_REAL_USER_AGENT;
+
+        /** @var bool If true, User-Agent will be freed from netcurl extras. */
+        private $spoofableUserAgent = false;
+
         /**
          * @var array Custom User-Agent Memory
          */
@@ -3467,7 +3696,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * Set up if this library can throw exceptions, whenever it needs to do that.
-         *
          * Note: This does not cover everything in the library. It was set up for handling SoapExceptions.
          *
          * @var bool
@@ -3488,7 +3716,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * @param array $requestPostData
          * @param int $requestPostMethod
          * @param array $requestFlags
-         *
          * @throws \Exception
          */
         public function __construct(
@@ -3535,7 +3762,15 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
             $this->throwableHttpCodes = [];
             $this->getSslDriver();
 
-            $this->HTTP_USER_AGENT = $this->userAgents['Mozilla'] . ' ' . NETCURL_CURL_CLIENTNAME . '-' . NETCURL_RELEASE . "/" . __CLASS__ . "-" . NETCURL_CURL_RELEASE . ' (' . $this->netCurlUrl . ')';
+            $this->HTTP_USER_AGENT = sprintf(
+                '%s %s-%s/%s-%s (%s)',
+                $this->userAgents['Mozilla'],
+                NETCURL_CURL_CLIENTNAME,
+                NETCURL_RELEASE,
+                __CLASS__,
+                NETCURL_CURL_RELEASE,
+                $this->netCurlUrl
+            );
 
             if (!empty($requestUrl)) {
                 $this->CURL_STORED_URL = $requestUrl;
@@ -3567,7 +3802,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * Termination Controller
-         *
          * As of 6.0.20 cookies will be only stored if there is a predefined cookiepath or if system tempdir is allowed
          *
          * @since 5.0
@@ -3726,7 +3960,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param bool $useCookies
-         *
          * @since 6.0.20
          */
         public function setUseCookies($useCookies = true)
@@ -3745,7 +3978,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param int $curlResolveType
-         *
          * @since 6.0.20
          */
         public function setCurlResolve($curlResolveType = NETCURL_RESOLVER::RESOLVER_DEFAULT)
@@ -3764,12 +3996,10 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * Enable or disable the ability to let netcurl throw exceptions on places where it is not always necessary.
-         *
          * This function has minor effects on newer netcurls since throwing exxceptions should be considered necessary
          * in many situations to handle errors.
          *
          * @param bool $netCurlCanThrow
-         *
          * @since 6.0.20
          */
         public function setThrowable($netCurlCanThrow = true)
@@ -3790,7 +4020,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * When you just need responses and nothing else (except for exceptions)
-         *
          * Activation means you will always get a proper response back, on http requests.
          * Defaults to parsed content, but if the parse is empty, we will fall back on the body parts and if bodyparts
          * is empty netcurl will fall back to an array called simplifiedContainer.
@@ -3819,7 +4048,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Enable/disable the parsing of Dom content
          *
          * @param bool $domContentProhibit
-         *
          * @since 6.0.22
          */
         public function setDomContentParser($domContentProhibit = false)
@@ -3840,7 +4068,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param array $arrayData
-         *
          * @return bool
          * @since 6.0
          */
@@ -3889,7 +4116,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param string $setContentTypeString
-         *
          * @since 6.0.17
          */
         public function setContentType($setContentTypeString = 'application/json; charset=utf-8')
@@ -3971,13 +4197,11 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * Set timeout for CURL, normally we'd like a quite short timeout here. Default: CURL default
-         *
          * Affects connect and response timeout by below values:
          *   CURLOPT_CONNECTTIMEOUT = ceil($timeout/2)    - How long a request is allowed to wait for conneciton, curl default = 300
          *   CURLOPT_TIMEOUT = ceil($timeout)             - How long a request is allowed to take, curl default = never timeout (0)
          *
          * @param int $timeout
-         *
          * @since 6.0.13
          */
         public function setTimeout($timeout = 6)
@@ -4037,7 +4261,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Sets, if defined by user, up a cookie directory storage
          *
          * @param $ownCookiePath
-         *
          * @return bool
          * @since 6.0.20
          */
@@ -4093,7 +4316,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          *
          * @param string $flagKey
          * @param string $flagValue Nullable since 6.0.10 = If null, then it is considered a true boolean, set setFlag("key") will always be true as an activation key
-         *
          * @return bool If successful
          * @throws \Exception
          * @since 6.0.9
@@ -4116,7 +4338,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param string $flagKey
-         *
          * @return bool
          * @since 6.0.10
          */
@@ -4133,7 +4354,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param string $flagKey
-         *
          * @return bool
          * @since 6.0.13 Consider using unsetFlag
          */
@@ -4144,7 +4364,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param string $flagKey
-         *
          * @return bool
          * @since 6.0.13 Consider using unsetFlag
          */
@@ -4165,7 +4384,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Get internal flag
          *
          * @param string $flagKey
-         *
          * @return mixed|null
          * @since 6.0.9
          */
@@ -4182,7 +4400,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Check if flag is set and true
          *
          * @param string $flagKey
-         *
          * @return bool
          * @since 6.0.9
          */
@@ -4199,7 +4416,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Check if there is an internal flag set with current key
          *
          * @param string $flagKey
-         *
          * @return bool
          * @since 6.0.9
          */
@@ -4216,7 +4432,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Enable chained mode ($Module->doGet(URL)->getParsedResponse()"
          *
          * @param bool $enable
-         *
          * @throws \Exception
          * @since 6.0.14
          */
@@ -4245,7 +4460,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          *
          * @param string $message
          * @param string $code
-         *
          * @throws \Exception
          * @since 6.0.6
          */
@@ -4279,14 +4493,12 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * Allow fallback tests in SOAP mode
-         *
          * Defines whether, when there is a SOAP-call, we should try to make the SOAP initialization twice.
          * This is a kind of fallback when users forget to add ?wsdl or &wsdl in urls that requires this to call for SOAP.
          * It may happen when setting NETCURL_POST_DATATYPES to a SOAP-call but, the URL is not defined as one.
          * Setting this to false, may suppress important errors, since this will suppress fatal errors at first try.
          *
          * @param bool $enabledMode
-         *
          * @since 6.0.9
          */
         public function setSoapTryOnce($enabledMode = true)
@@ -4310,7 +4522,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Set the curl libraray to die, if no proxy has been successfully set up (Currently not active in module)
          *
          * @param bool $dieEnabled
-         *
          * @since 6.0.9
          */
         public function setDieOnNoProxy($dieEnabled = true)
@@ -4334,7 +4545,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          *
          * @param int $throwableMin Minimum value to throw on (Used with >=)
          * @param int $throwableMax Maxmimum last value to throw on (Used with <)
-         *
          * @since 6.0.6
          */
         public function setThrowableHttpCodes($throwableMin = 400, $throwableMax = 599)
@@ -4359,7 +4569,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * When using soap/xml fields returned as CDATA will be returned as text nodes if this is disabled (default: diabled)
          *
          * @param bool $enabled
-         *
          * @since 5.0.0
          */
         public function setCdata($enabled = true)
@@ -4380,11 +4589,9 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * Enable the use of local cookie storage
-         *
          * Use this only if necessary and if you are planning to cookies locally while, for example, needs to set a logged in state more permanent during get/post/etc
          *
          * @param bool $enabled
-         *
          * @since 5.0.0
          */
         public function setLocalCookies($enabled = false)
@@ -4418,7 +4625,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Enforce a response type if you're not happy with the default returned array.
          *
          * @param int $NETCURL_RETURN_RESPONSE_TYPE
-         *
          * @since 5.0.0
          */
         public function setResponseType($NETCURL_RETURN_RESPONSE_TYPE = NETCURL_RESPONSETYPE::RESPONSETYPE_ARRAY)
@@ -4439,12 +4645,10 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * Enforce a specific type of post method
-         *
          * To always send PostData, even if it is not set in the doXXX-method, you can use this setting to enforce - for example - JSON posts
          * $myLib->setPostTypeDefault(NETCURL_POST_DATATYPES::DATATYPE_JSON)
          *
          * @param int $postType
-         *
          * @since 6.0.6
          */
         public function setPostTypeDefault($postType = NETCURL_POST_DATATYPES::DATATYPE_NOT_SET)
@@ -4467,7 +4671,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Enforces CURLOPT_FOLLOWLOCATION to act different if not matching with the internal rules
          *
          * @param bool $setEnabledState
-         *
          * @since 5.0
          */
         public function setEnforceFollowLocation($setEnabledState = true)
@@ -4488,11 +4691,9 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * Allow the initCookie-function to throw exceptions if the local cookie store can not be created properly
-         *
          * Exceptions are invoked, normally when the function for initializing cookies can not create the storage directory. This is something you should consider disabled in a production environment.
          *
          * @param bool $enabled
-         *
          * @deprecated 6.0.20 No longer in use
          */
         public function setCookieExceptions($enabled = false)
@@ -4518,7 +4719,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Set up whether we should allow html parsing or not
          *
          * @param bool $enabled
-         *
          * @since      6.0
          * @deprecated 6.0.22 Use setDomContentParser and getDomContentParser
          */
@@ -4540,18 +4740,38 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
         }
 
         /**
+         * @param $isSpoofable
+         * @since 6.0.25
+         */
+        public function setSpoofableUserAgent($isSpoofable)
+        {
+            $this->spoofableUserAgent = $isSpoofable;
+        }
+
+        /**
+         * @return bool
+         * @since 6.0.25
+         */
+        public function getSpoofableUserAgent()
+        {
+            return $this->spoofableUserAgent;
+        }
+
+        /**
          * Set up a different user agent for this library
-         *
          * To make proper identification of the library we are always appending TorbeLIB+cUrl to the chosen user agent string.
          *
          * @param string $CustomUserAgent
          * @param array $inheritAgents Updates an array that might have lost some data
-         *
+         * @param bool $isSpoofable
          * @since 6.0
          */
-        public function setUserAgent($CustomUserAgent = "", $inheritAgents = [])
+        public function setUserAgent($CustomUserAgent = "", $inheritAgents = [], $isSpoofable = false)
         {
-
+            if (!$this->spoofableUserAgent) {
+                $this->spoofableUserAgent = $isSpoofable;
+                $this->HTTP_REAL_USER_AGENT = $CustomUserAgent;
+            }
             if (is_array($inheritAgents) && count($inheritAgents)) {
                 foreach ($inheritAgents as $inheritedAgentName) {
                     if (!in_array(trim($inheritedAgentName), $this->CUSTOM_USER_AGENT)) {
@@ -4561,43 +4781,46 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
             }
 
             if (!empty($CustomUserAgent)) {
-                $this->mergeUserAgent($CustomUserAgent);
+                $this->mergeUserAgent($CustomUserAgent, $isSpoofable);
             } else {
-                $this->HTTP_USER_AGENT = sprintf(
-                    '%s +TorneLIB-NetCURL-%s +%s +%s (%s)',
-                    $this->userAgents['Mozilla'],
-                    NETCURL_RELEASE,
-                    NETCURL_CURL_CLIENTNAME,
-                    NETCURL_CURL_RELEASE,
-                    $this->netCurlUrl
-                );
+                if (!$this->spoofableUserAgent) {
+                    $this->HTTP_USER_AGENT = sprintf(
+                        '%s +TorneLIB-NetCURL-%s +%s +%s (%s)',
+                        $this->userAgents['Mozilla'],
+                        NETCURL_RELEASE,
+                        NETCURL_CURL_CLIENTNAME,
+                        NETCURL_CURL_RELEASE,
+                        $this->netCurlUrl
+                    );
+                }
             }
         }
 
         /**
          * @param string $CustomUserAgent
-         *
+         * @param bool $isSpoofable
          * @since 6.0.20
          */
-        private function mergeUserAgent($CustomUserAgent = "")
+        private function mergeUserAgent($CustomUserAgent = "", $isSpoofable = false)
         {
             $trimmedUserAgent = trim($CustomUserAgent);
             if (!in_array($trimmedUserAgent, $this->CUSTOM_USER_AGENT)) {
                 $this->CUSTOM_USER_AGENT[] = $trimmedUserAgent;
             }
 
-            // NETCURL_CURL_CLIENTNAME . '-' . NETCURL_RELEASE . "/" . __CLASS__ . "-" . NETCURL_CURL_RELEASE
-            $this->HTTP_USER_AGENT = sprintf(
-                '%s +TorneLIB-NETCURL-%s +%s-%s (%s)',
-                implode(
-                    " ",
-                    $this->CUSTOM_USER_AGENT
-                ),
-                NETCURL_RELEASE,
-                NETCURL_CURL_CLIENTNAME,
-                NETCURL_CURL_RELEASE,
-                $this->netCurlUrl
-            );
+            if (!$this->spoofableUserAgent || !$isSpoofable) {
+                $this->HTTP_USER_AGENT = sprintf(
+                    '%s +TorneLIB-NETCURL-%s +%s-%s (%s)',
+                    implode(
+                        " ",
+                        $this->CUSTOM_USER_AGENT
+                    ),
+                    NETCURL_RELEASE,
+                    NETCURL_CURL_CLIENTNAME,
+                    NETCURL_CURL_RELEASE,
+                    $this->netCurlUrl
+                );
+            }
         }
 
         /**
@@ -4624,7 +4847,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param string $refererString
-         *
          * @since 6.0.9
          */
         public function setReferer($refererString = "")
@@ -4667,7 +4889,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          *
          * @param array|string $curlOptArrayOrKey If arrayed, there will be multiple options at once
          * @param null $curlOptValue If not null, and the first parameter is not an array, this is taken as a single update value.
-         *
          * @throws \Exception
          * @since 6.0
          */
@@ -4677,15 +4898,17 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
                 if (is_null($this->NETCURL_CURL_SESSION)) {
                     $this->initializeNetCurl();
                 }
+                // curlopt is normally in use from the top array, but as curl_setopt fails on invalid
+                // key/value combinations not all options here will be set properly.
                 if (is_array($curlOptArrayOrKey)) {
                     foreach ($curlOptArrayOrKey as $key => $val) {
                         $this->curlopt[$key] = $val;
-                        curl_setopt($this->NETCURL_CURL_SESSION, $key, $val);
+                        @curl_setopt($this->NETCURL_CURL_SESSION, $key, $val);
                     }
                 }
                 if (!is_array($curlOptArrayOrKey) && !empty($curlOptArrayOrKey) && !is_null($curlOptValue)) {
                     $this->curlopt[$curlOptArrayOrKey] = $curlOptValue;
-                    curl_setopt($this->NETCURL_CURL_SESSION, $curlOptArrayOrKey, $curlOptValue);
+                    @curl_setopt($this->NETCURL_CURL_SESSION, $curlOptArrayOrKey, $curlOptValue);
                 }
             }
         }
@@ -4695,7 +4918,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          *
          * @param array|string $curlOptArrayOrKey
          * @param null $curlOptValue
-         *
          * @throws \Exception
          * @since 6.0
          */
@@ -4708,7 +4930,7 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
                 if (!is_array($curlOptArrayOrKey) && !empty($curlOptArrayOrKey) && !is_null($curlOptValue)) {
                     if (!isset($this->curlopt[$curlOptArrayOrKey])) {
                         $this->curlopt[$curlOptArrayOrKey] = $curlOptValue;
-                        curl_setopt($this->NETCURL_CURL_SESSION, $curlOptArrayOrKey, $curlOptValue);
+                        @curl_setopt($this->NETCURL_CURL_SESSION, $curlOptArrayOrKey, $curlOptValue);
                     }
                 }
             }
@@ -4750,7 +4972,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Set up special SSL option array for communicators
          *
          * @param array $sslOptArray
-         *
          * @since 6.0.9
          */
         public function setSslOpt($sslOptArray = [])
@@ -4778,7 +4999,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Get the current version of the module
          *
          * @param bool $fullRelease
-         *
          * @return string
          * @since 5.0
          */
@@ -4848,7 +5068,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Check against Tornevall Networks API if there are updates for this module
          *
          * @param string $libName
-         *
          * @return string
          * @throws \Exception
          * @deprecated 6.0.20
@@ -4865,7 +5084,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param string $libName
-         *
          * @return string
          * @throws \Exception
          * @deprecated 6.0.20
@@ -4893,6 +5111,7 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          *
          * @return bool
          * @since 6.0.10
+         * @deprecated Removed from 6.1: Replaced with getSecurityLevelChange()
          */
         public function getSslIsUnsafe()
         {
@@ -4916,14 +5135,12 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * Automatically generates stream_context and appends it to whatever you need it for.
-         *
          * Example:
          *  $addonContextData = array('http' => array("user_agent" => "MyUserAgent"));
          *  $this->soapOptions = sslGetDefaultStreamContext($this->soapOptions, $addonContextData);
          *
          * @param array $optionsArray
          * @param array $addonContextData
-         *
          * @return array
          * @throws \Exception
          * @since 6.0
@@ -4937,7 +5154,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Set and/or append certificate bundle locations to current configuration
          *
          * @param array $locationArrayOrString
-         *
          * @return bool
          * @throws \Exception
          * @since 6.0
@@ -4962,11 +5178,9 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * Enable/disable SSL Certificate autodetection (and/or host/peer ssl verications)
-         *
          * The $hostVerification-flag can also be called manually with setSslVerify()
          *
          * @param bool $enabledFlag
-         *
          * @deprecated 6.0.20 Use setSslVerify
          */
         public function setCertAuto($enabledFlag = true)
@@ -4979,7 +5193,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          *
          * @param bool $strictCertificateVerification
          * @param bool $prohibitSelfSigned
-         *
          * @return void
          * @since 6.0
          */
@@ -5001,7 +5214,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param bool $sslFailoverEnabled
-         *
          * @since 6.0.22
          */
         public function setSslStrictFallback($sslFailoverEnabled = false)
@@ -5011,7 +5223,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param bool $sslFailoverEnabled
-         *
          * @since      6.0.20
          * @deprecated 6.0.22 Use setSslStrictFallback as it is better described
          */
@@ -5042,13 +5253,11 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * While doing SSL calls, and SSL certificate verifications is failing, enable the ability to skip SSL verifications.
-         *
          * Normally, we want a valid SSL certificate while doing https-requests, but sometimes the verifications must be disabled. One reason of this is
          * in cases, when crt-files are missing and PHP can not under very specific circumstances verify the peer. To allow this behaviour, the client
          * must use this function.
          *
          * @param bool $allowStrictFallback
-         *
          * @since      5.0
          * @deprecated 6.0.20 Use setStrictFallback
          */
@@ -5071,7 +5280,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * TestCerts - Test if your webclient has certificates available (make sure the $testssldeprecated are enabled if you want to test older PHP-versions - meaning older than 5.6.0)
-         *
          * Note: This function also forces full ssl certificate checking.
          *
          * @return bool
@@ -5176,7 +5384,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          *
          * @param     $ProxyAddr
          * @param int $ProxyType
-         *
          * @throws \Exception
          * @since 6.0
          */
@@ -5209,7 +5416,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Enable curl tunneling
          *
          * @param bool $curlTunnelEnable
-         *
          * @throws \Exception
          * @since 6.0.11
          */
@@ -5234,7 +5440,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param string $byWhat
-         *
          * @return array
          * @since 6.0.20
          */
@@ -5251,7 +5456,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
         /**
          * @param null $rawInput
          * @param bool $internalRaw
-         *
          * @return $this|array|null|NETCURL_HTTP_OBJECT
          * @throws \Exception
          */
@@ -5411,7 +5615,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param string $netCurlResponse
-         *
          * @return array|string|MODULE_CURL|NETCURL_HTTP_OBJECT
          * @throws \Exception
          */
@@ -5450,7 +5653,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Get head and body from a request parsed
          *
          * @param string $content
-         *
          * @return array
          * @throws \Exception
          * @since 6.0
@@ -5495,7 +5697,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Extract a parsed response from a webrequest
          *
          * @param null $inputResponse
-         *
          * @return null
          * @throws \Exception
          * @since 6.0.20
@@ -5525,7 +5726,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param $inputResponse
-         *
          * @return bool
          * @throws \Exception
          * @since 6.0.20
@@ -5547,7 +5747,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param $inputResponse
-         *
          * @return null
          * @since 6.0.20
          */
@@ -5564,7 +5763,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param $inputResponse
-         *
          * @return mixed
          * @since 6.0.20
          */
@@ -5580,7 +5778,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param $inputResponse
-         *
          * @return null
          * @since 6.0.20
          */
@@ -5599,7 +5796,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param null $ResponseContent
-         *
          * @return int
          * @since 6.0.20
          */
@@ -5620,7 +5816,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param null $ResponseContent
-         *
          * @return int
          * @since 6.0.20
          */
@@ -5640,7 +5835,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param null $ResponseContent
-         *
          * @return null
          * @since 6.0.20
          */
@@ -5679,7 +5873,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param null $ResponseContent
-         *
          * @return null|string
          * @since 6.0.20
          */
@@ -5704,7 +5897,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          *
          * @param      $keyName
          * @param null $responseContent
-         *
          * @return mixed|null
          * @throws \Exception
          * @since 6.0.20
@@ -5789,7 +5981,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Create an array of a header, with keys and values
          *
          * @param array $HeaderRows
-         *
          * @return array
          * @since 6.0
          */
@@ -5819,7 +6010,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Check if SOAP exists in system
          *
          * @param bool $extendedSearch Extend search for SOAP (unsafe method, looking for constants defined as SOAP_*)
-         *
          * @return bool
          * @since 6.0
          */
@@ -5843,7 +6033,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Defines if this library should be able to store the curl_getinfo() for each curl_exec that generates an exception
          *
          * @param bool $Activate
-         *
          * @since 6.0.6
          */
         public function setStoreSessionExceptions($Activate = false)
@@ -5902,7 +6091,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * @param string $url
          * @param array $postData
          * @param int $postAs
-         *
          * @return array|null|string|MODULE_CURL|NETCURL_HTTP_OBJECT
          * @throws \Exception
          * @since 5.0
@@ -5924,7 +6112,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * @param string $url
          * @param array $postData
          * @param int $postAs
-         *
          * @return array|null|string|MODULE_CURL|NETCURL_HTTP_OBJECT
          * @throws \Exception
          * @since 5.0
@@ -5946,7 +6133,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * @param string $url
          * @param array $postData
          * @param int $postAs
-         *
          * @return array|null|string|MODULE_CURL|NETCURL_HTTP_OBJECT
          * @throws \Exception
          * @since 5.0
@@ -5967,7 +6153,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          *
          * @param string $url
          * @param int $postAs
-         *
          * @return array|null|string|MODULE_CURL|NETCURL_HTTP_OBJECT
          * @throws \Exception
          * @since 5.0
@@ -5989,7 +6174,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * @param null $Username
          * @param null $Password
          * @param int $AuthType Falls back on CURLAUTH_ANY if none are given. NETCURL_AUTH_TYPES are minimalistic since it follows the standards of CURLAUTH_
-         *
          * @throws \Exception
          * @since 6.0
          */
@@ -6011,7 +6195,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Fix problematic header data by converting them to proper outputs.
          *
          * @param array $headerList
-         *
          * @since 6.0
          */
         private function fixHttpHeaders($headerList = [])
@@ -6033,7 +6216,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          *
          * @param string $key
          * @param string $value
-         *
          * @since 6.0
          */
         public function setCurlHeader($key = '', $value = '')
@@ -6144,7 +6326,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          *
          * @param bool $checkSafeMode If true, we will also check if safe_mode is active
          * @param bool $mockSafeMode If true, NetCurl will pretend safe_mode is true (for testing)
-         *
          * @return bool If true, PHP is in secure mode and won't allow things like follow-redirects and setting up different paths for certificates, etc
          * @since 6.0.20
          */
@@ -6170,7 +6351,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Get safe_mode status (mockable)
          *
          * @param bool $mockedSafeMode When active, this always returns true
-         *
          * @return bool
          * @since 6.0.20
          */
@@ -6192,7 +6372,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Trust the pems defined from SSL_MODULE
          *
          * @param bool $iTrustBundlesSetBySsl If this is false, NetCurl will trust internals (PHP + Curl) rather than pre-set pem bundles
-         *
          * @since 6.0.20
          */
         public function setTrustedSslBundles($iTrustBundlesSetBySsl = false)
@@ -6219,7 +6398,15 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          */
         private function setSslUserAgent()
         {
-            $this->setUserAgent(NETCURL_SSL_CLIENTNAME . "-" . NETCURL_SSL_RELEASE);
+            if (!$this->spoofableUserAgent) {
+                $this->setUserAgent(
+                    sprintf(
+                        '%s-%s',
+                        NETCURL_SSL_CLIENTNAME,
+                        NETCURL_SSL_RELEASE
+                    )
+                );
+            }
         }
 
         /**
@@ -6272,7 +6459,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Initializes internal curl driver
          *
          * @param bool $reinitialize
-         *
          * @throws \Exception
          * @since 6.0.20
          */
@@ -6449,6 +6635,9 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
                 $this->setCurlOptInternal(CURLOPT_REFERER, $this->NETCURL_HTTP_REFERER);
             }
             if (isset($this->HTTP_USER_AGENT) && !empty($this->HTTP_USER_AGENT)) {
+                if ($this->spoofableUserAgent && !empty($this->HTTP_REAL_USER_AGENT)) {
+                    $this->HTTP_USER_AGENT = $this->HTTP_REAL_USER_AGENT;
+                }
                 $this->setCurlOpt(CURLOPT_USERAGENT, $this->HTTP_USER_AGENT); // overwrite old
             }
             if (isset($this->HTTP_CHARACTER_ENCODING) && !empty($this->HTTP_CHARACTER_ENCODING)) {
@@ -6530,7 +6719,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * Add debug data
          *
          * @param $returnContent
-         *
          * @since 6.0.20
          */
         private function internal_curl_execute_add_debug($returnContent)
@@ -6573,14 +6761,16 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
                 // Special case: Resolver failures
                 if ($this->CURL_RESOLVER_FORCED && $this->CURL_RETRY_TYPES['resolve'] >= 2) {
-                    throw new \Exception(NETCURL_CURL_CLIENTNAME . " exception in " . __FUNCTION__ . ": The maximum tries of curl_exec() for " . $this->CURL_STORED_URL . " has been reached without any successful response. Normally, this happens after " . $this->CURL_RETRY_TYPES['resolve'] . " CurlResolveRetries and might be connected with a bad URL or similar that can not resolve properly.\nCurl error message follows: " . $errorMessage,
+                    throw new \Exception(
+                        NETCURL_CURL_CLIENTNAME . " exception in " . __FUNCTION__ . ": The maximum tries of curl_exec() for " . $this->CURL_STORED_URL . " has been reached without any successful response. Normally, this happens after " . $this->CURL_RETRY_TYPES['resolve'] . " CurlResolveRetries and might be connected with a bad URL or similar that can not resolve properly.\nCurl error message follows: " . $errorMessage,
                         $errorCode);
                 }
                 $this->internal_curl_error_resolver($errorCode, $errorMessage);
             }
 
             if ($this->NETCURL_ERRORHANDLER_HAS_ERRORS && !$this->NETCURL_ERRORHANDLER_RERUN) {
-                throw new \Exception(NETCURL_CURL_CLIENTNAME . " exception from PHP/CURL at " . __FUNCTION__ . ": " . curl_error($this->NETCURL_CURL_SESSION),
+                throw new \Exception(
+                    NETCURL_CURL_CLIENTNAME . " exception from PHP/CURL at " . __FUNCTION__ . ": " . curl_error($this->NETCURL_CURL_SESSION),
                     curl_errno($this->NETCURL_CURL_SESSION));
             }
 
@@ -6620,7 +6810,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          *
          * @param $errorCode
          * @param $errorMessage
-         *
          * @throws \Exception
          * @since 6.0.20
          */
@@ -6632,7 +6821,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
         /**
          * @param $errorCode
          * @param $errorMessage
-         *
          * @throws \Exception
          */
         private function sslVerificationAdjustment($errorCode, $errorMessage)
@@ -6681,12 +6869,16 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
         private function internal_curl_execute()
         {
             $returnContent = curl_exec($this->NETCURL_CURL_SESSION);
+
             $this->internal_curl_execute_add_debug($returnContent);
 
             if ($this->internal_curl_errors()) {
                 if ($this->internal_curl_can_rerun()) {
-                    return $this->executeUrlCall($this->CURL_STORED_URL, $this->POST_DATA_HANDLED,
-                        $this->NETCURL_POST_METHOD);
+                    return $this->executeUrlCall(
+                        $this->CURL_STORED_URL,
+                        $this->POST_DATA_HANDLED,
+                        $this->NETCURL_POST_METHOD
+                    );
                 }
             }
 
@@ -6745,7 +6937,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * @param array $postData
          * @param int $postMethod
          * @param int $postDataType
-         *
          * @return mixed
          * @throws \Exception
          * @since 6.0
@@ -6792,6 +6983,7 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
                         'opt' => $this->getCurlOptByKeys(),
                         'success' => true,
                         'exception' => null,
+                        'curlinfo' => curl_getinfo($this->NETCURL_CURL_SESSION)
                     ];
                 } catch (\Exception $e) {
                     throw new \Exception(NETCURL_CURL_CLIENTNAME . " exception from PHP/CURL at " . __FUNCTION__ . ": " . $e->getMessage(),
@@ -6799,8 +6991,17 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
                 }
             } else {
                 if (is_object($currentDriver) && method_exists($currentDriver, 'executeNetcurlRequest')) {
-                    $returnContent = $currentDriver->executeNetcurlRequest($this->CURL_STORED_URL,
-                        $this->POST_DATA_HANDLED, $this->NETCURL_POST_METHOD, $this->NETCURL_POST_DATA_TYPE);
+                    if (method_exists($currentDriver, 'setAuthentication') &&
+                        isset($this->AuthData) && isset($this->AuthData['Username']) && isset($this->AuthData['Password'])
+                    ) {
+                        $currentDriver->setAuthentication($this->AuthData['Username'], $this->AuthData['Password']);
+                    }
+                    $returnContent = $currentDriver->executeNetcurlRequest(
+                        $this->CURL_STORED_URL,
+                        $this->POST_DATA_HANDLED,
+                        $this->NETCURL_POST_METHOD,
+                        $this->NETCURL_POST_DATA_TYPE
+                    );
                 }
             }
 
@@ -6813,7 +7014,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * @param string $url
          * @param array $postData
          * @param int $CurlMethod
-         *
          * @return MODULE_SOAP
          * @throws \Exception
          * @since 6.0.14
@@ -6853,9 +7053,10 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
                     'previous' => null,
                 ];
             } catch (\Exception $getSoapResponseException) {
-
-                $this->sslVerificationAdjustment($getSoapResponseException->getCode(),
-                    $getSoapResponseException->getMessage());
+                $this->sslVerificationAdjustment(
+                    $getSoapResponseException->getCode(),
+                    $getSoapResponseException->getMessage()
+                );
 
                 $this->DEBUG_DATA['soapdata']['url'][] = [
                     'url' => $this->CURL_STORED_URL,
@@ -6890,7 +7091,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param null $responseInData
-         *
          * @return int
          * @since      6.0
          * @deprecated 6.0.20 Use getCode
@@ -6902,7 +7102,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param null $responseInData
-         *
          * @return null
          * @since      6.0
          * @deprecated 6.0.20 Use getBody
@@ -6914,7 +7113,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param null $responseInData
-         *
          * @return string
          * @since      6.0.16
          * @deprecated 6.0.20 Use getUrl
@@ -6926,7 +7124,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param null $inputResponse
-         *
          * @return null
          * @throws \Exception
          * @since      6.0
@@ -6940,7 +7137,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
         /**
          * @param null $keyName
          * @param null $responseContent
-         *
          * @return mixed|null
          * @throws \Exception
          * @since      6.0
@@ -6970,7 +7166,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @return array
-         *
          * @since      6.0.16
          * @deprecated 6.0.20
          */
@@ -7001,8 +7196,6 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
 			throw new \Exception( NETCURL_CURL_CLIENTNAME . " exception: Function " . $name . " does not exist!", $this->NETWORK->getExceptionCode( "NETCURL_UNEXISTENT_FUNCTION" ) );
 		}*/
-
-
     }
 }
 
@@ -7049,6 +7242,7 @@ if (!class_exists('MODULE_SOAP', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
      *
      * @package TorneLIB
      * @since   6.0.20
+     * @deprecated In v6.1 MODULE_SOAP is replaced by SoapClientWrapper.
      */
     class MODULE_SOAP extends MODULE_CURL
     {
@@ -7441,7 +7635,6 @@ if (!class_exists('MODULE_SOAP', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
             return $this->SoapFaultCode;
         }
 
-
         /**
          * Get the SOAP response independently on exceptions or successes
          *
@@ -7485,10 +7678,10 @@ if (!class_exists('Tornevall_SimpleSoap', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 }
 
 if (!defined('TORNELIB_CRYPTO_RELEASE')) {
-    define('TORNELIB_CRYPTO_RELEASE', '6.0.22');
+    define('TORNELIB_CRYPTO_RELEASE', '6.0.25');
 }
 if (!defined('TORNELIB_CRYPTO_MODIFY')) {
-    define('TORNELIB_CRYPTO_MODIFY', '20191207');
+    define('TORNELIB_CRYPTO_MODIFY', '20200419');
 }
 if (!defined('TORNELIB_CRYPTO_CLIENTNAME')) {
     define('TORNELIB_CRYPTO_CLIENTNAME', 'MODULE_CRYPTO');
@@ -7524,13 +7717,12 @@ if (!class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) &&
         'TorneLIB\MODULE_CRYPTO',
         CRYPTO_CLASS_EXISTS_AUTOLOAD
     ) && defined('TORNELIB_CRYPTO_ALLOW_AUTOLOAD') && TORNELIB_CRYPTO_ALLOW_AUTOLOAD === true) {
-
     /**
      * Class TorneLIB_Crypto
+     * @deprecated Not supported by netcurl 6.1 - maintenance only - soon updating to 6.1
      */
     class MODULE_CRYPTO
     {
-
         private $ENCRYPT_AES_KEY = "";
         private $ENCRYPT_AES_IV = "";
 
@@ -7662,8 +7854,7 @@ if (!class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) &&
                     $numchars[$charListId] = 0;
                 }
 
-                if (isset($characterListArray[$charListId][
-                    mt_rand(
+                if (isset($characterListArray[$charListId][mt_rand(
                         0,
                         (
                             strlen(
@@ -7732,7 +7923,6 @@ if (!class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) &&
          * Returns a selected character list array string as a new array
          *
          * @param string $type
-         *
          * @return array|false|string[]
          * @since 6.0.4
          */
@@ -7746,7 +7936,6 @@ if (!class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) &&
          *
          * @param array $type
          * @param bool $ambigous
-         *
          * @return mixed|string
          * @since 6.0.4
          */
@@ -7803,9 +7992,8 @@ if (!class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) &&
                         'numeric',
                         'specials',
                     ], $ambigous);
-                case 5:
-                    return $this->getRandomCharacterFromArray(['table']);
                 case 6:
+                case 5:
                     return $this->getRandomCharacterFromArray(['table']);
                 default:
                     return $this->getRandomCharacterFromArray('upper', $ambigous);
@@ -7818,7 +8006,6 @@ if (!class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) &&
          * @param int $complexity 1=UPPERCASE, 2=UPPERCASE+lowercase, 3=UPPERCASE+lowercase+numerics, 4=UPPERCASE,lowercase+numerics+specialcharacters, 5/6=Full character set
          * @param int $totalLength Length of the string
          * @param bool $ambigous Exclude what we see as ambigous characters (this has no effect in complexity > 4)
-         *
          * @return string
          * @since 6.0.4
          */
@@ -7842,7 +8029,7 @@ if (!class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) &&
          */
         public static function getRandomSalt($complexity = 4, $totalLength = 16, $ambigous = false)
         {
-            $selfInstance = new TorneLIB_Crypto();
+            $selfInstance = new MODULE_CRYPTO();
 
             return $selfInstance->mkpass($complexity, $totalLength, $ambigous);
         }
@@ -7960,8 +8147,12 @@ if (!class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) &&
                 $contentData = utf8_encode($decryptedContent);
             }
             /** @noinspection PhpDeprecationInspection */
-            $binEnc = mcrypt_encrypt(MCRYPT_RIJNDAEL_256, $this->ENCRYPT_AES_KEY, $contentData, MCRYPT_MODE_CBC,
-                $this->ENCRYPT_AES_IV);
+            $binEnc = mcrypt_encrypt(
+                MCRYPT_RIJNDAEL_256,
+                $this->ENCRYPT_AES_KEY,
+                $contentData, MCRYPT_MODE_CBC,
+                $this->ENCRYPT_AES_IV
+            );
             $baseEncoded = $this->base64url_encode($binEnc);
             if ($asBase64) {
                 return $baseEncoded;
@@ -8157,7 +8348,6 @@ if (!class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) &&
          */
         public function aesDecrypt($encryptedContent = "", $asBase64 = true)
         {
-
             if (!$this->USE_MCRYPT || version_compare(PHP_VERSION, '7.3', '>=')) {
                 return $this->getDecryptSsl($encryptedContent, $asBase64);
             }
@@ -8425,40 +8615,11 @@ if (!class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) &&
     }
 }
 
-/**
- * @todo Split extenders to another place
- */
-
-if (!class_exists('TORNELIB_CRYPTO_TYPES', CRYPTO_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists(
-        'TorneLIB\TORNELIB_CRYPTO_TYPES',
-        CRYPTO_CLASS_EXISTS_AUTOLOAD
-    )
-) {
-    abstract class TORNELIB_CRYPTO_TYPES
-    {
-        const TYPE_NONE = 0;
-        const TYPE_GZ = 1;
-        const TYPE_BZ2 = 2;
-    }
-}
-
-if (!class_exists('TorneLIB_Crypto', CRYPTO_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists(
-        'TorneLIB\TorneLIB_Crypto',
-        CRYPTO_CLASS_EXISTS_AUTOLOAD
-    )
-) {
-    class TorneLIB_Crypto extends MODULE_CRYPTO
-    {
-    }
-}
-
 if (!defined('TORNELIB_IO_RELEASE')) {
-    define('TORNELIB_IO_RELEASE', '6.0.17');
+    define('TORNELIB_IO_RELEASE', '6.0.21');
 }
 if (!defined('TORNELIB_IO_MODIFY')) {
-    define('TORNELIB_IO_MODIFY', '20190827');
+    define('TORNELIB_IO_MODIFY', '20200419');
 }
 if (!defined('TORNELIB_IO_CLIENTNAME')) {
     define('TORNELIB_IO_CLIENTNAME', 'MODULE_IO');
@@ -8501,10 +8662,11 @@ if (!class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) &&
      * Class MODULE_IO
      *
      * @package TorneLIB
+     * @deprecated Check v6.1 instead. PSR4 supported.
+     * Maintenance only (moving to separate package) and soon updating to 6.1
      */
     class MODULE_IO
     {
-
         /** @var TorneLIB_Crypto $CRYPTO */
         private $CRYPTO;
         /** @var bool Enforce usage SimpleXML objects even if XML_Serializer is present */
@@ -8529,7 +8691,7 @@ if (!class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) &&
         public function setCrypto()
         {
             if (empty($this->CRYPTO)) {
-                $this->CRYPTO = new TorneLIB_Crypto();
+                $this->CRYPTO = new MODULE_CRYPTO();
             }
         }
 
@@ -8675,7 +8837,7 @@ if (!class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) &&
          * @return object
          * @since 6.0.0
          */
-        public function arrayObjectToStdClass($objectArray = array(), $useJsonFunction = false)
+        public function arrayObjectToStdClass($objectArray = [], $useJsonFunction = false)
         {
             /**
              * If json_decode and json_encode exists as function, do it the simple way.
@@ -8684,7 +8846,7 @@ if (!class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) &&
             if ((function_exists('json_decode') && function_exists('json_encode')) || $useJsonFunction) {
                 return json_decode(json_encode($objectArray));
             }
-            $newArray = array();
+            $newArray = [];
             if (is_array($objectArray) || is_object($objectArray)) {
                 foreach ($objectArray as $itemKey => $itemValue) {
                     if (is_array($itemValue)) {
@@ -8709,9 +8871,9 @@ if (!class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) &&
          * @return array
          * @since 6.0.0
          */
-        public function objectsIntoArray($arrObjData, $arrSkipIndices = array())
+        public function objectsIntoArray($arrObjData, $arrSkipIndices = [])
         {
-            $arrData = array();
+            $arrData = [];
             // if input is object, convert into array
             if (is_object($arrObjData)) {
                 $arrObjData = get_object_vars($arrObjData);
@@ -8737,10 +8899,9 @@ if (!class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) &&
          *
          * @return mixed
          * @since 6.0.3
-         * @todo Fix PSR compliance (by switching the places of default arguments, if you do want to get rid of the nulled $xml)
-         * @todo Get rid of camelcase
+         * @deprecated Got rid of camelcase. Did it in PSR4. Upgrade to v6.1 ASAP.
          */
-        private function array_to_xml($dataArray = array(), $xml = null)
+        private function array_to_xml($dataArray = [], $xml = null)
         {
             foreach ($dataArray as $key => $value) {
                 $key = is_numeric($key) ? 'item' : $key;
@@ -8762,9 +8923,9 @@ if (!class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) &&
          * @return array
          * @since 6.0.0
          */
-        private function getUtf8($dataArray = array())
+        private function getUtf8($dataArray = [])
         {
-            $newArray = array();
+            $newArray = [];
             if (is_array($dataArray)) {
                 foreach ($dataArray as $p => $v) {
                     if (is_array($v) || is_object($v)) {
@@ -8789,7 +8950,7 @@ if (!class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) &&
          */
         public function isAssoc(array $arrayData)
         {
-            if (array() === $arrayData) {
+            if ([] === $arrayData) {
                 return false;
             }
 
@@ -8820,9 +8981,9 @@ if (!class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) &&
 
             if ($renderAndDie) {
                 if ($compression == TORNELIB_CRYPTO_TYPES::TYPE_GZ) {
-                    $contentString = array('gz' => $contentString);
+                    $contentString = ['gz' => $contentString];
                 } elseif ($compression == TORNELIB_CRYPTO_TYPES::TYPE_BZ2) {
-                    $contentString = array('bz2' => $contentString);
+                    $contentString = ['bz2' => $contentString];
                 }
             }
 
@@ -8841,7 +9002,7 @@ if (!class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) &&
          * @since 6.0.1
          */
         public function renderJson(
-            $contentData = array(),
+            $contentData = [],
             $renderAndDie = false,
             $compression = TORNELIB_CRYPTO_TYPES::TYPE_NONE
         ) {
@@ -8878,7 +9039,7 @@ if (!class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) &&
          * @since 6.0.1
          */
         public function renderPhpSerialize(
-            $contentData = array(),
+            $contentData = [],
             $renderAndDie = false,
             $compression = TORNELIB_CRYPTO_TYPES::TYPE_NONE
         ) {
@@ -8931,7 +9092,7 @@ if (!class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) &&
          * @since 6.0.1
          */
         public function renderYaml(
-            $contentData = array(),
+            $contentData = [],
             $renderAndDie = false,
             $compression = TORNELIB_CRYPTO_TYPES::TYPE_NONE
         ) {
@@ -8966,7 +9127,7 @@ if (!class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) &&
          * @since 6.0.1
          */
         public function renderXml(
-            $contentData = array(),
+            $contentData = [],
             $renderAndDie = false,
             $compression = TORNELIB_CRYPTO_TYPES::TYPE_NONE,
             $initialTagName = 'item',
@@ -8978,13 +9139,13 @@ if (!class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) &&
                 require_once('XML/Serializer.php');
             }
             $objectArrayEncoded = $this->getUtf8($this->objectsIntoArray($contentData));
-            $options = array(
+            $options = [
                 'indent' => '    ',
                 'linebreak' => "\n",
                 'encoding' => 'UTF-8',
                 'rootName' => $rootName,
-                'defaultTagName' => $initialTagName
-            );
+                'defaultTagName' => $initialTagName,
+            ];
             if (class_exists('XML_Serializer', IO_CLASS_EXISTS_AUTOLOAD) && !$this->ENFORCE_SIMPLEXML) {
                 $xmlSerializer = new \XML_Serializer($options);
                 $xmlSerializer->serialize($objectArrayEncoded);
@@ -9018,7 +9179,6 @@ if (!class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @param string $dataIn
-         *
          * @return mixed|string
          * @since 6.0.5
          */
@@ -9049,7 +9209,7 @@ if (!class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) &&
         {
             set_error_handler(function ($errNo, $errStr) {
                 throw new \Exception($errStr, $errNo);
-            }, E_ALL);
+            }, E_WARNING);
 
             $dataIn = trim($dataIn);
 
@@ -9098,12 +9258,24 @@ if (!class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) &&
                 }
             } else {
                 if (class_exists('SimpleXMLElement', IO_CLASS_EXISTS_AUTOLOAD)) {
+                    $options = defined('LIBXML_NOERROR') ? LIBXML_NOERROR : 32;
+                    if (function_exists('libxml_use_internal_errors')) {
+                        libxml_use_internal_errors(false);
+                    }
                     if (is_string($dataIn) && preg_match("/\<(.*?)\>/s", $dataIn)) {
-                        if ($this->ENFORCE_CDATA) {
-                            $simpleXML = new \SimpleXMLElement($dataIn, LIBXML_NOCDATA);
-                        } else {
-                            $simpleXML = new \SimpleXMLElement($dataIn);
+                        try {
+                            if ($this->ENFORCE_CDATA) {
+                                $options += defined('LIBXML_NOCDATA') ? LIBXML_NOCDATA : 16384;
+                                $simpleXML = new \SimpleXMLElement($dataIn, $options);
+                            } else {
+                                $simpleXML = new \SimpleXMLElement($dataIn, $options);
+                            }
+                        } catch (\Exception $e) {
+                            restore_error_handler();
+                            return null;
                         }
+                        restore_error_handler();
+
                         if (isset($simpleXML) && (is_object($simpleXML) || is_array($simpleXML))) {
                             if (!$normalize) {
                                 restore_error_handler();
@@ -9207,12 +9379,5 @@ if (!class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) &&
             }
         }
 
-    }
-}
-
-if (!class_exists('TorneLIB_IO', IO_CLASS_EXISTS_AUTOLOAD) && !class_exists('TorneLIB\TorneLIB_IO',
-        IO_CLASS_EXISTS_AUTOLOAD)) {
-    class TorneLIB_IO extends MODULE_IO
-    {
     }
 }
