@@ -25,6 +25,11 @@ use PHPUnit\Framework\TestCase;
 use Resursbank\MODULE_CURL;
 use Resursbank\MODULE_SOAP;
 use Resursbank\RBEcomPHP\MODULE_IO;
+use Resursbank\RBEcomPHP\RESURS_CALLBACK_TYPES;
+use Resursbank\RBEcomPHP\RESURS_ENVIRONMENTS;
+use Resursbank\RBEcomPHP\RESURS_FLOW_TYPES;
+use Resursbank\RBEcomPHP\RESURS_TEST_BRIDGE;
+use Resursbank\RBEcomPHP\ResursBank;
 
 // Global test configuration section starts here
 require_once(__DIR__ . "/classes/ResursBankTestClass.php");
@@ -91,6 +96,12 @@ class resursBankTest extends TestCase
         $this->API = new ResursBank();
         $this->API->setDebug(true);
         $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
+
+        // How to destroy tests: Inject cached wsdl.
+        //$CH = $this->TEST->ECOM->getCurlHandle();
+        //$CH->setCurlOpt(['cache_wsdl' => 3]);
+        //$this->TEST->ECOM->setCurlHandle($CH);
+
         $this->WEBDRIVER = new \RESURS_WEBDRIVER();
         if (!empty($this->webdriverFile) && file_exists(__DIR__ . '/' . $this->webdriverFile)) {
             $this->WEBDRIVER->init();
@@ -191,14 +202,14 @@ class resursBankTest extends TestCase
         }
 
         $this->TEST->ECOM->getAddress($this->flowHappyCustomer);
-        /** @var MODULE_CURL $lastCurlHandle */
+        /** @var \TorneLIB\MODULE_CURL $lastCurlHandle */
 
+        $lastCurlHandle = $this->TEST->ECOM->getCurlHandle(true);
         if (defined('TORNELIB_NETCURL_RELEASE') && version_compare(TORNELIB_NETCURL_RELEASE, '6.0.20', '<')) {
             // In versions prior to 6.0.20, you need to first extract the SOAP body from simpleSoap itself (via getLibResponse).
-            $lastCurlHandle = $this->TEST->ECOM->getCurlHandle(true);
-            /** @var MODULE_SOAP $lastCurlHandle */
+            /** @var \TorneLIB\MODULE_SOAP $lastCurlHandle */
             $soapLibResponse = $lastCurlHandle->getSoapResponse();
-            $selfParser = new MODULE_IO();
+            $selfParser = new \TorneLIB\MODULE_IO();
             $byIo = $selfParser->getFromXml($soapLibResponse['body'], true);
             /** @noinspection PhpUndefinedFieldInspection */
             static::assertTrue((
@@ -209,18 +220,26 @@ class resursBankTest extends TestCase
             return;
         }
 
-        // The XML parser in the IO MODULE should give the same response as the direct curl handle
-        // From NetCURL 6.0.20 and the IO library, this could be extracted directly from the curl handle
-        $selfParser = new MODULE_IO();
+        if (defined('NETCURL_VERSION') &&
+            version_compare(
+                NETCURL_VERSION,
+                '6.1',
+                '>='
+            )
+        ) {
+            $curlResponse = $lastCurlHandle->getParsed();
+            static::assertTrue(
+                $curlResponse->fullName == $this->flowHappyCustomerName
+            );
+            return;
+        }
+
         // Get the curl handle without bulk request
         $lastCurlHandle = $this->TEST->ECOM->getCurlHandle();
-
-        $byIo = $selfParser->getFromXml($lastCurlHandle->getBody(), true);
         $byHandle = $lastCurlHandle->getParsed();
 
         /** @noinspection PhpUndefinedFieldInspection */
         static::assertTrue(
-            $byIo->fullName == $this->flowHappyCustomerName &&
             $byHandle->fullName == $this->flowHappyCustomerName
         );
     }
@@ -610,7 +629,6 @@ class resursBankTest extends TestCase
      *
      * @param string $specificType
      * @param string $customerType
-     *
      * @return mixed
      * @throws \Exception
      */
@@ -640,9 +658,7 @@ class resursBankTest extends TestCase
     /**
      * @test
      * @testdox Test if getPaymentMethods work and in the same time cache it for future use
-     *
      * @param bool $noAssert
-     *
      * @throws \Exception
      */
     public function getPaymentMethods($noAssert = false)
@@ -703,8 +719,8 @@ class resursBankTest extends TestCase
     }
 
     /**
-     * @todo Countable issue linked to an IO event
      * @throws \Exception
+     * @todo Countable issue linked to an IO event
      */
     public function findPaymentsXmlBody()
     {
@@ -833,6 +849,9 @@ class resursBankTest extends TestCase
         try {
             $this->TEST->ECOM->unregisterEventCallback(255, true);
         } catch (\Exception $e) {
+            if ($e->getCode() === 1008) {
+                throw $e;
+            }
         }
         $callbacks = $this->TEST->ECOM->getCallBacksByRest();
         static::assertTrue(is_array($callbacks) && !count($callbacks) ? true : false);
@@ -1662,7 +1681,8 @@ class resursBankTest extends TestCase
      * @testdox Get iframeorigin from source or extract it from a session variable.
      * @throws \Exception
      */
-    public function getOwnOrigin() {
+    public function getOwnOrigin()
+    {
         $this->__setUp();
         $this->TEST->ECOM->setFlag('STORE_ORIGIN');
         $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
@@ -1676,9 +1696,20 @@ class resursBankTest extends TestCase
         $realOrigin = $this->TEST->ECOM->getIframeOrigin();
         $notRealOrigin = $this->TEST->ECOM->getIframeOrigin($extractFrom, true);
         static::assertTrue(
-            ($realOrigin === 'https://omnitest.resurs.com' &&
-                $notRealOrigin === $expect) ? true : false
+            (
+                $realOrigin === 'https://omnitest.resurs.com' &&
+                $notRealOrigin === $expect
+            ) ? true : false
         );
+    }
+
+    /**
+     *
+     */
+    public function netCore30Helper() {
+        $this->__setUp();
+        $req = $this->TEST->ECOM->getPaymentDiffByStatus('1573');
+        //print_R($req);
     }
 
     /**
