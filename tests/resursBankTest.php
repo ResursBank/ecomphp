@@ -1704,6 +1704,15 @@ class resursBankTest extends TestCase
     }
 
     /**
+     *
+     */
+    public function netCore30Helper() {
+        $this->__setUp();
+        $req = $this->TEST->ECOM->getPaymentDiffByStatus('1573');
+        //print_R($req);
+    }
+
+    /**
      * @test
      * @testdox Expect arrays regardless of response
      * @throws \Exception

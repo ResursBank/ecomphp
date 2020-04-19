@@ -7063,8 +7063,11 @@ class ResursBank
             if (is_array($paymentDiff) && count($paymentDiff)) {
                 // Inspired by DataGert.
                 foreach ($paymentDiff as $type => $paymentDiffObject) {
-                    $orderLinesByStatus = $this->getMergedPaymentDiff($paymentDiffObject->paymentSpec->specLines,
-                        $orderLinesByStatus, $paymentDiffObject->type);
+                    $orderLinesByStatus = $this->getMergedPaymentDiff(
+                        $paymentDiffObject->paymentSpec->specLines,
+                        $orderLinesByStatus,
+                        $paymentDiffObject->type
+                    );
                 }
             }
         }
