@@ -7,7 +7,7 @@
  * @author  Resurs Bank <support@resurs.se>
  * @author  Tomas Tornevall <tomas.tornevall@resurs.se>
  * @branch 1.1
- * @version 1.1.56
+ * @version 1.1.57
  * @deprecated Maintenance version only - Use composer based package v1.3 or higher if possible
  * @link https://test.resurs.com/docs/x/BACt Migration from 1.0/1.1 to 1.3 documentation
  * @link https://test.resurs.com/docs/x/TYNM Get started with EComPHP
@@ -53,13 +53,18 @@ if (file_exists(RB_API_PATH . '/ecomhooks.php')) {
 }
 
 use Exception;
+use TorneLIB\Module\Bit;
+use TorneLIB\MODULE_CRYPTO;
+use TorneLIB\MODULE_CURL;
+use TorneLIB\MODULE_NETWORK;
+use TorneLIB\NETCURL_POST_DATATYPES;
 
 // Globals starts here
 if (!defined('ECOMPHP_VERSION')) {
-    define('ECOMPHP_VERSION', '1.1.56');
+    define('ECOMPHP_VERSION', '1.1.57');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20200403');
+    define('ECOMPHP_MODIFY_DATE', '20200419');
 }
 
 /**
@@ -69,6 +74,7 @@ if (!defined('ECOMPHP_MODIFY_DATE')) {
 
 /**
  * Class ResursBank
+ *
  * @package Resursbank\RBEcomPHP
  */
 class ResursBank
@@ -348,7 +354,7 @@ class ResursBank
     /**
      * Another way to handle bitmasks (might be deprecated in future releases)
      *
-     * @var MODULE_NETBITS
+     * @var Bit
      */
     private $BIT;
     /**
@@ -1071,8 +1077,7 @@ class ResursBank
             if (($cTimeout = $this->getFlag('CURL_TIMEOUT')) > 0) {
                 $this->CURL->setTimeout($cTimeout);
             }
-            $this->NETWORK = new MODULE_NETWORK();
-            $this->BIT = $this->NETWORK->BIT;
+            $this->BIT = new Bit();
         }
         $this->wsdlServices = [];
         foreach ($this->ServiceRequestList as $reqType => $reqService) {
@@ -2267,7 +2272,7 @@ class ResursBank
     ) {
         $callbackArray = [];
         if ($isMultiple) {
-            $this->BIT = new MODULE_NETBITS();
+            $this->BIT = new Bit();
             $this->BIT->setBitStructure(
                 [
                     'UNFREEZE' => RESURS_CALLBACK_TYPES::UNFREEZE,
@@ -2546,6 +2551,8 @@ class ResursBank
             $this->CURL->setFlag("SOAPWARNINGS", true);
             $Service = $this->CURL->doGet($serviceNameUrl);
             try {
+                // Using call_user_func_array requires the parameters at this level to be pushed into an array.
+                //$RequestService = call_user_func_array(array($Service, $serviceName), [$resursParameters]);
                 $RequestService = $Service->$serviceName($resursParameters);
             } catch (\Exception $serviceRequestException) {
                 // Try to fetch previous exception (This is what we actually want)
@@ -4415,17 +4422,7 @@ class ResursBank
     private function getCustomerIp()
     {
         $this->isNetWork();
-
         $primaryAddress = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : "127.0.0.1";
-        // Warning: This is untested and currently returns an array instead of a string, which may break ecommerce
-        if (
-            $this->preferCustomerProxy &&
-            !empty($this->NETWORK) &&
-            is_array($this->NETWORK->getProxyHeaders()) &&
-            count($this->NETWORK->getProxyHeaders())
-        ) {
-            $primaryAddress = $this->NETWORK->getProxyHeaders();
-        }
 
         return $primaryAddress;
     }
@@ -5197,7 +5194,6 @@ class ResursBank
                 }
             }
         } catch (\Exception $e) {
-
         }
         $this->preparePayload($payment_id_or_method, $payload);
         if ($this->paymentMethodIsPsp) {
@@ -7070,8 +7066,11 @@ class ResursBank
             if (is_array($paymentDiff) && count($paymentDiff)) {
                 // Inspired by DataGert.
                 foreach ($paymentDiff as $type => $paymentDiffObject) {
-                    $orderLinesByStatus = $this->getMergedPaymentDiff($paymentDiffObject->paymentSpec->specLines,
-                        $orderLinesByStatus, $paymentDiffObject->type);
+                    $orderLinesByStatus = $this->getMergedPaymentDiff(
+                        $paymentDiffObject->paymentSpec->specLines,
+                        $orderLinesByStatus,
+                        $paymentDiffObject->type
+                    );
                 }
             }
         }
