@@ -20,16 +20,17 @@
  *
  * @package TorneLIB
  * @version 6.0.27
+ * @deprecated Initializer removed from 6.1.0
  */
 
 namespace Resursbank\RBEcomPHP;
 
 // Library Release Information
 if (!defined('NETCURL_RELEASE')) {
-    define('NETCURL_RELEASE', '6.0.27');
+    define('NETCURL_RELEASE', '6.0.28');
 }
 if (!defined('NETCURL_MODIFY')) {
-    define('NETCURL_MODIFY', '20200419');
+    define('NETCURL_MODIFY', '20200422');
 }
 if (!defined('TORNELIB_NETCURL_RELEASE')) {
     // Compatibility constant
@@ -123,6 +124,7 @@ if (!class_exists('NETCURL_DRIVER_GUZZLEHTTP', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
      * Inspections for classes and namespaces is ignored as they are dynamically loaded when they do exist.
      *
      * @package TorneLIB
+     * @deprecated Replaced with PSR4 compliances in v6.1
      */
     class NETCURL_DRIVER_GUZZLEHTTP implements NETCURL_DRIVERS_INTERFACE
     {
@@ -479,6 +481,7 @@ if (!class_exists('NETCURL_DRIVER_WORDPRESS',
      *
      * @package TorneLIB
      * @since 6.0.20
+     * @deprecated Replaced with PSR4 compliances in v6.1
      */
     class NETCURL_DRIVER_WORDPRESS implements NETCURL_DRIVERS_INTERFACE
     {
@@ -1146,6 +1149,7 @@ if (!class_exists('NETCURL_DRIVER_CONTROLLER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
      *
      * @package TorneLIB
      * @since   6.0.20
+     * @deprecated Removed in 6.1.0, each driver has its own "controller".
      */
     class NETCURL_DRIVER_CONTROLLER
     {
@@ -1563,6 +1567,7 @@ if (!class_exists('MODULE_SSL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
      * Class MODULE_SSL SSL Helper class
      *
      * @package TorneLIB
+     * @deprecated Replaced with PSR4 compliances in v6.1
      */
     class MODULE_SSL
     {
@@ -2209,6 +2214,7 @@ if (!class_exists('NETCURL_AUTH_TYPES', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
      *
      * @package TorneLIB
      * @since   6.0.20
+     * @deprecated Replaced with PSR4 compliances in v6.1
      */
     abstract class NETCURL_AUTH_TYPES
     {
@@ -2235,6 +2241,7 @@ if (!class_exists('NETCURL_HTTP_OBJECT', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
      *
      * @package TorneLIB
      * @since   6.0.20
+     * @deprecated Replaced with PSR4 compliances in v6.1
      */
     class NETCURL_HTTP_OBJECT
     {
@@ -2317,6 +2324,7 @@ if (!class_exists('NETCURL_POST_DATATYPES', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
      *
      * @package TorneLIB
      * @since 6.0.20
+     * @deprecated Replaced with PSR4 compliances in v6.1
      */
     abstract class NETCURL_POST_DATATYPES
     {
@@ -2358,6 +2366,7 @@ if (!class_exists('NETCURL_NETWORK_DRIVERS', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
      *
      * @package TorneLIB
      * @since   6.0.20
+     * @deprecated Replaced with PSR4 compliances in v6.1
      */
     abstract class NETCURL_NETWORK_DRIVERS
     {
@@ -2436,6 +2445,7 @@ if (!class_exists('NETCURL_IP_PROTOCOLS', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
      *
      * @package TorneLIB
      * @since   6.0.20
+     * @deprecated Entirely removed from 6.1.0
      */
     abstract class NETCURL_IP_PROTOCOLS
     {
@@ -2452,7 +2462,7 @@ if (!class_exists('TorneLIB_Network_IP', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
      * Class TorneLIB_Network_IP
      *
      * @package    TorneLIB
-     * @deprecated 6.0.20 Use NETCURL_IP_PROTOCOLS
+     * @deprecated 6.0.20 Use NETCURL_IP_PROTOCOLS - entirely removed from netcurl 6.1
      */
     abstract class TorneLIB_Network_IP extends NETCURL_IP_PROTOCOLS
     {
@@ -2486,6 +2496,7 @@ if (!class_exists('NETCURL_POST_METHODS', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
      *
      * @package TorneLIB
      * @since   6.0.20
+     * @deprecated Replaced with PSR4 compliances in v6.1
      */
     abstract class NETCURL_POST_METHODS
     {
@@ -2518,6 +2529,7 @@ if (!class_exists('NETCURL_RESOLVER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
      *
      * @package TorneLIB
      * @since   6.0.20
+     * @deprecated Replaced with PSR4 compliances in v6.1
      */
     abstract class NETCURL_RESOLVER
     {
@@ -2547,6 +2559,7 @@ if (!class_exists('NETCURL_RESPONSETYPE', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
      *
      * @package TorneLIB
      * @since   6.0.20
+     * @deprecated Replaced with PSR4 compliances in v6.1
      */
     abstract class NETCURL_RESPONSETYPE
     {
@@ -2588,6 +2601,7 @@ if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
      * @link    https://docs.tornevall.net/x/KQCy TorneLIB (PHP) Landing documentation
      * @link    https://bitbucket.tornevall.net/projects/LIB/repos/tornelib-php/browse Sources of TorneLIB
      * @package TorneLIB
+     * @deprecated Replaced with PSR4 compliances in v6.1
      */
     class MODULE_NETWORK
     {
@@ -2638,6 +2652,7 @@ if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          *
          * @param string $exceptionConstantName Constant name (make sure it exists before use)
          * @return int
+         * @deprecated It is recommended to use ExceptionHandler instead.
          */
         public function getExceptionCode($exceptionConstantName = 'NETCURL_NO_ERROR')
         {
@@ -2677,6 +2692,7 @@ if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * @param bool $keepCredentials
          * @return array
          * @throws \Exception
+         * @deprecated Moved to netcurl 6.1.
          */
         public function getGitTagsByVersion(
             $gitUrl,
@@ -2711,6 +2727,7 @@ if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * @return array
          * @throws \Exception
          * @since 6.0.4
+         * @deprecated Method moved to netcurl-6.1, use that directly instead of this old reference pointer.
          */
         public function getGitTagsByUrl(
             $gitUrl,
@@ -2792,6 +2809,7 @@ if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * @return array
          * @throws \Exception
          * @since 6.0.4
+         * @deprecated Moved to netcurl 6.1.
          */
         public function getMyVersionByGitTag($myVersion = '', $gitUrl = '')
         {
@@ -2814,6 +2832,7 @@ if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * @return bool
          * @throws \Exception
          * @since 6.0.4
+         * @deprecated Moved to netcurl 6.1
          */
         public function getVersionTooOld($myVersion = '', $gitUrl = '')
         {
@@ -2868,7 +2887,7 @@ if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
         /**
          * Extract urls from a text string and return as array
          *
-         * @param       $stringWithUrls
+         * @param $stringWithUrls
          * @param int $offset
          * @param int $urlLimit
          * @param array $protocols
@@ -3328,7 +3347,7 @@ if (!class_exists('TorneLIB_Network', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
      * Class MODULE_CURL
      *
      * @package    TorneLIB
-     * @deprecated 6.0.20 Use MODULE_NETWORK
+     * @deprecated From 6.0.20 use MODULE_NETWORK, removed in 6.1 and replaced with PSR4 compliances.
      */
     class TorneLIB_Network extends MODULE_NETWORK
     {
@@ -7666,7 +7685,7 @@ if (!class_exists('Tornevall_SimpleSoap', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
      * Class MODULE_CURL
      *
      * @package    TorneLIB
-     * @deprecated 6.0.20 Use MODULE_SOAP
+     * @deprecated 6.0.20 Use MODULE_SOAP, removed entirely in v6.1
      */
     class Tornevall_SimpleSoap extends MODULE_SOAP
     {
