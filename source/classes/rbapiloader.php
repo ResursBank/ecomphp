@@ -329,6 +329,11 @@ class ResursBank
     private $CURLDRIVER_VERSION = null;
 
     /**
+     * @var int
+     */
+    private $CURLDRIVER_WSDL_CACHE = 0;
+
+    /**
      * @var MODULE_CURL $CURL_USER_DEFINED
      */
     private $CURL_USER_DEFINED;
@@ -863,8 +868,10 @@ class ResursBank
 
         if (version_compare($this->CURLDRIVER_VERSION, '6.1.0', '>=') && !is_null($this->CURL)) {
             if ($enable) {
+                $this->CURLDRIVER_WSDL_CACHE = WSDL_CACHE_BOTH;
                 $this->CURL->setWsdlCache(WSDL_CACHE_BOTH);
             } else {
+                $this->CURLDRIVER_WSDL_CACHE = WSDL_CACHE_NONE;
                 $this->CURL->setWsdlCache(WSDL_CACHE_NONE);
             }
         }
@@ -1105,6 +1112,11 @@ class ResursBank
             } else {
                 $this->CURL = new MODULE_CURL();
             }
+
+            if (version_compare($this->getNcVersion(), '6.1.0', '>=') && $this->CURLDRIVER_WSDL_CACHE > 0) {
+                $this->CURL->setWsdlCache($this->CURLDRIVER_WSDL_CACHE);
+            }
+
             $this->CURL->setChain(false);
             if ($this->getSslSecurityDisabled()) {
                 $this->CURL->setSslVerify(false, false);
