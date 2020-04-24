@@ -855,10 +855,9 @@ class ResursBank
     /**
      * @return $this
      */
-    public function setProductionCache($enable)
+    public function setWsdlCache($enable)
     {
-        if (version_compare($this->CURLDRIVER_VERSION, '6.1.0', '>=') &&
-            $this->getEnvironment() === RESURS_ENVIRONMENTS::PRODUCTION
+        if (version_compare($this->CURLDRIVER_VERSION, '6.1.0', '>=')
         ) {
             if ($enable) {
                 $this->CURL->setWsdlCache(WSDL_CACHE_BOTH);
