@@ -684,6 +684,14 @@ class resursBankTest extends TestCase
      * @test
      */
     public function ncCache() {
+        // Time: 1.83 seconds, Memory: 14.00 MB
+        // Time: 411 ms, Memory: 14.00 MB
+
+        if (!defined('NETCURL_VERSION')) {
+            static::markTestSkipped('NETCURL_VERSION is not defined, so this is probably now 6.1.0');
+            return;
+        }
+
         $this->__setUp();
         $this->TEST->ECOM->setWsdlCache(true);
         $methods = $this->TEST->ECOM->getPaymentMethods();
