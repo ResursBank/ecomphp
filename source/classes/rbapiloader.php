@@ -1369,9 +1369,9 @@ class ResursBank
      *
      * @param string $MyUserAgent
      *
-     * @since 1.0.2
-     * @since 1.1.2
      * @throws \Exception
+     * @since 1.1.2
+     * @since 1.0.2
      */
     public function setUserAgent($MyUserAgent = '')
     {
@@ -2243,10 +2243,11 @@ class ResursBank
 
         throw new \ResursException(
             sprintf(
-                '%s exception %d: Could not register callback event %s (originally %s) via service %s.',
+                '%s exception code %d: Failed to register callback event %s (originally %s) via service %s.',
                 __FUNCTION__,
                 $code,
-                isset($renderCallback['eventType']) ? $renderCallback['eventType'] : 'Unknown eventType: $renderCallback[eventType] was never set',
+                isset($renderCallback['eventType']) ?
+                    $renderCallback['eventType'] : 'Unknown eventType: $renderCallback[eventType] was never set',
                 'RESURS_CALLBACK_TYPES::' . $requestedCallbackType,
                 $registerBy
             )
@@ -3207,8 +3208,8 @@ class ResursBank
      * @param $duration
      *
      * @return float
-     * @since 1.1.24
      * @throws \Exception
+     * @since 1.1.24
      */
     public function getAnnuityPriceByDuration($totalAmount, $paymentMethodIdOrFactorObject, $duration)
     {
@@ -3659,8 +3660,8 @@ class ResursBank
     }
 
     /**
-     * @param  string $paymentId The current paymentId
-     * @param  string $to What it should be updated to
+     * @param string $paymentId The current paymentId
+     * @param string $to What it should be updated to
      *
      * @return bool
      * @throws \Exception
@@ -4174,7 +4175,7 @@ class ResursBank
                 $vars = [
                     'priceInfoTabs' => $tab,
                     'priceInfoBlocks' => $block,
-                    'bodyOnly' => $bodyOnly
+                    'bodyOnly' => $bodyOnly,
                 ];
 
                 $return = $this->getHtmlTemplate($template['costofpriceinfo'], $vars);
@@ -5170,10 +5171,10 @@ class ResursBank
      * @param string $payment_id_or_method For ResursCheckout the payment id are preferred before the payment method
      * @param array $payload If there are any extra (or full) payload for the chosen payment, it should be placed here
      *
-     * @throws \Exception
-     * @since 1.0.2
-     * @since 1.1.2
      * @return array
+     * @throws \Exception
+     * @since 1.1.2
+     * @since 1.0.2
      */
     public function createPayment($payment_id_or_method = '', $payload = [])
     {
