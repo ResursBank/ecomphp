@@ -1113,7 +1113,7 @@ class ResursBank
                 $this->CURL = new MODULE_CURL();
             }
 
-            if (version_compare($this->getNcVersion(), '6.1.0', '>=') && $this->CURLDRIVER_WSDL_CACHE > 0) {
+            if (version_compare($this->CURLDRIVER_VERSION, '6.1.0', '>=') && $this->CURLDRIVER_WSDL_CACHE > 0) {
                 $this->CURL->setWsdlCache($this->CURLDRIVER_WSDL_CACHE);
             }
 
