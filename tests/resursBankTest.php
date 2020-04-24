@@ -685,9 +685,11 @@ class resursBankTest extends TestCase
      */
     public function ncCache() {
         $this->__setUp();
-        $this->TEST->ECOM->setProductionCache(true);
+        $this->TEST->ECOM->setWsdlCache(true);
         $methods = $this->TEST->ECOM->getPaymentMethods();
-        print_R($methods);
+        static::assertTrue(
+            count($methods) > 0
+        );
     }
 
     /**

@@ -853,12 +853,15 @@ class ResursBank
     }
 
     /**
+     * @param $enable
      * @return $this
+     * @throws Exception
      */
     public function setWsdlCache($enable)
     {
-        if (version_compare($this->CURLDRIVER_VERSION, '6.1.0', '>=')
-        ) {
+        $this->InitializeServices(false);
+
+        if (version_compare($this->CURLDRIVER_VERSION, '6.1.0', '>=') && !is_null($this->CURL)) {
             if ($enable) {
                 $this->CURL->setWsdlCache(WSDL_CACHE_BOTH);
             } else {
