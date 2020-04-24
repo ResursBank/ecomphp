@@ -7,7 +7,7 @@
  * @author  Resurs Bank <support@resurs.se>
  * @author  Tomas Tornevall <tomas.tornevall@resurs.se>
  * @branch  1.3
- * @version 1.3.36
+ * @version 1.3.38
  * @link    https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link    https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @link    https://test.resurs.com/docs/x/KAH1 EComPHP: Bitmasking features
@@ -58,10 +58,10 @@ use TorneLIB\NETCURL_POST_DATATYPES;
 
 // Globals starts here
 if (!defined('ECOMPHP_VERSION')) {
-    define('ECOMPHP_VERSION', '1.3.36');
+    define('ECOMPHP_VERSION', '1.3.38');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20200403');
+    define('ECOMPHP_MODIFY_DATE', '20200424');
 }
 
 /**
@@ -1369,9 +1369,9 @@ class ResursBank
      *
      * @param string $MyUserAgent
      *
-     * @since 1.0.2
-     * @since 1.1.2
      * @throws \Exception
+     * @since 1.1.2
+     * @since 1.0.2
      */
     public function setUserAgent($MyUserAgent = '')
     {
@@ -2134,6 +2134,7 @@ class ResursBank
         $basicAuthUserName = null,
         $basicAuthPassword = null
     ) {
+        $requestedCallbackType = $callbackType;
         $this->InitializeServices();
 
         // Not thrown = Success or skipped
@@ -2242,10 +2243,12 @@ class ResursBank
 
         throw new \ResursException(
             sprintf(
-                '%s exception %d: Could not register callback event %s via service %s.',
+                '%s exception code %d: Failed to register callback event %s (originally %s) via service %s.',
                 __FUNCTION__,
                 $code,
-                isset($renderCallback['eventType']) ? $renderCallback['eventType'] : 'Unknown eventType',
+                isset($renderCallback['eventType']) ?
+                    $renderCallback['eventType'] : 'Unknown eventType: $renderCallback[eventType] was never set',
+                'RESURS_CALLBACK_TYPES::' . $requestedCallbackType,
                 $registerBy
             )
         );
@@ -3205,8 +3208,8 @@ class ResursBank
      * @param $duration
      *
      * @return float
-     * @since 1.1.24
      * @throws \Exception
+     * @since 1.1.24
      */
     public function getAnnuityPriceByDuration($totalAmount, $paymentMethodIdOrFactorObject, $duration)
     {
@@ -3657,8 +3660,8 @@ class ResursBank
     }
 
     /**
-     * @param  string $paymentId The current paymentId
-     * @param  string $to What it should be updated to
+     * @param string $paymentId The current paymentId
+     * @param string $to What it should be updated to
      *
      * @return bool
      * @throws \Exception
@@ -4172,7 +4175,7 @@ class ResursBank
                 $vars = [
                     'priceInfoTabs' => $tab,
                     'priceInfoBlocks' => $block,
-                    'bodyOnly' => $bodyOnly
+                    'bodyOnly' => $bodyOnly,
                 ];
 
                 $return = $this->getHtmlTemplate($template['costofpriceinfo'], $vars);
@@ -5168,10 +5171,10 @@ class ResursBank
      * @param string $payment_id_or_method For ResursCheckout the payment id are preferred before the payment method
      * @param array $payload If there are any extra (or full) payload for the chosen payment, it should be placed here
      *
-     * @throws \Exception
-     * @since 1.0.2
-     * @since 1.1.2
      * @return array
+     * @throws \Exception
+     * @since 1.1.2
+     * @since 1.0.2
      */
     public function createPayment($payment_id_or_method = '', $payload = [])
     {
@@ -7063,8 +7066,11 @@ class ResursBank
             if (is_array($paymentDiff) && count($paymentDiff)) {
                 // Inspired by DataGert.
                 foreach ($paymentDiff as $type => $paymentDiffObject) {
-                    $orderLinesByStatus = $this->getMergedPaymentDiff($paymentDiffObject->paymentSpec->specLines,
-                        $orderLinesByStatus, $paymentDiffObject->type);
+                    $orderLinesByStatus = $this->getMergedPaymentDiff(
+                        $paymentDiffObject->paymentSpec->specLines,
+                        $orderLinesByStatus,
+                        $paymentDiffObject->type
+                    );
                 }
             }
         }
