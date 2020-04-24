@@ -7,7 +7,7 @@
  * @author  Resurs Bank <support@resurs.se>
  * @author  Tomas Tornevall <tomas.tornevall@resurs.se>
  * @branch  1.3
- * @version 1.3.36
+ * @version 1.3.38
  * @link    https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link    https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @link    https://test.resurs.com/docs/x/KAH1 EComPHP: Bitmasking features
@@ -58,10 +58,10 @@ use TorneLIB\NETCURL_POST_DATATYPES;
 
 // Globals starts here
 if (!defined('ECOMPHP_VERSION')) {
-    define('ECOMPHP_VERSION', '1.3.36');
+    define('ECOMPHP_VERSION', '1.3.38');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20200403');
+    define('ECOMPHP_MODIFY_DATE', '20200424');
 }
 
 /**
@@ -2134,6 +2134,7 @@ class ResursBank
         $basicAuthUserName = null,
         $basicAuthPassword = null
     ) {
+        $requestedCallbackType = $callbackType;
         $this->InitializeServices();
 
         // Not thrown = Success or skipped
@@ -2242,10 +2243,11 @@ class ResursBank
 
         throw new \ResursException(
             sprintf(
-                '%s exception %d: Could not register callback event %s via service %s.',
+                '%s exception %d: Could not register callback event %s (originally %s) via service %s.',
                 __FUNCTION__,
                 $code,
-                isset($renderCallback['eventType']) ? $renderCallback['eventType'] : 'Unknown eventType',
+                isset($renderCallback['eventType']) ? $renderCallback['eventType'] : 'Unknown eventType: $renderCallback[eventType] was never set',
+                'RESURS_CALLBACK_TYPES::' . $requestedCallbackType,
                 $registerBy
             )
         );
@@ -7063,8 +7065,11 @@ class ResursBank
             if (is_array($paymentDiff) && count($paymentDiff)) {
                 // Inspired by DataGert.
                 foreach ($paymentDiff as $type => $paymentDiffObject) {
-                    $orderLinesByStatus = $this->getMergedPaymentDiff($paymentDiffObject->paymentSpec->specLines,
-                        $orderLinesByStatus, $paymentDiffObject->type);
+                    $orderLinesByStatus = $this->getMergedPaymentDiff(
+                        $paymentDiffObject->paymentSpec->specLines,
+                        $orderLinesByStatus,
+                        $paymentDiffObject->type
+                    );
                 }
             }
         }
