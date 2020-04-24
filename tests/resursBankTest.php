@@ -681,6 +681,27 @@ class resursBankTest extends TestCase
     }
 
     /**
+     * @test
+     * netcurl 6.1.0 specific test with wsdl-cache vs without. This test activates the wsdl cache.
+     * Example of the results:
+     *   phpunit runtime: 1.83 seconds, Memory: 14.00 MB (not cached)
+     *   phpunit runtime: 411 ms, Memory: 14.00 MB (cached)
+     */
+    public function ncCache() {
+        if (!defined('NETCURL_VERSION')) {
+            static::markTestSkipped('NETCURL_VERSION is not defined, so this is probably now 6.1.0');
+            return;
+        }
+
+        $this->__setUp();
+        $this->TEST->ECOM->setWsdlCache(true);
+        $methods = $this->TEST->ECOM->getPaymentMethods();
+        static::assertTrue(
+            count($methods) > 0
+        );
+    }
+
+    /**
      * @test Direct test - Extract orderdata from library
      * @testdox
      * @throws \Exception
