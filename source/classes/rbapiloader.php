@@ -855,12 +855,16 @@ class ResursBank
     /**
      * @return $this
      */
-    public function setProductionCache()
+    public function setProductionCache($enable)
     {
         if (version_compare($this->CURLDRIVER_VERSION, '6.1.0', '>=') &&
             $this->getEnvironment() === RESURS_ENVIRONMENTS::PRODUCTION
         ) {
-            $this->CURL->setWsdlCache(WSDL_CACHE_BOTH);
+            if ($enable) {
+                $this->CURL->setWsdlCache(WSDL_CACHE_BOTH);
+            } else {
+                $this->CURL->setWsdlCache(WSDL_CACHE_NONE);
+            }
         }
 
         return $this;
@@ -869,7 +873,8 @@ class ResursBank
     /**
      * @return string
      */
-    private function getNcVersion() {
+    private function getNcVersion()
+    {
         $return = '';
 
         if (defined('NETCURL_RELEASE')) {
