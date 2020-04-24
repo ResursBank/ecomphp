@@ -324,6 +324,11 @@ class ResursBank
     private $CURL;
 
     /**
+     * @var null
+     */
+    private $CURLDRIVER_VERSION = null;
+
+    /**
      * @var MODULE_CURL $CURL_USER_DEFINED
      */
     private $CURL_USER_DEFINED;
@@ -744,6 +749,9 @@ class ResursBank
      * @var string
      */
     private $afterShopInvoiceExtRef = "";
+    /**
+     * @var bool
+     */
     private $isFirstInvoiceId = false;
 
     /**
@@ -806,6 +814,8 @@ class ResursBank
         $debug = false,
         $paramFlagSet = []
     ) {
+        $this->CURLDRIVER_VERSION = $this->getNcVersion();
+
         if (is_array($paramFlagSet) && count($paramFlagSet)) {
             $this->preSetEarlyFlags($paramFlagSet);
         }
@@ -840,6 +850,36 @@ class ResursBank
         }
         $this->setUserAgent();
         $this->E_DEPRECATED = new RESURS_DEPRECATED_FLOW();
+    }
+
+    /**
+     * @return $this
+     */
+    public function setProductionCache()
+    {
+        if (version_compare($this->CURLDRIVER_VERSION, '6.1.0', '>=') &&
+            $this->getEnvironment() === RESURS_ENVIRONMENTS::PRODUCTION
+        ) {
+            $this->CURL->setWsdlCache(WSDL_CACHE_BOTH);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    private function getNcVersion() {
+        $return = '';
+
+        if (defined('NETCURL_RELEASE')) {
+            $return = NETCURL_RELEASE;
+        }
+        if (defined('NETCURL_VERSION')) {
+            $return = NETCURL_VERSION;
+        }
+
+        return $return;
     }
 
     /**
