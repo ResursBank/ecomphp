@@ -681,6 +681,16 @@ class resursBankTest extends TestCase
     }
 
     /**
+     * @test
+     */
+    public function ncCache() {
+        $this->__setUp();
+        $this->TEST->ECOM->setProductionCache(true);
+        $methods = $this->TEST->ECOM->getPaymentMethods();
+        print_R($methods);
+    }
+
+    /**
      * @test Direct test - Extract orderdata from library
      * @testdox
      * @throws \Exception
