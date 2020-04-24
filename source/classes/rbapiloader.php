@@ -819,8 +819,6 @@ class ResursBank
         $debug = false,
         $paramFlagSet = []
     ) {
-        $this->CURLDRIVER_VERSION = $this->getNcVersion();
-
         if (is_array($paramFlagSet) && count($paramFlagSet)) {
             $this->preSetEarlyFlags($paramFlagSet);
         }
@@ -1112,6 +1110,7 @@ class ResursBank
             } else {
                 $this->CURL = new MODULE_CURL();
             }
+            $this->CURLDRIVER_VERSION = $this->getNcVersion();
 
             if (version_compare($this->CURLDRIVER_VERSION, '6.1.0', '>=') && $this->CURLDRIVER_WSDL_CACHE > 0) {
                 $this->CURL->setWsdlCache($this->CURLDRIVER_WSDL_CACHE);
