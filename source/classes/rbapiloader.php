@@ -639,7 +639,7 @@ class ResursBank
      *
      * @var bool
      */
-    private $registerCallbacksViaRest = true;
+    private $registerCallbacksViaRest = false;
 
     /// SOAP and WSDL
     /**
