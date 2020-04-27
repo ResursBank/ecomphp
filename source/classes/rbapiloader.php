@@ -1113,6 +1113,9 @@ class ResursBank
             } else {
                 $this->CURL = new MODULE_CURL();
             }
+            if (method_exists($this->CURL, 'setIdentifiers')) {
+                $this->CURL->setIdentifiers(true, true);
+            }
             $this->CURLDRIVER_VERSION = $this->getNcVersion();
 
             if (version_compare($this->CURLDRIVER_VERSION, '6.1.0', '>=') && $this->CURLDRIVER_WSDL_CACHE > 0) {
