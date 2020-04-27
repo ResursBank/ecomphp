@@ -58,7 +58,7 @@ use TorneLIB\MODULE_CURL;
 use TorneLIB\MODULE_NETWORK;
 use TorneLIB\NETCURL_POST_DATATYPES;
 
-// Globals starts here
+// Globals starts here. But should be deprecated if version tag can be fetched through their docblocks.
 if (!defined('ECOMPHP_VERSION')) {
     define('ECOMPHP_VERSION', '1.3.38');
 }
@@ -75,6 +75,7 @@ if (!defined('ECOMPHP_MODIFY_DATE')) {
  * Class ResursBank
  *
  * @package Resursbank\RBEcomPHP
+ * @version 1.3.38
  */
 class ResursBank
 {
