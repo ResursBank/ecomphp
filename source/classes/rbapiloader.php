@@ -1114,7 +1114,7 @@ class ResursBank
                 $this->CURL = new MODULE_CURL();
             }
             if (method_exists($this->CURL, 'setIdentifiers')) {
-                $this->CURL->setIdentifiers(true, true);
+                $this->CURL->setIdentifiers(true);
             }
             $this->CURLDRIVER_VERSION = $this->getNcVersion();
 
