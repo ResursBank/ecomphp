@@ -7,7 +7,7 @@
  * @author  Resurs Bank <support@resurs.se>
  * @author  Tomas Tornevall <tomas.tornevall@resurs.se>
  * @branch 1.0
- * @version 1.0.57
+ * @version 1.0.58
  * @deprecated Maintenance version only - Use composer based package v1.3 or higher if possible
  * @link https://test.resurs.com/docs/x/BACt Migration from 1.0/1.1 to 1.3 documentation
  * @link https://test.resurs.com/docs/x/TYNM Get started with EComPHP
@@ -60,12 +60,12 @@ use Resursbank\RBEcomPHP\RESURS_PAYMENT_STATUS_RETURNCODES;
 use Resursbank\RBEcomPHP\RESURS_URL_ENCODE_TYPES;
 use TorneLIB\Module\Bit;
 
-// Globals starts here
+// Globals starts here. But should be deprecated if version tag can be fetched through their docblocks.
 if (!defined('ECOMPHP_VERSION')) {
-    define('ECOMPHP_VERSION', '1.0.57');
+    define('ECOMPHP_VERSION', '1.0.58');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20200419');
+    define('ECOMPHP_MODIFY_DATE', '20200427');
 }
 
 /**
@@ -77,6 +77,7 @@ if (!defined('ECOMPHP_MODIFY_DATE')) {
  * Class ResursBank
  *
  * @package Resursbank\RBEcomPHP
+ * @version 1.0.58
  */
 class ResursBank
 {
