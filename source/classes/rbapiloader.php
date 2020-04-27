@@ -1386,6 +1386,7 @@ class ResursBank
      * @since 1.0.26
      * @since 1.1.26
      * @since 1.2.0
+     * @deprecated Do not use this. There's no guarantee that it will work.
      */
     public function getIsCurrent($testVersion = '')
     {
@@ -1404,6 +1405,7 @@ class ResursBank
      * @since 1.1.35
      * @since 1.2.8
      * @since 1.3.8
+     * @deprecated Do not use this. There's no guarantee that it will work.
      */
     public function getCurrentRelease()
     {
@@ -1420,6 +1422,7 @@ class ResursBank
      * @since 1.0.26
      * @since 1.1.26
      * @since 1.2.0
+     * @deprecated Do not use this. There's no guarantee that it will work.
      */
     public function getVersionsByGitTag()
     {
