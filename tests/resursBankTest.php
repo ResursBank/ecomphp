@@ -717,18 +717,6 @@ class resursBankTest extends TestCase
 
     /**
      * @test
-     * @testdox Make sure the current version of ECom is not 1.0.0 and getCurrentRelease() says something
-     * @throws \Exception
-     */
-    public function getCurrentReleaseTests()
-    {
-        $this->__setUp();
-        $currentReleaseShouldNotBeEmpty = $this->TEST->ECOM->getCurrentRelease();  // php 5.5
-        static::assertFalse($this->TEST->ECOM->getIsCurrent("1.0.0") && !empty($currentReleaseShouldNotBeEmpty));
-    }
-
-    /**
-     * @test
      * @throws \Exception
      */
     public function getAnnuityMethods()
