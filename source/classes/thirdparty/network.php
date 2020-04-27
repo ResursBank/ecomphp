@@ -1,27 +1,4 @@
 <?php
-/**
- * Copyright 2018 Tomas Tornevall & Tornevall Networks
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * Tornevall Networks netCurl library - Yet another http- and network communicator library
- * Each class in this library has its own version numbering to keep track of where the changes are. However, there is a
- * major version too.
- *
- * @package TorneLIB
- * @version 6.0.27
- * @deprecated Initializer removed from 6.1.0
- */
 
 namespace Resursbank\RBEcomPHP;
 
@@ -746,6 +723,7 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
      * Class NETCURL_PARSER Network communications driver detection
      *
      * @package TorneLIB
+     * @version 6.0.5
      * @deprecated netcurl 6.1 is rewritten without the guessing games.
      */
     class NETCURL_PARSER
@@ -780,7 +758,7 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * @param string $htmlContent
          * @param string $contentType
          * @param array $flags
-         * @throws Exception
+         * @throws \Exception
          * @since 6.0.0
          */
         public function __construct($htmlContent = '', $contentType = '', $flags = [])
@@ -792,9 +770,6 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
                 $this->NETCURL_PROHIBIT_DOMCONTENT_PARSE = $flags['NETCURL_PROHIBIT_DOMCONTENT_PARSE'];
             }
 
-            /*if (is_null($this->IO)) {
-                throw new \Exception( NETCURL_CURL_CLIENTNAME . " is missing MODULE_IO for rendering post data content", $this->NETWORK->getExceptionCode( 'NETCURL_PARSE_XML_FAILURE' ) );
-            }*/
             $this->PARSE_CONTAINER = $htmlContent;
             $this->PARSE_CONTENT_TYPE = $contentType;
             $this->PARSE_CONTENT_OUTPUT = $this->getContentByTest();
@@ -863,7 +838,9 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
         /**
          * @param bool $returnAsIs
          * @return null|string
+         * @throws \Exception
          * @since 6.0.0
+         * @deprecated Do not use this. It will be removed from version 6.1.0 anyway.
          */
         public function getContentByYaml($returnAsIs = false)
         {
@@ -973,8 +950,9 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @return array|null|string
-         * @throws Exception
+         * @throws \Exception
          * @since 6.0.0
+         * @deprecated Stop using this. Run by content-type instead.
          */
         private function getContentByTest()
         {
@@ -1567,6 +1545,7 @@ if (!class_exists('MODULE_SSL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
      * Class MODULE_SSL SSL Helper class
      *
      * @package TorneLIB
+     * @version 6.0.0
      * @deprecated Replaced with PSR4 compliances in v6.1
      */
     class MODULE_SSL
@@ -2245,7 +2224,6 @@ if (!class_exists('NETCURL_HTTP_OBJECT', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
      */
     class NETCURL_HTTP_OBJECT
     {
-
         private $NETCURL_HEADER;
         private $NETCURL_BODY;
         private $NETCURL_CODE;
@@ -2601,6 +2579,7 @@ if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
      * @link    https://docs.tornevall.net/x/KQCy TorneLIB (PHP) Landing documentation
      * @link    https://bitbucket.tornevall.net/projects/LIB/repos/tornelib-php/browse Sources of TorneLIB
      * @package TorneLIB
+     * @version 6.0.7
      * @deprecated Replaced with PSR4 compliances in v6.1
      */
     class MODULE_NETWORK
@@ -3351,7 +3330,7 @@ if (!class_exists('TorneLIB_Network', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
      */
     class TorneLIB_Network extends MODULE_NETWORK
     {
-        function __construct()
+        public function __construct()
         {
             parent::__construct();
         }
@@ -3379,6 +3358,7 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
      * @link    https://bitbucket.tornevall.net/projects/LIB/repos/tornelib-php-netcurl/browse Sources of TorneLIB
      * @link    https://docs.tornevall.net/x/KwCy Network & Curl v5 and v6 Library usage
      * @link    https://docs.tornevall.net/x/FoBU TorneLIB Full documentation
+     * @version 6.0.27
      * @since   6.0.20
      * @deprecated MODULE_CURL is still present in v6.1 but will be raised as a backward compatible module.
      */
@@ -7260,6 +7240,7 @@ if (!class_exists('MODULE_SOAP', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
      * Making no difference of a SOAP call and a regular GET/POST
      *
      * @package TorneLIB
+     * @version 6.0.6
      * @since   6.0.20
      * @deprecated In v6.1 MODULE_SOAP is replaced by SoapClientWrapper.
      */
@@ -7689,7 +7670,7 @@ if (!class_exists('Tornevall_SimpleSoap', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
      */
     class Tornevall_SimpleSoap extends MODULE_SOAP
     {
-        function __construct(string $Url, $that = null)
+        public function __construct(string $Url, $that = null)
         {
             parent::__construct($Url, $that);
         }
@@ -7697,10 +7678,10 @@ if (!class_exists('Tornevall_SimpleSoap', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 }
 
 if (!defined('TORNELIB_CRYPTO_RELEASE')) {
-    define('TORNELIB_CRYPTO_RELEASE', '6.0.25');
+    define('TORNELIB_CRYPTO_RELEASE', '6.0.26');
 }
 if (!defined('TORNELIB_CRYPTO_MODIFY')) {
-    define('TORNELIB_CRYPTO_MODIFY', '20200419');
+    define('TORNELIB_CRYPTO_MODIFY', '20200427');
 }
 if (!defined('TORNELIB_CRYPTO_CLIENTNAME')) {
     define('TORNELIB_CRYPTO_CLIENTNAME', 'MODULE_CRYPTO');
@@ -8635,10 +8616,10 @@ if (!class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) &&
 }
 
 if (!defined('TORNELIB_IO_RELEASE')) {
-    define('TORNELIB_IO_RELEASE', '6.0.21');
+    define('TORNELIB_IO_RELEASE', '6.0.22');
 }
 if (!defined('TORNELIB_IO_MODIFY')) {
-    define('TORNELIB_IO_MODIFY', '20200419');
+    define('TORNELIB_IO_MODIFY', '20200427');
 }
 if (!defined('TORNELIB_IO_CLIENTNAME')) {
     define('TORNELIB_IO_CLIENTNAME', 'MODULE_IO');
@@ -9375,6 +9356,7 @@ if (!class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) &&
          * @return array|mixed|object
          * @throws \Exception
          * @since 6.0.5
+         * @deprecated This might break stuff, so don't use it!
          */
         public function getFromYaml($yamlString = '', $getAssoc = true)
         {
@@ -9394,7 +9376,8 @@ if (!class_exists('MODULE_IO', IO_CLASS_EXISTS_AUTOLOAD) &&
                     return $this->arrayObjectToStdClass($extractYaml);
                 }
             } else {
-                throw new \Exception("yaml_parse not supported - ask your admin to install the driver", 404);
+                // Silently leave if there is no yaml_parse available. Noone cares anyway.
+                return null;
             }
         }
 
