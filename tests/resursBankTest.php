@@ -97,10 +97,16 @@ class resursBankTest extends TestCase
         $this->API->setDebug(true);
         $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
 
-        // How to destroy tests: Inject cached wsdl.
-        //$CH = $this->TEST->ECOM->getCurlHandle();
-        //$CH->setCurlOpt(['cache_wsdl' => 3]);
-        //$this->TEST->ECOM->setCurlHandle($CH);
+        if (defined('NETCURL_VERSION') &&
+            version_compare(NETCURL_VERSION, '6.1.0', '>=')
+        ) {
+            // How to destroy tests with netcurl-6.0: Inject cached wsdl.
+            // How to make them faster: Upgrade!
+            // This is an experimental part that runs all tests on cache when upgrading to v6.1
+            $CH = $this->TEST->ECOM->getCurlHandle();
+            $CH->setCurlOpt(['cache_wsdl' => 3]);
+            $this->TEST->ECOM->setCurlHandle($CH);
+        }
 
         $this->WEBDRIVER = new \RESURS_WEBDRIVER();
         if (!empty($this->webdriverFile) && file_exists(__DIR__ . '/' . $this->webdriverFile)) {
