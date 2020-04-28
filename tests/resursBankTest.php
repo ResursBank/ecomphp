@@ -1401,7 +1401,12 @@ class resursBankTest extends TestCase
         } catch (\Exception $e) {
             // Faultcode 700 = ECom Exception PAYMENT_SESSION_NOT_FOUND.
             // Faultcode 14 = Payment session does not exist.
-            static::assertTrue($e->getCode() === 700 || $e->getCode() === 14);
+            // Faultcode 404 = Probably caused by file_get_contents as the body can't be checked from there.
+            static::assertTrue(
+                $e->getCode() === 700 ||
+                $e->getCode() === 14 ||
+                $e->getCode() === 404
+            );
         }
     }
 
