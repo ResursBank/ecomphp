@@ -687,7 +687,8 @@ class resursBankTest extends TestCase
      *   phpunit runtime: 1.83 seconds, Memory: 14.00 MB (not cached)
      *   phpunit runtime: 411 ms, Memory: 14.00 MB (cached)
      */
-    public function ncCache() {
+    public function ncCache()
+    {
         if (!defined('NETCURL_VERSION')) {
             static::markTestSkipped('NETCURL_VERSION is not defined, so this is probably now 6.1.0');
             return;
@@ -1713,12 +1714,15 @@ class resursBankTest extends TestCase
     }
 
     /**
-     *
+     * This is not a test case. This is for a .NET-build.
+     * If it is running it will be included in the assertions anyway.
      */
-    public function netCore30Helper() {
+    public function netCore30HelperTest()
+    {
         $this->__setUp();
         $req = $this->TEST->ECOM->getPaymentDiffByStatus('1573');
-        //print_R($req);
+
+        static::assertTrue(true);
     }
 
     /**
