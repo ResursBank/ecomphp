@@ -89,6 +89,36 @@ class resursBankTest extends TestCase
     //protected $webdriverFile = 'selenium.jar';
 
     /**
+     * @param $code
+     * @param $message
+     */
+    private function bailOut($codeException = '', $message = '')
+    {
+        if (is_object($codeException) && method_exists($codeException, 'getCode')) {
+            /** @var \Exception $codeException */
+            $code = $codeException->getCode();
+            $message = $codeException->getMessage();
+        } else {
+            $code = intval($codeException);
+        }
+
+        if ($code >= 500) {
+            $haltExceptionString = sprintf(
+                'Halt on exception %s: %s',
+                $code,
+                $message
+            );
+            $haltExceptionString .= "Errors over 500 normally indicates that something went wrong in the test environment, " .
+                "that's why we also abort the entire test";
+
+            //echo $haltExceptionString;
+
+            static::fail($haltExceptionString);
+            die($haltExceptionString);
+        }
+    }
+
+    /**
      * @throws \Exception
      */
     public function __setUp()
@@ -146,11 +176,7 @@ class resursBankTest extends TestCase
         try {
             $this->TEST->getCredentialControl(false);
         } catch (\Exception $e) {
-            if ($e->getCode() >= 500) {
-                static::fail("Got internal server error (500) from Resurs Bank. This test usually returns 401 for access denied, but something went wrong this time.");
-
-                return;
-            }
+            $this->bailOut($e);
             static::assertTrue(($e->getCode() == 401));
         }
     }
@@ -290,6 +316,7 @@ class resursBankTest extends TestCase
             $this->TEST->ECOM->setMetaData('inboundKey', 'inboundValue');
             $this->TEST->ECOM->setMetaData('inboundKey', 'inboundValue');
         } catch (\Exception $e) {
+            $this->bailOut($e);
             static::assertTrue($e->getCode() === 400);
         }
     }
@@ -431,6 +458,7 @@ class resursBankTest extends TestCase
             try {
                 $this->TEST->ECOM->finalizePayment($payment->paymentId);
             } catch (\Exception $e) {
+                $this->bailOut($e);
                 static::assertTrue(
                     $e->getCode() === \RESURS_EXCEPTIONS::ECOMMERCEERROR_NOT_ALLOWED_IN_CURRENT_STATE,
                     'Finalization properly prohibited by current state'
@@ -865,6 +893,7 @@ class resursBankTest extends TestCase
         try {
             $this->TEST->ECOM->unregisterEventCallback(255, true);
         } catch (\Exception $e) {
+            $this->bailOut($e);
             if ($e->getCode() === 1008) {
                 throw $e;
             }
@@ -972,6 +1001,7 @@ class resursBankTest extends TestCase
         try {
             $this->TEST->ECOM->unregisterEventCallback(255, true, false);
         } catch (\Exception $e) {
+            $this->bailOut($e);
         }
         $callbacks = $this->TEST->ECOM->getCallBacksByRest(true);
         static::assertTrue(is_array($callbacks) && !count($callbacks) ? true : false);
@@ -1004,6 +1034,7 @@ class resursBankTest extends TestCase
         try {
             $this->TEST->ECOM->getPayment("FAIL_HERE");
         } catch (\Exception $e) {
+            $this->bailOut($e);
             $code = (int)$e->getCode();
             // Code 3 = REST, Code 8 = SOAP (180914)
             static::assertTrue($code === 8 || $code === 404);
@@ -1020,6 +1051,7 @@ class resursBankTest extends TestCase
             $this->TEST->ECOM->setFlag('GET_PAYMENT_BY_REST');
             $this->TEST->ECOM->getPayment('FAIL_HERE');
         } catch (\Exception $e) {
+            $this->bailOut($e);
             $code = (int)$e->getCode();
             // Code 3 = REST, Code 8 = SOAP (180914)
             static::assertTrue($code === 3 || $code === 404);
@@ -1036,6 +1068,7 @@ class resursBankTest extends TestCase
         try {
             $this->TEST->ECOM->getPayment('FAIL_HERE');
         } catch (\Exception $e) {
+            $this->bailOut($e);
             // This should NEVER throw anything else than 3 (REST) or 8 (SOAP)
             $code = $e->getCode();
             static::assertTrue($code === 8);
@@ -1096,13 +1129,7 @@ class resursBankTest extends TestCase
             $this->TEST->ECOM->annulPayment($paymentid, [['artNo' => 'PR01', 'quantity' => 50]]);
             $this->TEST->ECOM->finalizePayment($paymentid, [['artNo' => 'PR01', 'quantity' => 50]]);
         } catch (\Exception $e) {
-            if ($e->getCode() >= 500) {
-                static::markTestSkipped(
-                    sprintf('Test %s failed due to code >= 500 (%s). Skipped!', __FUNCTION__, $e->getCode())
-                );
-
-                return;
-            }
+            $this->bailOut($e);
         }
 
         static::assertTrue(
@@ -1148,13 +1175,7 @@ class resursBankTest extends TestCase
             $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 50);
             $this->TEST->ECOM->finalizePayment($paymentid);
         } catch (\Exception $e) {
-            if ($e->getCode() >= 500) {
-                static::markTestSkipped(
-                    sprintf('Test %s failed due to code >= 500 (%s). Skipped!', __FUNCTION__, $e->getCode())
-                );
-
-                return;
-            }
+            $this->bailOut($e);
         }
 
         static::assertTrue(
@@ -1260,13 +1281,7 @@ class resursBankTest extends TestCase
                 ]
             );
         } catch (\Exception $e) {
-            if ($e->getCode() >= 500) {
-                static::markTestSkipped(
-                    sprintf('Test %s failed due to code >= 500 (%s). Skipped!', __FUNCTION__, $e->getCode())
-                );
-
-                return;
-            }
+            $this->bailOut($e);
         }
 
         // The new creditec object does not seem to be reflected in its state.
@@ -1309,13 +1324,7 @@ class resursBankTest extends TestCase
             // Annul the rest (which gives us another 25 credits on PR01. Credited should at this point be 50.).
             $this->TEST->ECOM->cancelPayment($paymentid);
         } catch (\Exception $e) {
-            if ($e->getCode() >= 500) {
-                static::markTestSkipped(
-                    sprintf('Test %s failed due to code >= 500 (%s). Skipped!', __FUNCTION__, $e->getCode())
-                );
-
-                return;
-            }
+            $this->bailOut($e);
         }
 
         static::assertTrue(
@@ -1385,11 +1394,13 @@ class resursBankTest extends TestCase
         try {
             throw new \ResursException('Fail', 0, null, 'TEST_ERROR_CODE_AS_STRING', __FUNCTION__);
         } catch (\Exception $e) {
+            $this->bailOut($e);
             $firstCode = $e->getCode();
         }
         try {
             throw new \ResursException('Fail', 0, null, 'TEST_ERROR_CODE_AS_STRING_WITHOUT_CONSTANT', __FUNCTION__);
         } catch (\Exception $e) {
+            $this->bailOut($e);
             $secondCode = $e->getCode();
         }
 
@@ -1405,8 +1416,8 @@ class resursBankTest extends TestCase
         try {
             $this->TEST->ECOM->updatePaymentReference('not_this', 'not_that');
         } catch (\Exception $e) {
-            if ($e->getCode() !== 700 && $e->getCode() !== 14 && $e->getCode() !== 404)
-            {
+            $this->bailOut($e);
+            if ($e->getCode() !== 700 && $e->getCode() !== 14 && $e->getCode() !== 404) {
                 static::markTestSkipped(__FUNCTION__ . ' exception code mismatch: ' . $e->getCode());
                 return;
             }
@@ -1523,6 +1534,7 @@ class resursBankTest extends TestCase
             try {
                 $payment[$paymentIndex] = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715');
             } catch (\Exception $bookPaymentException) {
+                $this->bailOut($bookPaymentException);
                 if ($bookPaymentException->getCode() >= 500) {
                     static::markTestSkipped(
                         sprintf(
@@ -1541,6 +1553,7 @@ class resursBankTest extends TestCase
         try {
             $finalizationResponseNoInvoice = $this->TEST->ECOM->finalizePayment($payment[1]->paymentId);
         } catch (\Exception $noInvoiceException) {
+            $this->bailOut($noInvoiceException);
             $noErrorDynamic = true;
             if ($noInvoiceException->getCode() >= 500) {
                 static::markTestSkipped(
@@ -1561,6 +1574,7 @@ class resursBankTest extends TestCase
         try {
             $finalizationResponseYesInvoice = $this->TEST->ECOM->finalizePayment($payment[2]->paymentId);
         } catch (\Exception $yesInvoceException) {
+            $this->bailOut($yesInvoceException);
             $noErrorStatic = true;
             if ($yesInvoceException->getCode() >= 500) {
                 static::markTestSkipped(
@@ -1582,6 +1596,7 @@ class resursBankTest extends TestCase
         try {
             $finalizationResponseYesInvoiceFailTwice = $this->TEST->ECOM->finalizePayment($payment[3]->paymentId);
         } catch (\Exception $failTwiceException) {
+            $this->bailOut($failTwiceException);
             $noErrorStaticRepeat = true;
             if ($failTwiceException->getCode() >= 500) {
                 static::markTestSkipped(
@@ -1657,6 +1672,7 @@ class resursBankTest extends TestCase
         try {
             $this->TEST->ECOM->obsoleteMissingMethod();
         } catch (\Exception $e) {
+            $this->bailOut($e);
             static::assertTrue($e->getCode() === 501);
         }
     }
@@ -1688,6 +1704,7 @@ class resursBankTest extends TestCase
         try {
             $paymentInfo = $this->TEST->ECOM->getPayment($payment->paymentId);
         } catch (\Exception $e) {
+            $this->bailOut($e);
             // Special problems with SSL certificates and SoapClient is absent.
             if ($e->getCode() === 51) {
                 static::markTestSkipped(
@@ -1769,6 +1786,7 @@ class resursBankTest extends TestCase
             $this->TEST->ECOM->unregisterEventCallback(76, true);
             $this->TEST->ECOM->unregisterEventCallback(255, true);
         } catch (\Exception $e) {
+            $this->bailOut($e);
         }
         $callbacks = $this->TEST->ECOM->getCallBacksByRest(true);
         static::assertTrue(is_array($callbacks) && !count($callbacks) ? true : false);
