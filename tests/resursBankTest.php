@@ -696,7 +696,7 @@ class resursBankTest extends TestCase
     public function ncCache()
     {
         if (!defined('NETCURL_VERSION')) {
-            static::markTestSkipped('NETCURL_VERSION is not defined, so this is probably now 6.1.0');
+            static::markTestSkipped('NETCURL_VERSION is not defined, so this is probably not 6.1.0');
             return;
         }
 
