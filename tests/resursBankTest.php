@@ -479,7 +479,12 @@ class resursBankTest extends TestCase
     {
         if (!$this->allowVersion()) {
             static::markTestSkipped(
-                'Special test limited to one PHP version detected. This is the wrong version, so it is being skipped.'
+                sprintf(
+                    'Special test limited to one PHP version (%s) detected. ' .
+                    'This is the wrong version (%s), so it is being skipped.',
+                    isset($_ENV['standalone_ecom']) ? $_ENV['standalone_ecom'] : 'Detection failed',
+                    PHP_VERSION
+                )
             );
             return;
         }
@@ -1156,7 +1161,12 @@ class resursBankTest extends TestCase
     {
         if (!$this->allowVersion()) {
             static::markTestSkipped(
-                'Special test limited to one PHP version detected. This is the wrong version, so it is being skipped.'
+                sprintf(
+                    'Special test limited to one PHP version (%s) detected. ' .
+                    'This is the wrong version (%s), so it is being skipped.',
+                    isset($_ENV['standalone_ecom']) ? $_ENV['standalone_ecom'] : 'Detection failed',
+                    PHP_VERSION
+                )
             );
             return;
         }
@@ -1204,7 +1214,12 @@ class resursBankTest extends TestCase
     {
         if (!$this->allowVersion()) {
             static::markTestSkipped(
-                'Special test limited to one PHP version detected. This is the wrong version, so it is being skipped.'
+                sprintf(
+                    'Special test limited to one PHP version (%s) detected. ' .
+                    'This is the wrong version (%s), so it is being skipped.',
+                    isset($_ENV['standalone_ecom']) ? $_ENV['standalone_ecom'] : 'Detection failed',
+                    PHP_VERSION
+                )
             );
             return;
         }
@@ -1257,7 +1272,12 @@ class resursBankTest extends TestCase
     {
         if (!$this->allowVersion()) {
             static::markTestSkipped(
-                'Special test limited to one PHP version detected. This is the wrong version, so it is being skipped.'
+                sprintf(
+                    'Special test limited to one PHP version (%s) detected. ' .
+                    'This is the wrong version (%s), so it is being skipped.',
+                    isset($_ENV['standalone_ecom']) ? $_ENV['standalone_ecom'] : 'Detection failed',
+                    PHP_VERSION
+                )
             );
             return;
         }
@@ -1306,7 +1326,12 @@ class resursBankTest extends TestCase
     {
         if (!$this->allowVersion()) {
             static::markTestSkipped(
-                'Special test limited to one PHP version detected. This is the wrong version, so it is being skipped.'
+                sprintf(
+                    'Special test limited to one PHP version (%s) detected. ' .
+                    'This is the wrong version (%s), so it is being skipped.',
+                    isset($_ENV['standalone_ecom']) ? $_ENV['standalone_ecom'] : 'Detection failed',
+                    PHP_VERSION
+                )
             );
             return;
         }
@@ -1367,7 +1392,12 @@ class resursBankTest extends TestCase
     {
         if (!$this->allowVersion()) {
             static::markTestSkipped(
-                'Special test limited to one PHP version detected. This is the wrong version, so it is being skipped.'
+                sprintf(
+                    'Special test limited to one PHP version (%s) detected. ' .
+                    'This is the wrong version (%s), so it is being skipped.',
+                    isset($_ENV['standalone_ecom']) ? $_ENV['standalone_ecom'] : 'Detection failed',
+                    PHP_VERSION
+                )
             );
             return;
         }
@@ -1586,7 +1616,12 @@ class resursBankTest extends TestCase
     {
         if (!$this->allowVersion()) {
             static::markTestSkipped(
-                'Special test limited to one PHP version detected. This is the wrong version, so it is being skipped.'
+                sprintf(
+                    'Special test limited to one PHP version (%s) detected. ' .
+                    'This is the wrong version (%s), so it is being skipped.',
+                    isset($_ENV['standalone_ecom']) ? $_ENV['standalone_ecom'] : 'Detection failed',
+                    PHP_VERSION
+                )
             );
             return;
         }
