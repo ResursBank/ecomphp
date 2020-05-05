@@ -1746,7 +1746,6 @@ class resursBankTest extends TestCase
         try {
             $this->TEST->ECOM->obsoleteMissingMethod();
         } catch (\Exception $e) {
-            $this->bailOut($e);
             static::assertTrue($e->getCode() === 501);
         }
     }
