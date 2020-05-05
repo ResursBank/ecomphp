@@ -128,7 +128,7 @@ class resursBankTest extends TestCase
             $code = intval($codeException);
         }
 
-        if ($code >= 500) {
+        if ($code >= 500 && $code <= 600) {
             $haltExceptionString = sprintf(
                 'Halt on exception %s: %s',
                 $code,
