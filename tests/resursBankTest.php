@@ -47,6 +47,10 @@ if (file_exists("/etc/ecomphp.json")) {
     }
 }
 
+if (!isset($_ENV['standalone_ecom'])) {
+    $_ENV['standalone_ecom'] = '7.1';
+}
+
 /**
  * Class resursBankTest
  *
@@ -87,6 +91,28 @@ class resursBankTest extends TestCase
      * @var string
      */
     //protected $webdriverFile = 'selenium.jar';
+
+    /**
+     * Allow limited testing.
+     * @return bool
+     */
+    private function allowVersion()
+    {
+        $envFix = explode('.', $_ENV['standalone_ecom']);
+        $envFix[2] = '0';
+        $higherThan = implode('.', $envFix);
+        $envFix[1]++;
+        $lowerThan = implode('.', $envFix);
+
+        $return = false;
+        if (version_compare(PHP_VERSION, $higherThan, '>') &&
+            version_compare(PHP_VERSION, $lowerThan, '<')
+        ) {
+            $return = true;
+        }
+
+        return $return;
+    }
 
     /**
      * @param $code
@@ -390,7 +416,7 @@ class resursBankTest extends TestCase
      * @test
      *
      * @param string $govId
-     *
+     * @param bool $staticProductPrice
      * @return array
      * @throws \Exception
      */
@@ -451,6 +477,13 @@ class resursBankTest extends TestCase
      */
     public function finalizeFrozen()
     {
+        if (!$this->allowVersion()) {
+            static::markTestSkipped(
+                'Special test limited to one PHP version detected. This is the wrong version, so it is being skipped.'
+            );
+            return;
+        }
+
         $this->__setUp();
         $payment = $this->generateSimpleSimplifiedInvoiceOrder(true, '198101010000');
         if (isset($payment->paymentId) && $payment->bookPaymentStatus === 'FROZEN') {
@@ -1121,6 +1154,13 @@ class resursBankTest extends TestCase
      */
     public function annulAndDebitPaymentQuantityOldMethod()
     {
+        if (!$this->allowVersion()) {
+            static::markTestSkipped(
+                'Special test limited to one PHP version detected. This is the wrong version, so it is being skipped.'
+            );
+            return;
+        }
+
         $this->__setUp();
         try {
             $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder();
@@ -1162,6 +1202,13 @@ class resursBankTest extends TestCase
      */
     public function annulAndDebitedPaymentQuantityProperMethod()
     {
+        if (!$this->allowVersion()) {
+            static::markTestSkipped(
+                'Special test limited to one PHP version detected. This is the wrong version, so it is being skipped.'
+            );
+            return;
+        }
+
         $this->__setUp();
         try {
             // Four orderlines are normally created here.
@@ -1208,6 +1255,13 @@ class resursBankTest extends TestCase
      */
     public function annulDebitAndCreditPaymentQuantityProperMethod()
     {
+        if (!$this->allowVersion()) {
+            static::markTestSkipped(
+                'Special test limited to one PHP version detected. This is the wrong version, so it is being skipped.'
+            );
+            return;
+        }
+
         $this->__setUp();
         $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
         $paymentid = $payment->paymentId;
@@ -1250,6 +1304,13 @@ class resursBankTest extends TestCase
      */
     public function creditSomethingElse()
     {
+        if (!$this->allowVersion()) {
+            static::markTestSkipped(
+                'Special test limited to one PHP version detected. This is the wrong version, so it is being skipped.'
+            );
+            return;
+        }
+
         try {
             $this->__setUp();
             $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
@@ -1304,6 +1365,13 @@ class resursBankTest extends TestCase
      */
     public function cancelMixedPayment()
     {
+        if (!$this->allowVersion()) {
+            static::markTestSkipped(
+                'Special test limited to one PHP version detected. This is the wrong version, so it is being skipped.'
+            );
+            return;
+        }
+
         try {
             $this->__setUp();
             $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
@@ -1516,6 +1584,12 @@ class resursBankTest extends TestCase
      */
     public function finalizeWithoutInvoiceId()
     {
+        if (!$this->allowVersion()) {
+            static::markTestSkipped(
+                'Special test limited to one PHP version detected. This is the wrong version, so it is being skipped.'
+            );
+            return;
+        }
         $this->__setUp();
         $noErrorDynamic = false;
         $noErrorStatic = false;
@@ -1573,10 +1647,10 @@ class resursBankTest extends TestCase
         $this->TEST->ECOM->setFlag('AFTERSHOP_STATIC_INVOICE');
         try {
             $finalizationResponseYesInvoice = $this->TEST->ECOM->finalizePayment($payment[2]->paymentId);
-        } catch (\Exception $yesInvoceException) {
-            $this->bailOut($yesInvoceException);
+        } catch (\Exception $yesInvoiceException) {
+            $this->bailOut($yesInvoiceException);
             $noErrorStatic = true;
-            if ($yesInvoceException->getCode() >= 500) {
+            if ($yesInvoiceException->getCode() >= 500) {
                 static::markTestSkipped(
                     sprintf(
                         'Error >= 500 occurred in %s. Skip the rest (state: %s).',
