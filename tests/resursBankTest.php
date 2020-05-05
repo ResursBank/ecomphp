@@ -950,11 +950,11 @@ class resursBankTest extends TestCase
         }
         $callbacks = $this->TEST->ECOM->getCallBacksByRest();
         $noCriticalTrue = is_array($callbacks) && !count($callbacks) ? true : false;
-        if ($noCriticalTrue) {
-            static::assertTrue($noCriticalTrue);
+        if (!$noCriticalTrue) {
+            static::markTestSkipped('Callback count mismatched the assertion.');
             return;
         }
-        static::markTestSkipped('Callback count mismatched the assertion.');
+        static::assertTrue($noCriticalTrue);
     }
 
     /**
