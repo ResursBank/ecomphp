@@ -7,7 +7,7 @@
  * @author  Resurs Bank <support@resurs.se>
  * @author  Tomas Tornevall <tomas.tornevall@resurs.se>
  * @branch  1.3
- * @version 1.3.38
+ * @version 1.3.39
  * @link    https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link    https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @link    https://test.resurs.com/docs/x/KAH1 EComPHP: Bitmasking features
@@ -60,10 +60,10 @@ use TorneLIB\NETCURL_POST_DATATYPES;
 
 // Globals starts here. But should be deprecated if version tag can be fetched through their docblocks.
 if (!defined('ECOMPHP_VERSION')) {
-    define('ECOMPHP_VERSION', '1.3.38');
+    define('ECOMPHP_VERSION', '1.3.39');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20200427');
+    define('ECOMPHP_MODIFY_DATE', '20200511');
 }
 
 /**
@@ -818,7 +818,7 @@ class ResursBank
     function __construct(
         $login = '',
         $password = '',
-        $targetEnvironment = RESURS_ENVIRONMENTS::NOT_SET,
+        $targetEnvironment = RESURS_ENVIRONMENTS::TEST,
         $debug = false,
         $paramFlagSet = []
     ) {
@@ -851,7 +851,7 @@ class ResursBank
         $this->soapOptions['ssl_method'] = (defined('SOAP_SSL_METHOD_TLS') ? SOAP_SSL_METHOD_TLS : false);
 
         $this->setAuthentication($login, $password);
-        if ($targetEnvironment != RESURS_ENVIRONMENTS::NOT_SET) {
+        if ($targetEnvironment !== RESURS_ENVIRONMENTS::NOT_SET) {
             $this->setEnvironment($targetEnvironment);
         }
         $this->setUserAgent();
