@@ -62,7 +62,7 @@ use TorneLIB\Module\Bit;
 
 // Globals starts here. But should be deprecated if version tag can be fetched through their docblocks.
 if (!defined('ECOMPHP_VERSION')) {
-    define('ECOMPHP_VERSION', '1.0.59');
+    define('ECOMPHP_VERSION', '1.0.58');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
     define('ECOMPHP_MODIFY_DATE', '20200511');
