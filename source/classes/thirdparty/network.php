@@ -716,6 +716,8 @@ if (!class_exists('NETCURL_DRIVER_WORDPRESS',
         }
     }
 }
+use Exception;
+
 if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
     !class_exists('TorneLIB\NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD)
 ) {
@@ -758,7 +760,7 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * @param string $htmlContent
          * @param string $contentType
          * @param array $flags
-         * @throws \Exception
+         * @throws Exception
          * @since 6.0.0
          */
         public function __construct($htmlContent = '', $contentType = '', $flags = [])
@@ -773,6 +775,16 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
             $this->PARSE_CONTAINER = $htmlContent;
             $this->PARSE_CONTENT_TYPE = $contentType;
             $this->PARSE_CONTENT_OUTPUT = $this->getContentByTest();
+
+            // Consider the solution below.
+            /*try {
+                $this->PARSE_CONTENT_OUTPUT = $this->getContentByTest();
+            } catch (Exception $e) {
+                $this->PARSE_CONTENT_OUTPUT = $this->getContentByHeaderType(
+                    $this->PARSE_CONTAINER,
+                    $this->PARSE_CONTENT_TYPE
+                );
+            }*/
         }
 
         /**
@@ -838,7 +850,7 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
         /**
          * @param bool $returnAsIs
          * @return null|string
-         * @throws \Exception
+         * @throws Exception
          * @since 6.0.0
          * @deprecated Do not use this. It will be removed from version 6.1.0 anyway.
          */
@@ -950,13 +962,22 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @return array|null|string
-         * @throws \Exception
+         * @throws Exception
          * @since 6.0.0
          * @deprecated Stop using this. Run by content-type instead.
          */
         private function getContentByTest()
         {
             $returnNonNullValue = null;
+
+            // Trust content-type higher than the guessing game (NETCURL-290, implementation imported from netcur 6.1).
+            // Note: This solution support only xml and json.
+            if (!empty($this->PARSE_CONTENT_TYPE)) {
+                $response = $this->getContentByHeaderType($this->PARSE_CONTAINER, $this->PARSE_CONTENT_TYPE);
+                if ($response !== $this->PARSE_CONTAINER && !empty($response)) {
+                    return $response;
+                }
+            }
 
             if (!is_null($respond = $this->getContentByJson())) {
                 $returnNonNullValue = $respond;
@@ -973,6 +994,29 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
             return $returnNonNullValue;
         }
 
+        /**
+         * @param $content
+         * @param $contentType
+         * @return mixed|string|null
+         * @since 6.1.0 Imported feature.
+         */
+        private function getContentByHeaderType($content, $contentType)
+        {
+            $return = $content;
+
+            switch ($contentType) {
+                case (!empty($contentType) && preg_match('/\/xml/i', $contentType) ? true : false):
+                    $return = $this->getContentByXml();
+                    break;
+                case (preg_match('/\/json/i', $contentType) ? true : false):
+                    $return = json_decode($content);
+                    break;
+                default:
+                    break;
+            }
+
+            return $return;
+        }
 
         /**
          * Experimental: Convert DOMDocument to an array
@@ -1021,8 +1065,10 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
                             }
 
                             $idNoName = $nodeItem->tagName;
-                            // Forms without id namings will get the tagname. This will open up for reading forms and other elements without id's.
-                            // NOTE: If forms are not tagged with an id, the form will not render "properly" and the form fields might pop outside the real form.
+                            // Forms without id namings will get the tagname. This will open up for reading forms and
+                            // other elements without id's.
+                            // NOTE: If forms are not tagged with an id, the form will not render "properly" and the
+                            // form fields might pop outside the real form.
                             if (empty($elementData['id'])) {
                                 $elementData['id'] = $idNoName;
                             }
@@ -1064,7 +1110,7 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @return array
-         * @throws \Exception
+         * @throws Exception
          * @since 6.0.0
          */
         private function getDomElements()
@@ -1099,7 +1145,7 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
                     }
                 }
             } else {
-                throw new \Exception(
+                throw new Exception(
                     NETCURL_CURL_CLIENTNAME . " HtmlParse exception: Can not parse DOMDocuments without the DOMDocuments class",
                     $this->NETWORK->getExceptionCode("NETCURL_DOMDOCUMENT_CLASS_MISSING")
                 );

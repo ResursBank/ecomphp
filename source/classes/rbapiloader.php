@@ -7,7 +7,7 @@
  * @author  Resurs Bank <support@resurs.se>
  * @author  Tomas Tornevall <tomas.tornevall@resurs.se>
  * @branch 1.1
- * @version 1.1.58
+ * @version 1.1.59
  * @deprecated Maintenance version only - Use composer based package v1.3 or higher if possible
  * @link https://test.resurs.com/docs/x/BACt Migration from 1.0/1.1 to 1.3 documentation
  * @link https://test.resurs.com/docs/x/TYNM Get started with EComPHP
@@ -61,10 +61,10 @@ use TorneLIB\NETCURL_POST_DATATYPES;
 
 // Globals starts here. But should be deprecated if version tag can be fetched through their docblocks.
 if (!defined('ECOMPHP_VERSION')) {
-    define('ECOMPHP_VERSION', '1.1.58');
+    define('ECOMPHP_VERSION', '1.1.59');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20200427');
+    define('ECOMPHP_MODIFY_DATE', '20200511');
 }
 
 /**
@@ -640,7 +640,7 @@ class ResursBank
      *
      * @var bool
      */
-    private $registerCallbacksViaRest = true;
+    private $registerCallbacksViaRest = false;
 
     /// SOAP and WSDL
     /**
@@ -819,7 +819,7 @@ class ResursBank
     function __construct(
         $login = '',
         $password = '',
-        $targetEnvironment = RESURS_ENVIRONMENTS::NOT_SET,
+        $targetEnvironment = RESURS_ENVIRONMENTS::TEST,
         $debug = false,
         $paramFlagSet = []
     ) {
@@ -852,7 +852,7 @@ class ResursBank
         $this->soapOptions['ssl_method'] = (defined('SOAP_SSL_METHOD_TLS') ? SOAP_SSL_METHOD_TLS : false);
 
         $this->setAuthentication($login, $password);
-        if ($targetEnvironment != RESURS_ENVIRONMENTS::NOT_SET) {
+        if ($targetEnvironment !== RESURS_ENVIRONMENTS::NOT_SET) {
             $this->setEnvironment($targetEnvironment);
         }
         $this->setUserAgent();
@@ -1113,6 +1113,9 @@ class ResursBank
                 $this->CURL = $this->CURL_USER_DEFINED;
             } else {
                 $this->CURL = new MODULE_CURL();
+            }
+            if (method_exists($this->CURL, 'setIdentifiers')) {
+                $this->CURL->setIdentifiers(true);
             }
             $this->CURLDRIVER_VERSION = $this->getNcVersion();
 
@@ -1384,6 +1387,7 @@ class ResursBank
      * @since 1.0.26
      * @since 1.1.26
      * @since 1.2.0
+     * @deprecated Do not use this. There's no guarantee that it will work.
      */
     public function getIsCurrent($testVersion = '')
     {
@@ -1402,6 +1406,7 @@ class ResursBank
      * @since 1.1.35
      * @since 1.2.8
      * @since 1.3.8
+     * @deprecated Do not use this. There's no guarantee that it will work.
      */
     public function getCurrentRelease()
     {
@@ -1418,6 +1423,7 @@ class ResursBank
      * @since 1.0.26
      * @since 1.1.26
      * @since 1.2.0
+     * @deprecated Do not use this. There's no guarantee that it will work.
      */
     public function getVersionsByGitTag()
     {
