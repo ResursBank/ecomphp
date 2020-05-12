@@ -2067,7 +2067,22 @@ class ResursBank
                 $ResursResponse = $this->CURL->getParsed();
             }
         } catch (\Exception $restException) {
-            throw new ResursException($restException->getMessage(), $restException->getCode(), $restException);
+            $message = $restException->getMessage();
+            $code = $restException->getCode();
+            // Special recipes extracted from netcurl-6.1
+            if (method_exists($restException, 'getExtendException')) {
+                $extendedClass = $restException->getExtendException();
+                if (is_object($extendedClass) && method_exists($extendedClass, 'getParsed')) {
+                    $parsedExtended = $extendedClass->getParsed();
+                    if (isset($parsedExtended->description)) {
+                        $message .= ' (' . $parsedExtended . ')';
+                    }
+                    if (isset($parsedExtended->code) && $parsedExtended->code > 0) {
+                        $code = $parsedExtended->code;
+                    }
+                }
+            }
+            throw new ResursException($message, $code, $restException);
         }
         if ($ReturnAsArray) {
             $ResursResponseArray = [];
