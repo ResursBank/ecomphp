@@ -2067,7 +2067,7 @@ class ResursBank
                 $ResursResponse = $this->CURL->getParsed();
             }
         } catch (\Exception $restException) {
-            throw new ResursException($restException->getMessage(), $restException->getCode());
+            throw new ResursException($restException->getMessage(), $restException->getCode(), $restException);
         }
         if ($ReturnAsArray) {
             $ResursResponseArray = [];
