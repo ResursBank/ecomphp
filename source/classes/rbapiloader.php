@@ -1122,7 +1122,7 @@ class ResursBank
                 $this->CURL->setWsdlCache($this->CURLDRIVER_WSDL_CACHE);
             }
 
-            $this->CURL->setChain(false);
+            //$this->CURL->setChain(false);
             if ($this->getSslSecurityDisabled()) {
                 $this->CURL->setSslVerify(false, false);
             }
