@@ -2075,7 +2075,7 @@ class ResursBank
                 if (is_object($extendedClass) && method_exists($extendedClass, 'getParsed')) {
                     $parsedExtended = $extendedClass->getParsed();
                     if (isset($parsedExtended->description)) {
-                        $message .= ' (' . $parsedExtended . ')';
+                        $message .= ' (' . $parsedExtended->description . ')';
                     }
                     if (isset($parsedExtended->code) && $parsedExtended->code > 0) {
                         $code = $parsedExtended->code;
