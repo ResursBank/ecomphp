@@ -4,7 +4,8 @@
     "license": "Apache-2.0",
     "minimum-stability": "dev",
     "require": {
-        "tornevall/tornelib-php-netcurl": ">6.0"
+        "tornevall/tornelib-php-network": "^6.0",
+        "tornevall/tornelib-php-netcurl": ">6.1"
     },
     "authors": [
         {
