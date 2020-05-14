@@ -53,6 +53,7 @@ if (file_exists(RB_API_PATH . '/ecomhooks.php')) {
 }
 
 use Exception;
+use ResursException;
 use Resursbank\RBEcomPHP\MODULE_NETBITS;
 use Resursbank\RBEcomPHP\MODULE_CRYPTO;
 use Resursbank\RBEcomPHP\MODULE_CURL;
