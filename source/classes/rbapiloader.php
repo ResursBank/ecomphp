@@ -53,12 +53,13 @@ if (file_exists(RB_API_PATH . '/ecomhooks.php')) {
 }
 
 use Exception;
+use RESURS_EXCEPTIONS;
 use ResursException;
-use Resursbank\RBEcomPHP\MODULE_NETBITS;
 use Resursbank\RBEcomPHP\MODULE_CRYPTO;
 use Resursbank\RBEcomPHP\MODULE_CURL;
 use Resursbank\RBEcomPHP\MODULE_NETWORK;
 use Resursbank\RBEcomPHP\NETCURL_POST_DATATYPES;
+use Resursbank\RBEcomPHP\MODULE_NETBITS;
 
 // Globals starts here. But should be deprecated if version tag can be fetched through their docblocks.
 if (!defined('ECOMPHP_VERSION')) {
