@@ -66,10 +66,10 @@ use Resursbank\RBEcomPHP\NETCURL_POST_DATATYPES;
 
 // Globals starts here. But should be deprecated if version tag can be fetched through their docblocks.
 if (!defined('ECOMPHP_VERSION')) {
-    define('ECOMPHP_VERSION', '1.0.58');
+    define('ECOMPHP_VERSION', '1.0.59');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20200511');
+    define('ECOMPHP_MODIFY_DATE', '20200514');
 }
 
 /**
@@ -866,7 +866,7 @@ class ResursBank
 
     /**
      * @param $enable
-     * @return \Resursbank\RBEcomPHP\ResursBank
+     * @return $this
      * @throws Exception
      */
     public function setWsdlCache($enable)
@@ -1128,7 +1128,6 @@ class ResursBank
                 $this->CURL->setWsdlCache($this->CURLDRIVER_WSDL_CACHE);
             }
 
-            //$this->CURL->setChain(false);
             if ($this->getSslSecurityDisabled()) {
                 $this->CURL->setSslVerify(false, false);
             }
