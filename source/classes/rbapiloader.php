@@ -63,10 +63,10 @@ use Resursbank\RBEcomPHP\MODULE_NETBITS;
 
 // Globals starts here. But should be deprecated if version tag can be fetched through their docblocks.
 if (!defined('ECOMPHP_VERSION')) {
-    define('ECOMPHP_VERSION', '1.1.58');
+    define('ECOMPHP_VERSION', '1.1.59');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20200511');
+    define('ECOMPHP_MODIFY_DATE', '20200514');
 }
 
 /**
@@ -1125,7 +1125,6 @@ class ResursBank
                 $this->CURL->setWsdlCache($this->CURLDRIVER_WSDL_CACHE);
             }
 
-            //$this->CURL->setChain(false);
             if ($this->getSslSecurityDisabled()) {
                 $this->CURL->setSslVerify(false, false);
             }
