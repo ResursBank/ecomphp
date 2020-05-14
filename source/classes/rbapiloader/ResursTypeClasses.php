@@ -2,8 +2,6 @@
 
 namespace Resursbank\RBEcomPHP;
 
-use TorneLIB\MODULE_NETBITS;
-
 /**
  * Class RESURS_FLOW_TYPES
  *
