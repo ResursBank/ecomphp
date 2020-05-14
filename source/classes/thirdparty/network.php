@@ -93,9 +93,9 @@ if (!interface_exists('NETCURL_DRIVERS_INTERFACE', NETCURL_CLASS_EXISTS_AUTOLOAD
     }
 }
 
-if (!class_exists('NETCURL_DRIVER_GUZZLEHTTP', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\NETCURL_DRIVER_GUZZLEHTTP', NETCURL_CLASS_EXISTS_AUTOLOAD)
-) {
+if (!class_exists('NETCURL_DRIVER_GUZZLEHTTP',
+        NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\NETCURL_DRIVER_GUZZLEHTTP',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
     /**
      * Class NETCURL_DRIVER_GUZZLEHTTP Network communications driver detection
      * Inspections for classes and namespaces is ignored as they are dynamically loaded when they do exist.
@@ -448,7 +448,7 @@ if (!class_exists('NETCURL_DRIVER_GUZZLEHTTP', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
     }
 }
 if (!class_exists('NETCURL_DRIVER_WORDPRESS',
-        NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('TorneLIB\NETCURL_DRIVER_WORDPRESS',
+        NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\NETCURL_DRIVER_WORDPRESS',
         NETCURL_CLASS_EXISTS_AUTOLOAD)
 ) {
     /**
@@ -714,9 +714,8 @@ if (!class_exists('NETCURL_DRIVER_WORDPRESS',
         }
     }
 }
-if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD)
-) {
+if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\NETCURL_PARSER',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
     /**
      * Class NETCURL_PARSER Network communications driver detection
      *
@@ -1160,9 +1159,9 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
     }
 }
 
-if (!class_exists('NETCURL_DRIVER_CONTROLLER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\NETCURL_DRIVER_CONTROLLER', NETCURL_CLASS_EXISTS_AUTOLOAD)
-) {
+if (!class_exists('NETCURL_DRIVER_CONTROLLER',
+        NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\NETCURL_DRIVER_CONTROLLER',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
     /**
      * Class NETCURL_DRIVERS Network communications driver detection
      *
@@ -1569,9 +1568,8 @@ if (!class_exists('NETCURL_DRIVER_CONTROLLER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
     }
 }
 
-if (!class_exists('MODULE_SSL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\MODULE_SSL', NETCURL_CLASS_EXISTS_AUTOLOAD)
-) {
+if (!class_exists('MODULE_SSL', NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\MODULE_SSL',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
     if (!defined('NETCURL_SSL_RELEASE')) {
         define('NETCURL_SSL_RELEASE', '6.0.0');
     }
@@ -1954,8 +1952,8 @@ if (!defined('NETCURL_NETBITS_MODIFY')) {
 }
 
 // Check if there is a packagist release already loaded, since this network standalone release is deprecated as of 20180320.
-if (!class_exists('MODULE_NETBITS', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\MODULE_NETBITS', NETCURL_CLASS_EXISTS_AUTOLOAD)
+if (!class_exists('MODULE_NETBITS', NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\MODULE_NETBITS',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)
 ) {
     /**
      * Class TorneLIB_NetBits Netbits Library for calculations with bitmasks
@@ -2134,9 +2132,8 @@ if (!class_exists('MODULE_NETBITS', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
     }
 }
 
-if (!class_exists('TorneLIB_NetBits', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\TorneLIB_NetBits', NETCURL_CLASS_EXISTS_AUTOLOAD)
-) {
+if (!class_exists('TorneLIB_NetBits', NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\TorneLIB_NetBits',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
     /**
      * Class TorneLIB_NetBits
      *
@@ -2152,9 +2149,9 @@ if (!class_exists('TorneLIB_NetBits', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
     }
 }
 
-if (!class_exists('TorneLIB_NETCURL_EXCEPTIONS', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\TorneLIB_NETCURL_EXCEPTIONS', NETCURL_CLASS_EXISTS_AUTOLOAD)
-) {
+if (!class_exists('TorneLIB_NETCURL_EXCEPTIONS',
+        NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\TorneLIB_NETCURL_EXCEPTIONS',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
     /**
      * Class NETCURL_EXCEPTIONS
      *
@@ -2212,9 +2209,9 @@ if (!class_exists('TorneLIB_NETCURL_EXCEPTIONS', NETCURL_CLASS_EXISTS_AUTOLOAD) 
     }
 }
 
-if (!class_exists('TorneLIB_NETCURL_EXCEPTIONS', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\TorneLIB_NETCURL_EXCEPTIONS', NETCURL_CLASS_EXISTS_AUTOLOAD)
-) {
+if (!class_exists('TorneLIB_NETCURL_EXCEPTIONS',
+        NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\TorneLIB_NETCURL_EXCEPTIONS',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
     /**
      * Class TORNELIB_NETCURL_EXCEPTIONS
      *
@@ -2225,9 +2222,8 @@ if (!class_exists('TorneLIB_NETCURL_EXCEPTIONS', NETCURL_CLASS_EXISTS_AUTOLOAD) 
     {
     }
 }
-if (!class_exists('NETCURL_AUTH_TYPES', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\NETCURL_AUTH_TYPES', NETCURL_CLASS_EXISTS_AUTOLOAD)
-) {
+if (!class_exists('NETCURL_AUTH_TYPES', NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\NETCURL_AUTH_TYPES',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
     /**
      * Class CURL_AUTH_TYPES Available authentication types for use with password protected sites
      * The authentication types listed in this section defines what is fully supported by the module. In other cases you might be on your own.
@@ -2242,9 +2238,8 @@ if (!class_exists('NETCURL_AUTH_TYPES', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
         const AUTHTYPE_BASIC = 1;
     }
 }
-if (!class_exists('CURL_AUTH_TYPES', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\CURL_AUTH_TYPES', NETCURL_CLASS_EXISTS_AUTOLOAD)
-) {
+if (!class_exists('CURL_AUTH_TYPES', NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\CURL_AUTH_TYPES',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
     /**
      * @package    TorneLIB
      * @deprecated 6.0.20 Use NETCURL_AUTH_TYPES
@@ -2253,9 +2248,8 @@ if (!class_exists('CURL_AUTH_TYPES', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
     {
     }
 }
-if (!class_exists('NETCURL_HTTP_OBJECT', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\NETCURL_HTTP_OBJECT', NETCURL_CLASS_EXISTS_AUTOLOAD)
-) {
+if (!class_exists('NETCURL_HTTP_OBJECT', NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\NETCURL_HTTP_OBJECT',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
     /**
      * Class NETCURL_CURLOBJECT
      *
@@ -2314,9 +2308,8 @@ if (!class_exists('NETCURL_HTTP_OBJECT', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
     }
 }
 
-if (!class_exists('TORNELIB_CURLOBJECT', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\TORNELIB_CURLOBJECT', NETCURL_CLASS_EXISTS_AUTOLOAD)
-) {
+if (!class_exists('TORNELIB_CURLOBJECT', NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\TORNELIB_CURLOBJECT',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
     /**
      * Class TORNELIB_CURLOBJECT
      *
@@ -2334,9 +2327,9 @@ if (!class_exists('TORNELIB_CURLOBJECT', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
     }
 }
 
-if (!class_exists('NETCURL_POST_DATATYPES', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\NETCURL_POST_DATATYPES', NETCURL_CLASS_EXISTS_AUTOLOAD)
-) {
+if (!class_exists('NETCURL_POST_DATATYPES',
+        NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\NETCURL_POST_DATATYPES',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
     /**
      * Class NETCURL_POST_DATATYPES
      * Prepared formatting for POST-content in this library (Also available from for example PUT)
@@ -2354,9 +2347,8 @@ if (!class_exists('NETCURL_POST_DATATYPES', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
         const DATATYPE_SOAP_XML = 4;
     }
 }
-if (!class_exists('CURL_POST_AS', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\CURL_POST_AS', NETCURL_CLASS_EXISTS_AUTOLOAD)
-) {
+if (!class_exists('CURL_POST_AS', NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\CURL_POST_AS',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
     /**
      * @package TorneLIB
      * @deprecated 6.0.20 Use NETCURL_POST_DATATYPES
@@ -2377,9 +2369,9 @@ if (!class_exists('CURL_POST_AS', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
         const POST_AS_SOAP = 2;
     }
 }
-if (!class_exists('NETCURL_NETWORK_DRIVERS', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\NETCURL_NETWORK_DRIVERS', NETCURL_CLASS_EXISTS_AUTOLOAD)
-) {
+if (!class_exists('NETCURL_NETWORK_DRIVERS',
+        NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\NETCURL_NETWORK_DRIVERS',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
     /**
      * Class NETCURL_NETWORK_DRIVERS Supported network Addons
      *
@@ -2407,9 +2399,9 @@ if (!class_exists('NETCURL_NETWORK_DRIVERS', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
     }
 }
 
-if (!class_exists('TORNELIB_CURL_DRIVERS', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\TORNELIB_CURL_DRIVERS', NETCURL_CLASS_EXISTS_AUTOLOAD)
-) {
+if (!class_exists('TORNELIB_CURL_DRIVERS',
+        NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\TORNELIB_CURL_DRIVERS',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
     /**
      * Class TORNELIB_CURL_DRIVERS
      *
@@ -2421,9 +2413,8 @@ if (!class_exists('TORNELIB_CURL_DRIVERS', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
     }
 }
 
-if (!class_exists('NETCURL_ENVIRONMENT', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\NETCURL_ENVIRONMENT', NETCURL_CLASS_EXISTS_AUTOLOAD)
-) {
+if (!class_exists('NETCURL_ENVIRONMENT', NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\NETCURL_ENVIRONMENT',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
     /**
      * Class NETCURL_ENVIRONMENT Unittest helping class
      *
@@ -2438,9 +2429,9 @@ if (!class_exists('NETCURL_ENVIRONMENT', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
     }
 }
 
-if (!class_exists('TORNELIB_CURL_ENVIRONMENT', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\TORNELIB_CURL_ENVIRONMENT', NETCURL_CLASS_EXISTS_AUTOLOAD)
-) {
+if (!class_exists('TORNELIB_CURL_ENVIRONMENT',
+        NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\TORNELIB_CURL_ENVIRONMENT',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
     /** @noinspection PhpDeprecationInspection */
 
     /**
@@ -2456,9 +2447,9 @@ if (!class_exists('TORNELIB_CURL_ENVIRONMENT', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
     }
 }
 
-if (!class_exists('NETCURL_IP_PROTOCOLS', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\NETCURL_IP_PROTOCOLS', NETCURL_CLASS_EXISTS_AUTOLOAD)
-) {
+if (!class_exists('NETCURL_IP_PROTOCOLS',
+        NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\NETCURL_IP_PROTOCOLS',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
     /**
      * Class NETCURL_IP_PROTOCOLS IP Address Types class
      *
@@ -2474,9 +2465,8 @@ if (!class_exists('NETCURL_IP_PROTOCOLS', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
     }
 
 }
-if (!class_exists('TorneLIB_Network_IP', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\TorneLIB_Network_IP', NETCURL_CLASS_EXISTS_AUTOLOAD)
-) {
+if (!class_exists('TorneLIB_Network_IP', NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\TorneLIB_Network_IP',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
     /**
      * Class TorneLIB_Network_IP
      *
@@ -2491,9 +2481,9 @@ if (!class_exists('TorneLIB_Network_IP', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
     }
 }
 
-if (!class_exists('TorneLIB_Network_IP_Protocols', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\TorneLIB_Network_IP_Protocols', NETCURL_CLASS_EXISTS_AUTOLOAD)
-) {
+if (!class_exists('TorneLIB_Network_IP_Protocols',
+        NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\TorneLIB_Network_IP_Protocols',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
     /** @noinspection PhpDeprecationInspection */
 
     /**
@@ -2507,9 +2497,9 @@ if (!class_exists('TorneLIB_Network_IP_Protocols', NETCURL_CLASS_EXISTS_AUTOLOAD
     }
 }
 
-if (!class_exists('NETCURL_POST_METHODS', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\NETCURL_POST_METHODS', NETCURL_CLASS_EXISTS_AUTOLOAD)
-) {
+if (!class_exists('NETCURL_POST_METHODS',
+        NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\NETCURL_POST_METHODS',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
     /**
      * Class NETCURL_POST_METHODS List of methods available in this library
      *
@@ -2528,9 +2518,8 @@ if (!class_exists('NETCURL_POST_METHODS', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
     }
 }
 
-if (!class_exists('CURL_METHODS', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\CURL_METHODS', NETCURL_CLASS_EXISTS_AUTOLOAD)
-) {
+if (!class_exists('CURL_METHODS', NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\CURL_METHODS',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
     /**
      * @package    TorneLIB
      * @deprecated 6.0.20 Use NETCURL_POST_METHODS
@@ -2540,9 +2529,8 @@ if (!class_exists('CURL_METHODS', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
     }
 }
 
-if (!class_exists('NETCURL_RESOLVER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\NETCURL_RESOLVER', NETCURL_CLASS_EXISTS_AUTOLOAD)
-) {
+if (!class_exists('NETCURL_RESOLVER', NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\NETCURL_RESOLVER',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
     /**
      * Class NETCURL_RESOLVER Class definitions on how to resolve things on lookups
      *
@@ -2558,9 +2546,8 @@ if (!class_exists('NETCURL_RESOLVER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
     }
 }
 
-if (!class_exists('CURL_RESOLVER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\CURL_RESOLVER', NETCURL_CLASS_EXISTS_AUTOLOAD)
-) {
+if (!class_exists('CURL_RESOLVER', NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\CURL_RESOLVER',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
     /**
      * @package    TorneLIB
      * @deprecated 6.0.20 Use NETCURL_RESOLVER
@@ -2570,9 +2557,9 @@ if (!class_exists('CURL_RESOLVER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
     }
 }
 
-if (!class_exists('NETCURL_RESPONSETYPE', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\NETCURL_RESPONSETYPE', NETCURL_CLASS_EXISTS_AUTOLOAD)
-) {
+if (!class_exists('NETCURL_RESPONSETYPE',
+        NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\NETCURL_RESPONSETYPE',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
     /**
      * Class NETCURL_RESPONSETYPE Assoc or object?
      *
@@ -2586,9 +2573,9 @@ if (!class_exists('NETCURL_RESPONSETYPE', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
         const RESPONSETYPE_OBJECT = 1;
     }
 
-    if (!class_exists('TORNELIB_CURL_RESPONSETYPE', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-        !class_exists('TorneLIB\TORNELIB_CURL_RESPONSETYPE', NETCURL_CLASS_EXISTS_AUTOLOAD)
-    ) {
+    if (!class_exists('TORNELIB_CURL_RESPONSETYPE',
+            NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\TORNELIB_CURL_RESPONSETYPE',
+            NETCURL_CLASS_EXISTS_AUTOLOAD)) {
 
         /**
          * Class TORNELIB_CURL_RESPONSETYPE
@@ -2602,9 +2589,8 @@ if (!class_exists('NETCURL_RESPONSETYPE', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
     }
 }
 
-if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD)
-) {
+if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\MODULE_NETWORK',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
     if (!defined('NETCURL_NETWORK_RELEASE')) {
         define('NETCURL_NETWORK_RELEASE', '6.0.7RC1');
     }
@@ -3264,7 +3250,7 @@ if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          */
         public function isIpInRange($IP, $CIDR)
         {
-            list ($net, $mask) = explode("/", $CIDR);
+            [$net, $mask] = explode("/", $CIDR);
             $ip_net = ip2long($net);
             $ip_mask = ~((1 << (32 - $mask)) - 1);
             $ip_ip = ip2long($IP);
@@ -3360,9 +3346,8 @@ if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
     }
 }
 
-if (!class_exists('TorneLIB_Network', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\TorneLIB_Network', NETCURL_CLASS_EXISTS_AUTOLOAD)
-) {
+if (!class_exists('TorneLIB_Network', NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\TorneLIB_Network',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
     /**
      * Class MODULE_CURL
      *
@@ -3378,9 +3363,8 @@ if (!class_exists('TorneLIB_Network', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
     }
 }
 
-if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD)
-) {
+if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\MODULE_CURL',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
     if (!defined('NETCURL_CURL_RELEASE')) {
         define('NETCURL_CURL_RELEASE', '6.0.28');
     }
@@ -7245,9 +7229,8 @@ if (!class_exists('MODULE_CURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
     }
 }
 
-if (!class_exists('Tornevall_cURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\Tornevall_cURL', NETCURL_CLASS_EXISTS_AUTOLOAD)
-) {
+if (!class_exists('Tornevall_cURL', NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\Tornevall_cURL',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
     /**
      * Class MODULE_CURL
      *
@@ -7268,9 +7251,8 @@ if (!class_exists('Tornevall_cURL', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
     }
 }
 
-if (!class_exists('MODULE_SOAP', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\MODULE_SOAP', NETCURL_CLASS_EXISTS_AUTOLOAD)
-) {
+if (!class_exists('MODULE_SOAP', NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\MODULE_SOAP',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
     if (!defined('NETCURL_SIMPLESOAP_RELEASE')) {
         define('NETCURL_SIMPLESOAP_RELEASE', '6.0.6');
     }
@@ -7706,9 +7688,9 @@ if (!class_exists('MODULE_SOAP', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
     }
 }
 
-if (!class_exists('Tornevall_SimpleSoap', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists('TorneLIB\Tornevall_SimpleSoap', NETCURL_CLASS_EXISTS_AUTOLOAD)
-) {
+if (!class_exists('Tornevall_SimpleSoap',
+        NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\Tornevall_SimpleSoap',
+        NETCURL_CLASS_EXISTS_AUTOLOAD)) {
     /**
      * Class MODULE_CURL
      *
@@ -7725,10 +7707,10 @@ if (!class_exists('Tornevall_SimpleSoap', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 }
 
 if (!defined('TORNELIB_CRYPTO_RELEASE')) {
-    define('TORNELIB_CRYPTO_RELEASE', '6.0.26');
+    define('TORNELIB_CRYPTO_RELEASE', '6.0.27');
 }
 if (!defined('TORNELIB_CRYPTO_MODIFY')) {
-    define('TORNELIB_CRYPTO_MODIFY', '20200427');
+    define('TORNELIB_CRYPTO_MODIFY', '20200514');
 }
 if (!defined('TORNELIB_CRYPTO_CLIENTNAME')) {
     define('TORNELIB_CRYPTO_CLIENTNAME', 'MODULE_CRYPTO');
@@ -7759,11 +7741,8 @@ if (defined('TORNELIB_CRYPTO_REQUIRE')) {
     }
 }
 
-if (!class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) &&
-    !class_exists(
-        'TorneLIB\MODULE_CRYPTO',
-        CRYPTO_CLASS_EXISTS_AUTOLOAD
-    ) && defined('TORNELIB_CRYPTO_ALLOW_AUTOLOAD') && TORNELIB_CRYPTO_ALLOW_AUTOLOAD === true) {
+if (!class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) && !class_exists('Resursbank\RBEcomPHP\MODULE_CRYPTO',
+        CRYPTO_CLASS_EXISTS_AUTOLOAD) && defined('TORNELIB_CRYPTO_ALLOW_AUTOLOAD') && TORNELIB_CRYPTO_ALLOW_AUTOLOAD === true) {
     /**
      * Class TorneLIB_Crypto
      * @deprecated Not supported by netcurl 6.1 - maintenance only - soon updating to 6.1
@@ -8663,10 +8642,10 @@ if (!class_exists('MODULE_CRYPTO', CRYPTO_CLASS_EXISTS_AUTOLOAD) &&
 }
 
 if (!defined('TORNELIB_IO_RELEASE')) {
-    define('TORNELIB_IO_RELEASE', '6.0.22');
+    define('TORNELIB_IO_RELEASE', '6.0.23');
 }
 if (!defined('TORNELIB_IO_MODIFY')) {
-    define('TORNELIB_IO_MODIFY', '20200427');
+    define('TORNELIB_IO_MODIFY', '20200514');
 }
 if (!defined('TORNELIB_IO_CLIENTNAME')) {
     define('TORNELIB_IO_CLIENTNAME', 'MODULE_IO');
