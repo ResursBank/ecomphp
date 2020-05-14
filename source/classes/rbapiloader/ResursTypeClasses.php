@@ -393,7 +393,7 @@ abstract class ResursCountry extends RESURS_COUNTRY
 {
 }
 
-if (!class_exists('Bit')) {
+if (!class_exists('Bit') && class_exists('MODULE_NETBITS')) {
     class Bit extends MODULE_NETBITS {
 
     }
