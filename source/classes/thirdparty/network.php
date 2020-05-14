@@ -4,10 +4,10 @@ namespace Resursbank\RBEcomPHP;
 
 // Library Release Information
 if (!defined('NETCURL_RELEASE')) {
-    define('NETCURL_RELEASE', '6.0.28');
+    define('NETCURL_RELEASE', '6.0.29');
 }
 if (!defined('NETCURL_MODIFY')) {
-    define('NETCURL_MODIFY', '20200422');
+    define('NETCURL_MODIFY', '20200514');
 }
 if (!defined('TORNELIB_NETCURL_RELEASE')) {
     // Compatibility constant
@@ -447,8 +447,6 @@ if (!class_exists('NETCURL_DRIVER_GUZZLEHTTP', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
     }
 }
-use Exception;
-
 if (!class_exists('NETCURL_DRIVER_WORDPRESS',
         NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exists('TorneLIB\NETCURL_DRIVER_WORDPRESS',
         NETCURL_CLASS_EXISTS_AUTOLOAD)
@@ -648,7 +646,7 @@ if (!class_exists('NETCURL_DRIVER_WORDPRESS',
                 $httpResponseObject = $httpResponse->get_response_object();
                 $this->RESPONSE_RAW = isset($httpResponseObject->raw) ? $httpResponseObject->raw : null;
             } else {
-                throw new Exception(
+                throw new \Exception(
                     sprintf(
                         '%s %s exception: Wordpress driver seem to miss get_response_object',
                         NETCURL_CURL_CLIENTNAME,
@@ -716,8 +714,6 @@ if (!class_exists('NETCURL_DRIVER_WORDPRESS',
         }
     }
 }
-use Exception;
-
 if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
     !class_exists('TorneLIB\NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD)
 ) {
@@ -760,7 +756,6 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * @param string $htmlContent
          * @param string $contentType
          * @param array $flags
-         * @throws Exception
          * @since 6.0.0
          */
         public function __construct($htmlContent = '', $contentType = '', $flags = [])
@@ -850,7 +845,7 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
         /**
          * @param bool $returnAsIs
          * @return null|string
-         * @throws Exception
+         * @throws \Exception
          * @since 6.0.0
          * @deprecated Do not use this. It will be removed from version 6.1.0 anyway.
          */
@@ -896,7 +891,7 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
          * @param string $serialInput
          * @param bool $assoc
          * @return mixed|null
-         * @throws Exception
+         * @throws \Exception
          * @since 6.0.26
          * @deprecated This function is not supported in version 6.1.0 and above.
          */
@@ -918,7 +913,7 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
         /**
          * @param array $objectArray
          * @return mixed|null
-         * @throws Exception
+         * @throws \Exception
          */
         public function arrayObjectToStdClass($objectArray = [])
         {
@@ -962,7 +957,7 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @return array|null|string
-         * @throws Exception
+         * @throws \Exception
          * @since 6.0.0
          * @deprecated Stop using this. Run by content-type instead.
          */
@@ -1110,7 +1105,7 @@ if (!class_exists('NETCURL_PARSER', NETCURL_CLASS_EXISTS_AUTOLOAD) &&
 
         /**
          * @return array
-         * @throws Exception
+         * @throws \Exception
          * @since 6.0.0
          */
         private function getDomElements()
