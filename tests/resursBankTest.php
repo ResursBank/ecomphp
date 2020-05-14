@@ -1898,6 +1898,36 @@ class resursBankTest extends TestCase
 
     /**
      * @test
+     * @throws \Exception
+     */
+    public function unregCallbacks()
+    {
+        $username = '';
+        $password = '';
+
+        if (isset($username) || empty($username)) {
+            static::markTestSkipped(
+                sprintf(
+                    '%s is not a test, used for special purposes.',
+                    __FUNCTION__
+                )
+            );
+            return;
+        }
+
+        $specialCase = new ResursBank($username, $password);
+        $specialCase->unregisterEventCallback(255, true, true);
+        static::markTestSkipped(
+            sprintf(
+                '%s seems to pass without complications. ' .
+                'This is not a standard test however, so it has been skipped.',
+                __FUNCTION__
+            )
+        );
+    }
+
+    /**
+     * @test
      * @testdox Clean up special test data from share file
      */
     public function finalTest()
