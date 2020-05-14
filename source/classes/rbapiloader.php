@@ -53,11 +53,11 @@ if (file_exists(RB_API_PATH . '/ecomhooks.php')) {
 }
 
 use Exception;
-use TorneLIB\Module\Bit;
-use TorneLIB\MODULE_CRYPTO;
-use TorneLIB\MODULE_CURL;
-use TorneLIB\MODULE_NETWORK;
-use TorneLIB\NETCURL_POST_DATATYPES;
+use Resursbank\RBEcomPHP\MODULE_NETBITS;
+use Resursbank\RBEcomPHP\MODULE_CRYPTO;
+use Resursbank\RBEcomPHP\MODULE_CURL;
+use Resursbank\RBEcomPHP\MODULE_NETWORK;
+use Resursbank\RBEcomPHP\NETCURL_POST_DATATYPES;
 
 // Globals starts here. But should be deprecated if version tag can be fetched through their docblocks.
 if (!defined('ECOMPHP_VERSION')) {
@@ -1123,7 +1123,7 @@ class ResursBank
                 $this->CURL->setWsdlCache($this->CURLDRIVER_WSDL_CACHE);
             }
 
-            $this->CURL->setChain(false);
+            //$this->CURL->setChain(false);
             if ($this->getSslSecurityDisabled()) {
                 $this->CURL->setSslVerify(false, false);
             }
@@ -2068,7 +2068,22 @@ class ResursBank
                 $ResursResponse = $this->CURL->getParsed();
             }
         } catch (\Exception $restException) {
-            throw new ResursException($restException->getMessage(), $restException->getCode());
+            $message = $restException->getMessage();
+            $code = $restException->getCode();
+            // Special recipes extracted from netcurl-6.1
+            if (method_exists($restException, 'getExtendException')) {
+                $extendedClass = $restException->getExtendException();
+                if (is_object($extendedClass) && method_exists($extendedClass, 'getParsed')) {
+                    $parsedExtended = $extendedClass->getParsed();
+                    if (isset($parsedExtended->description)) {
+                        $message .= ' (' . $parsedExtended->description . ')';
+                    }
+                    if (isset($parsedExtended->code) && $parsedExtended->code > 0) {
+                        $code = $parsedExtended->code;
+                    }
+                }
+            }
+            throw new ResursException($message, $code, $restException);
         }
         if ($ReturnAsArray) {
             $ResursResponseArray = [];
