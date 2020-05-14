@@ -70,7 +70,7 @@ class proxyTest extends TestCase
 	{
 		$CURL = $this->TEST->ECOM->getCurlHandle();
 		$CURL->setProxy('proxytest.resurs.it:80', CURLPROXY_HTTP);
-		$CURL->setChain();
+		//$CURL->setChain();
 		try {
 			$request = $CURL->doGet('http://proxytest.resurs.it/ip.php');
 			static::assertTrue($this->isProperIp($request->getBody()));

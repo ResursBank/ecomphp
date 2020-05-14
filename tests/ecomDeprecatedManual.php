@@ -94,7 +94,7 @@ class ecomDeprecatedManual extends TestCase
 
         $this->CURL = new MODULE_CURL();
         $this->CURL->setFlag("SOAPCHAIN", true);
-        $this->CURL->setChain(false);   // Unchain the module for backward
+        //$this->CURL->setChain(false);   // Unchain the module for backward
 
         $this->NETWORK = new MODULE_NETWORK();
         if (version_compare(PHP_VERSION, '5.3.0', "<")) {
@@ -2486,7 +2486,7 @@ class ecomDeprecatedManual extends TestCase
     function testSoapError()
     {
         $CURL = new MODULE_CURL();
-        $CURL->setChain(false);
+        //$CURL->setChain(false);
         $wsdl = $CURL->doGet('https://test.resurs.com/ecommerce-test/ws/V4/SimplifiedShopFlowService?wsdl');
         try {
             /** @noinspection PhpUndefinedMethodInspection */
