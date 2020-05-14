@@ -136,7 +136,7 @@ class curlTest extends TestCase
     {
         $this->__setUp();
         if (version_compare(PHP_VERSION, '5.4.0', '<')) {
-            $this->CURL->setChain(false);
+            //$this->CURL->setChain(false);
             $this->CURL->setFlag('SOAPCHAIN', false);
         }
         $this->CURL->setAuthentication("fail", "fail");
