@@ -5029,15 +5029,15 @@ class ResursBank
      * @since 1.0.2
      * @since 1.1.2
      */
-    public function setCountry($Country = RESURS_COUNTRY::COUNTRY_NOT_SET)
+    public function setCountry($Country)
     {
-        if ($Country === RESURS_COUNTRY::COUNTRY_DK) {
+        if ($Country === RESURS_COUNTRY::DK) {
             $this->envCountry = "DK";
-        } elseif ($Country === RESURS_COUNTRY::COUNTRY_NO) {
+        } elseif ($Country === RESURS_COUNTRY::NO) {
             $this->envCountry = "NO";
-        } elseif ($Country === RESURS_COUNTRY::COUNTRY_FI) {
+        } elseif ($Country === RESURS_COUNTRY::FI) {
             $this->envCountry = "FI";
-        } elseif ($Country === RESURS_COUNTRY::COUNTRY_SE) {
+        } elseif ($Country === RESURS_COUNTRY::SE) {
             $this->envCountry = "SE";
         } else {
             $this->envCountry = null;
