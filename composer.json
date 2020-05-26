@@ -3,11 +3,9 @@
     "description": "Resurs Bank AB ecommerce library for PHP.",
     "license": "Apache-2.0",
     "require": {
-        "ext-soap": "*",
-        "ext-curl": "*",
         "tornevall/tornelib-php-bitmask": "^6.1",
-        "tornevall/tornelib-php-crypto": "6.0.*",
-        "tornevall/tornelib-php-netcurl": "6.0.*"
+        "tornevall/tornelib-php-netcurl-deprecate-60": "^6.0",
+        "tornevall/tornelib-php-network": "^6.1"
     },
     "authors": [
         {
