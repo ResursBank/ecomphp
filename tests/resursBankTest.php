@@ -156,12 +156,8 @@ class resursBankTest extends TestCase
         if (defined('NETCURL_VERSION') &&
             version_compare(NETCURL_VERSION, '6.1.0', '>=')
         ) {
-            // How to destroy tests with netcurl-6.0: Inject cached wsdl.
-            // How to make them faster: Upgrade!
-            // This is an experimental part that runs all tests on cache when upgrading to v6.1
-            $CH = $this->TEST->ECOM->getCurlHandle();
-            $CH->setCurlOpt(['cache_wsdl' => 3]);
-            $this->TEST->ECOM->setCurlHandle($CH);
+            // This is not possible for netcurl-6.0, it will cause crashes, so we keep it only for 6.1.0+
+            $this->TEST->ECOM->setWsdlCache(true);
         }
 
         $this->WEBDRIVER = new \RESURS_WEBDRIVER();
@@ -549,7 +545,8 @@ class resursBankTest extends TestCase
              * Required test result:
              *   - The cache should be able to request AT LEAST 10 getPayment in a period of three seconds.
              *      Initial tests shows that we could make at least 179 requests. NOTE: Pipelines just counted 6 calls.
-             *   - Each request should be able to respond under 1 seccond.
+             *      For netcurl 6.1 initial tests showed up test results of 3818 requests.
+             *   - Each request should be able to respond under 1 second.
              *   - The first $hasCache was initially disabled via __construct and should be false.
              *   - The second hasCache is untouched and should be true.
              */
@@ -1934,6 +1931,17 @@ class resursBankTest extends TestCase
                 __FUNCTION__
             )
         );
+    }
+
+    /**
+     * @test
+     * @throws \Exception
+     */
+    public function testGetSaltByCrypto()
+    {
+        $this->__setUp();
+        $saltByCrypto = $this->TEST->ECOM->getSaltByCrypto(7, 24);
+        static::assertTrue(strlen($saltByCrypto) == 24);
     }
 
     /**
