@@ -54,6 +54,7 @@ use RESURS_EXCEPTIONS;
 use ResursException;
 use TorneLIB\Data\Compress;
 use TorneLIB\Data\Password;
+use TorneLIB\Helpers\NetUtils;
 use TorneLIB\Model\Type\dataType;
 use TorneLIB\Module\Bit;
 use TorneLIB\MODULE_CURL;
@@ -1408,7 +1409,7 @@ class ResursBank
     {
         $this->isNetWork();
 
-        return $this->NETWORK->getGitTagsByUrl($this->gitUrl);
+        return (new NetUtils())->getGitTagsByUrl($this->gitUrl);
     }
 
     /**
