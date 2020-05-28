@@ -27,6 +27,7 @@ if (file_exists(__DIR__ . '/webdriver.php')) {
 
 // Resurs Bank usages
 use PHPUnit\Framework\TestCase;
+use TorneLIB\Module\Network\NetWrapper;
 use TorneLIB\MODULE_CURL;
 use TorneLIB\MODULE_IO;
 use TorneLIB\MODULE_SOAP;
@@ -156,12 +157,8 @@ class resursBankTest extends TestCase
         if (defined('NETCURL_VERSION') &&
             version_compare(NETCURL_VERSION, '6.1.0', '>=')
         ) {
-            // How to destroy tests with netcurl-6.0: Inject cached wsdl.
-            // How to make them faster: Upgrade!
-            // This is an experimental part that runs all tests on cache when upgrading to v6.1
-            $CH = $this->TEST->ECOM->getCurlHandle();
-            $CH->setCurlOpt(['cache_wsdl' => 3]);
-            $this->TEST->ECOM->setCurlHandle($CH);
+            // This is not possible for netcurl-6.0, it will cause crashes, so we keep it only for 6.1.0+
+            ($this->TEST->ECOM->getCurlHandle())->setWsdlCache(WSDL_CACHE_BOTH);
         }
 
         $this->WEBDRIVER = new \RESURS_WEBDRIVER();

@@ -52,18 +52,19 @@ if (file_exists(__DIR__ . "/../../vendor/autoload.php")) {
 use Exception;
 use RESURS_EXCEPTIONS;
 use ResursException;
+use TorneLIB\Data\Compress;
+use TorneLIB\Data\Password;
+use TorneLIB\Model\Type\dataType as NETCURL_POST_DATATYPES;
 use TorneLIB\Module\Bit;
-use TorneLIB\MODULE_CRYPTO;
 use TorneLIB\MODULE_CURL;
 use TorneLIB\MODULE_NETWORK;
-use TorneLIB\NETCURL_POST_DATATYPES;
 
-// Globals starts here. But should be deprecated if version tag can be fetched through their docblocks.
+// Globals starts here. But should be deprecated if version tag can be fetched through their doc-blocks.
 if (!defined('ECOMPHP_VERSION')) {
     define('ECOMPHP_VERSION', '1.3.40');
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20200514');
+    define('ECOMPHP_MODIFY_DATE', '20200528');
 }
 
 /**
@@ -367,15 +368,6 @@ class ResursBank
      * @var Bit
      */
     private $BIT;
-    /**
-     * Class for handling data encoding/encryption
-     *
-     * @var MODULE_CRYPTO
-     * @since 1.0.13
-     * @since 1.1.13
-     * @since 1.2.0
-     */
-    private $T_CRYPTO;
 
     /**
      * Deprecated flow class (for forms etc)
@@ -1048,7 +1040,7 @@ class ResursBank
      * is not a problem, but since there are server- and hosting providers that is actually having this disabled, the
      * decision has been made to do this check.
      *
-     * @throws \Exception
+     * @throws ResursException
      */
     private function testWrappers()
     {
@@ -1448,7 +1440,10 @@ class ResursBank
             $this->myUserAgent = $this->getVersionFull() . (defined('PHP_VERSION') ? "/PHP-" . PHP_VERSION : "");
         }
         if ($this->customerUserAgentPush && isset($_SERVER['HTTP_USER_AGENT'])) {
-            $this->myUserAgent .= " +CLI-" . $this->T_CRYPTO->base64_compress($_SERVER['HTTP_USER_AGENT']);
+            $this->myUserAgent .= sprintf(
+                ' +CLI %s',
+                (new Compress())->getGzEncode($_SERVER['HTTP_USER_AGENT'])
+            );
         }
     }
 
@@ -1875,15 +1870,16 @@ class ResursBank
      *
      * @param int $complexity
      * @param int $totalLength
-     *
      * @return string
+     * @throws Exception
      * @since 1.3.4
      */
     public function getSaltByCrypto($complexity = 3, $totalLength = 24)
     {
-        $this->T_CRYPTO = new MODULE_CRYPTO();
-
-        return $this->T_CRYPTO->mkpass($complexity, $totalLength);
+        return (new Password())->mkpass(
+            $complexity,
+            $totalLength
+        );
     }
 
     /**
@@ -2734,10 +2730,7 @@ class ResursBank
      */
     public function setPushCustomerUserAgent($enableCustomerUserAgent = false)
     {
-        $this->T_CRYPTO = new MODULE_CRYPTO();
-        if (!empty($this->T_CRYPTO)) {
-            $this->customerUserAgentPush = $enableCustomerUserAgent;
-        }
+        $this->customerUserAgentPush = $enableCustomerUserAgent;
     }
 
     /**

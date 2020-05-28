@@ -3387,7 +3387,7 @@ class ecomDeprecatedManual extends TestCase
 
     public function testGetSaltByCrypto()
     {
-        static::assertTrue(strlen($this->rb->getSaltByCrypto(3, 128)) == 128);
+        static::assertTrue(strlen($this->rb->getSaltByCrypto(7, 24)) == 24);
     }
 
     public function testWcMtRandEntropyKeyGen()
