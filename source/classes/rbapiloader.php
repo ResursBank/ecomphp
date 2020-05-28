@@ -836,9 +836,7 @@ class ResursBank
         $this->soapOptions['ssl_method'] = (defined('SOAP_SSL_METHOD_TLS') ? SOAP_SSL_METHOD_TLS : false);
 
         $this->setAuthentication($login, $password);
-        if ($targetEnvironment !== RESURS_ENVIRONMENTS::NOT_SET) {
-            $this->setEnvironment($targetEnvironment);
-        }
+        $this->setEnvironment($targetEnvironment);
         $this->setUserAgent();
         $this->E_DEPRECATED = new RESURS_DEPRECATED_FLOW();
     }
