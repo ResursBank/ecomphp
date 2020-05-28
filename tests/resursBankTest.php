@@ -27,9 +27,10 @@ if (file_exists(__DIR__ . '/webdriver.php')) {
 
 // Resurs Bank usages
 use PHPUnit\Framework\TestCase;
+use TorneLIB\Exception\ExceptionHandler;
+use TorneLIB\Module\Config\WrapperConfig;
+use TorneLIB\Module\Network\Wrappers\CurlWrapper;
 use TorneLIB\MODULE_CURL;
-use TorneLIB\MODULE_IO;
-use TorneLIB\MODULE_SOAP;
 
 // curl wrapper, extended network handling functions etc
 
@@ -91,6 +92,49 @@ class resursBankTest extends TestCase
      * @var string
      */
     //protected $webdriverFile = 'selenium.jar';
+
+    /**
+     * @param $addr
+     * @return bool
+     */
+    private function isProperIp($addr)
+    {
+        $not = ['127.0.0.1'];
+        if (filter_var(trim($addr), FILTER_VALIDATE_IP) && !in_array(trim($addr), $not)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return bool
+     * @throws ExceptionHandler
+     */
+    private function canProxy()
+    {
+        $return = false;
+
+        $ipList = [
+            '212.63.208.',
+            '10.1.1.',
+            '81.231.10.114'
+        ];
+
+        $wrapperData = (new CurlWrapper())
+            ->setConfig((new WrapperConfig())->setUserAgent('ProxyTestAgent'))
+            ->request('https://ipv4.netcurl.org')->getParsed();
+        if (isset($wrapperData->ip)) {
+            foreach ($ipList as $ip) {
+                if (preg_match('/' . $ip . '/', $wrapperData->ip)) {
+                    $return = true;
+                    break;
+                }
+            }
+        }
+
+        return $return;
+    }
 
     /**
      * Allow limited testing.
@@ -1153,21 +1197,6 @@ class resursBankTest extends TestCase
     }
 
     /**
-     * @param $addr
-     *
-     * @return bool
-     */
-    private function isProperIp($addr)
-    {
-        $not = ['127.0.0.1'];
-        if (filter_var(trim($addr), FILTER_VALIDATE_IP) && !in_array(trim($addr), $not)) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
      * @test
      * @throws \Exception
      */
@@ -1942,6 +1971,47 @@ class resursBankTest extends TestCase
         $this->__setUp();
         $saltByCrypto = $this->TEST->ECOM->getSaltByCrypto(7, 24);
         static::assertTrue(strlen($saltByCrypto) == 24);
+    }
+
+    /**
+     * @test
+     * Create iframe via proxy.
+     * @throws \Exception
+     */
+    public function proxyByBookRcoHalfway()
+    {
+        if (!$this->canProxy()) {
+            static::markTestSkipped('Can not perform proxy tests with this client. Skipped.');
+            return;
+        }
+
+        $this->__setUp();
+        $CURL = $this->TEST->ECOM->getCurlHandle();
+        $CURL->setProxy('proxytest.resurs.it:80', CURLPROXY_HTTP);
+        $this->TEST->ECOM->setCurlHandle($CURL);
+
+        try {
+            $request = $CURL->doGet('http://proxytest.resurs.it/ip.php');
+        } catch (\Exception $e) {
+            static::markTestSkipped(sprintf('Proxy test skipped (%d): %s', $e->getCode(), $e->getMessage()));
+            return;
+        }
+
+        $ipBody = $request->getBody();
+        if ($this->isProperIp($ipBody)) {
+            $_SERVER['REMOTE_ADDR'] = $this->getProperIp($ipBody);
+            $customerData = $this->getHappyCustomerData();
+            $this->TEST->ECOM->setBillingByGetAddress($customerData);
+            $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
+            $this->TEST->ECOM->setCustomer('8305147715', "0808080808", "0707070707", "test@test.com", "NATURAL");
+            $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+            $this->TEST->ECOM->addOrderLine("ProxyArtRequest", "My Proxified Product", 800, 25);
+            $iframeRequest = $this->TEST->ECOM->createPayment($this->getMethodId());
+
+            static::assertTrue(preg_match('/iframe src/i', $iframeRequest) ? true : false);
+        } else {
+            static::markTestSkipped('Could not complete proxy test');
+        }
     }
 
     /**
