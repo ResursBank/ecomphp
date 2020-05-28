@@ -52,6 +52,7 @@ if (file_exists(__DIR__ . "/../../vendor/autoload.php")) {
 use Exception;
 use RESURS_EXCEPTIONS;
 use ResursException;
+use stdClass;
 use TorneLIB\Data\Compress;
 use TorneLIB\Data\Password;
 use TorneLIB\Helpers\NetUtils;
@@ -949,7 +950,7 @@ class ResursBank
             } else {
                 $this->ecomSession = session_id();
             }
-        } catch (\Exception $sessionActivationException) {
+        } catch (Exception $sessionActivationException) {
 
         }
 
@@ -1299,7 +1300,8 @@ class ResursBank
     /**
      * Enables strict SSL validation or put in "relaxed mode".
      *
-     * @param bool $enable
+     * @param bool $disableSecurity
+     * @return ResursBank
      * @throws Exception
      * @since 1.3.27
      */
@@ -1307,6 +1309,7 @@ class ResursBank
     {
         $this->InitializeServices();
         $this->curlSslValidationDisable = $disableSecurity;
+        return $this;
     }
 
     /**
@@ -1578,7 +1581,7 @@ class ResursBank
      *
      * @param int $environmentType
      */
-    public function setEnvironment($environmentType = RESURS_ENVIRONMENTS::ENVIRONMENT_TEST)
+    public function setEnvironment($environmentType = RESURS_ENVIRONMENTS::TEST)
     {
         $this->current_environment = $environmentType;
         $this->current_environment_updated = true;
@@ -1643,11 +1646,11 @@ class ResursBank
      * @param string $username
      * @param string $password
      * @return bool
-     * @throws Exception Borrowing 417 (Expectation Failed) here
-     *     (https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/417)
+     * @throws Exception 417 (Expectation Failed) here (https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/417)
      * @since 1.1.42
      * @since 1.0.42
      * @since 1.3.15
+     * @noinspection PhpUnusedParameterInspection
      */
     public function validateCredentials($environment = RESURS_ENVIRONMENTS::TEST, $username = '', $password = '')
     {
@@ -2440,7 +2443,7 @@ class ResursBank
         $this->InitializeServices();
         $envUrl = $this->env_test;
         $curEnv = $this->getEnvironment();
-        if ($curEnv == RESURS_ENVIRONMENTS::ENVIRONMENT_PRODUCTION) {
+        if ($curEnv == RESURS_ENVIRONMENTS::PRODUCTION) {
             $envUrl = $this->env_prod;
         }
         $serviceUrl = $envUrl . "DeveloperWebService?wsdl";
@@ -2856,7 +2859,6 @@ class ResursBank
      * found in the last X payments)
      *
      * @param $scanDebitCount
-     *
      * @return int
      * @throws \Exception
      * @since 1.0.27
@@ -2893,7 +2895,7 @@ class ResursBank
         if (intval($currentInvoiceTest) > 0 && $currentInvoiceTest > $properInvoiceNumber) {
             $properInvoiceNumber = $currentInvoiceTest;
         }
-        $currentPeekInvoice = $this->getNextInvoiceNumber(true, $properInvoiceNumber);
+        $this->getNextInvoiceNumber(true, $properInvoiceNumber);
 
         // Make sure this isn't a special test.
         $testInvoiceNumber = $this->getTestInvoiceNumber();
@@ -3310,9 +3312,8 @@ class ResursBank
 
     /**
      * @param string $paymentId
-     * @param bool $putified
-     * @return \stdClass
-     * @throws Exception
+     * @return stdClass
+     * @throws ResursException
      * @since 1.3.13
      * @since 1.1.40
      * @since 1.0.40
@@ -3336,7 +3337,7 @@ class ResursBank
     }
 
     /**
-     * @return string
+     * @return array
      */
     public function getDisabledClasses()
     {
@@ -3402,6 +3403,7 @@ class ResursBank
      * that, if the request are being sent twice during this period, the cache will reply instead of making
      * live responses.
      *
+     * @param bool $enabled
      * @since 1.3.26
      */
     public function setApiCache($enabled = true)
@@ -3452,13 +3454,10 @@ class ResursBank
      *
      * @param string $paymentId
      * @param bool $requestCached Try fetch cached data before going for livedata.
-     * @return array|mixed|null
+     * @return mixed
      * @throws ResursException
      * @since 1.0.1
      * @since 1.1.1
-     * @since 1.0.31 Refactored from this version
-     * @since 1.1.31 Refactored from this version
-     * @since 1.2.4 Refactored from this version
      * @since 1.3.4 Refactored from this version
      */
     public function getPayment($paymentId = '', $requestCached = true)
@@ -3532,9 +3531,10 @@ class ResursBank
      * Get metadata from a payment. As of 1.3.16 metadata can also be fetched from pre set payload.
      *
      * @param string $paymentId
-     *
+     * @param bool $internalMetadata
+     * @param bool $assoc
      * @return array
-     * @throws \Exception
+     * @throws ResursException
      */
     public function getMetaData($paymentId = '', $internalMetadata = false, $assoc = false)
     {
@@ -3770,7 +3770,8 @@ class ResursBank
                         $errorMessage,
                         is_numeric($jsonized->errorCode) ? $jsonized->errorCode : 0,
                         null,
-                        !is_numeric($jsonized->errorCode) && is_string($jsonized->errorCode) ? $jsonized->errorCode : null,
+                        !is_numeric($jsonized->errorCode) &&
+                        is_string($jsonized->errorCode) ? $jsonized->errorCode : null,
                         __FUNCTION__
                     );
                 }
@@ -3869,7 +3870,8 @@ class ResursBank
      *
      * @param $key
      * @param $value
-     * @throws Exception
+     * @param bool $preventDuplicates
+     * @throws ResursException
      * @since 1.0.40
      * @since 1.1.40
      * @since 1.3.13
@@ -4115,8 +4117,6 @@ class ResursBank
      */
     private function getTemplatePriceInfoBlocks()
     {
-        $template = [];
-
         // costofpriceinfo - entire tab block
         // priceinfotab - each clickable tab
         // priceinfoblock - html content of priceinfo (Wants $methodHtml)
@@ -4138,6 +4138,7 @@ class ResursBank
      * @param $method
      * @param $amount
      * @param bool $fetch
+     * @param bool $iframe
      * @return array
      * @throws Exception
      * @since 1.3.30
@@ -4333,6 +4334,7 @@ class ResursBank
         $templateFile = sprintf('%s/%s.%s', __DIR__ . '/../templates', $templateName, $extension);
         if (file_exists($templateFile)) {
             ob_start();
+            /** @noinspection PhpIncludeInspection */
             @include($templateFile);
             $templateHtml = ob_get_clean();
         } else {
@@ -4551,7 +4553,7 @@ class ResursBank
      * By means, you need a prepared "proper" payment already, where you only need to adjust the quantity
      * values.
      *
-     * @param array|\stdClass $artObject
+     * @param array|stdClass $artObject
      * @param int $quantity
      *
      * @return mixed
@@ -5055,13 +5057,13 @@ class ResursBank
     public function setCountryByCountryCode($countryCodeString = "")
     {
         if (strtolower($countryCodeString) == "dk") {
-            $this->setCountry(RESURS_COUNTRY::COUNTRY_DK);
+            $this->setCountry(RESURS_COUNTRY::DK);
         } elseif (strtolower($countryCodeString) == "no") {
-            $this->setCountry(RESURS_COUNTRY::COUNTRY_NO);
+            $this->setCountry(RESURS_COUNTRY::NO);
         } elseif (strtolower($countryCodeString) == "fi") {
-            $this->setCountry(RESURS_COUNTRY::COUNTRY_FI);
+            $this->setCountry(RESURS_COUNTRY::FI);
         } else {
-            $this->setCountry(RESURS_COUNTRY::COUNTRY_SE);
+            $this->setCountry(RESURS_COUNTRY::SE);
         }
     }
 
@@ -5592,11 +5594,11 @@ class ResursBank
     {
         if (is_null($unitMeasure)) {
             if (!empty($this->envCountry)) {
-                if ($this->envCountry == RESURS_COUNTRY::COUNTRY_DK) {
+                if ($this->envCountry == RESURS_COUNTRY::DK) {
                     $this->defaultUnitMeasure = "st";
-                } elseif ($this->envCountry == RESURS_COUNTRY::COUNTRY_NO) {
+                } elseif ($this->envCountry == RESURS_COUNTRY::NO) {
                     $this->defaultUnitMeasure = "st";
-                } elseif ($this->envCountry == RESURS_COUNTRY::COUNTRY_FI) {
+                } elseif ($this->envCountry == RESURS_COUNTRY::FI) {
                     $this->defaultUnitMeasure = "kpl";
                 } else {
                     $this->defaultUnitMeasure = "st";
@@ -6406,11 +6408,13 @@ class ResursBank
     }
 
     /**
+     * @param $url
      * @param $urlType RESURS_URL_ENCODE_TYPES
      * @return string
      * @since 1.3.15
      * @since 1.0.42
      * @since 1.1.42
+     * @noinspection PhpDeprecationInspection
      */
     private function getEncodedUrl($url, $urlType)
     {
@@ -6473,11 +6477,12 @@ class ResursBank
      * @param string $failUrl Payment failures redirect url
      * @param bool $forceSigning Always require signing during payment
      * @param string $backUrl Backurl (optional for hosted flow where back !== fail) if anything else than failUrl
-     * @param RESURS_URL_ENCODE_TYPES $encodeType It is NOT recommended to run this on a successurl
+     * @param int $encodeType It is NOT recommended to run this on a successurl
      * @return mixed
      * @throws Exception
      * @since 1.0.6
      * @since 1.1.6
+     * @noinspection PhpParamsInspection
      */
     public function setSigning(
         $successUrl = '',
@@ -6718,7 +6723,6 @@ class ResursBank
      * @return string
      * @since 1.0.1
      * @since 1.1.1
-     * @todo Make this method less ugly.
      */
     public function getCheckoutUrl($requestedEnvironment = RESURS_ENVIRONMENTS::TEST, $getCurrentIfSet = true)
     {
@@ -6831,7 +6835,7 @@ class ResursBank
      */
     public function getHostedUrl()
     {
-        if ($this->current_environment == RESURS_ENVIRONMENTS::ENVIRONMENT_TEST) {
+        if ($this->current_environment == RESURS_ENVIRONMENTS::TEST) {
             return $this->env_hosted_test;
         } else {
             return $this->env_hosted_prod;
@@ -8001,8 +8005,8 @@ class ResursBank
             // 29 ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID
             if (
                 (
-                    (int)$finalizationException->getCode() === RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ||
-                    (int)$finalizationException->getCode() === RESURS_EXCEPTIONS::ECOMMERCEERROR_NOT_ALLOWED_INVOICE_ID
+                    $finalizationException->getCode() === RESURS_EXCEPTIONS::ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID ||
+                    $finalizationException->getCode() === RESURS_EXCEPTIONS::ECOMMERCEERROR_NOT_ALLOWED_INVOICE_ID
                 ) &&
                 !$this->isFlag('SKIP_AFTERSHOP_INVOICE_CONTROL')
             ) {
@@ -8062,6 +8066,7 @@ class ResursBank
      * @since 1.0.22
      * @since 1.1.22
      * @since 1.2.0
+     * @noinspection PhpUnusedParameterInspection
      */
     public function paymentAnnul(
         $paymentId = "",
@@ -8265,7 +8270,8 @@ class ResursBank
         // Collect the payment sorted by status
         $currentPaymentTable = $this->getPaymentDiffByStatus($paymentData, true);
 
-        // Sanitized paymentspec based on what CAN be fully ANNULLED (and actually also debited) wit no custom payment load.
+        // Sanitized paymentspec based on what CAN be fully ANNULLED (and actually
+        // also debited) wit no custom payment load.
         $fullAnnulObject = $this->sanitizeAfterShopSpec($this->getPayment($paymentId),
             RESURS_AFTERSHOP_RENDER_TYPES::ANNUL);
         // Sanitized paymentspec based on what CAN be fully CREDITed with no custom payment load.
@@ -9012,6 +9018,7 @@ class ResursBank
      * Enforce automatic adjustment if memory limit is set too low (or your defined value).
      *
      * @param string $minLimit
+     * @param string $maxLimit
      * @return bool
      */
     public function getMemoryLimitAdjusted($minLimit = '256M', $maxLimit = '-1')
