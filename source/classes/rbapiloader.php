@@ -54,7 +54,7 @@ use RESURS_EXCEPTIONS;
 use ResursException;
 use TorneLIB\Data\Compress;
 use TorneLIB\Data\Password;
-use TorneLIB\Model\Type\dataType as NETCURL_POST_DATATYPES;
+use TorneLIB\Model\Type\dataType;
 use TorneLIB\Module\Bit;
 use TorneLIB\MODULE_CURL;
 use TorneLIB\MODULE_NETWORK;
@@ -283,13 +283,6 @@ class ResursBank
      * @var array Last stored getPayment()
      */
     private $lastPaymentStored = [];
-
-    /**
-     * Last time for getPayment (when using cache requests).
-     *
-     * @var array $lastGetPaymentRequest time()
-     */
-    private $lastGetPaymentRequest = [];
 
     /**
      * @var int $lastGetPaymentMaxCacheTime Number of seconds.
@@ -1121,8 +1114,6 @@ class ResursBank
             if ($inheritExtendedSoapWarnings) {
                 $this->CURL->setFlag('SOAPWARNINGS_EXTEND', true);
             }
-            $this->CURL->setFlag('SOAPCHAIN', false);
-
             $this->CURL->setStoreSessionExceptions(true);
             $this->CURL->setAuthentication($this->soapOptions['login'], $this->soapOptions['password']);
             $this->CURL->setUserAgent($this->myUserAgent);
@@ -2290,7 +2281,7 @@ class ResursBank
                 $renderedResponse = $this->CURL->doPost(
                     $renderCallbackUrl,
                     $renderCallback,
-                    NETCURL_POST_DATATYPES::DATATYPE_JSON
+                    dataType::JSON
                 );
                 $code = $this->CURL->getCode($renderedResponse);
             } catch (\Exception $e) {
@@ -2393,7 +2384,7 @@ class ResursBank
                         $curlResponse = $this->CURL->doDelete(
                             $renderCallbackUrl,
                             [],
-                            NETCURL_POST_DATATYPES::DATATYPE_JSON
+                            dataType::JSON
                         );
                         $curlCode = $this->CURL->getCode($curlResponse);
                     } catch (\Exception $e) {
@@ -3757,7 +3748,7 @@ class ResursBank
             $result = $this->CURL->doPut(
                 $url,
                 ['paymentReference' => $to],
-                NETCURL_POST_DATATYPES::DATATYPE_JSON
+                dataType::JSON
             );
         } catch (\Exception $e) {
             $exceptionFromBody = $this->CURL->getBody();
@@ -4436,7 +4427,11 @@ class ResursBank
             $base64url = $this->base64url_encode($useUrl);
             $ExternalPostData = ['link' => $useUrl, "returnEncoded" => true];
             try {
-                $this->CURL->doPost($ExternalAPI, $ExternalPostData, NETCURL_POST_DATATYPES::DATATYPE_JSON);
+                $this->CURL->doPost(
+                    $ExternalAPI,
+                    $ExternalPostData,
+                    dataType::JSON
+                );
                 $WebResponse = $this->CURL->getParsed();
             } catch (\Exception $e) {
                 return RESURS_CALLBACK_REACHABILITY::IS_REACHABLE_NOT_KNOWN;
@@ -5359,7 +5354,7 @@ class ResursBank
                 $checkoutResponse = $this->CURL->doPost(
                     $checkoutUrl,
                     $this->Payload,
-                    NETCURL_POST_DATATYPES::DATATYPE_JSON
+                    dataType::JSON
                 );
                 $parsedResponse = $this->CURL->getParsed($checkoutResponse);
                 $responseCode = $this->CURL->getCode($checkoutResponse);
@@ -5409,8 +5404,11 @@ class ResursBank
         } elseif ($myFlow == RESURS_FLOW_TYPES::HOSTED_FLOW) {
             $hostedUrl = $this->getHostedUrl();
             try {
-                $hostedResponse = $this->CURL->doPost($hostedUrl, $this->Payload,
-                    NETCURL_POST_DATATYPES::DATATYPE_JSON);
+                $hostedResponse = $this->CURL->doPost(
+                    $hostedUrl,
+                    $this->Payload,
+                    dataType::JSON
+                );
                 $parsedResponse = $this->CURL->getParsed($hostedResponse);
                 // Do not trust response codes!
                 if (isset($parsedResponse->location)) {
@@ -6807,8 +6805,11 @@ class ResursBank
             $outputOrderLines,
             RESURS_FLOW_TYPES::RESURS_CHECKOUT
         );
-        $updateOrderLinesResponse = $this->CURL->doPut($this->getCheckoutUrl() . "/checkout/payments/" . $paymentId,
-            ['orderLines' => $sanitizedOutputOrderLines], NETCURL_POST_DATATYPES::DATATYPE_JSON);
+        $updateOrderLinesResponse = $this->CURL->doPut(
+            $this->getCheckoutUrl() . "/checkout/payments/" . $paymentId,
+            ['orderLines' => $sanitizedOutputOrderLines],
+            dataType::JSON
+        );
         $updateOrderLinesResponseCode = $this->CURL->getCode($updateOrderLinesResponse);
         if ($updateOrderLinesResponseCode >= 400) {
             throw new ResursException(
