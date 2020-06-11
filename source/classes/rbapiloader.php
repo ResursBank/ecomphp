@@ -7,7 +7,6 @@
  * @author Resurs Bank <support@resurs.se>
  * @author Tomas Tornevall <tomas.tornevall@resurs.se>
  * @branch 1.3
- * @version 1.3.41
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @link https://test.resurs.com/docs/x/KAH1 EComPHP: Bitmasking features
@@ -60,13 +59,14 @@ use TorneLIB\Model\Type\dataType;
 use TorneLIB\Module\Bit;
 use TorneLIB\MODULE_CURL;
 use TorneLIB\MODULE_NETWORK;
+use TorneLIB\Utils\Generic;
 
 // Globals starts here. But should be deprecated if version tag can be fetched through their doc-blocks.
 if (!defined('ECOMPHP_VERSION')) {
-    define('ECOMPHP_VERSION', '1.3.40');
+    define('ECOMPHP_VERSION', (new Generic())->getVersionByComposer(__FILE__));
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20200601');
+    define('ECOMPHP_MODIFY_DATE', '20200611');
 }
 
 /**
