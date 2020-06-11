@@ -3665,9 +3665,9 @@ class ResursBank
             $this->paymentMethodNames = [];
             foreach ($methods as $objectMethod) {
                 if (isset($objectMethod->id) && !empty($objectMethod->id) && !in_array(
-                    $objectMethod->id,
-                    $this->paymentMethodNames
-                )) {
+                        $objectMethod->id,
+                        $this->paymentMethodNames
+                    )) {
                     $this->paymentMethodNames[$objectMethod->id] = $objectMethod->id;
                 }
             }
@@ -6941,9 +6941,9 @@ class ResursBank
                         $trimmedCustomerValue = $customerValue;
                     }
                     if (!is_array($customerValue) && !in_array(
-                        $customerKey,
-                        $mandatoryExtendedCustomerFields
-                    ) && empty($trimmedCustomerValue)) {
+                            $customerKey,
+                            $mandatoryExtendedCustomerFields
+                        ) && empty($trimmedCustomerValue)) {
                         unset($this->Payload['customer'][$customerKey]);
                     }
                 }
@@ -9091,15 +9091,22 @@ class ResursBank
      */
     public function __call($func = null, $args = [])
     {
+        $runCall = false;
         if (class_exists(
             'Resursbank_Obsolete_Functions',
             ECOM_CLASS_EXISTS_AUTOLOAD
-        ) ||
-            class_exists(
-                '\Resursbank\RBEcomPHP\Resursbank_Obsolete_Functions',
-                ECOM_CLASS_EXISTS_AUTOLOAD
-            )
-        ) {
+        )) {
+            $runCall = true;
+        }
+
+        if (class_exists(
+            '\Resursbank\RBEcomPHP\Resursbank_Obsolete_Functions',
+            ECOM_CLASS_EXISTS_AUTOLOAD
+        )) {
+            $runCall = true;
+        }
+
+        if ($runCall) {
             /** @noinspection PhpUndefinedClassInspection */
             $obsoleteCaller = new Resursbank_Obsolete_Functions($this);
             if (method_exists($obsoleteCaller, $func)) {

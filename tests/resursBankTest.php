@@ -118,7 +118,7 @@ class resursBankTest extends TestCase
         $ipList = [
             '212.63.208.',
             '10.1.1.',
-            '81.231.10.114'
+            '81.231.10.114',
         ];
 
         $wrapperData = (new CurlWrapper())
@@ -281,7 +281,6 @@ class resursBankTest extends TestCase
             $this->TEST->unshare("outShare");
             $keys = $this->TEST->share();
             static::assertTrue(is_array($keys));
-
         } else {
             static::markTestSkipped("Test has been started without shareDataOut.");
         }
@@ -311,8 +310,10 @@ class resursBankTest extends TestCase
             $byIo = $selfParser->getFromXml($soapLibResponse['body'], true);
             /** @noinspection PhpUndefinedFieldInspection */
             static::assertTrue((
-                $byIo->fullName == $this->flowHappyCustomerName ? true : false) &&
-                ($soapLibResponse['parsed']->fullName == $this->flowHappyCustomerName ? true : false
+                $byIo->fullName == $this->flowHappyCustomerName ? true : false
+                ) &&
+                (
+                $soapLibResponse['parsed']->fullName == $this->flowHappyCustomerName ? true : false
                 ));
 
             return;
@@ -603,7 +604,6 @@ class resursBankTest extends TestCase
                     !$hasCache
                     && $hasCacheDefault
             );
-
         }
     }
 
@@ -1745,14 +1745,12 @@ class resursBankTest extends TestCase
             }
         }
 
-        $expectedAssertResult = (
-            (bool)$finalizationResponseNoInvoice &&
+        $expectedAssertResult = ((bool)$finalizationResponseNoInvoice &&
             (bool)$finalizationResponseYesInvoice &&
             (bool)!$finalizationResponseYesInvoiceFailTwice &&
             (bool)!$noErrorDynamic &&
             (bool)!$noErrorStatic &&
-            (bool)$noErrorStaticRepeat
-        ) ? true : false;
+            (bool)$noErrorStaticRepeat);
 
         if (!$expectedAssertResult) {
             // "Debug mode" required for this assertion part as it tend to fail sometimes and sometimes not.
@@ -1764,7 +1762,6 @@ class resursBankTest extends TestCase
                 '$noErrorStatic ?false?' => $noErrorStatic,
                 '$noErrorStaticRepeat ?true?' => $noErrorStaticRepeat,
             ];
-            print_r($assertList);
         }
 
         static::assertTrue($expectedAssertResult);
@@ -1791,8 +1788,8 @@ class resursBankTest extends TestCase
         $fIframe = $this->TEST->ECOM->createPayment($id);
         $rcoResponse = $this->TEST->ECOM->getFullCheckoutResponse();
         static::assertTrue((
-        preg_match('/<iframe/is', $fIframe) ? true : false &&
-        count($rcoResponse) >= 3 ? true : false &&
+            (preg_match('/<iframe/is', $fIframe) ? true : false) &&
+            (count($rcoResponse) >= 3) &&
             (isset($rcoResponse->script) && !empty($rcoResponse->script))
         ));
     }
@@ -1823,7 +1820,7 @@ class resursBankTest extends TestCase
             static::assertTrue(
                 isset($response->fullName) &&
                 $response->fullName !== '' &&
-                strlen($response->fullName) > 5
+                \strlen($response->fullName) > 5
             );
         } catch (\Exception $e) {
             static::markTestSkipped(
