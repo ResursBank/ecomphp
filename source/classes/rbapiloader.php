@@ -2496,6 +2496,21 @@ class ResursBank
     }
 
     /**
+     * @param $curlProxyAddr
+     * @param $curlProxyType
+     * @return ResursBank
+     * @since 1.3.41
+     */
+    public function setProxy($curlProxyAddr, $curlProxyType)
+    {
+        $CURL = $this->getCurlHandle();
+        $CURL->setProxy($curlProxyAddr, $curlProxyType);
+        $this->setCurlHandle($CURL);
+
+        return $this;
+    }
+
+    /**
      * Return the current set "preferred payment service" (hosted, checkout, simplified)
      *
      * @return RESURS_FLOW_TYPES

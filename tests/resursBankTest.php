@@ -30,6 +30,7 @@ use Exception;
 use PHPUnit\Framework\TestCase;
 use TorneLIB\Exception\ExceptionHandler;
 use TorneLIB\Module\Config\WrapperConfig;
+use TorneLIB\Module\Network\NetWrapper;
 use TorneLIB\Module\Network\Wrappers\CurlWrapper;
 use TorneLIB\MODULE_CURL;
 
@@ -194,7 +195,7 @@ class resursBankTest extends TestCase
     /**
      * @throws Exception
      */
-    public function __setUp()
+    public function unitSetup()
     {
         $this->API = new ResursBank();
         $this->API->setDebug(true);
@@ -218,7 +219,7 @@ class resursBankTest extends TestCase
      */
     public function clearStorage()
     {
-        $this->__setUp();
+        $this->unitSetup();
         @unlink(__DIR__ . '/storage/shared.serialize');
         static::assertTrue(!file_exists(__DIR__ . '/storage/shared.serialize'));
     }
@@ -230,7 +231,7 @@ class resursBankTest extends TestCase
      */
     public function apiPaymentMethodsWithCredentials()
     {
-        $this->__setUp();
+        $this->unitSetup();
         static::assertTrue(count($this->TEST->getCredentialControl()) > 0);
     }
 
@@ -241,7 +242,7 @@ class resursBankTest extends TestCase
      */
     public function apiPaymentMethodsWithWrongCredentials()
     {
-        $this->__setUp();
+        $this->unitSetup();
         try {
             $this->TEST->getCredentialControl(false);
         } catch (Exception $e) {
@@ -256,7 +257,7 @@ class resursBankTest extends TestCase
      */
     public function shareDataOut()
     {
-        $this->__setUp();
+        $this->unitSetup();
         $this->TEST->share('outShare', 1);
         $keys = $this->TEST->share('thisKey', 'thatValue');
         static::assertTrue(count($keys) > 0);
@@ -268,7 +269,7 @@ class resursBankTest extends TestCase
      */
     public function shareDataIn()
     {
-        $this->__setUp();
+        $this->unitSetup();
         $keys = $this->TEST->share('thisKey');
         static::assertTrue(count($keys) > 0);
     }
@@ -279,7 +280,7 @@ class resursBankTest extends TestCase
      */
     public function shareDataRemove()
     {
-        $this->__setUp();
+        $this->unitSetup();
         if ($this->TEST->share('outShare')) {
             $this->TEST->unshare('outShare');
             $keys = $this->TEST->share();
@@ -296,7 +297,7 @@ class resursBankTest extends TestCase
      */
     public function getAddressCurlHandle()
     {
-        $this->__setUp();
+        $this->unitSetup();
         if (!class_exists('\SimpleXMLElement')) {
             static::markTestSkipped('SimpleXMLElement missing');
         }
@@ -352,7 +353,7 @@ class resursBankTest extends TestCase
      */
     public function addOrderLine()
     {
-        $this->__setUp();
+        $this->unitSetup();
         $this->TEST->ECOM->addOrderLine('Product-1337', 'One simple orderline', 800, 25);
         $orderLines = $this->TEST->ECOM->getOrderLines();
         static::assertTrue(count($orderLines) > 0 && $orderLines[0]['artNo'] == 'Product-1337');
@@ -363,7 +364,7 @@ class resursBankTest extends TestCase
      */
     public function preMetaData()
     {
-        $this->__setUp();
+        $this->unitSetup();
         $this->TEST->ECOM->addOrderLine('Product-1337', 'One simple orderline', 800, 25);
         $this->TEST->ECOM->setMetaData('inboundKey', 'inboundValue');
 
@@ -379,7 +380,7 @@ class resursBankTest extends TestCase
      */
     public function setMetaData()
     {
-        $this->__setUp();
+        $this->unitSetup();
         $this->TEST->ECOM->addOrderLine('Product-1337', 'One simple orderline', 800, 25);
         try {
             $this->TEST->ECOM->setMetaData('inboundKey', 'inboundValue');
@@ -397,7 +398,7 @@ class resursBankTest extends TestCase
      */
     public function setMetaDataDuplicate()
     {
-        $this->__setUp();
+        $this->unitSetup();
         $this->TEST->ECOM->addOrderLine('Product-1337', 'One simple orderline', 800, 25);
         $this->TEST->ECOM->setMetaData('inboundKey', 'inboundValue', false);
         $this->TEST->ECOM->setMetaData('inboundKey', 'inboundValue', false);
@@ -414,7 +415,7 @@ class resursBankTest extends TestCase
      */
     public function findPaymentByGovId()
     {
-        $this->__setUp();
+        $this->unitSetup();
         $payments = $this->TEST->ECOM->findPayments(['governmentId' => '8305147715']);
         static::assertTrue(is_array($payments) && count($payments));
     }
@@ -430,7 +431,7 @@ class resursBankTest extends TestCase
      */
     public function generateSimpleSimplifiedInvoiceOrder($noAssert = false, $govId = '198305147715')
     {
-        $this->__setUp();
+        $this->unitSetup();
         $customerData = $this->getHappyCustomerData();
         $this->TEST->ECOM->addOrderLine('Product-1337', 'One simple orderline', 800, 25);
         $this->TEST->ECOM->setBillingByGetAddress($customerData);
@@ -466,7 +467,7 @@ class resursBankTest extends TestCase
      */
     public function generateSimpleSimplifiedInvoiceQuantityOrder($govId = '198305147715', $staticProductPrice = false)
     {
-        $this->__setUp();
+        $this->unitSetup();
         $customerData = $this->getHappyCustomerData();
         $this->TEST->ECOM->addOrderLine(
             'PR01',
@@ -533,7 +534,7 @@ class resursBankTest extends TestCase
             return;
         }
 
-        $this->__setUp();
+        $this->unitSetup();
         $payment = $this->generateSimpleSimplifiedInvoiceOrder(true, '198101010000');
         if (isset($payment->paymentId) && $payment->bookPaymentStatus === 'FROZEN') {
             // Verified frozen.
@@ -555,7 +556,7 @@ class resursBankTest extends TestCase
      */
     public function getPaymentCached()
     {
-        $this->__setUp();
+        $this->unitSetup();
         $apiWithoutCache = new ResursBank($this->username, $this->password, null, false, ['setApiCache' => false]);
         $hasCache = $apiWithoutCache->getApiCache();
         $hasCacheDefault = $this->TEST->ECOM->getApiCache();
@@ -620,7 +621,7 @@ class resursBankTest extends TestCase
      */
     public function wooCommerceCollider($noAssert = false)
     {
-        $this->__setUp();
+        $this->unitSetup();
         $incremental = 1430;
         $customerData = $this->getHappyCustomerData();
         $this->TEST->ECOM->addOrderLine('Product-1337', 'One simple orderline', 800, 25);
@@ -646,7 +647,7 @@ class resursBankTest extends TestCase
      */
     public function generateSimpleSimplifiedPspResponse()
     {
-        $this->__setUp();
+        $this->unitSetup();
         $customerData = $this->getHappyCustomerData();
         $this->TEST->ECOM->addOrderLine('Product-1337', 'One simple orderline', 800, 25);
         $this->TEST->ECOM->setBillingByGetAddress($customerData);
@@ -667,7 +668,7 @@ class resursBankTest extends TestCase
      */
     public function generateSimpleSimplifiedPspWithouGovernmentIdCompatibility()
     {
-        $this->__setUp();
+        $this->unitSetup();
         $customerData = $this->getHappyCustomerData();
         $this->TEST->ECOM->setBillingByGetAddress($customerData);
         $this->TEST->ECOM->setCustomer(null, '0808080808', '0707070707', 'test@test.com', 'NATURAL');
@@ -709,7 +710,7 @@ class resursBankTest extends TestCase
      */
     public function getAddress($noAssert = false)
     {
-        $this->__setUp();
+        $this->unitSetup();
         $happyCustomer = $this->TEST->ECOM->getAddress($this->flowHappyCustomer);
         $this->TEST->share('happyCustomer', $happyCustomer, false);
         if (!$noAssert) {
@@ -732,7 +733,7 @@ class resursBankTest extends TestCase
      */
     public function getMethodId($specificType = 'INVOICE')
     {
-        $this->__setUp();
+        $this->unitSetup();
         $specificMethod = $this->getMethod($specificType);
         if (isset($specificMethod->id)) {
             return $specificMethod->id;
@@ -752,7 +753,7 @@ class resursBankTest extends TestCase
      */
     public function getMethod($specificType = 'INVOICE', $customerType = 'NATURAL')
     {
-        $this->__setUp();
+        $this->unitSetup();
         $return = null;
         $this->getPaymentMethods(false);
         $prePop = $this->TEST->share('paymentMethods');
@@ -781,7 +782,7 @@ class resursBankTest extends TestCase
      */
     public function getPaymentMethods($noAssert = false)
     {
-        $this->__setUp();
+        $this->unitSetup();
         $methodList = $this->TEST->share('paymentMethods');
         /** @noinspection NotOptimalIfConditionsInspection */
         if ((is_array($methodList) && !count($methodList)) || !is_array($methodList)) {
@@ -813,7 +814,7 @@ class resursBankTest extends TestCase
             return;
         }
 
-        $this->__setUp();
+        $this->unitSetup();
         $this->TEST->ECOM->setWsdlCache(true);
         $methods = $this->TEST->ECOM->getPaymentMethods();
         static::assertTrue(
@@ -828,7 +829,7 @@ class resursBankTest extends TestCase
      */
     public function getOrderData()
     {
-        $this->__setUp();
+        $this->unitSetup();
         $this->TEST->ECOM->setBillingByGetAddress($this->flowHappyCustomer);
         $this->TEST->ECOM->addOrderLine('RDL-1337', 'One simple orderline', 800, 25);
         $orderData = $this->TEST->ECOM->getOrderData();
@@ -841,7 +842,7 @@ class resursBankTest extends TestCase
      */
     public function getAnnuityMethods()
     {
-        $this->__setUp();
+        $this->unitSetup();
         $annuityObjectList = $this->TEST->ECOM->getPaymentMethodsByAnnuity();
         $annuityIdList = $this->TEST->ECOM->getPaymentMethodsByAnnuity(true);
         static::assertTrue(count($annuityIdList) >= 1 && count($annuityObjectList) >= 1);
@@ -853,7 +854,7 @@ class resursBankTest extends TestCase
      */
     public function findPaymentsXmlBody()
     {
-        $this->__setUp();
+        $this->unitSetup();
         $paymentScanList = $this->TEST->ECOM->findPayments(['statusSet' => ['IS_DEBITED']], 1, 10, [
             'ascending' => false,
             'sortColumns' => ['FINALIZED_TIME', 'MODIFIED_TIME', 'BOOKED_TIME'],
@@ -870,7 +871,7 @@ class resursBankTest extends TestCase
      */
     public function updateStrangePaymentReference()
     {
-        $this->__setUp();
+        $this->unitSetup();
         $showFrames = false;
         $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
         $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
@@ -909,7 +910,7 @@ class resursBankTest extends TestCase
      */
     public function getCostOfPurchase()
     {
-        $this->__setUp();
+        $this->unitSetup();
         $result = $this->TEST->ECOM->getCostOfPurchase('PARTPAYMENT', '10000');
         //$result = $this->TEST->ECOM->getCostOfPurchase($this->getMethodId(), '10000');
 
@@ -929,7 +930,7 @@ class resursBankTest extends TestCase
      */
     public function hashedSpecLines()
     {
-        $this->__setUp();
+        $this->unitSetup();
         $customerData = $this->getHappyCustomerData();
         $this->TEST->ECOM->addOrderLine('Product-1337', 'One simple orderline, red', 800, 25);
         $this->TEST->ECOM->addOrderLine('Product-1337', 'Second simple orderline, blue', 900, 25);
@@ -987,7 +988,7 @@ class resursBankTest extends TestCase
             return;
         }
 
-        $this->__setUp();
+        $this->unitSetup();
         try {
             $this->TEST->ECOM->unregisterEventCallback(255, true);
         } catch (Exception $e) {
@@ -1028,7 +1029,7 @@ class resursBankTest extends TestCase
             return;
         }
 
-        $this->__setUp();
+        $this->unitSetup();
         $this->TEST->ECOM->setCallbackDigestSalt(
             uniqid(sha1(microtime(true)), true),
             RESURS_CALLBACK_TYPES::BOOKED
@@ -1158,7 +1159,7 @@ class resursBankTest extends TestCase
      */
     public function getPaymentWrong()
     {
-        $this->__setUp();
+        $this->unitSetup();
         try {
             $this->TEST->ECOM->getPayment('FAIL_HERE');
         } catch (Exception $e) {
@@ -1174,7 +1175,7 @@ class resursBankTest extends TestCase
      */
     public function getPaymentWrongRest()
     {
-        $this->__setUp();
+        $this->unitSetup();
         try {
             $this->TEST->ECOM->setFlag('GET_PAYMENT_BY_REST');
             $this->TEST->ECOM->getPayment('FAIL_HERE');
@@ -1192,7 +1193,7 @@ class resursBankTest extends TestCase
      */
     public function getPaymentUnexistentSoap()
     {
-        $this->__setUp();
+        $this->unitSetup();
         try {
             $this->TEST->ECOM->getPayment('FAIL_HERE');
         } catch (Exception $e) {
@@ -1209,7 +1210,7 @@ class resursBankTest extends TestCase
      */
     public function validateCredentials()
     {
-        $this->__setUp();
+        $this->unitSetup();
         $isNotValid = $this->TEST->ECOM->validateCredentials(RESURS_ENVIRONMENTS::TEST, 'fail', 'fail');
         $isValid = $this->TEST->ECOM->validateCredentials(
             RESURS_ENVIRONMENTS::TEST,
@@ -1246,7 +1247,7 @@ class resursBankTest extends TestCase
             return;
         }
 
-        $this->__setUp();
+        $this->unitSetup();
         try {
             // Four orderlines are normally created here.
             $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
@@ -1313,7 +1314,7 @@ class resursBankTest extends TestCase
             return;
         }
 
-        $this->__setUp();
+        $this->unitSetup();
         $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
         $paymentid = $payment->paymentId;
 
@@ -1368,7 +1369,7 @@ class resursBankTest extends TestCase
         }
 
         try {
-            $this->__setUp();
+            $this->unitSetup();
             $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
             $paymentid = $payment->paymentId;
 
@@ -1434,7 +1435,7 @@ class resursBankTest extends TestCase
         }
 
         try {
-            $this->__setUp();
+            $this->unitSetup();
             $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
             $paymentid = $payment->paymentId;
 
@@ -1541,7 +1542,7 @@ class resursBankTest extends TestCase
      */
     public function failUpdatePaymentReference()
     {
-        $this->__setUp();
+        $this->unitSetup();
         try {
             $this->TEST->ECOM->updatePaymentReference('not_this', 'not_that');
         } catch (Exception $e) {
@@ -1567,7 +1568,7 @@ class resursBankTest extends TestCase
      */
     public function keyPurging()
     {
-        $this->__setUp();
+        $this->unitSetup();
         $purgableByResurs = $this->TEST->ECOM->setGetPaymentMatchKeys('tiny');
         $purgableByWooCommerce = $this->TEST->ECOM->setGetPaymentMatchKeys(['artNo', 'description', 'unitMeasure']);
 
@@ -1583,7 +1584,7 @@ class resursBankTest extends TestCase
      */
     public function getPaymentMethodsCache()
     {
-        $this->__setUp();
+        $this->unitSetup();
         $methodArray = [];
         $counter = 0;
         $this->TEST->ECOM->getPaymentMethods();
@@ -1608,7 +1609,7 @@ class resursBankTest extends TestCase
      */
     public function getPriceInfo()
     {
-        $this->__setUp();
+        $this->unitSetup();
         $myMethods = $this->TEST->ECOM->getPaymentMethods();
 
         // Normal one method.
@@ -1662,7 +1663,7 @@ class resursBankTest extends TestCase
             );
             return;
         }
-        $this->__setUp();
+        $this->unitSetup();
         $noErrorDynamic = false;
         $noErrorStatic = false;
         $noErrorStaticRepeat = false;
@@ -1790,7 +1791,7 @@ class resursBankTest extends TestCase
      */
     public function getRcoFrame()
     {
-        $this->__setUp();
+        $this->unitSetup();
         $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
         $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
 
@@ -1813,7 +1814,7 @@ class resursBankTest extends TestCase
      */
     public function obsoletion()
     {
-        $this->__setUp();
+        $this->unitSetup();
         try {
             $this->TEST->ECOM->obsoleteMissingMethod();
         } catch (Exception $e) {
@@ -1880,7 +1881,7 @@ class resursBankTest extends TestCase
      */
     public function getOwnOrigin()
     {
-        $this->__setUp();
+        $this->unitSetup();
         $this->TEST->ECOM->setFlag('STORE_ORIGIN');
         $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
         $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
@@ -1904,7 +1905,7 @@ class resursBankTest extends TestCase
      */
     public function netCore30HelperTest()
     {
-        $this->__setUp();
+        $this->unitSetup();
         $req = $this->TEST->ECOM->getPaymentDiffByStatus('1573');
 
         static::assertTrue(true);
@@ -1930,7 +1931,7 @@ class resursBankTest extends TestCase
          *   )
          * Standard request when empty should return array()
          */
-        $this->__setUp();
+        $this->unitSetup();
 
         try {
             // Running unreg through rest as of 1.3.31
@@ -1987,7 +1988,7 @@ class resursBankTest extends TestCase
      */
     public function testGetSaltByCrypto()
     {
-        $this->__setUp();
+        $this->unitSetup();
         $saltByCrypto = $this->TEST->ECOM->getSaltByCrypto(7, 24);
         static::assertEquals(strlen($saltByCrypto), 24);
     }
@@ -2015,18 +2016,26 @@ class resursBankTest extends TestCase
             return;
         }
 
-        $this->__setUp();
+        $this->unitSetup();
+        /** @var NetWrapper $CURL */
         $CURL = $this->TEST->ECOM->getCurlHandle();
-        $CURL->setProxy('proxytest.resurs.it:80', CURLPROXY_HTTP);
-        $this->TEST->ECOM->setCurlHandle($CURL);
+        //CURL->setProxy('proxytest.resurs.it:80', CURLPROXY_HTTP);
+        //$this->TEST->ECOM->setCurlHandle($CURL);
 
+        // As of 1.3.41, we can set proxy directly at ecom level.
+        $this->TEST->ECOM->setProxy('proxytest.resurs.it:80', CURLPROXY_HTTP);
         try {
-            $request = $CURL->doGet('http://proxytest.resurs.it/ip.php');
+            $request = $CURL->doGet('https://ipv4.netcurl.org/ip.php');
         } catch (Exception $e) {
-            static::markTestSkipped(sprintf('Proxy test skipped (%d): %s', $e->getCode(), $e->getMessage()));
+            static::markTestSkipped(
+                sprintf(
+                    'Proxy test skipped (%d): %s',
+                    $e->getCode(),
+                    $e->getMessage()
+                )
+            );
             return;
         }
-
         $ipBody = $request->getBody();
         if ($this->isProperIp($ipBody)) {
             $_SERVER['REMOTE_ADDR'] = $ipBody;
@@ -2036,11 +2045,18 @@ class resursBankTest extends TestCase
             $this->TEST->ECOM->setCustomer('8305147715', '0808080808', '0707070707', 'test@test.com', 'NATURAL');
             $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
             $this->TEST->ECOM->addOrderLine('ProxyArtRequest', 'My Proxified Product', 800, 25);
-            $iframeRequest = $this->TEST->ECOM->createPayment($this->getMethodId());
-
-            static::assertTrue(preg_match('/iframe src/i', $iframeRequest) ? true : false);
+            try {
+                $iframeRequest = $this->TEST->ECOM->createPayment($this->getMethodId());
+                static::assertTrue(preg_match('/iframe(.*?)src/i', $iframeRequest) ? true : false);
+            } catch (Exception $e) {
+                static::markTestSkipped(
+                    'Could not complete proxy test (%d): %s',
+                    $e->getCode(),
+                    $e->getMessage()
+                );
+            }
         } else {
-            static::markTestSkipped('Could not complete proxy test');
+            static::markTestSkipped('Could not complete proxy test. Got no proper ip address.');
         }
     }
 
@@ -2050,7 +2066,7 @@ class resursBankTest extends TestCase
      */
     public function finalTest()
     {
-        $this->__setUp();
+        $this->unitSetup();
         $this->TEST->ECOM->resetInvoiceNumber();
         static::assertTrue($this->TEST->unshare('thisKey'));
     }
