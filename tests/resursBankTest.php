@@ -1999,8 +1999,19 @@ class resursBankTest extends TestCase
      */
     public function proxyByBookRcoHalfway()
     {
-        if (!$this->canProxy()) {
-            static::markTestSkipped('Can not perform proxy tests with this client. Skipped.');
+        try {
+            if (!$this->canProxy()) {
+                static::markTestSkipped('Can not perform proxy tests with this client. Skipped.');
+                return;
+            }
+        } catch (Exception $e) {
+            static::markTestIncomplete(
+                sprintf(
+                    'Error %d during proxytest: %s',
+                    $e->getCode(),
+                    $e->getMessage()
+                )
+            );
             return;
         }
 
@@ -2018,7 +2029,7 @@ class resursBankTest extends TestCase
 
         $ipBody = $request->getBody();
         if ($this->isProperIp($ipBody)) {
-            $_SERVER['REMOTE_ADDR'] = $this->getProperIp($ipBody);
+            $_SERVER['REMOTE_ADDR'] = $ipBody;
             $customerData = $this->getHappyCustomerData();
             $this->TEST->ECOM->setBillingByGetAddress($customerData);
             $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
