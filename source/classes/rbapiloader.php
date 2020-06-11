@@ -7,7 +7,7 @@
  * @author Resurs Bank <support@resurs.se>
  * @author Tomas Tornevall <tomas.tornevall@resurs.se>
  * @branch 1.3
- * @version 1.3.40
+ * @version 1.3.41
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://test.resurs.com/docs/x/TYNM EComPHP Usage
  * @link https://test.resurs.com/docs/x/KAH1 EComPHP: Bitmasking features
@@ -33,7 +33,7 @@ if (!defined('ECOM_SKIP_AUTOLOAD')) {
     }
 }
 
-// Prevent duplicate loading
+/** @noinspection ClassConstantCanBeUsedInspection */
 if (
     class_exists('ResursBank', ECOM_CLASS_EXISTS_AUTOLOAD) &&
     class_exists('Resursbank\RBEcomPHP\ResursBank', ECOM_CLASS_EXISTS_AUTOLOAD)
@@ -78,7 +78,7 @@ if (!defined('ECOMPHP_MODIFY_DATE')) {
  * Class ResursBank
  *
  * @package Resursbank\RBEcomPHP
- * @version 1.3.38
+ * @version 1.3.41
  */
 class ResursBank
 {
