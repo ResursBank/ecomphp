@@ -21,7 +21,7 @@
             "source/classes/rbapiloader.php"
         ],
         "psr-4": {
-            "Resursbank\\RBEcomPHP\\": "source"
+            "Resursbank\\RBEcomPHP\\": "source/classes/rbapiloader.php"
         }
     }
 }
