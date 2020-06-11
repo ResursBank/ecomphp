@@ -2019,8 +2019,12 @@ class resursBankTest extends TestCase
         $this->unitSetup();
         /** @var NetWrapper $CURL */
         $CURL = $this->TEST->ECOM->getCurlHandle();
+        /** @var WrapperConfig $configData */
+        $configData = $CURL->getConfig();
+        $configData->setUserAgent('AnotherUserAgentRequest');
+        $CURL->setConfig($configData);
         //CURL->setProxy('proxytest.resurs.it:80', CURLPROXY_HTTP);
-        //$this->TEST->ECOM->setCurlHandle($CURL);
+        $this->TEST->ECOM->setCurlHandle($CURL);
 
         // As of 1.3.41, we can set proxy directly at ecom level.
         $this->TEST->ECOM->setProxy('proxytest.resurs.it:80', CURLPROXY_HTTP);
