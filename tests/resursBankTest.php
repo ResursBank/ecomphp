@@ -85,7 +85,10 @@ class resursBankTest extends TestCase
     private function isProperIp($addr)
     {
         $not = ['127.0.0.1'];
-        return filter_var(trim($addr), FILTER_VALIDATE_IP) &&
+        return filter_var(
+            trim($addr),
+            FILTER_VALIDATE_IP
+        ) &&
             !\in_array(trim($addr), $not);
     }
 
@@ -285,47 +288,13 @@ class resursBankTest extends TestCase
         }
 
         $this->TEST->ECOM->getAddress($this->flowHappyCustomer);
+
         /** @var MODULE_CURL $lastCurlHandle */
-
         $lastCurlHandle = $this->TEST->ECOM->getCurlHandle(true);
-        if (defined('TORNELIB_NETCURL_RELEASE') && version_compare(TORNELIB_NETCURL_RELEASE, '6.0.20', '<')) {
-            // In versions prior to 6.0.20, you need to first extract the SOAP body from simpleSoap itself (via getLibResponse).
-            /** @var MODULE_SOAP $lastCurlHandle */
-            $soapLibResponse = $lastCurlHandle->getSoapResponse();
-            $selfParser = new MODULE_IO();
-            $byIo = $selfParser->getFromXml($soapLibResponse['body'], true);
-            /** @noinspection PhpUndefinedFieldInspection */
-            static::assertTrue((
-                    $byIo->fullName == $this->flowHappyCustomerName
-                ) &&
-                (
-                    $soapLibResponse['parsed']->fullName == $this->flowHappyCustomerName
-                ));
-
-            return;
-        }
-
-        if (defined('NETCURL_VERSION') &&
-            version_compare(
-                NETCURL_VERSION,
-                '6.1',
-                '>='
-            )
-        ) {
-            $curlResponse = $lastCurlHandle->getParsed();
-            static::assertEquals(
-                $curlResponse->fullName, $this->flowHappyCustomerName
-            );
-            return;
-        }
-
-        // Get the curl handle without bulk request
-        $lastCurlHandle = $this->TEST->ECOM->getCurlHandle();
-        $byHandle = $lastCurlHandle->getParsed();
-
-        /** @noinspection PhpUndefinedFieldInspection */
+        $curlResponse = $lastCurlHandle->getParsed();
         static::assertEquals(
-            $byHandle->fullName, $this->flowHappyCustomerName
+            $curlResponse->fullName,
+            $this->flowHappyCustomerName
         );
     }
 
@@ -530,7 +499,8 @@ class resursBankTest extends TestCase
             } catch (Exception $e) {
                 $this->bailOut($e);
                 static::assertSame(
-                    $e->getCode(), \RESURS_EXCEPTIONS::ECOMMERCEERROR_NOT_ALLOWED_IN_CURRENT_STATE,
+                    $e->getCode(),
+                    \RESURS_EXCEPTIONS::ECOMMERCEERROR_NOT_ALLOWED_IN_CURRENT_STATE,
                     'Finalization properly prohibited by current state'
                 );
             }
