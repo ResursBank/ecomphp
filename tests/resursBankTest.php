@@ -15,6 +15,16 @@
 
 namespace Resursbank\RBEcomPHP;
 
+// Set up local user agent for identification with webservices
+if (!isset($_SERVER['HTTP_USER_AGENT'])) {
+    $_SERVER['HTTP_USER_AGENT'] = 'EComPHP/Test-InternalClient';
+}
+
+// For pipelines.
+if (!isset($_ENV['standalone_ecom'])) {
+    $_ENV['standalone_ecom'] = '7.1';
+}
+
 require_once(__DIR__ . '/../vendor/autoload.php');
 require_once(__DIR__ . '/classes/ResursBankTestClass.php');
 
@@ -26,16 +36,6 @@ use TorneLIB\Module\Config\WrapperConfig;
 use TorneLIB\Module\Network\NetWrapper;
 use TorneLIB\Module\Network\Wrappers\CurlWrapper;
 use TorneLIB\MODULE_CURL;
-
-// Set up local user agent for identification with webservices
-if (!isset($_SERVER['HTTP_USER_AGENT'])) {
-    $_SERVER['HTTP_USER_AGENT'] = 'EComPHP/Test-InternalClient';
-}
-
-// For pipelines.
-if (!isset($_ENV['standalone_ecom'])) {
-    $_ENV['standalone_ecom'] = '7.1';
-}
 
 /**
  * Class resursBankTest
