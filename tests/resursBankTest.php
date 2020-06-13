@@ -7,7 +7,6 @@
  *
  * @package EcomPHPTest
  * @author Resurs Bank AB, Tomas Tornevall <tomas.tornevall@resurs.se>
- * @version 0.2
  * @link https://test.resurs.com/docs/x/KYM0 Get started - PHP Section
  * @link https://resursbankplugins.atlassian.net/browse/ECOMPHP-214 Rebuilding!
  * @license Apache 2.0
@@ -27,6 +26,7 @@ if (!isset($_ENV['standalone_ecom'])) {
 
 require_once(__DIR__ . '/../vendor/autoload.php');
 require_once(__DIR__ . '/classes/ResursBankTestClass.php');
+require_once(__DIR__ . '/hooks.php');
 
 // Resurs Bank usages
 use Exception;
@@ -37,11 +37,6 @@ use TorneLIB\Module\Network\NetWrapper;
 use TorneLIB\Module\Network\Wrappers\CurlWrapper;
 use TorneLIB\MODULE_CURL;
 
-/**
- * Class resursBankTest
- *
- * @package Resursbank\RBEcomPHP
- */
 class resursBankTest extends TestCase
 {
     /**
