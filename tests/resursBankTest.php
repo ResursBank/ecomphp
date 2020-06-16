@@ -32,6 +32,10 @@ require_once(__DIR__ . '/hooks.php');
 use Exception;
 use PHPUnit\Framework\TestCase;
 use TorneLIB\Exception\ExceptionHandler;
+use TorneLIB\Helpers\GenericParser;
+use TorneLIB\IO\Data\Content;
+use TorneLIB\Model\Type\dataType;
+use TorneLIB\Model\Type\requestMethod;
 use TorneLIB\Module\Config\WrapperConfig;
 use TorneLIB\Module\Network\NetWrapper;
 use TorneLIB\Module\Network\Wrappers\CurlWrapper;
@@ -81,9 +85,9 @@ class resursBankTest extends TestCase
     {
         $not = ['127.0.0.1'];
         return filter_var(
-            trim($addr),
-            FILTER_VALIDATE_IP
-        ) &&
+                trim($addr),
+                FILTER_VALIDATE_IP
+            ) &&
             !\in_array(trim($addr), $not);
     }
 
@@ -1302,6 +1306,62 @@ class resursBankTest extends TestCase
                 ]
             )
         );
+    }
+
+    /**
+     * @test
+     */
+    public function annulStd()
+    {
+        if (!$this->allowVersion()) {
+            static::markTestSkipped(
+                sprintf(
+                    'Special test limited to one PHP version (%s) detected. ' .
+                    'This is the wrong version (%s), so it is being skipped.',
+                    isset($_ENV['standalone_ecom']) ? $_ENV['standalone_ecom'] : 'Detection failed',
+                    PHP_VERSION
+                )
+            );
+            return;
+        }
+
+        $this->unitSetup();
+        $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
+        $paymentId = $payment->paymentId;
+        $res = $this->TEST->ECOM->annulPayment($paymentId);
+        static::assertTrue((bool)$res);
+    }
+
+    /**
+     * @test
+     */
+    public function annulByNetWrapper()
+    {
+        $xml = '<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:res="http://ecommerce.resurs.com/v4/msg/aftershopflow">  
+  <SOAP-ENV:Body>  
+    <res:annulPayment>  
+      <paymentId>direct_xml_to_curl</paymentId>  
+      <partPaymentSpec xsi:nil="true"/>  
+      <createdBy>IntegrationService</createdBy>  
+    </res:annulPayment>  
+    </SOAP-ENV:Body>  
+</SOAP-ENV:Envelope>';
+        try {
+            $response = (new NetWrapper())
+                ->setAuthentication(
+                    'atest',
+                    'atest'
+                )->request(
+                    'https://test.resurs.com/ecommerce-test/ws/V4/AfterShopFlowService',
+                    $xml,
+                    requestMethod::METHOD_POST,
+                    dataType::SOAP_XML
+                );
+        } catch (ExceptionHandler $e) {
+            /** @var CurlWrapper $extended */
+            $extended = $e->getExtendException()->getBody();
+            static::assertContains('TypeId>8<', $extended);
+        }
     }
 
     /**

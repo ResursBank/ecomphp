@@ -13,3 +13,4 @@ source/classes/cookies
 tests/selenium.jar
 tests/startwebdriver
 tests/chromedriver
+specmerge.sh

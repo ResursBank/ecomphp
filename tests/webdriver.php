@@ -5,13 +5,14 @@ require_once(__DIR__ . '/../vendor/autoload.php');
 use Facebook\WebDriver\Chrome\ChromeOptions;
 use Facebook\WebDriver\Remote\DesiredCapabilities;
 use Facebook\WebDriver\Remote\RemoteWebDriver;
+use Facebook\WebDriver\WebDriver;
 
 /**
  * Class RESURS_WEBDRIVER WebDriver Helper functions
  */
 class RESURS_WEBDRIVER
 {
-    /** @var \Facebook\WebDriver\WebDriver */
+    /** @var WebDriver */
     public $REMOTE;
     private $HEADLESS;
     private $BROWSER_BINARY;
