@@ -3246,7 +3246,14 @@ class ResursBank
      */
     public function getAnnuityFactors($paymentMethodId = '')
     {
-        return $this->postService('getAnnuityFactors', ['paymentMethodId' => $paymentMethodId]);
+        $return = $this->postService('getAnnuityFactors', ['paymentMethodId' => $paymentMethodId]);
+
+        if (is_object($return)) {
+            // Embed array.
+            $return = [$return];
+        }
+
+        return $return;
     }
 
     /**

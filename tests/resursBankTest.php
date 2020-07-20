@@ -1871,8 +1871,9 @@ class resursBankTest extends TestCase
     {
         $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
         $this->TEST->ECOM->setFlag('GET_PAYMENT_BY_REST');
+        $paymentId = $payment->paymentId;
         try {
-            $this->TEST->ECOM->getPayment($payment->paymentId);
+            $this->TEST->ECOM->getPayment($paymentId);
         } catch (Exception $e) {
             $this->bailOut($e);
             // Special problems with SSL certificates and SoapClient is absent.
