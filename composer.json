@@ -22,8 +22,5 @@
         "psr-4": {
             "Resursbank\\RBEcomPHP\\": "source/classes/rbapiloader.php"
         }
-    },
-    "require-dev": {
-        "phpunit/phpunit": "^9"
     }
 }
