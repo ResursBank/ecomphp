@@ -1846,32 +1846,6 @@ class resursBankTest extends TestCase
      * @test
      * @throws Exception
      */
-    public function norwaySimple()
-    {
-        try {
-            $ec = new ResursBank('phpapitestno', 'fqjuF7XL6v1GsykO46muHZvJzo8eHwqx');
-            $response = $ec->getAddressByPhone('40000010', 'NATURAL', '127.0.0.1');
-
-            static::assertTrue(
-                isset($response->fullName) &&
-                $response->fullName !== '' &&
-                \strlen($response->fullName) > 5
-            );
-        } catch (Exception $e) {
-            static::markTestSkipped(
-                sprintf(
-                    'Skipped on %d: %s',
-                    $e->getCode(),
-                    $e->getMessage()
-                )
-            );
-        }
-    }
-
-    /**
-     * @test
-     * @throws Exception
-     */
     public function getPaymentByRest()
     {
         $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
