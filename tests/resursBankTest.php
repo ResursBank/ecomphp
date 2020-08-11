@@ -21,7 +21,7 @@ if (!isset($_SERVER['HTTP_USER_AGENT'])) {
 
 // For pipelines.
 if (!isset($_ENV['standalone_ecom'])) {
-    $_ENV['standalone_ecom'] = '7.1';
+    $_ENV['standalone_ecom'] = '7.1|8.0';
 }
 
 require_once(__DIR__ . '/../vendor/autoload.php');
@@ -31,9 +31,8 @@ require_once(__DIR__ . '/hooks.php');
 // Resurs Bank usages
 use Exception;
 use PHPUnit\Framework\TestCase;
+use ResursException;
 use TorneLIB\Exception\ExceptionHandler;
-use TorneLIB\Helpers\GenericParser;
-use TorneLIB\IO\Data\Content;
 use TorneLIB\Model\Type\dataType;
 use TorneLIB\Model\Type\requestMethod;
 use TorneLIB\Module\Config\WrapperConfig;
@@ -126,17 +125,23 @@ class resursBankTest extends TestCase
      */
     private function allowVersion()
     {
-        $envFix = explode('.', $_ENV['standalone_ecom']);
-        $envFix[2] = '0';
-        $higherThan = implode('.', $envFix);
-        $envFix[1]++;
-        $lowerThan = implode('.', $envFix);
-
         $return = false;
-        if (version_compare(PHP_VERSION, $higherThan, '>') &&
-            version_compare(PHP_VERSION, $lowerThan, '<')
-        ) {
-            $return = true;
+
+        $saE = explode('|', $_ENV['standalone_ecom']);
+        if (is_array($saE) && count($saE)) {
+            foreach ($saE as $textVersion) {
+                $envFix = explode('.', $textVersion);
+                $envFix[2] = '0';
+                $higherThan = implode('.', $envFix);
+                $envFix[1]++;
+                $lowerThan = implode('.', $envFix);
+                if ((version_compare(PHP_VERSION, $higherThan, '>') && version_compare(PHP_VERSION, $lowerThan, '<'))
+                    || preg_match(sprintf('/^%s/', $textVersion), PHP_VERSION)
+                ) {
+                    $return = true;
+                    break;
+                }
+            }
         }
 
         return $return;
@@ -205,7 +210,7 @@ class resursBankTest extends TestCase
         // Silently kill file.
         /** @noinspection PhpUsageOfSilenceOperatorInspection */
         @unlink(__DIR__ . '/storage/shared.serialize');
-        static::assertFileNotExists(__DIR__ . '/storage/shared.serialize');
+        static::assertNotTrue(file_exists(__DIR__ . '/storage/shared.serialize'));
     }
 
     /**
@@ -916,12 +921,12 @@ class resursBankTest extends TestCase
     {
         /** @noinspection SuspiciousBinaryOperationInspection */
         static::assertTrue(
-            (255 & RESURS_CALLBACK_TYPES::FINALIZATION) ? true : false &&
-            (8 & RESURS_CALLBACK_TYPES::FINALIZATION) ? true : false &&
-            (24 & RESURS_CALLBACK_TYPES::TEST) ? true : false &&
-            (12 & RESURS_CALLBACK_TYPES::FINALIZATION && RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL) ? true : false &&
-            (56 & RESURS_CALLBACK_TYPES::FINALIZATION && RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL) ? true : false &&
-                (RESURS_CALLBACK_TYPES::FINALIZATION | RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL | RESURS_CALLBACK_TYPES::TEST) === 28
+            ((255 & RESURS_CALLBACK_TYPES::FINALIZATION) ? true : false) &&
+            ((8 & RESURS_CALLBACK_TYPES::FINALIZATION) ? true : false) &&
+            ((24 & RESURS_CALLBACK_TYPES::TEST) ? true : false) &&
+            ((12 & RESURS_CALLBACK_TYPES::FINALIZATION && RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL) ? true : false) &&
+            ((56 & RESURS_CALLBACK_TYPES::FINALIZATION && RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL) ? true : false) &&
+            ((RESURS_CALLBACK_TYPES::FINALIZATION | RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL | RESURS_CALLBACK_TYPES::TEST) === 28)
         );
     }
 
@@ -1360,7 +1365,7 @@ class resursBankTest extends TestCase
         } catch (ExceptionHandler $e) {
             /** @var CurlWrapper $extended */
             $extended = $e->getExtendException()->getBody();
-            static::assertContains('TypeId>8<', $extended);
+            static::assertTrue((bool)preg_match('/TypeId>8</', $extended));
         }
     }
 
@@ -1536,13 +1541,13 @@ class resursBankTest extends TestCase
     public function stringExceptions()
     {
         try {
-            throw new \ResursException('Fail', 0, null, 'TEST_ERROR_CODE_AS_STRING', __FUNCTION__);
+            throw new ResursException('Fail', 0, null, 'TEST_ERROR_CODE_AS_STRING', __FUNCTION__);
         } catch (Exception $e) {
             $this->bailOut($e);
             $firstCode = $e->getCode();
         }
         try {
-            throw new \ResursException('Fail', 0, null, 'TEST_ERROR_CODE_AS_STRING_WITHOUT_CONSTANT', __FUNCTION__);
+            throw new ResursException('Fail', 0, null, 'TEST_ERROR_CODE_AS_STRING_WITHOUT_CONSTANT', __FUNCTION__);
         } catch (Exception $e) {
             $this->bailOut($e);
             $secondCode = $e->getCode();

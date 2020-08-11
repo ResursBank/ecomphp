@@ -4881,7 +4881,7 @@ class ResursBank
      * @deprecated 1.0.8 Build your own integration please
      * @deprecated 1.1.8 Build your own integration please
      */
-    public function getRegEx($formFieldName = '', $countryCode, $customerType)
+    public function getRegEx($formFieldName = '', $countryCode = '', $customerType = 'NATURAL')
     {
         /** @noinspection PhpDeprecationInspection */
         return $this->E_DEPRECATED->getRegEx($formFieldName, $countryCode, $customerType);
@@ -5825,18 +5825,20 @@ class ResursBank
 
     /**
      * Set flag annulIfFrozen
-     *
      * @param bool $setBoolean
-     *
-     * @since 1.0.29
+     * @return ResursBank
      * @since 1.1.29
      * @since 1.2.2
      * @since 1.3.2
+     * @since 1.0.29
+     * @noinspection ParameterDefaultValueIsNotNullInspection
      */
     public function setAnnulIfFrozen($setBoolean = true)
     {
         $this->fixPaymentData();
         $this->Payload['paymentData']['annulIfFrozen'] = $setBoolean;
+
+        return $this;
     }
 
     /**
@@ -5861,8 +5863,7 @@ class ResursBank
      * Set flag waitForFraudControl
      *
      * @param bool $setBoolean
-     *
-     * @return bool
+     * @return ResursBank
      * @since 1.0.29
      * @since 1.1.29
      * @since 1.2.2
@@ -5873,9 +5874,7 @@ class ResursBank
         $this->fixPaymentData();
         $this->Payload['paymentData']['waitForFraudControl'] = $setBoolean;
 
-        return isset(
-            $this->Payload['paymentData']['waitForFraudControl']
-        ) ? $this->Payload['paymentData']['waitForFraudControl'] : false;
+        return $this;
     }
 
     /**
@@ -5900,8 +5899,7 @@ class ResursBank
      * Set flag finalizeIfBooked
      *
      * @param bool $setBoolean
-     *
-     * @return bool
+     * @return ResursBank
      * @since 1.0.29
      * @since 1.1.29
      * @since 1.2.2
@@ -5912,9 +5910,7 @@ class ResursBank
         $this->fixPaymentData();
         $this->Payload['paymentData']['finalizeIfBooked'] = $setBoolean;
 
-        return isset(
-            $this->Payload['paymentData']['finalizeIfBooked']
-        ) ? $this->Payload['paymentData']['finalizeIfBooked'] : false;
+        return $this;
     }
 
     /**
@@ -5934,7 +5930,6 @@ class ResursBank
             $this->Payload['paymentData']['finalizeIfBooked']
         ) ? $this->Payload['paymentData']['finalizeIfBooked'] : false;
     }
-
 
     /**
      * Return correct data on https-detection
@@ -6230,7 +6225,7 @@ class ResursBank
      * @since 1.0.2
      * @since 1.1.2
      */
-    private function setAddressPayload($addressKey = 'address', $addressData)
+    private function setAddressPayload($addressKey = 'address', $addressData = [])
     {
         if (is_object($addressData)) {
             $this->setPayloadArray($addressKey, $this->renderAddress(

@@ -1,6 +1,6 @@
 {
     "name": "resursbank/ecomphp",
-    "version": "1.3.41",
+    "version": "1.3.42",
     "description": "Resurs Bank AB ecommerce library for PHP.",
     "license": "Apache-2.0",
     "require": {
@@ -22,5 +22,8 @@
         "psr-4": {
             "Resursbank\\RBEcomPHP\\": "source/classes/rbapiloader.php"
         }
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9"
     }
 }
