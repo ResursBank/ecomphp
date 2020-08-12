@@ -2389,12 +2389,12 @@ class ResursBank
                 } else {
                     $this->InitializeServices();
                     try {
-                        $curlResponse = $this->CURL->doGet(
-                            $this->getServiceUrl('unregisterEventCallback')
-                        )->unregisterEventCallback(
+                        // Proper SOAP request.
+                        $curlSoapRequest = $this->CURL->doGet($this->getServiceUrl('unregisterEventCallback'));
+                        $curlSoapRequest->unregisterEventCallback(
                             ['eventType' => $callbackType]
                         );
-                        $curlCode = $this->CURL->getCode($curlResponse);
+                        $curlCode = $curlSoapRequest->getCode();
                     } catch (Exception $e) {
                         // If this one suddenly starts throwing exceptions.
                         $curlCode = $e->getCode();
@@ -3863,9 +3863,11 @@ class ResursBank
             'value' => $metaDataValue,
         ];
         /** @noinspection PhpUndefinedMethodInspection */
-        $metaDataResponse = $this->CURL->doGet($this->getServiceUrl('addMetaData'))->addMetaData($metaDataArray);
-        $curlCode = $this->CURL->getCode($metaDataResponse);
-        if ($curlCode >= 200 && $curlCode <= 250) {
+        $metaDataSoapRequest = $this->CURL->doGet($this->getServiceUrl('addMetaData'));
+        $metaDataSoapRequest->addMetaData($metaDataArray);
+        // Old request method is bailing out on wrong soapcall.
+        $metaDataRequestCode = $metaDataSoapRequest->getCode();
+        if ($metaDataRequestCode >= 200 && $metaDataRequestCode <= 250) {
             return true;
         }
 
@@ -4881,7 +4883,7 @@ class ResursBank
      * @deprecated 1.0.8 Build your own integration please
      * @deprecated 1.1.8 Build your own integration please
      */
-    public function getRegEx($formFieldName = '', $countryCode, $customerType)
+    public function getRegEx($formFieldName = '', $countryCode = '', $customerType = 'NATURAL')
     {
         /** @noinspection PhpDeprecationInspection */
         return $this->E_DEPRECATED->getRegEx($formFieldName, $countryCode, $customerType);
@@ -5825,18 +5827,20 @@ class ResursBank
 
     /**
      * Set flag annulIfFrozen
-     *
      * @param bool $setBoolean
-     *
-     * @since 1.0.29
+     * @return ResursBank
      * @since 1.1.29
      * @since 1.2.2
      * @since 1.3.2
+     * @since 1.0.29
+     * @noinspection ParameterDefaultValueIsNotNullInspection
      */
     public function setAnnulIfFrozen($setBoolean = true)
     {
         $this->fixPaymentData();
         $this->Payload['paymentData']['annulIfFrozen'] = $setBoolean;
+
+        return $this;
     }
 
     /**
@@ -5861,8 +5865,7 @@ class ResursBank
      * Set flag waitForFraudControl
      *
      * @param bool $setBoolean
-     *
-     * @return bool
+     * @return ResursBank
      * @since 1.0.29
      * @since 1.1.29
      * @since 1.2.2
@@ -5873,9 +5876,7 @@ class ResursBank
         $this->fixPaymentData();
         $this->Payload['paymentData']['waitForFraudControl'] = $setBoolean;
 
-        return isset(
-            $this->Payload['paymentData']['waitForFraudControl']
-        ) ? $this->Payload['paymentData']['waitForFraudControl'] : false;
+        return $this;
     }
 
     /**
@@ -5900,8 +5901,7 @@ class ResursBank
      * Set flag finalizeIfBooked
      *
      * @param bool $setBoolean
-     *
-     * @return bool
+     * @return ResursBank
      * @since 1.0.29
      * @since 1.1.29
      * @since 1.2.2
@@ -5912,9 +5912,7 @@ class ResursBank
         $this->fixPaymentData();
         $this->Payload['paymentData']['finalizeIfBooked'] = $setBoolean;
 
-        return isset(
-            $this->Payload['paymentData']['finalizeIfBooked']
-        ) ? $this->Payload['paymentData']['finalizeIfBooked'] : false;
+        return $this;
     }
 
     /**
@@ -5934,7 +5932,6 @@ class ResursBank
             $this->Payload['paymentData']['finalizeIfBooked']
         ) ? $this->Payload['paymentData']['finalizeIfBooked'] : false;
     }
-
 
     /**
      * Return correct data on https-detection
@@ -6230,7 +6227,7 @@ class ResursBank
      * @since 1.0.2
      * @since 1.1.2
      */
-    private function setAddressPayload($addressKey = 'address', $addressData)
+    private function setAddressPayload($addressKey = 'address', $addressData = [])
     {
         if (is_object($addressData)) {
             $this->setPayloadArray($addressKey, $this->renderAddress(

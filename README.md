@@ -35,13 +35,19 @@ Version 1.3 is the current major release of EComPHP. New deployments are quite r
 
 # PHP versions verified
 
+Take a look at [this page](https://www.php.net/supported-versions.php) if you're unsure which PHP versions that are still supported by the PHP team.
+As of february 2020, only 7.3 and 7.4 have full support open. 7.2 still do have security patch support, but is on deprecation. All older versions are completely unsupported and should probably get upgrade by you also.
+
 ### Verified PHP versions
 
     5.6 - 7.4 (Bamboo & Pipelines)
+    8.0a3     (Bamboo only, as of 1.3.42)
     < 5.6     (No longer tested)
 
-Take a look at [this page](https://www.php.net/supported-versions.php) if you're unsure which PHP versions that are still supported by the PHP team.
-As of february 2020, only 7.3 and 7.4 have full support open. 7.2 still do have security patch support, but is on deprecation. All older versions are completely unsupported and should probably get upgrade by you also.
+Testing PHP 8.0 is possible when using phpunit 9 and a compiled version of PHP 8, like below:
+
+    composer --dev require phpunit/phpunit ^9 --ignore-platform-reqs
+    /usr/local/php8alpha/bin/php vendor/bin/phpunit
 
 ## What this library do and do not
 

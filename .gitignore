@@ -14,3 +14,6 @@ tests/selenium.jar
 tests/startwebdriver
 tests/chromedriver
 specmerge.sh
+.php_cs.cache
+.phpunit.result.cache
+
