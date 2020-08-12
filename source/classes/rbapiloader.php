@@ -75,9 +75,7 @@ if (!defined('ECOMPHP_MODIFY_DATE')) {
 
 /**
  * Class ResursBank
- *
  * @package Resursbank\RBEcomPHP
- * @version 1.3.41
  */
 class ResursBank
 {
@@ -1162,7 +1160,7 @@ class ResursBank
      */
     public function getCurlVersion($fullRelease = false)
     {
-        if (!is_null($this->CURL)) {
+        if ($this->CURL !== null) {
             return $this->CURL->getVersion($fullRelease);
         }
 
