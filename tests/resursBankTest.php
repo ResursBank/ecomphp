@@ -1994,6 +1994,7 @@ class resursBankTest extends TestCase
      * Part 1: one row has 50 annulled, 25 debited and 25 credited.
      * Part 2: one row has 50 annulled, 50 credited, and the resut of the order should be annulled.
      * @throws Exception
+     * @noinspection MultipleReturnStatementsInspection
      */
     public function cancelMixedPayment()
     {
