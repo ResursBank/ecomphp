@@ -3,6 +3,8 @@
 // Note: Namespaces must be left out for EC-1.0
 namespace Resursbank\RBEcomPHP;
 
+use Exception;
+
 /**
  * Class RESURS_TEST_BRIDGE Primary test class for setting up and simplify standard tests like order booking etc
  */
@@ -20,10 +22,9 @@ class RESURS_TEST_BRIDGE
      *
      * @param string $userName
      * @param string $password
-     *
-     * @throws \Exception
+     * @throws Exception
      */
-    function __construct($userName = 'ecomphpPipelineTest', $password = '4Em4r5ZQ98x3891D6C19L96TQ72HsisD')
+    public function __construct($userName = 'ecomphpPipelineTest', $password = '4Em4r5ZQ98x3891D6C19L96TQ72HsisD')
     {
         $this->shareFile = __DIR__ . "/../storage/shared.serialize";
         $this->ECOM = new ResursBank($userName, $password, RESURS_ENVIRONMENTS::TEST, true);
@@ -35,7 +36,7 @@ class RESURS_TEST_BRIDGE
      * @param bool $successLogin
      *
      * @return mixed
-     * @throws \Exception
+     * @throws Exception
      */
     public function getCredentialControl($successLogin = true)
     {
@@ -65,7 +66,7 @@ class RESURS_TEST_BRIDGE
         if (!empty($key)) {
             if (!isset($shareData[$key])) {
                 if (!is_null($value)) {
-                    $shareData[$key] = array($value);
+                    $shareData[$key] = [$value];
                 } else {
                     return null;
                 }
@@ -74,7 +75,7 @@ class RESURS_TEST_BRIDGE
                     if ($appendArray) {
                         $shareData[$key][] = $value;
                     } else {
-                        $shareData[$key] = array($value);
+                        $shareData[$key] = [$value];
                     }
                 } else {
                     return $shareData[$key];
