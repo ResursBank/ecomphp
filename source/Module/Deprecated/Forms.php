@@ -1,15 +1,13 @@
 <?php
 
-namespace Resursbank\RBEcomPHP;
+namespace Resursbank\RBEcomPHP\Module\Deprecated;
 
 /**
- * Class RESURS_DEPRECATED_FLOW Thing with relation to Resurs Bank deprecated flow
- * WARNING: Use this class at your own risk as it may contain glitches. Maintenance is only done
- * when really necessary.
- *
+ * Class Forms
+ * Formerly known as RESURS_DEPRECATED_FLOW.
  * @package Resursbank\RBEcomPHP
  */
-class RESURS_DEPRECATED_FLOW
+class Forms
 {
     private $formTemplateRuleArray;
     private $templateFieldsByMethodResponse;

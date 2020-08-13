@@ -39,17 +39,12 @@ if (class_exists('ResursBank', ECOM_CLASS_EXISTS_AUTOLOAD) &&
     return;
 }
 
-require_once(__DIR__ . '/rbapiloader/ResursForms.php');
-require_once(__DIR__ . '/rbapiloader/ResursTypeClasses.php');
-require_once(__DIR__ . '/rbapiloader/ResursException.php');
-
 if (file_exists(__DIR__ . '/../../vendor/autoload.php')) {
     require_once(__DIR__ . '/../../vendor/autoload.php');
 }
 
+// External dependencies.
 use Exception;
-use RESURS_EXCEPTIONS;
-use ResursException;
 use stdClass;
 use TorneLIB\Data\Compress;
 use TorneLIB\Data\Password;
@@ -59,6 +54,11 @@ use TorneLIB\Module\Bit;
 use TorneLIB\MODULE_CURL;
 use TorneLIB\MODULE_NETWORK;
 use TorneLIB\Utils\Generic;
+
+// New usages.
+use Resursbank\RBEcomPHP\Module\Deprecated\Forms;
+use Resursbank\RBEcomPHP\Exception\Exceptions as RESURS_EXCEPTIONS;
+use Resursbank\RBEcomPHP\Exception\ExceptionHandler as ResursException;
 
 // Globals starts here. But should be deprecated if version tag can be fetched through their doc-blocks.
 if (!defined('ECOMPHP_VERSION')) {
@@ -837,7 +837,7 @@ class ResursBank
         $this->setAuthentication($login, $password);
         $this->setEnvironment($targetEnvironment);
         $this->setUserAgent();
-        $this->E_DEPRECATED = new RESURS_DEPRECATED_FLOW();
+        $this->E_DEPRECATED = new Forms();
     }
 
     /**

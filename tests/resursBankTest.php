@@ -31,7 +31,8 @@ require_once(__DIR__ . '/hooks.php');
 // Resurs Bank usages
 use Exception;
 use PHPUnit\Framework\TestCase;
-use ResursException;
+use Resursbank\RBEcomPHP\Exception\Exceptions as RESURS_EXCEPTIONS;
+use Resursbank\RBEcomPHP\Exception\ExceptionHandler as ResursException;
 use TorneLIB\Exception\ExceptionHandler;
 use TorneLIB\Model\Type\dataType;
 use TorneLIB\Model\Type\requestMethod;
@@ -505,7 +506,7 @@ class resursBankTest extends TestCase
                 $this->bailOut($e);
                 static::assertSame(
                     $e->getCode(),
-                    \RESURS_EXCEPTIONS::ECOMMERCEERROR_NOT_ALLOWED_IN_CURRENT_STATE,
+                    RESURS_EXCEPTIONS::ECOMMERCEERROR_NOT_ALLOWED_IN_CURRENT_STATE,
                     'Finalization properly prohibited by current state'
                 );
             }

@@ -1,9 +1,12 @@
 <?php
 
+namespace Resursbank\RBEcomPHP\Exception;
+
 /**
- * Class ResursExceptions Exception handling for EComPHP
+ * Class Exceptions
+ * @package Resursbank\RBEcomPHP\Exception
  */
-abstract class RESURS_EXCEPTIONS
+class Exceptions
 {
     const ECOMMERCEERROR_ILLEGAL_ARGUMENT = 1;
     const ECOMMERCEERROR_INTERNAL_ERROR = 3;
@@ -93,64 +96,4 @@ abstract class RESURS_EXCEPTIONS
     const CREATEPAYMENT_NO_ID_SET = 7011;
     const CREATEPAYMENT_TOO_FAST = 7012;
     const CALLBACK_REGISTRATION_ERROR = 7013;
-}
-
-/**
- * Class RESURS_EXCEPTION_CLASS
- */
-class ResursException extends \Exception
-{
-    private $traceFunction;
-    private $stringifiedCode;
-
-    public function __construct(
-        $message = 'Unknown exception',
-        $code = 0,
-        \Exception $previous = null,
-        $stringifiedCode = null,
-        $fromFunction = ''
-    ) {
-        parent::__construct($message, $code, $previous);
-        $this->traceFunction = $fromFunction;
-        $this->stringifiedCode = $stringifiedCode;
-        $this->setStringifiedCode();
-    }
-
-    private function setStringifiedCode()
-    {
-        $constantName = sprintf('\RESURS_EXCEPTIONS::%s', $this->stringifiedCode);
-        if (empty($this->code) && !empty($this->stringifiedCode)) {
-            try {
-                if (defined($constantName)) {
-                    $constant = constant($constantName);
-                }
-            } catch (\Exception $regularConstantException) {
-                // Ignore this.
-            }
-            if (!empty($constant)) {
-                $this->code = constant($constantName);
-            } else {
-                $this->code = $this->stringifiedCode;
-            }
-        }
-    }
-
-    public function __toString()
-    {
-        if (empty($this->traceFunction)) {
-            return "RBEcomPHP Exception: [{$this->code}]: {$this->message}";
-        } else {
-            return "RBEcomPHP {$this->traceFunction}Exception {$this->code}: {$this->message}";
-        }
-    }
-
-    public function getStringifiedCode()
-    {
-        return $this->stringifiedCode;
-    }
-
-    public function getTraceFunction()
-    {
-        return $this->traceFunction;
-    }
 }
