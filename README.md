@@ -15,8 +15,8 @@ As EComPHP is continuously developed, you should take a look at our bitbucket re
 
 ### Obsoletions
 
-* EComPHP 1.2 was revoked when 1.3 was finally released.
-* EComPHP 1.1-ns and 1.0-nons has nearly dropped maintenance.
+* EComPHP 1.2 was completely revoked when 1.3 was released.
+* EComPHP 1.1-ns and 1.0-nons has nearly dropped maintenance as of july 2020.
 
 ## Installing
 
@@ -70,5 +70,5 @@ Testing PHP 8.0 is possible when using phpunit 9 and a compiled version of PHP 8
 ## What this library do and do not
 
 * If you are used to work with the simplified flow and wish to use Hosted/Checkout, you can stick to the use of the older SimplifiedFlow variables, as this library converts what's missing between the different flows.
-* The EComPHP-library honors a kind of developer sloppiness - if something is forgotten in the payload that used to be required standard fields, the library will fills it in (as good as possible) for you, as you send your payload to it
-* Both SOAP and REST is supported
+* The EComPHP-library takes care of many things that developers usually miss in their development. Especially the payload handling.
+* Both SOAP and REST is supported, under the condition that there are drivers available for it.
