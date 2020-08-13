@@ -6,15 +6,17 @@ As EComPHP is continuously developed, you should take a look at our bitbucket re
 
 ## Regular requirements, dependencies and information
 
-* For EComPHP 1.0 (With no namespaces) at least PHP 5.6.
-* For EComPHP 1.1 (With namespaces) at least PHP 5.6.
 * For EComPHP 1.3 at least PHP 5.6 (Use composer!)
 * [OpenSSL](https://www.openssl.org) - or similar. SSL drivers are *required* for communication with Resurs Bank.
 * [curl](https://curl.haxx.se): php-curl with SSL support (Make sure the above SSL requirement is fulfilled!).
 * php-xml and streams (For the SOAP parts).
 * EComPHP uses [NetCURL](https://www.netcurl.org) for "mixed calls" (SOAP vs REST). The packagist component is located [here](https://www.netcurl.org/packagist).
 * If you plan to *ONLY* use Resurs Checkout (checkout only, with no aftershop, callbacks or needs of listing payment methods etc) - there should be no need for SoapClient.
+
+### Obsoletions
+
 * EComPHP 1.2 was revoked when 1.3 was finally released.
+* EComPHP 1.1-ns and 1.0-nons has nearly dropped maintenance.
 
 ## Installing
 
