@@ -14,6 +14,7 @@ use Resursbank\RBEcomPHP\Types\Callbacks as RESURS_CALLBACK_TYPES;
 
 use TorneLIB\Data\Compress;
 use TorneLIB\Data\Password;
+use \Exception;
 use TorneLIB\Helpers\NetUtils;
 use TorneLIB\Model\Type\dataType;
 use TorneLIB\Module\Bit;
