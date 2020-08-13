@@ -3,18 +3,18 @@
 namespace Resursbank\RBEcomPHP\Module;
 
 use Resursbank\RBEcomPHP\Exception\ExceptionHandler as ResursException;
-use Resursbank\RBEcomPHP\Exception\Exceptions as RESURS_EXCEPTIONS;
 use Resursbank\RBEcomPHP\Module\Deprecated\Forms;
-use Resursbank\RBEcomPHP\Types\Country as RESURS_COUNTRY;
-use Resursbank\RBEcomPHP\Types\Environment as RESURS_ENVIRONMENTS;
-use Resursbank\RBEcomPHP\Types\Flows as RESURS_FLOW_TYPES;
 use Resursbank\RBEcomPHP\Types\Aftershop as RESURS_AFTERSHOP_RENDER_TYPES;
-use Resursbank\RBEcomPHP\RESURS_URL_ENCODE_TYPES;
 use Resursbank\RBEcomPHP\Types\Callbacks as RESURS_CALLBACK_TYPES;
-
+use Resursbank\RBEcomPHP\Types\Country as RESURS_COUNTRY;
+use Resursbank\RBEcomPHP\Types\HttpMethod as RESURS_CURL_METHODS;
+use Resursbank\RBEcomPHP\Types\Environment as RESURS_ENVIRONMENTS;
+use Resursbank\RBEcomPHP\Exception\Exceptions as RESURS_EXCEPTIONS;
+use Resursbank\RBEcomPHP\Types\Flows as RESURS_FLOW_TYPES;
+use Resursbank\RBEcomPHP\RESURS_URL_ENCODE_TYPES;
+use \Exception;
 use TorneLIB\Data\Compress;
 use TorneLIB\Data\Password;
-use \Exception;
 use TorneLIB\Helpers\NetUtils;
 use TorneLIB\Model\Type\dataType;
 use TorneLIB\Module\Bit;
