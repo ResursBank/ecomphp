@@ -1,8 +1,11 @@
 <?php
 
-namespace Resursbank\RBEcomPHP;
+/**
+ * @license See LICENSE for license details.
+ * @deprecated Avoid this class if possible.
+ */
 
-use Resursbank\RBEcomPHP\Types\Flows;
+namespace Resursbank\RBEcomPHP;
 
 /**
  * Class RESURS_FLOW_TYPES

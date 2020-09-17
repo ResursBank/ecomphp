@@ -1,9 +1,17 @@
 <?php
 
+/**
+ * @license See LICENSE for license details.
+ */
+
 namespace Resursbank\RBEcomPHP\Exception;
 
 use Exception;
 
+/**
+ * Class ExceptionHandler
+ * @package Resursbank\RBEcomPHP\Exception
+ */
 class ExceptionHandler extends Exception
 {
     private $traceFunction;

@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * @license See LICENSE for license details.
+ */
+
 namespace Resursbank\RBEcomPHP\Module;
 
 use Resursbank\RBEcomPHP\Exception\ExceptionHandler as ResursException;
@@ -21,6 +25,10 @@ use TorneLIB\Module\Bit;
 use TorneLIB\MODULE_CURL;
 use TorneLIB\MODULE_NETWORK;
 
+/**
+ * Class ResursBank
+ * @package Resursbank\RBEcomPHP\Module
+ */
 class ResursBank
 {
     ////////// Constants

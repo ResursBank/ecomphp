@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * @license See LICENSE for license details.
+ */
+
 global $ecomEvents;
 
 if (!is_array($ecomEvents)) {

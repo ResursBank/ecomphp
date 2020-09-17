@@ -1,14 +1,16 @@
 <?php
 
 /**
- * Deprecated Class Holder. Do not use.
+ * Legacy Class Holder - Do not use.
+ * @license See LICENSE for license details.
+ * @deprecated Avoid this file entirely if possible.
  */
 
 namespace Resursbank\RBEcomPHP;
 
 /**
  * Class RESURS_CHECKOUT_CALL_TYPES
- * @deprecated Never in use
+ * @deprecated Will be removed soon.
  */
 class RESURS_CHECKOUT_CALL_TYPES
 {
@@ -18,7 +20,7 @@ class RESURS_CHECKOUT_CALL_TYPES
 
 /**
  * Class RESURS_METAHASH_TYPES
- * @deprecated
+ * @deprecated Will be removed soon.
  */
 class RESURS_METAHASH_TYPES
 {
@@ -29,7 +31,7 @@ class RESURS_METAHASH_TYPES
 
 /**
  * Class RESURS_CALLBACK_REACHABILITY External API callback URI control codes
- * @deprecated
+ * @deprecated Will be removed soon.
  */
 class RESURS_CALLBACK_REACHABILITY
 {

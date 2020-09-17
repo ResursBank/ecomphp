@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * @license See LICENSE for license details.
+ * @deprecated Avoid this class if possible.
+ */
 
 namespace Resursbank\RBEcomPHP;
 

@@ -1,11 +1,15 @@
 <?php
 
+/**
+ * @license See LICENSE for license details.
+ */
+
 namespace Resursbank\RBEcomPHP\Module\Deprecated;
 
 /**
- * Class Forms
- * Formerly known as RESURS_DEPRECATED_FLOW.
+ * Class Forms Formerly known as RESURS_DEPRECATED_FLOW.
  * @package Resursbank\RBEcomPHP
+ * @deprecated Legacy content that originally belonged to shopFlow (the deprecated). Build your own solution.
  */
 class Forms
 {
