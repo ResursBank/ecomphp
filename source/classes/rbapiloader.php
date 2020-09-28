@@ -65,7 +65,7 @@ if (!defined('ECOMPHP_VERSION')) {
     define('ECOMPHP_VERSION', (new Generic())->getVersionByComposer(__FILE__));
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20200611');
+    define('ECOMPHP_MODIFY_DATE', '20200928');
 }
 
 /**
@@ -8853,7 +8853,15 @@ class ResursBank
             if (is_object($paymentMethodObject)) {
                 $this->autoDebitablePaymentMethod = $paymentMethodObject;
             }
-            $this->autoDebitablePaymentMethod = $this->getPaymentMethodSpecific($paymentData);
+            try {
+                $this->autoDebitablePaymentMethod = $this->getPaymentMethodSpecific($paymentData);
+            } catch (\Exception $e) {
+                throw new ResursException(
+                    'getPaymentMethods Problem',
+                    RESURS_EXCEPTIONS::PAYMENT_METHODS_ERROR,
+                    $e
+                );
+            }
         }
 
         // Check if feature is enabled, the type contains PAYMENT_PROVIDER and the specificType matches a payment
