@@ -18,10 +18,11 @@
         "files": [
             "source/classes/rbapiloader/ResursTypeClasses.php",
             "source/classes/ecomhooks.php",
-            "source/classes/rbapiloader.php"
+            "source/classes/ResursBank.php"
         ],
         "psr-4": {
-            "Resursbank\\RBEcomPHP\\": "source/"
+            "Resursbank\\RBEcomPHP\\": "source/",
+            "Resursbank\\": "source/"
         }
     }
 }

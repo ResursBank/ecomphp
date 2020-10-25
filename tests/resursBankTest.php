@@ -31,8 +31,9 @@ require_once(__DIR__ . '/hooks.php');
 // Resurs Bank usages
 use Exception;
 use PHPUnit\Framework\TestCase;
-use Resursbank\RBEcomPHP\Exception\Exceptions as RESURS_EXCEPTIONS;
+use Resursbank\Module\ResursApi;
 use Resursbank\RBEcomPHP\Exception\ExceptionHandler as ResursException;
+use Resursbank\RBEcomPHP\Exception\Exceptions as RESURS_EXCEPTIONS;
 use TorneLIB\Exception\ExceptionHandler;
 use TorneLIB\Model\Type\dataType;
 use TorneLIB\Model\Type\requestMethod;
@@ -40,16 +41,15 @@ use TorneLIB\Module\Config\WrapperConfig;
 use TorneLIB\Module\Network\NetWrapper;
 use TorneLIB\Module\Network\Wrappers\CurlWrapper;
 use TorneLIB\MODULE_CURL;
+use Resursbank\RBEcomPHP\ResursBank;
+use function in_array;
 
 class resursBankTest extends TestCase
 {
     /**
-     * @var ResursBank $API EComPHP
+     * @var ResursApi $API EComPHP
      */
     protected $API;
-
-    /** @var \RESURS_WEBDRIVER */
-    protected $WEBDRIVER;
 
     /** @var RESURS_TEST_BRIDGE $TEST Used for standard tests and simpler flow setup */
     protected $TEST;
@@ -69,15 +69,6 @@ class resursBankTest extends TestCase
     private $signUrl = 'https://test.resurs.com/signdummy/index.php?isSigningUrl=1';
 
     /**
-     * Exact match of selenium driver we're running with tests.
-     *
-     * Add to composer: "facebook/webdriver": "dev-master"
-     *
-     * @var string
-     */
-    //protected $webdriverFile = 'selenium.jar';
-
-    /**
      * @param $addr
      * @return bool
      */
@@ -87,8 +78,7 @@ class resursBankTest extends TestCase
         return filter_var(
                 trim($addr),
                 FILTER_VALIDATE_IP
-            ) &&
-            !\in_array(trim($addr), $not);
+            ) && !in_array(trim($addr), $not);
     }
 
     /**
@@ -136,7 +126,16 @@ class resursBankTest extends TestCase
                 $higherThan = implode('.', $envFix);
                 $envFix[1]++;
                 $lowerThan = implode('.', $envFix);
-                if ((version_compare(PHP_VERSION, $higherThan, '>') && version_compare(PHP_VERSION, $lowerThan, '<'))
+                if ((version_compare(
+                            PHP_VERSION,
+                            $higherThan,
+                            '>'
+                        ) &&
+                        version_compare(
+                            PHP_VERSION,
+                            $lowerThan,
+                            '<'
+                        ))
                     || preg_match(sprintf('/^%s/', $textVersion), PHP_VERSION)
                 ) {
                     $return = true;
@@ -193,11 +192,6 @@ class resursBankTest extends TestCase
             // This is not possible for netcurl-6.0, it will cause crashes, so we keep it only for 6.1.0+
             $this->TEST->ECOM->setWsdlCache(true);
         }
-
-        /*$this->WEBDRIVER = new \RESURS_WEBDRIVER();
-        if (!empty($this->webdriverFile) && file_exists(__DIR__ . '/' . $this->webdriverFile)) {
-            $this->WEBDRIVER->init();
-        }*/
     }
 
     /**
@@ -222,7 +216,7 @@ class resursBankTest extends TestCase
     public function apiPaymentMethodsWithCredentials()
     {
         $this->unitSetup();
-        static::assertTrue(count($this->TEST->getCredentialControl()) > 0);
+        static::assertTrue((count($this->TEST->getCredentialControl()) > 0));
     }
 
     /**
@@ -378,10 +372,8 @@ class resursBankTest extends TestCase
 
     /**
      * @test
-     *
      * @param bool $noAssert
      * @param string $govId
-     *
      * @return array
      * @throws Exception
      * @noinspection ParameterDefaultValueIsNotNullInspection

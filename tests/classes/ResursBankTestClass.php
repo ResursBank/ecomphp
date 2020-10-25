@@ -1,9 +1,9 @@
 <?php
 
-// Note: Namespaces must be left out for EC-1.0
 namespace Resursbank\RBEcomPHP;
 
 use Exception;
+use ResursException;
 
 /**
  * Class RESURS_TEST_BRIDGE Primary test class for setting up and simplify standard tests like order booking etc
@@ -34,17 +34,21 @@ class RESURS_TEST_BRIDGE
      * getCredentialControl(): Initiates ECom with proper credentials or failing credentials
      *
      * @param bool $successLogin
-     *
      * @return mixed
      * @throws Exception
      */
-    public function getCredentialControl($successLogin = true)
+    public function getCredentialControl($successLogin = null)
     {
-        if (!$successLogin) {
+        if (!(bool)$successLogin) {
             $this->ECOM = new ResursBank("fail", "fail");
         }
 
-        return $this->ECOM->getPaymentMethods();
+        try {
+            $return = $this->ECOM->getPaymentMethods();
+        } catch (ResursException $e) {
+            $return = [];
+        }
+        return $return;
     }
 
     /**

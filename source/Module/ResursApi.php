@@ -4,32 +4,34 @@
  * @license See LICENSE for license details.
  */
 
-namespace Resursbank\RBEcomPHP\Module;
+namespace Resursbank\Module;
 
+use Exception;
 use Resursbank\RBEcomPHP\Exception\ExceptionHandler as ResursException;
-use Resursbank\RBEcomPHP\Module\Deprecated\Forms;
+use Resursbank\RBEcomPHP\Exception\Exceptions as RESURS_EXCEPTIONS;
+use Resursbank\RBEcomPHP\RESURS_CALLBACK_REACHABILITY;
+//use Resursbank\RBEcomPHP\RESURS_DEPRECATED_FLOW;
+use Resursbank\RBEcomPHP\RESURS_PAYMENT_STATUS_RETURNCODES;
+use Resursbank\RBEcomPHP\RESURS_URL_ENCODE_TYPES;
+//use Resursbank\RBEcomPHP\Resursbank_Obsolete_Functions;
 use Resursbank\RBEcomPHP\Types\Aftershop as RESURS_AFTERSHOP_RENDER_TYPES;
 use Resursbank\RBEcomPHP\Types\Callbacks as RESURS_CALLBACK_TYPES;
 use Resursbank\RBEcomPHP\Types\Country as RESURS_COUNTRY;
-use Resursbank\RBEcomPHP\Types\HttpMethod as RESURS_CURL_METHODS;
 use Resursbank\RBEcomPHP\Types\Environment as RESURS_ENVIRONMENTS;
-use Resursbank\RBEcomPHP\Exception\Exceptions as RESURS_EXCEPTIONS;
 use Resursbank\RBEcomPHP\Types\Flows as RESURS_FLOW_TYPES;
-use Resursbank\RBEcomPHP\RESURS_URL_ENCODE_TYPES;
-use \Exception;
 use TorneLIB\Data\Compress;
 use TorneLIB\Data\Password;
 use TorneLIB\Helpers\NetUtils;
 use TorneLIB\Model\Type\dataType;
 use TorneLIB\Module\Bit;
-use TorneLIB\MODULE_CURL;
+use TorneLIB\Module\Network\NetWrapper as MODULE_CURL;
 use TorneLIB\MODULE_NETWORK;
 
 /**
- * Class ResursBank
+ * Class ResursApi
  * @package Resursbank\RBEcomPHP\Module
  */
-class ResursBank
+class ResursApi
 {
     ////////// Constants
     /**
@@ -507,7 +509,7 @@ class ResursBank
     private $fraudStatusAllowed = false;
 
     /**
-     * @var RESURS_FLOW_TYPES
+     * @var \Resursbank\RBEcomPHP\RESURS_FLOW_TYPES
      */
     private $enforceService = null;
     /**
@@ -751,10 +753,10 @@ class ResursBank
      * @param array $paramFlagSet
      * @throws Exception
      */
-    function __construct(
+    public function __construct(
         $login = '',
         $password = '',
-        $targetEnvironment = RESURS_ENVIRONMENTS::TEST,
+        $targetEnvironment = \Resursbank\RBEcomPHP\RESURS_ENVIRONMENTS::TEST,
         $debug = false,
         $paramFlagSet = []
     ) {
@@ -789,12 +791,12 @@ class ResursBank
         $this->setAuthentication($login, $password);
         $this->setEnvironment($targetEnvironment);
         $this->setUserAgent();
-        $this->E_DEPRECATED = new Forms();
+        //$this->E_DEPRECATED = new RESURS_DEPRECATED_FLOW();
     }
 
     /**
      * @param $enable
-     * @return $this
+     * @return \Resursbank\RBEcomPHP\ResursBank
      * @throws Exception
      */
     public function setWsdlCache($enable)
@@ -1241,7 +1243,7 @@ class ResursBank
      * Enables strict SSL validation or put in "relaxed mode".
      *
      * @param bool $disableSecurity
-     * @return ResursBank
+     * @return ResursApi
      * @throws Exception
      * @since 1.3.27
      */
@@ -1820,7 +1822,7 @@ class ResursBank
      * @return null|string
      * @since 1.3.13 Private changed to public
      */
-    public function getCallbackTypeString($callbackType = RESURS_CALLBACK_TYPES::NOT_SET)
+    public function getCallbackTypeString($callbackType = \Resursbank\RBEcomPHP\RESURS_CALLBACK_TYPES::NOT_SET)
     {
         $return = null;
 
@@ -2448,7 +2450,7 @@ class ResursBank
     /**
      * @param $curlProxyAddr
      * @param $curlProxyType
-     * @return ResursBank
+     * @return ResursApi
      * @since 1.3.41
      */
     public function setProxy($curlProxyAddr, $curlProxyType)
@@ -2476,7 +2478,7 @@ class ResursBank
 
     /**
      * @param bool $setSoapChainBoolean
-     * @return ResursBank
+     * @return ResursApi
      * @throws Exception
      * @since 1.0.36
      * @since 1.1.36
@@ -2666,7 +2668,7 @@ class ResursBank
      * before setUserAgent.
      *
      * @param bool $enableCustomerUserAgent
-     * @return ResursBank
+     * @return ResursApi
      * @since 1.1.13
      * @since 1.2.0
      * @since 1.0.13
@@ -3321,7 +3323,7 @@ class ResursBank
     {
         $return = false;
 
-        if (class_exists('SoapClient', ECOM_CLASS_EXISTS_AUTOLOAD)) {
+        if (class_exists('\SoapClient')) {
             $return = true;
         }
 
@@ -4339,7 +4341,7 @@ class ResursBank
      * returned html-code from Resurs Bank
      *
      * @param string $htmlData
-     * @return ResursBank
+     * @return ResursApi
      * @since 1.1.0
      * @since 1.4.0
      * @since 1.0.0
@@ -4366,7 +4368,7 @@ class ResursBank
      * returned html-code from Resurs Bank
      *
      * @param string $htmlData
-     * @return ResursBank
+     * @return ResursApi
      * @since 1.1.0
      * @since 1.4.0
      * @since 1.0.0
@@ -4704,7 +4706,7 @@ class ResursBank
             } else {
                 // If no logged in user is set, ecomphp will mark the createdBy-string with an indication
                 // that something or someone on the remote has done something to the order. This is
-                // done to clarify that this hasn't been done with a regular ResursBank-local interface.
+                // done to clarify that this hasn't been done with a regular ResursApi-local interface.
                 $createdBy = 'EComPHP-RemoteClientAction';
             }
         }
@@ -4996,7 +4998,7 @@ class ResursBank
      */
     public function setCountry($Country)
     {
-        if ($Country === RESURS_COUNTRY::DK) {
+        if ($Country === \Resursbank\RBEcomPHP\RESURS_COUNTRY::DK) {
             $this->envCountry = 'DK';
         } elseif ($Country === RESURS_COUNTRY::NO) {
             $this->envCountry = 'NO';
@@ -5778,7 +5780,7 @@ class ResursBank
     /**
      * Set flag annulIfFrozen
      * @param bool $setBoolean
-     * @return ResursBank
+     * @return ResursApi
      * @since 1.1.29
      * @since 1.2.2
      * @since 1.3.2
@@ -5815,7 +5817,7 @@ class ResursBank
      * Set flag waitForFraudControl
      *
      * @param bool $setBoolean
-     * @return ResursBank
+     * @return ResursApi
      * @since 1.0.29
      * @since 1.1.29
      * @since 1.2.2
@@ -5851,7 +5853,7 @@ class ResursBank
      * Set flag finalizeIfBooked
      *
      * @param bool $setBoolean
-     * @return ResursBank
+     * @return ResursApi
      * @since 1.0.29
      * @since 1.1.29
      * @since 1.2.2
@@ -7221,14 +7223,14 @@ class ResursBank
 
                 if (isset($row['artNo'])) {
                     $orderRowArray[$idx]['totalVatAmount'] = $this->getTotalVatAmount(
-                        $row['unitAmountWithoutVat'],
-                        $row['vatPct'],
-                        $row['quantity']
+                        isset($row['unitAmountWithoutVat']) ? $row['unitAmountWithoutVat'] : 0,
+                        isset($row['vatPct']) ? $row['vatPct'] : 0,
+                        isset($row['quantity']) ? $row['quantity'] : 0
                     );
                     $orderRowArray[$idx]['totalAmount'] = $this->getTotalAmount(
-                        $row['unitAmountWithoutVat'],
-                        $row['vatPct'],
-                        $row['quantity']
+                        isset($row['unitAmountWithoutVat']) ? $row['unitAmountWithoutVat'] : 0,
+                        isset($row['vatPct']) ? $row['vatPct'] : 0,
+                        isset($row['quantity']) ? $row['quantity'] : 0
                     );
                 }
             }
@@ -7267,8 +7269,8 @@ class ResursBank
             'artNo' => $artRow['artNo'],
             'description' => $artRow['description'],
             'unitMeasure' => $artRow['unitMeasure'],
-            'unitAmountWithoutVat' => $artRow['unitAmountWithoutVat'],
-            'vatPct' => $artRow['vatPct'],
+            'unitAmountWithoutVat' => isset($artRow['unitAmountWithoutVat']) ? $artRow['unitAmountWithoutVat'] : 0,
+            'vatPct' => isset($artRow['vatPct']) ? $artRow['vatPct'] : 0,
             'AUTHORIZE' => isset($artRow['quantity']) ? $artRow['quantity'] : 0,
             'DEBIT' => isset($debited['quantity']) ? $debited['quantity'] : 0,
             'CREDIT' => isset($credited['quantity']) ? $credited['quantity'] : 0,
@@ -7554,7 +7556,7 @@ class ResursBank
      */
     public function sanitizeAfterShopSpec(
         $paymentIdOrPaymentObjectData = '',
-        $renderType = RESURS_AFTERSHOP_RENDER_TYPES::NONE
+        $renderType = \Resursbank\RBEcomPHP\RESURS_AFTERSHOP_RENDER_TYPES::NONE
     ) {
 
         $returnSpecObject = [];
@@ -8805,7 +8807,15 @@ class ResursBank
             if (is_object($paymentMethodObject)) {
                 $this->autoDebitablePaymentMethod = $paymentMethodObject;
             }
-            $this->autoDebitablePaymentMethod = $this->getPaymentMethodSpecific($paymentData);
+            try {
+                $this->autoDebitablePaymentMethod = $this->getPaymentMethodSpecific($paymentData);
+            } catch (\Exception $e) {
+                throw new ResursException(
+                    'getPaymentMethods Problem',
+                    RESURS_EXCEPTIONS::PAYMENT_METHODS_ERROR,
+                    $e
+                );
+            }
         }
 
         // Check if feature is enabled, the type contains PAYMENT_PROVIDER and the specificType matches a payment
