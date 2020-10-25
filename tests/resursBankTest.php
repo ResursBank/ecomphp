@@ -31,6 +31,7 @@ require_once(__DIR__ . '/hooks.php');
 // Resurs Bank usages
 use Exception;
 use PHPUnit\Framework\TestCase;
+use ReflectionException;
 use ResursException;
 use TorneLIB\Exception\ExceptionHandler;
 use TorneLIB\Model\Type\dataType;
@@ -39,7 +40,11 @@ use TorneLIB\Module\Config\WrapperConfig;
 use TorneLIB\Module\Network\NetWrapper;
 use TorneLIB\Module\Network\Wrappers\CurlWrapper;
 use TorneLIB\MODULE_CURL;
+use TorneLIB\Utils\Generic;
+use TorneLIB\Utils\Memory;
 use function in_array;
+
+(new Memory())->setMemoryLimit('-1');
 
 class resursBankTest extends TestCase
 {
@@ -73,9 +78,9 @@ class resursBankTest extends TestCase
     {
         $not = ['127.0.0.1'];
         return filter_var(
-            trim($addr),
-            FILTER_VALIDATE_IP
-        ) && !in_array(trim($addr), $not);
+                trim($addr),
+                FILTER_VALIDATE_IP
+            ) && !in_array(trim($addr), $not);
     }
 
     /**
@@ -124,10 +129,10 @@ class resursBankTest extends TestCase
                 $envFix[1]++;
                 $lowerThan = implode('.', $envFix);
                 if ((version_compare(
-                    PHP_VERSION,
-                    $higherThan,
-                    '>'
-                ) &&
+                            PHP_VERSION,
+                            $higherThan,
+                            '>'
+                        ) &&
                         version_compare(
                             PHP_VERSION,
                             $lowerThan,
@@ -712,9 +717,9 @@ class resursBankTest extends TestCase
         $methodGroup = array_pop($prePop);
         foreach ($methodGroup as $curMethod) {
             if ((
-                $curMethod->specificType === $specificType ||
+                    $curMethod->specificType === $specificType ||
                     $curMethod->type === $specificType
-            ) &&
+                ) &&
                 in_array($customerType, (array)$curMethod->customerType)
             ) {
                 $this->TEST->share('METHOD_' . $specificType);
@@ -2077,6 +2082,18 @@ class resursBankTest extends TestCase
                 static::markTestSkipped(print_r($printOut, true));
             }
         }
+    }
+
+    /**
+     * @test Three ways to fetch current version.
+     * @throws ExceptionHandler
+     * @throws ReflectionException
+     */
+    public function getVersions()
+    {
+        $byComposer = (new Generic())->getVersionByComposer(__FILE__, 3);
+        $byGeneric = (new Generic())->getVersionByAny(__FILE__, 3, ResursBank::class);
+        static::assertTrue(!empty($byGeneric) && !empty(ECOMPHP_VERSION) && !empty($byComposer));
     }
 
     /**

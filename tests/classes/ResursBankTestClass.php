@@ -5,7 +5,6 @@ namespace Resursbank\RBEcomPHP;
 
 use Exception;
 use ResursException;
-use TorneLIB\Exception\ExceptionHandler;
 
 /**
  * Class RESURS_TEST_BRIDGE Primary test class for setting up and simplify standard tests like order booking etc
