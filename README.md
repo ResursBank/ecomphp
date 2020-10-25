@@ -59,7 +59,7 @@ As of february 2020, only 7.3 and 7.4 have full support open. 7.2 still do have 
 ### Verified PHP versions
 
     5.6 - 7.4 (Bamboo & Pipelines)
-    8.0a3     (Bamboo only, as of 1.3.42)
+    8.0       (Bamboo only, as of 1.3.42)
     < 5.6     (No longer tested)
 
 Testing PHP 8.0 is possible when using phpunit 9 and a compiled version of PHP 8, like below:

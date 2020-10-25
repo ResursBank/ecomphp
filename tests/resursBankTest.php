@@ -221,7 +221,7 @@ class resursBankTest extends TestCase
     public function apiPaymentMethodsWithCredentials()
     {
         $this->unitSetup();
-        static::assertTrue(count($this->TEST->getCredentialControl()) > 0);
+        static::assertTrue((count($this->TEST->getCredentialControl()) > 0));
     }
 
     /**
@@ -377,10 +377,8 @@ class resursBankTest extends TestCase
 
     /**
      * @test
-     *
      * @param bool $noAssert
      * @param string $govId
-     *
      * @return array
      * @throws Exception
      * @noinspection ParameterDefaultValueIsNotNullInspection
