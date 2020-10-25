@@ -6,17 +6,33 @@ As EComPHP is continuously developed, you should take a look at our bitbucket re
 
 ## Regular requirements, dependencies and information
 
-* For EComPHP 1.3 at least PHP 5.6 (Use composer!)
+* For EComPHP 1.3 at least PHP 7.3 in composer mode.
+* EComPHP 1.3 inofficially supports PHP from 5.6 and above.
 * [OpenSSL](https://www.openssl.org) - or similar. SSL drivers are *required* for communication with Resurs Bank.
 * [curl](https://curl.haxx.se): php-curl with SSL support (Make sure the above SSL requirement is fulfilled!).
 * php-xml and streams (For the SOAP parts).
 * EComPHP uses [NetCURL](https://www.netcurl.org) for "mixed calls" (SOAP vs REST). The packagist component is located [here](https://www.netcurl.org/packagist).
 * If you plan to *ONLY* use Resurs Checkout (checkout only, with no aftershop, callbacks or needs of listing payment methods etc) - there should be no need for SoapClient.
+* EComPHP 1.2 was revoked.
+* EComPHP 1.1 and 1.0 is no longer officially maintained (july 2020).
 
-### Obsoletions
+## Testing: Bamboo, github actions and bitbucket pipelines
 
-* EComPHP 1.2 was completely revoked when 1.3 was released.
-* EComPHP 1.1-ns and 1.0-nons has nearly dropped maintenance as of july 2020.
+NetCURL is tested within a few different suites. Due to the lack of "test time", tests are not entirely fulfilled in the Bitbucket cloud, which is why tests also are executed from other places on commits. Below is a list of those instances.
+
+* [GitHub Actions 5.6+7.3-8.0](https://github.com/ResursBank/ecomphp/actions).
+* [Bitbucket Pipelines (7.3-8.0)](https://bitbucket.org/resursbankplugins/resurs-ecomphp/addon/pipelines/home).
+* [Atlassian Bamboo (inofficial tests, 7.3+8.0)](https://bamboo.tornevall.net/browse/RB-RBT).
+
+### Verified PHP releases
+
+Take a look at [this page](https://www.php.net/supported-versions.php) if you're unsure which PHP versions that are still supported by the PHP team.
+As of february 2020, only 7.3 and 7.4 have full support open. 7.2 still do have security patch support, but is on deprecation. All older versions are completely unsupported and should probably get upgrade by you also.
+
+    7.3 - 8.0 - Supported
+    5.6 - 7.2 - Inofficially supported
+    5.6       - Partially tested
+    <= 5.5    - Nope.
 
 ## Installing
 
@@ -50,22 +66,6 @@ This is a short example of how to get started, but you can [take a look at our d
         $methods = $resurs->getPaymentMethods();
         print_r($methods);
     ?>
-
-# PHP versions verified
-
-Take a look at [this page](https://www.php.net/supported-versions.php) if you're unsure which PHP versions that are still supported by the PHP team.
-As of february 2020, only 7.3 and 7.4 have full support open. 7.2 still do have security patch support, but is on deprecation. All older versions are completely unsupported and should probably get upgrade by you also.
-
-### Verified PHP versions
-
-    5.6 - 7.4 (Bamboo & Pipelines)
-    8.0       (Bamboo only, as of 1.3.42)
-    < 5.6     (No longer tested)
-
-Testing PHP 8.0 is possible when using phpunit 9 and a compiled version of PHP 8, like below:
-
-    composer --dev require phpunit/phpunit ^9 --ignore-platform-reqs
-    /usr/local/php8alpha/bin/php vendor/bin/phpunit
 
 ## What this library do and do not
 
