@@ -1,6 +1,6 @@
 # EComPHP - Resurs Bank ECommerce Library for PHP
 
-Resurs EComPHP Gateway for Resurs Bank shopflows, with functionality enough to getting started fast. It communicates with the Simplified Flow API for booking payments, Configuration Service and the After Shop Service API for finalizing, crediting and annulments etc. This full version of the gateway communicates with Hosted Payment Flow and Resurs Checkout (supporting both REST and SOAP). A PHP-reference for EComPHP is located at https://test.resurs.com/autodocs/apigen/ecomphp-1.3-develop/, if you want to take a look at our automatically generated documentation.
+Resurs EComPHP Gateway for Resurs Bank shop flows, with functionality enough to getting started fast. It communicates with the Simplified Flow API for booking payments, Configuration Service and the After Shop Service API for finalizing, crediting and annulments etc. This full version of the gateway communicates with Hosted Payment Flow and Resurs Checkout (supporting both REST and SOAP). A PHP-reference for EComPHP is located at https://test.resurs.com/autodocs/apigen/ecomphp-1.3-develop/, if you want to take a look at our automatically generated documentation.
 
 As EComPHP is continuously developed, you should take a look at our bitbucket repo to keep this information updated. It can be found at https://bitbucket.org/resursbankplugins/resurs-ecomphp
 
@@ -18,7 +18,7 @@ As EComPHP is continuously developed, you should take a look at our bitbucket re
 
 ## Testing: Bamboo, github actions and bitbucket pipelines
 
-NetCURL is tested within a few different suites. Due to the lack of "test time", tests are not entirely fulfilled in the Bitbucket cloud, which is why tests also are executed from other places on commits. Below is a list of those instances.
+EComPHP is tested within a few different suites. Due to the lack of "test time", tests are not entirely fulfilled in the Bitbucket Cloud, which is why tests also are executed from other places on commits. Below is a list of those instances.
 
 * [GitHub Actions 5.6+7.3-8.0](https://github.com/ResursBank/ecomphp/actions).
 * [Bitbucket Pipelines (7.3-8.0)](https://bitbucket.org/resursbankplugins/resurs-ecomphp/addon/pipelines/home).
@@ -29,9 +29,9 @@ NetCURL is tested within a few different suites. Due to the lack of "test time",
 Take a look at [this page](https://www.php.net/supported-versions.php) if you're unsure which PHP versions that are still supported by the PHP team.
 As of february 2020, only 7.3 and 7.4 have full support open. 7.2 still do have security patch support, but is on deprecation. All older versions are completely unsupported and should probably get upgrade by you also.
 
-    7.3 - 8.0 - Supported
-    5.6 - 7.2 - Inofficially supported
-    5.6       - Partially tested
+    7.3 - 8.0 - Supported.
+    5.6 - 7.2 - Inofficially supported.
+    5.6       - Partially tested.
     <= 5.5    - Nope.
 
 ## Installing
@@ -45,6 +45,8 @@ There might be a slight chance that you also need openssl or similar, as our ser
 ### Using composer
 
     composer require resursbank/ecomphp:^1.3
+
+### Self deployed packages
 
 If you are planning to deploy a plugin bundled with this package, you can run composer with the parameter --prefer-dist
 You should also make sure that the repositories that is also downloaded together with this package is cleaned up properly: The .git directories must be removed, or a composer install is required before using it. Such deployment could look like this:

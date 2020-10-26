@@ -1592,7 +1592,6 @@ class ResursBank
      *
      * @param string $username
      * @param string $password
-     *
      * @param bool $validate
      * @return bool
      * @throws Exception
@@ -1606,11 +1605,11 @@ class ResursBank
 
         $this->username = $username;
         $this->password = $password;
-        if (!is_null($username)) {
+        if ($username !== null) {
             $this->soapOptions['login'] = $username;
             $this->username = $username;
         }
-        if (!is_null($password)) {
+        if ($password !== null) {
             $this->soapOptions['password'] = $password;
             $this->password = $password;
         }

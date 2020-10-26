@@ -37,19 +37,15 @@ class RESURS_TEST_BRIDGE
      * @param bool $successLogin
      * @return mixed
      * @throws Exception
+     * @noinspection ParameterDefaultValueIsNotNullInspection
      */
-    public function getCredentialControl($successLogin = null)
+    public function getCredentialControl($successLogin = true)
     {
         if (!(bool)$successLogin) {
             $this->ECOM = new ResursBank("fail", "fail");
         }
 
-        try {
-            $return = $this->ECOM->getPaymentMethods();
-        } catch (ResursException $e) {
-            $return = [];
-        }
-        return $return;
+        return $this->ECOM->getPaymentMethods();
     }
 
     /**
