@@ -76,7 +76,7 @@ if (!defined('ECOMPHP_MODIFY_DATE')) {
 /**
  * Class ResursBank
  * @package Resursbank\RBEcomPHP
- * @version 1.3.43
+ * @version 1.3.44
  */
 class ResursBank
 {
@@ -852,11 +852,11 @@ class ResursBank
 
         if (version_compare($this->CURLDRIVER_VERSION, '6.1.0', '>=') && !is_null($this->CURL)) {
             if ($enable) {
-                $this->CURLDRIVER_WSDL_CACHE = WSDL_CACHE_BOTH;
-                $this->CURL->setWsdlCache(WSDL_CACHE_BOTH);
+                $this->CURLDRIVER_WSDL_CACHE = (defined('WSDL_CACHE_BOTH') ? WSDL_CACHE_BOTH : 3);
+                $this->CURL->setWsdlCache((defined('WSDL_CACHE_BOTH') ? WSDL_CACHE_BOTH : 3));
             } else {
-                $this->CURLDRIVER_WSDL_CACHE = WSDL_CACHE_NONE;
-                $this->CURL->setWsdlCache(WSDL_CACHE_NONE);
+                $this->CURLDRIVER_WSDL_CACHE = (defined(WSDL_CACHE_NONE) ? WSDL_CACHE_NONE : 0);
+                $this->CURL->setWsdlCache((defined(WSDL_CACHE_NONE) ? WSDL_CACHE_NONE : 0));
             }
         }
 
