@@ -1383,6 +1383,7 @@ class resursBankTest extends TestCase
             return;
         }
 
+        $paymentStatusQuantity = null;
         try {
             $this->unitSetup();
             $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
@@ -1417,7 +1418,7 @@ class resursBankTest extends TestCase
             $this->bailOut($e);
         }
 
-        // The new creditec object does not seem to be reflected in its state.
+        // The new credited object does not seem to be reflected in its state.
         static::assertTrue(
             $paymentStatusQuantity
         );
