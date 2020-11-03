@@ -3058,6 +3058,42 @@ class ResursBank
     }
 
     /**
+     * @param $type
+     * @param string $customerType
+     * @return array
+     * @throws Exception
+     * @since 1.3.45
+     */
+    public function getPaymentMethodsByType($type, $customerType = null)
+    {
+        $return = [];
+        $methodList = $this->getPaymentMethods();
+
+        if (is_array($methodList) && count($methodList)) {
+            foreach ($methodList as $method) {
+                if (isset($method->type) && $method->type === $type) {
+                    $foundMethod = $method;
+                } elseif (isset($method->specificType) && $method->specificType === $type) {
+                    $foundMethod = $method;
+                } else {
+                    $foundMethod = null;
+                }
+                if (!empty($foundMethod)) {
+                    if (empty($customerType)) {
+                        $return[] = $foundMethod;
+                    } else {
+                        if (in_array($customerType, (array)$foundMethod, true)) {
+                            $return[] = $foundMethod;
+                        }
+                    }
+                }
+            }
+        }
+
+        return $return;
+    }
+
+    /**
      * Get list of payment methods (payment method objects), that support annuity factors
      *
      * @param bool $namesOnly

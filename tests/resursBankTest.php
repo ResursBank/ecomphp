@@ -1598,12 +1598,8 @@ class resursBankTest extends TestCase
         $diff = (float)$endTime - $startTime;
         $naturalList = $this->TEST->ECOM->getPaymentMethods(['customerType' => 'NATURAL']);
 
-        $theName = '';
-        foreach ($naturalList as $item) {
-            if ($item->type === 'INVOICE') {
-                $theName = $item->id;
-            }
-        }
+        $theMethod = $this->TEST->ECOM->getPaymentMethodsByType('INVOICE', 'NATURAL');
+        $theName = array_pop($theMethod)->id;
 
         $invoiceCache = $this->TEST->ECOM->getPaymentMethodSpecific($theName);
 
@@ -1611,6 +1607,18 @@ class resursBankTest extends TestCase
             ($diff < 5) &&
             (isset($invoiceCache->id) && $invoiceCache->id === $theName)
         );
+    }
+
+    /**
+     * @test
+     * @throws Exception
+     */
+    public function getPaymentMethodsByType()
+    {
+        $this->unitSetup();
+        $methods = $this->TEST->ECOM->getPaymentMethodsByType('INVOICE');
+
+        static::assertGreaterThan(1, $methods);
     }
 
     /**
