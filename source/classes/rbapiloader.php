@@ -2054,7 +2054,7 @@ class ResursBank
             $code = $restException->getCode();
 
             $failover = false;
-            if ($code === 500) {
+            if ($code >= 500) {
                 try {
                     $failover = true;
                     $hasUpdate = true;
