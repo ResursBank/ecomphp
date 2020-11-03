@@ -51,6 +51,7 @@ use Exception;
 use RESURS_EXCEPTIONS;
 use ResursException;
 use stdClass;
+use TorneLIB\Config\Flag;
 use TorneLIB\Data\Compress;
 use TorneLIB\Data\Password;
 use TorneLIB\Helpers\NetUtils;
@@ -2034,8 +2035,16 @@ class ResursBank
     public function getCallBacksByRest($ReturnAsArray = false)
     {
         $ResursResponse = [];
+        $hasUpdate = false;
+
         $this->InitializeServices();
         try {
+            if (Flag::isFlag('callback_rest_500')) {
+                throw new Exception(
+                    'This exception is not real and only a part of testings.',
+                    500
+                );
+            }
             $callbackResponse = $this->CURL->getParsed($this->CURL->doGet($this->getCheckoutUrl() . '/callbacks'));
             if (!empty($callbackResponse)) {
                 $ResursResponse = $this->CURL->getParsed();
@@ -2043,20 +2052,44 @@ class ResursBank
         } catch (Exception $restException) {
             $message = $restException->getMessage();
             $code = $restException->getCode();
-            // Special recipes extracted from netcurl-6.1
-            if (method_exists($restException, 'getExtendException')) {
-                $extendedClass = $restException->getExtendException();
-                if (is_object($extendedClass) && method_exists($extendedClass, 'getParsed')) {
-                    $parsedExtended = $extendedClass->getParsed();
-                    if (isset($parsedExtended->description)) {
-                        $message .= ' (' . $parsedExtended->description . ')';
+
+            $failover = false;
+            if ($code >= 500) {
+                try {
+                    $failover = true;
+                    $hasUpdate = true;
+                    $ResursResponse = $this->getRegisteredEventCallback(255);
+                    if (!$ReturnAsArray && is_array($ResursResponse)) {
+                        foreach ($ResursResponse as $callbackKey => $callbackUrl) {
+                            $callbackClass = new stdClass();
+                            $callbackClass->eventType = $callbackKey;
+                            $callbackClass->uriTemplate = $callbackUrl;
+                            $returnObject[] = $callbackClass;
+                        }
+                        if (is_array($returnObject)) {
+                            $ResursResponse = $returnObject;
+                        }
                     }
-                    if (isset($parsedExtended->code) && $parsedExtended->code > 0) {
-                        $code = $parsedExtended->code;
-                    }
+                } catch (Exception $e) {
                 }
             }
-            throw new ResursException($message, $code, $restException);
+
+            if (!$failover) {
+                // Special recipes extracted from netcurl-6.1
+                if (method_exists($restException, 'getExtendException')) {
+                    $extendedClass = $restException->getExtendException();
+                    if (is_object($extendedClass) && method_exists($extendedClass, 'getParsed')) {
+                        $parsedExtended = $extendedClass->getParsed();
+                        if (isset($parsedExtended->description)) {
+                            $message .= ' (' . $parsedExtended->description . ')';
+                        }
+                        if (isset($parsedExtended->code) && $parsedExtended->code > 0) {
+                            $code = $parsedExtended->code;
+                        }
+                    }
+                }
+                throw new ResursException($message, $code, $restException);
+            }
         }
         if ($ReturnAsArray) {
             $ResursResponseArray = [];
@@ -2078,7 +2111,7 @@ class ResursBank
 
             return $ResursResponseArray;
         }
-        $hasUpdate = false;
+
         if (is_array($ResursResponse) || is_object($ResursResponse)) {
             foreach ($ResursResponse as $responseObject) {
                 if (isset($responseObject->eventType) && $responseObject->eventType == 'UPDATE') {
@@ -2111,6 +2144,20 @@ class ResursBank
     {
         $this->InitializeServices();
         $fetchThisCallback = $this->getCallbackTypeString($callbackType);
+
+        if (is_null($fetchThisCallback)) {
+            $returnArray = [];
+            foreach ([1, 2, 4, 8, 16, 32, 64] as $typeBit) {
+                if (($callbackType & $typeBit)) {
+                    $objectResponse = $this->getRegisteredEventCallback($typeBit);
+                    if (isset($objectResponse->uriTemplate)) {
+                        $returnArray[$this->getCallbackTypeString($typeBit)] = $objectResponse->uriTemplate;
+                    }
+                }
+            }
+            return $returnArray;
+        }
+
         $getRegisteredCallbackUrl = $this->getServiceUrl('getRegisteredEventCallback');
         // We are not using postService here, since we are dependent on the response code
         // rather than the response itself
