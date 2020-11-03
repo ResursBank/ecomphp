@@ -57,10 +57,13 @@ class resursBankTest extends TestCase
     /** @var RESURS_TEST_BRIDGE $TEST Used for standard tests and simpler flow setup */
     protected $TEST;
 
-    /** @var string Username to web services. */
-    private $username = 'ecomphpPipelineTest';
-    /** @var string Password to web services. */
-    private $password = '4Em4r5ZQ98x3891D6C19L96TQ72HsisD';
+    // Paymentadmin
+    //private $username = 'ecomphpPipelineTest';
+    //private $password = '4Em4r5ZQ98x3891D6C19L96TQ72HsisD';
+
+    // Merchantportal
+    private $username = 'ecomPhpPipelines';
+    private $password = 'nIeZe3825F16f033lIB81G3778MJn9l5';
 
     private $flowHappyCustomer = '8305147715';
     private $flowHappyCustomerName = 'Vincent Williamsson Alexandersson';
@@ -219,7 +222,30 @@ class resursBankTest extends TestCase
     public function apiPaymentMethodsWithCredentials()
     {
         $this->unitSetup();
-        static::assertTrue((count($this->TEST->getCredentialControl()) > 0));
+        $methods = $this->TEST->getCredentialControl();
+        static::assertTrue((count($methods) > 0));
+    }
+
+    /**
+     * @return bool
+     * @throws Exception
+     */
+    private function hasPsp()
+    {
+        $return = false;
+
+        $methods = $this->TEST->getCredentialControl();
+        foreach ($methods as $method) {
+            if (isset($method->type) && $method->type === 'PAYMENT_PROVIDER') {
+                $return = true;
+                break;
+            }
+            if (isset($method->specificType) && $method->specificType === 'PAYMENT_PROVIDER') {
+                $return = true;
+                break;
+            }
+        }
+        return $return;
     }
 
     /**
@@ -384,7 +410,8 @@ class resursBankTest extends TestCase
     public function generateSimpleSimplifiedInvoiceOrder($noAssert = false, $govId = '198305147715')
     {
         $this->unitSetup();
-        $this->TEST->ECOM->setPreferredId(uniqid(microtime(true), true));
+        $preferredId = md5(uniqid(microtime(true), true));
+        $this->TEST->ECOM->setPreferredId($preferredId);
         $customerData = $this->getHappyCustomerData();
         $this->TEST->ECOM->addOrderLine('Product-1337', 'One simple orderline', 800, 25);
         $this->TEST->ECOM->setBillingByGetAddress($customerData);
@@ -606,6 +633,11 @@ class resursBankTest extends TestCase
     public function generateSimpleSimplifiedPspResponse()
     {
         $this->unitSetup();
+
+        if (!$this->hasPsp()) {
+            static::markTestSkipped('There are no PAYMENT_PROVIDER method to test with.');
+            return;
+        }
         $customerData = $this->getHappyCustomerData();
         $this->TEST->ECOM->addOrderLine('Product-1337', 'One simple orderline', 800, 25);
         $this->TEST->ECOM->setBillingByGetAddress($customerData);
@@ -627,6 +659,11 @@ class resursBankTest extends TestCase
     public function generateSimpleSimplifiedPspWithoutGovernmentIdCompatibility()
     {
         $this->unitSetup();
+        if (!$this->hasPsp()) {
+            static::markTestSkipped('There are no PAYMENT_PROVIDER method to test with.');
+            return;
+        }
+
         $customerData = $this->getHappyCustomerData();
         $this->TEST->ECOM->setBillingByGetAddress($customerData);
         $this->TEST->ECOM->setCustomer(null, '0808080808', '0707070707', 'test@test.com', 'NATURAL');
@@ -788,10 +825,21 @@ class resursBankTest extends TestCase
     public function getOrderData()
     {
         $this->unitSetup();
-        $this->TEST->ECOM->setBillingByGetAddress($this->flowHappyCustomer);
+        // Removing automation of billing address as it is not this function we're testing here.
+        // And since getAddress may break the other part of the test, we run this manually.
+        $this->TEST->ECOM->setBillingAddress(
+            'Full Name',
+            'First',
+            'Name',
+            'Love you 3000',
+            '',
+            'Knowhere',
+            1337,
+            'SE'
+        );
         $this->TEST->ECOM->addOrderLine('RDL-1337', 'One simple orderline', 800, 25);
         $orderData = $this->TEST->ECOM->getOrderData();
-        static::assertEquals($orderData['totalAmount'], '1000');
+        static::assertEquals((int)$orderData['totalAmount'], 1000);
     }
 
     /**
@@ -1087,11 +1135,12 @@ class resursBankTest extends TestCase
         $this->setRegisterCallback(true);
 
         try {
-            $this->TEST->ECOM->unregisterEventCallback(255, true, false);
+            $this->TEST->ECOM->unregisterEventCallback(255, true);
         } catch (Exception $e) {
             $this->bailOut($e);
         }
-        $callbacks = $this->TEST->ECOM->getCallBacksByRest(true);
+        //$callbacks = $this->TEST->ECOM->getCallBacksByRest(true);
+        $callbacks = $this->TEST->ECOM->getRegisteredEventCallback(255);
         static::assertTrue((is_array($callbacks) && !count($callbacks)));
     }
 
@@ -1546,13 +1595,21 @@ class resursBankTest extends TestCase
         }
         $endTime = microtime(true);
         // Above setup should finish before 5 seconds passed.
-        $diff = $endTime - $startTime;
-        $this->TEST->ECOM->getPaymentMethods(['customerType' => 'NATURAL']);
-        $invoiceCache = $this->TEST->ECOM->getPaymentMethodSpecific('NATURALINVOICE');
+        $diff = (float)$endTime - $startTime;
+        $naturalList = $this->TEST->ECOM->getPaymentMethods(['customerType' => 'NATURAL']);
+
+        $theName = '';
+        foreach ($naturalList as $item) {
+            if ($item->type === 'INVOICE') {
+                $theName = $item->id;
+            }
+        }
+
+        $invoiceCache = $this->TEST->ECOM->getPaymentMethodSpecific($theName);
 
         static::assertTrue(
             ($diff < 5) &&
-            (isset($invoiceCache->id) && $invoiceCache->id === 'NATURALINVOICE')
+            (isset($invoiceCache->id) && $invoiceCache->id === $theName)
         );
     }
 
@@ -1929,7 +1986,7 @@ class resursBankTest extends TestCase
         static::markTestSkipped(
             sprintf(
                 '%s seems to pass without complications. ' .
-                'This is not a standard test however, so it has been skipped.',
+                'This is not a standard test however, so it is ignorable.',
                 __FUNCTION__
             )
         );
