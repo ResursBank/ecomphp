@@ -33,6 +33,7 @@ use Exception;
 use PHPUnit\Framework\TestCase;
 use ReflectionException;
 use ResursException;
+use TorneLIB\Config\Flag;
 use TorneLIB\Exception\ExceptionHandler;
 use TorneLIB\Model\Type\dataType;
 use TorneLIB\Model\Type\requestMethod;
@@ -1867,6 +1868,41 @@ class resursBankTest extends TestCase
         }
 
         static::assertTrue($noCriticalTrue);
+    }
+
+    /**
+     * @throws Exception
+     * @test
+     */
+    public function getCallbacksBySoapTypes()
+    {
+        $this->setRegisterCallback(true);
+        $callbackList = $this->TEST->ECOM->getRegisteredEventCallback(12);
+        static::assertCount(2, $callbackList);
+    }
+
+    /**
+     * @test
+     * @throws Exception
+     */
+    public function getCallbacksByRest()
+    {
+        $this->setRegisterCallback(true);
+        $callbackList = $this->TEST->ECOM->getCallBacksByRest(true);
+        static::assertGreaterThan(1, count($callbackList));
+    }
+
+    /**
+     * @test
+     * @throws Exception
+     */
+    public function getCallbacksByRestFailover()
+    {
+        $this->setRegisterCallback(true);
+        Flag::setFlag('callback_rest_500');
+        $callbackList = $this->TEST->ECOM->getCallBacksByRest();
+        Flag::deleteFlag('callback_rest_500');
+        static::assertGreaterThan(0, count($callbackList));
     }
 
     /**
