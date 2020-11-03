@@ -1902,7 +1902,7 @@ class resursBankTest extends TestCase
         Flag::setFlag('callback_rest_500');
         $callbackList = $this->TEST->ECOM->getCallBacksByRest();
         Flag::deleteFlag('callback_rest_500');
-        static::assertGreaterThan(0, count($callbackList));
+        static::assertGreaterThan(1, count($callbackList));
     }
 
     /**
