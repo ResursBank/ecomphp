@@ -1141,7 +1141,14 @@ class resursBankTest extends TestCase
         }
         //$callbacks = $this->TEST->ECOM->getCallBacksByRest(true);
         $callbacks = $this->TEST->ECOM->getRegisteredEventCallback(255);
-        static::assertTrue((is_array($callbacks) && !count($callbacks)));
+        if (is_array($callbacks) && count($callbacks)) {
+            static::fail(
+                'unregisterCallbacks is currently not working for MP accounts. If this test runs with such ' .
+                'credential, this failure is natural.'
+            );
+        } else {
+            static::assertTrue((is_array($callbacks) && !count($callbacks)));
+        }
     }
 
     /**
