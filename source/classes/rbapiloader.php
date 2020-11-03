@@ -3556,7 +3556,6 @@ class ResursBank
                 }
                 if (!$this->SOAP_AVAILABLE && $e->getCode() === 51) {
                     // Fail over on SSL certificate errors (first) as the domain for soap is different than RCO-rest.
-                    // If rest throws 500, continue with SOAP.
                     $rested = false;
                 } else {
                     throw $e;
