@@ -60,19 +60,17 @@ class resursBankTest extends TestCase
     /**
      * @var bool
      */
-    protected $useMerchant = true;
+    protected $useMerchant = false;
 
-    // Default username to PA
+    // Defaults.
     private $username = 'ecomphpPipelineTest';
     private $password = '4Em4r5ZQ98x3891D6C19L96TQ72HsisD';
 
-    // Paymentadmin
+    // PA.
     private $usernamePA = 'ecomphpPipelineTest';
     private $passwordPA = '4Em4r5ZQ98x3891D6C19L96TQ72HsisD';
-// nIeZe3825F16f033lIB81G3778MJn9l5
-// ywi5LQ8Ow3I8EX1142wco8Z3u4q42Q4w
 
-    // Merchantportal
+    // MP.
     private $usernameMP = 'ecomPhpPipelineWeb';
     private $passwordMP = 'nIeZe3825F16f033lIB81G3778MJn9l5';
 
