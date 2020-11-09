@@ -152,6 +152,12 @@ class ResursBank
      */
     private $paymentMethodsCache = ['params' => [], 'methods' => []];
 
+    /**
+     * @var int
+     * @since 1.3.45
+     */
+    private $getPaymentRequestMethod = 0;
+
     ///// Shop related
     /**
      * Always append amount data and ending urls (cost examples)
@@ -3412,6 +3418,7 @@ class ResursBank
      * @since 1.3.13
      * @since 1.1.40
      * @since 1.0.40
+     * @deprecated Since 1.3.45, use the auto selective method (getPayment) instead.
      */
     public function getPaymentByRest($paymentId = '')
     {
@@ -3581,7 +3588,9 @@ class ResursBank
             try {
                 $rested = true;
                 $this->lastPaymentStored[$paymentId] = $this->getPaymentByRest($paymentId);
+                $this->getPaymentRequestMethod = RESURS_GETPAYMENT_REQUESTTYPE::REST;
                 $this->lastPaymentStored[$paymentId]->cached = time();
+                $this->lastPaymentStored[$paymentId]->requestMethod = $this->getPaymentRequestMethod;
                 $return = $this->lastPaymentStored[$paymentId];
             } catch (ResursException $e) {
                 // 3 = The order does not exist, default REST error.
@@ -3602,7 +3611,9 @@ class ResursBank
         if (!$rested) {
             try {
                 $this->lastPaymentStored[$paymentId] = $this->getPaymentBySoap($paymentId);
+                $this->getPaymentRequestMethod = RESURS_GETPAYMENT_REQUESTTYPE::SOAP;
                 $this->lastPaymentStored[$paymentId]->cached = time();
+                $this->lastPaymentStored[$paymentId]->requestMethod = $this->getPaymentRequestMethod;
                 $return = $this->lastPaymentStored[$paymentId];
             } catch (Exception $e) {
                 // 8 = REFERENCED_DATA_DONT_EXISTS
@@ -3611,6 +3622,15 @@ class ResursBank
         }
 
         return $return;
+    }
+
+    /**
+     * @return int
+     * @since 1.3.45
+     */
+    public function getGetPaymentRequestMethod()
+    {
+        return $this->getPaymentRequestMethod;
     }
 
     /**

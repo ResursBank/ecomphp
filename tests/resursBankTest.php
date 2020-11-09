@@ -200,11 +200,11 @@ class resursBankTest extends TestCase
         $this->API->setDebug(true);
 
         $this->username = $this->usernamePA;
-        $this->username = $this->passwordPA;
+        $this->password = $this->passwordPA;
 
         if ($this->useMerchant) {
             $this->username = $this->usernameMP;
-            $this->username = $this->passwordMP;
+            $this->password = $this->passwordMP;
         }
 
         $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
