@@ -57,13 +57,24 @@ class resursBankTest extends TestCase
     /** @var RESURS_TEST_BRIDGE $TEST Used for standard tests and simpler flow setup */
     protected $TEST;
 
+    /**
+     * @var bool
+     */
+    protected $useMerchant = true;
+
+    // Default username to PA
+    private $username = 'ecomphpPipelineTest';
+    private $password = '4Em4r5ZQ98x3891D6C19L96TQ72HsisD';
+
     // Paymentadmin
-    //private $username = 'ecomphpPipelineTest';
-    //private $password = '4Em4r5ZQ98x3891D6C19L96TQ72HsisD';
+    private $usernamePA = 'ecomphpPipelineTest';
+    private $passwordPA = '4Em4r5ZQ98x3891D6C19L96TQ72HsisD';
+// nIeZe3825F16f033lIB81G3778MJn9l5
+// ywi5LQ8Ow3I8EX1142wco8Z3u4q42Q4w
 
     // Merchantportal
-    private $username = 'ecomPhpPipelines';
-    private $password = 'nIeZe3825F16f033lIB81G3778MJn9l5';
+    private $usernameMP = 'ecomPhpPipelineWeb';
+    private $passwordMP = 'nIeZe3825F16f033lIB81G3778MJn9l5';
 
     private $flowHappyCustomer = '8305147715';
     private $flowHappyCustomerName = 'Vincent Williamsson Alexandersson';
@@ -189,6 +200,15 @@ class resursBankTest extends TestCase
     {
         $this->API = new ResursBank();
         $this->API->setDebug(true);
+
+        $this->username = $this->usernamePA;
+        $this->username = $this->passwordPA;
+
+        if ($this->useMerchant) {
+            $this->username = $this->usernameMP;
+            $this->username = $this->passwordMP;
+        }
+
         $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
 
         // From 1.3.40 NETCURL is always 6.1+, so all soap based tests will run in cached mode.
@@ -1087,7 +1107,7 @@ class resursBankTest extends TestCase
         // Phase 4: Make sure this works for UPDATE also.
         if ($this->TEST->ECOM->setRegisterCallback(
             RESURS_CALLBACK_TYPES::UPDATE,
-            $templateUrl . 'type/finalization',
+            $templateUrl . 'type/update',
             [
                 'digestAlgorithm' => 'md5',
                 'digestSalt' => uniqid(sha1(md5(microtime(true))), true),
@@ -1139,7 +1159,6 @@ class resursBankTest extends TestCase
         } catch (Exception $e) {
             $this->bailOut($e);
         }
-        //$callbacks = $this->TEST->ECOM->getCallBacksByRest(true);
         $callbacks = $this->TEST->ECOM->getRegisteredEventCallback(255);
         if (is_array($callbacks) && count($callbacks)) {
             static::fail(
@@ -1184,6 +1203,25 @@ class resursBankTest extends TestCase
             // Code 3 = REST, Code 8 = SOAP (180914)
             static::assertTrue($code === 8 || $code === 404);
         }
+    }
+
+    /**
+     * @throws ResursException
+     */
+    public function getPaymentWrongByRest()
+    {
+        $this->unitSetup();
+        $this->TEST->ECOM->setFlag('GET_PAYMENT_BY_REST');
+        $this->TEST->ECOM->getPayment('FAIL_HERE');
+        try {
+            $this->TEST->ECOM->getPayment('FAIL_HERE');
+        } catch (Exception $e) {
+            $this->bailOut($e);
+            $code = (int)$e->getCode();
+            // Code 3 = REST, Code 8 = SOAP (180914)
+            static::assertTrue($code === 8 || $code === 404);
+        }
+        $this->TEST->ECOM->deleteFlag('GET_PAYMENT_BY_REST');
     }
 
     /**
@@ -1926,6 +1964,7 @@ class resursBankTest extends TestCase
         try {
             // Running unreg through rest as of 1.3.31
             $this->setRegisterCallback(true);
+            $this->TEST->ECOM->setRegisterCallbacksViaRest(true);
             $this->TEST->ECOM->unregisterEventCallback(76, true);
             $this->TEST->ECOM->unregisterEventCallback(255, true);
         } catch (Exception $e) {
@@ -1934,6 +1973,36 @@ class resursBankTest extends TestCase
         $callbacks = $this->TEST->ECOM->getCallBacksByRest(true);
         $noCriticalTrue = (is_array($callbacks) && !count($callbacks));
 
+        if (!$noCriticalTrue) {
+            static::markTestSkipped('Non critical skip: Callback count mismatched the assertion.');
+            return;
+        }
+
+        static::assertTrue($noCriticalTrue);
+    }
+
+    /**
+     * @test
+     * @throws Exception
+     */
+    public function getEmptyCallbacksRestFailover()
+    {
+        $this->unitSetup();
+        Flag::setFlag('unregisterRestFallback');
+
+        try {
+            // Running unreg through rest as of 1.3.31
+            $this->setRegisterCallback(true);
+            $this->TEST->ECOM->setRegisterCallbacksViaRest(true);
+            $this->TEST->ECOM->unregisterEventCallback(76, true);
+            $this->TEST->ECOM->unregisterEventCallback(255, true);
+        } catch (Exception $e) {
+            $this->bailOut($e);
+        }
+        $callbacks = $this->TEST->ECOM->getCallBacksByRest(true);
+        $noCriticalTrue = (is_array($callbacks) && !count($callbacks));
+
+        Flag::deleteFlag('unregisterRestFallback');
         if (!$noCriticalTrue) {
             static::markTestSkipped('Non critical skip: Callback count mismatched the assertion.');
             return;
