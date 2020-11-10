@@ -1649,8 +1649,6 @@ class ResursBank
      */
     public function validateCredentials($environment = RESURS_ENVIRONMENTS::TEST, $username = '', $password = '')
     {
-        $result = false;
-
         if (empty($username) && empty($password) && empty($this->username) && empty($this->password)) {
             throw new ResursException(
                 'Validating credentials means you have to defined credentials before ' .
@@ -1663,17 +1661,10 @@ class ResursBank
         }
 
         try {
-            $methods = $this->getPaymentMethods([], true);
-            // Extra layer control. If there are no payment methods something is terribly wrong.
-            if (is_array($methods) && count($methods)) {
-                $result = true;
-            } else {
-                throw new ResursException(
-                    'Validating credentials was successful, but not payment methods found.',
-                    417
-                );
-            }
+            $this->getRegisteredEventCallback(RESURS_CALLBACK_TYPES::BOOKED);
+            $result = true;
         } catch (Exception $ignoreMyException) {
+            $result = false;
         }
 
         return $result;
@@ -2140,9 +2131,7 @@ class ResursBank
 
     /**
      * Reimplementation of getRegisteredEventCallback due to #78124
-     *
      * @param int $callbackType
-     *
      * @return mixed
      * @throws Exception
      */
@@ -2165,8 +2154,6 @@ class ResursBank
         }
 
         $getRegisteredCallbackUrl = $this->getServiceUrl('getRegisteredEventCallback');
-        // We are not using postService here, since we are dependent on the response code
-        // rather than the response itself
         /** @noinspection PhpUndefinedMethodInspection */
         $renderedResponse = $this->CURL->doPost(
             $getRegisteredCallbackUrl
