@@ -1651,7 +1651,7 @@ class ResursBank
     {
         if (empty($username) && empty($password) && empty($this->username) && empty($this->password)) {
             throw new ResursException(
-                'Validating credentials means you have to defined credentials before ' .
+                'Validating credentials means you have to define credentials before ' .
                 'validating them. Use setAuthentication() or push your credentials into this method directly.',
                 417
             );
