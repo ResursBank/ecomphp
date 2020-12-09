@@ -418,30 +418,6 @@ class resursBankTest extends TestCase
     }
 
     /**
-     * @test
-     * @param false $noAssert
-     * @param string $govId
-     * @return void
-     * @throws ResursException
-     */
-    public function generateHostedInvoiceOrder($noAssert = false, $govId = '198305147715')
-    {
-        $this->unitSetup();
-        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::HOSTED_FLOW);
-        $preferredId = md5(uniqid(microtime(true), true));
-        $this->TEST->ECOM->setPreferredId($preferredId);
-        $customerData = $this->getHappyCustomerData();
-        $this->TEST->ECOM->addOrderLine('Product-1337', 'One simple orderline', 800, 25);
-        $this->TEST->ECOM->setBillingByGetAddress($customerData);
-        $this->TEST->ECOM->setCustomer($govId, '0808080808', '0707070707', 'test@test.com', 'NATURAL');
-        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
-        $this->TEST->ECOM->setMetaData('metaKeyTestTime', time());
-        $this->TEST->ECOM->setMetaData('metaKeyTestMicroTime', microtime(true));
-        $response = $this->TEST->ECOM->createPayment($this->getMethodId());
-        static::assertContains('hostedflow', $response);
-    }
-
-    /**
      * @return null
      * @throws Exception
      */
@@ -559,6 +535,30 @@ class resursBankTest extends TestCase
         if (!$noAssert) {
             static::assertGreaterThan(1, $paymentMethods);
         }
+    }
+
+    /**
+     * @test
+     * @param false $noAssert
+     * @param string $govId
+     * @return void
+     * @throws ResursException
+     */
+    public function generateHostedInvoiceOrder($noAssert = false, $govId = '198305147715')
+    {
+        $this->unitSetup();
+        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::HOSTED_FLOW);
+        $preferredId = md5(uniqid(microtime(true), true));
+        $this->TEST->ECOM->setPreferredId($preferredId);
+        $customerData = $this->getHappyCustomerData();
+        $this->TEST->ECOM->addOrderLine('Product-1337', 'One simple orderline', 800, 25);
+        $this->TEST->ECOM->setBillingByGetAddress($customerData);
+        $this->TEST->ECOM->setCustomer($govId, '0808080808', '0707070707', 'test@test.com', 'NATURAL');
+        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+        $this->TEST->ECOM->setMetaData('metaKeyTestTime', time());
+        $this->TEST->ECOM->setMetaData('metaKeyTestMicroTime', microtime(true));
+        $response = $this->TEST->ECOM->createPayment($this->getMethodId());
+        static::assertTrue((bool)preg_match('/hostedflow/i', $response);
     }
 
     /**
