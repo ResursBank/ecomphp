@@ -2177,10 +2177,20 @@ class ResursBank
      * If you want to register callbacks through the rest API instead of SOAP, set this to true
      *
      * @param bool $useRest
+     * @return ResursBank
+     * @noinspection ParameterDefaultValueIsNotNullInspection
      */
     public function setRegisterCallbacksViaRest($useRest = true)
     {
         $this->registerCallbacksViaRest = $useRest;
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function getRegisterCallbacksViaRest() {
+        return $this->registerCallbacksViaRest;
     }
 
     /**
