@@ -60,7 +60,7 @@ class resursBankTest extends TestCase
     /**
      * @var bool
      */
-    protected $useMerchant = false;
+    protected $useMerchant = true;
 
     // Defaults.
     private $username = 'ecomphpPipelineTest';
@@ -84,111 +84,17 @@ class resursBankTest extends TestCase
     private $signUrl = 'https://test.resurs.com/signdummy/index.php?isSigningUrl=1';
 
     /**
-     * @param $addr
-     * @return bool
+     * @test
      */
-    private function isProperIp($addr)
+    public function clearStorage()
     {
-        $not = ['127.0.0.1'];
-        return filter_var(
-                trim($addr),
-                FILTER_VALIDATE_IP
-            ) && !in_array(trim($addr), $not);
-    }
-
-    /**
-     * @return bool
-     * @throws ExceptionHandler
-     */
-    private function canProxy()
-    {
-        $return = false;
-
-        $ipList = [
-            '212.63.208.',
-            '10.1.1.',
-            '81.231.10.114',
-        ];
-
-        $wrapperData = (new CurlWrapper())
-            ->setConfig((new WrapperConfig())->setUserAgent('ProxyTestAgent'))
-            ->request('https://ipv4.netcurl.org')->getParsed();
-        if (isset($wrapperData->ip)) {
-            foreach ($ipList as $ip) {
-                if (preg_match('/' . $ip . '/', $wrapperData->ip)) {
-                    $return = true;
-                    break;
-                }
-            }
-        }
-
-        return $return;
-    }
-
-    /**
-     * Allow limited testing.
-     * @return bool
-     */
-    private function allowVersion()
-    {
-        $return = false;
-
-        $saE = explode('|', $_ENV['standalone_ecom']);
-        if (is_array($saE) && count($saE)) {
-            foreach ($saE as $textVersion) {
-                $envFix = explode('.', $textVersion);
-                $envFix[2] = '0';
-                $higherThan = implode('.', $envFix);
-                $envFix[1]++;
-                $lowerThan = implode('.', $envFix);
-                if ((version_compare(
-                            PHP_VERSION,
-                            $higherThan,
-                            '>'
-                        ) &&
-                        version_compare(
-                            PHP_VERSION,
-                            $lowerThan,
-                            '<'
-                        ))
-                    || preg_match(sprintf('/^%s/', $textVersion), PHP_VERSION)
-                ) {
-                    $return = true;
-                    break;
-                }
-            }
-        }
-
-        return $return;
-    }
-
-    /**
-     * @param string $codeException
-     * @param string $message
-     * @noinspection ParameterDefaultValueIsNotNullInspection
-     */
-    private function bailOut($codeException = '', $message = '')
-    {
-        if (is_object($codeException) && method_exists($codeException, 'getCode')) {
-            /** @var Exception $codeException */
-            $code = $codeException->getCode();
-            $message = $codeException->getMessage();
-        } else {
-            $code = (int)$codeException;
-        }
-
-        if ($code >= 500 && $code <= 600) {
-            $haltExceptionString = sprintf(
-                'Halt on exception %s: %s',
-                $code,
-                $message
-            );
-            $haltExceptionString .= 'Errors over 500 normally indicates that something went wrong in the test environment, ' .
-                "that's why we also abort the entire test";
-
-            static::fail($haltExceptionString);
-            die($haltExceptionString);
-        }
+        $this->unitSetup();
+        // Silently kill file.
+        /** @noinspection PhpUsageOfSilenceOperatorInspection */
+        @unlink(__DIR__ . '/storage/shared.serialize');
+        // assertFileNotExists is deprecated. Do not use it, despite the inspections.
+        /** @noinspection PhpUnitTestsInspection */
+        static::assertNotTrue(file_exists(__DIR__ . '/storage/shared.serialize'));
     }
 
     /**
@@ -220,20 +126,6 @@ class resursBankTest extends TestCase
 
     /**
      * @test
-     */
-    public function clearStorage()
-    {
-        $this->unitSetup();
-        // Silently kill file.
-        /** @noinspection PhpUsageOfSilenceOperatorInspection */
-        @unlink(__DIR__ . '/storage/shared.serialize');
-        // assertFileNotExists is deprecated. Do not use it, despite the inspections.
-        /** @noinspection PhpUnitTestsInspection */
-        static::assertNotTrue(file_exists(__DIR__ . '/storage/shared.serialize'));
-    }
-
-    /**
-     * @test
      * @testdox Tests API credentials and getPaymentMethods.
      * @throws Exception
      */
@@ -242,28 +134,6 @@ class resursBankTest extends TestCase
         $this->unitSetup();
         $methods = $this->TEST->getCredentialControl();
         static::assertTrue((count($methods) > 0));
-    }
-
-    /**
-     * @return bool
-     * @throws Exception
-     */
-    private function hasPsp()
-    {
-        $return = false;
-
-        $methods = $this->TEST->getCredentialControl();
-        foreach ($methods as $method) {
-            if (isset($method->type) && $method->type === 'PAYMENT_PROVIDER') {
-                $return = true;
-                break;
-            }
-            if (isset($method->specificType) && $method->specificType === 'PAYMENT_PROVIDER') {
-                $return = true;
-                break;
-            }
-        }
-        return $return;
     }
 
     /**
@@ -279,6 +149,35 @@ class resursBankTest extends TestCase
         } catch (Exception $e) {
             $this->bailOut($e);
             static::assertEquals($e->getCode(), 401);
+        }
+    }
+
+    /**
+     * @param string $codeException
+     * @param string $message
+     * @noinspection ParameterDefaultValueIsNotNullInspection
+     */
+    private function bailOut($codeException = '', $message = '')
+    {
+        if (is_object($codeException) && method_exists($codeException, 'getCode')) {
+            /** @var Exception $codeException */
+            $code = $codeException->getCode();
+            $message = $codeException->getMessage();
+        } else {
+            $code = (int)$codeException;
+        }
+
+        if ($code >= 500 && $code <= 600) {
+            $haltExceptionString = sprintf(
+                'Halt on exception %s: %s',
+                $code,
+                $message
+            );
+            $haltExceptionString .= 'Errors over 500 normally indicates that something went wrong in the test environment, ' .
+                "that's why we also abort the entire test";
+
+            static::fail($haltExceptionString);
+            die($haltExceptionString);
         }
     }
 
@@ -418,106 +317,6 @@ class resursBankTest extends TestCase
     }
 
     /**
-     * @test
-     * @param bool $noAssert
-     * @param string $govId
-     * @return array
-     * @throws Exception
-     * @noinspection ParameterDefaultValueIsNotNullInspection
-     */
-    public function generateSimpleSimplifiedInvoiceOrder($noAssert = false, $govId = '198305147715')
-    {
-        $this->unitSetup();
-        $preferredId = md5(uniqid(microtime(true), true));
-        $this->TEST->ECOM->setPreferredId($preferredId);
-        $customerData = $this->getHappyCustomerData();
-        $this->TEST->ECOM->addOrderLine('Product-1337', 'One simple orderline', 800, 25);
-        $this->TEST->ECOM->setBillingByGetAddress($customerData);
-        $this->TEST->ECOM->setCustomer($govId, '0808080808', '0707070707', 'test@test.com', 'NATURAL');
-        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
-        $this->TEST->ECOM->setMetaData('metaKeyTestTime', time());
-        $this->TEST->ECOM->setMetaData('metaKeyTestMicroTime', microtime(true));
-        $response = $this->TEST->ECOM->createPayment($this->getMethodId());
-        if (!$noAssert) {
-            /** @noinspection PhpUndefinedFieldInspection */
-            static::assertTrue($response->bookPaymentStatus == 'BOOKED' || $response->bookPaymentStatus == 'SIGNING');
-        }
-
-        return $response;
-    }
-
-    /**
-     * @param bool $static
-     * @return int
-     */
-    public function getProductPrice($static = false)
-    {
-        if (!$static) {
-            return rand(30, 90);
-        }
-
-        return 90;
-    }
-
-    /**
-     * @test
-     *
-     * @param string $govId
-     * @param bool $staticProductPrice
-     * @return array
-     * @throws Exception
-     */
-    public function generateSimpleSimplifiedInvoiceQuantityOrder($govId = '198305147715', $staticProductPrice = false)
-    {
-        $this->unitSetup();
-        $customerData = $this->getHappyCustomerData();
-        $this->TEST->ECOM->addOrderLine(
-            'PR01',
-            'PR01',
-            $this->getProductPrice($staticProductPrice),
-            25,
-            'st',
-            'ORDER_LINE',
-            100
-        );
-        $this->TEST->ECOM->addOrderLine(
-            'PR02',
-            'PR02',
-            $this->getProductPrice($staticProductPrice),
-            25,
-            'st',
-            'ORDER_LINE',
-            100
-        );
-        $this->TEST->ECOM->addOrderLine(
-            'PR03',
-            'PR03',
-            $this->getProductPrice($staticProductPrice),
-            25,
-            'st',
-            'ORDER_LINE',
-            100
-        );
-        $this->TEST->ECOM->addOrderLine(
-            'PR04',
-            'PR04',
-            $this->getProductPrice($staticProductPrice),
-            25,
-            'st',
-            'ORDER_LINE',
-            100
-        );
-        $this->TEST->ECOM->setBillingByGetAddress($customerData);
-        $this->TEST->ECOM->setCustomer($govId, '0808080808', '0707070707', 'test@test.com', 'NATURAL');
-        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
-        $this->TEST->ECOM->setMetaData('metaKeyTestTime', time());
-        $this->TEST->ECOM->setMetaData('metaKeyTestMicroTime', microtime(true));
-        $response = $this->TEST->ECOM->createPayment($this->getMethodId());
-
-        return $response;
-    }
-
-    /**
      * @test Finalize frozen orders - ECom should prevent this before Resurs Bank to save performance.
      *
      * @throws Exception
@@ -554,141 +353,67 @@ class resursBankTest extends TestCase
     }
 
     /**
-     * @test
-     * @throws Exception
+     * Allow limited testing.
+     * @return bool
      */
-    public function getPaymentCached()
+    private function allowVersion()
     {
-        $this->unitSetup();
-        $apiWithoutCache = new ResursBank($this->username, $this->password, null, false, ['setApiCache' => false]);
-        $hasCache = $apiWithoutCache->getApiCache();
-        $hasCacheDefault = $this->TEST->ECOM->getApiCache();
-        $req = [];
+        $return = false;
 
-        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
-
-        // Guarantee two different payment ids in this test.
-        $this->TEST->ECOM->setPreferredId($this->TEST->ECOM->getPreferredPaymentId(25, '', true, true));
-        $firstPayment = $this->generateSimpleSimplifiedInvoiceOrder(true);
-        $this->TEST->ECOM->setPreferredId($this->TEST->ECOM->getPreferredPaymentId(25, '', true, true));
-        $secondPayment = $this->generateSimpleSimplifiedInvoiceOrder(true);
-        if (isset($firstPayment->paymentId)) {
-            $req[] = $this->TEST->ECOM->getPayment($firstPayment->paymentId);
-            $req[] = $this->TEST->ECOM->getPayment($secondPayment->paymentId);
-
-            $requestEnd = 0;        // Should end when this reaches 3.
-            $requestStart = time(); // When requests started.
-            $timeTotal = 0;
-
-            // Loop until 4 sec or more.
-            while ($requestEnd < 3) {
-                $requestEnd = time() - $requestStart;
-
-                $currentRequestStartMillis = microtime(true);
-                $req[] = $this->TEST->ECOM->getPayment($firstPayment->paymentId);
-                $req[] = $this->TEST->ECOM->getPayment($secondPayment->paymentId);
-                $currentRequestStopMillis = microtime(true);
-                $currentRequestTimeSpeed = $currentRequestStopMillis - $currentRequestStartMillis;
-                $timeTotal += $currentRequestTimeSpeed;
+        $saE = explode('|', $_ENV['standalone_ecom']);
+        if (is_array($saE) && count($saE)) {
+            foreach ($saE as $textVersion) {
+                $envFix = explode('.', $textVersion);
+                $envFix[2] = '0';
+                $higherThan = implode('.', $envFix);
+                $envFix[1]++;
+                $lowerThan = implode('.', $envFix);
+                if ((version_compare(
+                            PHP_VERSION,
+                            $higherThan,
+                            '>'
+                        ) &&
+                        version_compare(
+                            PHP_VERSION,
+                            $lowerThan,
+                            '<'
+                        ))
+                    || preg_match(sprintf('/^%s/', $textVersion), PHP_VERSION)
+                ) {
+                    $return = true;
+                    break;
+                }
             }
-            $timeMed = $timeTotal / count($req);
-
-            /*
-             * Required test result:
-             *   - The cache should be able to request AT LEAST 10 getPayment in a period of three seconds.
-             *      Initial tests shows that we could make at least 179 requests. NOTE: Pipelines just counted 6 calls.
-             *      For netcurl 6.1 initial tests showed up test results of 3818 requests.
-             *   - Each request should be able to respond under 1 second.
-             *   - The first $hasCache was initially disabled via __construct and should be false.
-             *   - The second hasCache is untouched and should be true.
-             */
-
-            // >= 5 for pipelines.
-            // >= 10 for own tests.
-            static::assertTrue(
-                (count($req) >= 5) &&
-                (float)$timeMed < 1 &&
-                !$hasCache
-                && $hasCacheDefault
-            );
         }
+
+        return $return;
     }
 
     /**
-     * Only run this when emulating colliding orders in the woocommerce plugin.
-     *
+     * @test
      * @param bool $noAssert
+     * @param string $govId
      * @return array
      * @throws Exception
      * @noinspection ParameterDefaultValueIsNotNullInspection
      */
-    public function wooCommerceCollider($noAssert = false)
+    public function generateSimpleSimplifiedInvoiceOrder($noAssert = false, $govId = '198305147715')
     {
         $this->unitSetup();
-        $incremental = 1430;
+        $preferredId = md5(uniqid(microtime(true), true));
+        $this->TEST->ECOM->setPreferredId($preferredId);
         $customerData = $this->getHappyCustomerData();
         $this->TEST->ECOM->addOrderLine('Product-1337', 'One simple orderline', 800, 25);
         $this->TEST->ECOM->setBillingByGetAddress($customerData);
-        $this->TEST->ECOM->setCustomer('198305147715', '0808080808', '0707070707', 'test@test.com', 'NATURAL');
+        $this->TEST->ECOM->setCustomer($govId, '0808080808', '0707070707', 'test@test.com', 'NATURAL');
         $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
         $this->TEST->ECOM->setMetaData('metaKeyTestTime', time());
         $this->TEST->ECOM->setMetaData('metaKeyTestMicroTime', microtime(true));
-        $this->TEST->ECOM->setPreferredId($incremental);
         $response = $this->TEST->ECOM->createPayment($this->getMethodId());
         if (!$noAssert) {
             /** @noinspection PhpUndefinedFieldInspection */
             static::assertTrue($response->bookPaymentStatus == 'BOOKED' || $response->bookPaymentStatus == 'SIGNING');
         }
-
-        return $response;
-    }
-
-    /**
-     * @test Using PSP during simplified flow (with government id / SSN)
-     * @return array
-     * @throws Exception
-     */
-    public function generateSimpleSimplifiedPspResponse()
-    {
-        $this->unitSetup();
-
-        if (!$this->hasPsp()) {
-            static::markTestSkipped('There are no PAYMENT_PROVIDER method to test with.');
-            return;
-        }
-        $customerData = $this->getHappyCustomerData();
-        $this->TEST->ECOM->addOrderLine('Product-1337', 'One simple orderline', 800, 25);
-        $this->TEST->ECOM->setBillingByGetAddress($customerData);
-        $this->TEST->ECOM->setCustomer('198305147715', '0808080808', '0707070707', 'test@test.com', 'NATURAL');
-        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
-        $response = $this->TEST->ECOM->createPayment($this->getMethodId('PAYMENT_PROVIDER'));
-        // In a perfect world, a booked payment for PSP should generate SIGNING as the payment occurs
-        // externally.
-        static::assertSame($response->bookPaymentStatus, 'SIGNING');
-
-        return $response;
-    }
-
-    /**
-     * @test Using PSP during simplified flow (without government id / SSN)
-     * @return array
-     * @throws Exception
-     */
-    public function generateSimpleSimplifiedPspWithoutGovernmentIdCompatibility()
-    {
-        $this->unitSetup();
-        if (!$this->hasPsp()) {
-            static::markTestSkipped('There are no PAYMENT_PROVIDER method to test with.');
-            return;
-        }
-
-        $customerData = $this->getHappyCustomerData();
-        $this->TEST->ECOM->setBillingByGetAddress($customerData);
-        $this->TEST->ECOM->setCustomer(null, '0808080808', '0707070707', 'test@test.com', 'NATURAL');
-        $this->TEST->ECOM->addOrderLine('Product-1337', 'One simple orderline', 800, 25);
-        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
-        $response = $this->TEST->ECOM->createPayment($this->getMethodId('PAYMENT_PROVIDER'));
-        static::assertEquals($response->bookPaymentStatus, 'SIGNING');
 
         return $response;
     }
@@ -811,6 +536,168 @@ class resursBankTest extends TestCase
         if (!$noAssert) {
             static::assertGreaterThan(1, $paymentMethods);
         }
+    }
+
+    /**
+     * @test
+     * @throws Exception
+     */
+    public function getPaymentCached()
+    {
+        $this->unitSetup();
+        $apiWithoutCache = new ResursBank($this->username, $this->password, null, false, ['setApiCache' => false]);
+        $hasCache = $apiWithoutCache->getApiCache();
+        $hasCacheDefault = $this->TEST->ECOM->getApiCache();
+        $req = [];
+
+        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
+
+        // Guarantee two different payment ids in this test.
+        $this->TEST->ECOM->setPreferredId($this->TEST->ECOM->getPreferredPaymentId(25, '', true, true));
+        $firstPayment = $this->generateSimpleSimplifiedInvoiceOrder(true);
+        $this->TEST->ECOM->setPreferredId($this->TEST->ECOM->getPreferredPaymentId(25, '', true, true));
+        $secondPayment = $this->generateSimpleSimplifiedInvoiceOrder(true);
+        if (isset($firstPayment->paymentId)) {
+            $req[] = $this->TEST->ECOM->getPayment($firstPayment->paymentId);
+            $req[] = $this->TEST->ECOM->getPayment($secondPayment->paymentId);
+
+            $requestEnd = 0;        // Should end when this reaches 3.
+            $requestStart = time(); // When requests started.
+            $timeTotal = 0;
+
+            // Loop until 4 sec or more.
+            while ($requestEnd < 3) {
+                $requestEnd = time() - $requestStart;
+
+                $currentRequestStartMillis = microtime(true);
+                $req[] = $this->TEST->ECOM->getPayment($firstPayment->paymentId);
+                $req[] = $this->TEST->ECOM->getPayment($secondPayment->paymentId);
+                $currentRequestStopMillis = microtime(true);
+                $currentRequestTimeSpeed = $currentRequestStopMillis - $currentRequestStartMillis;
+                $timeTotal += $currentRequestTimeSpeed;
+            }
+            $timeMed = $timeTotal / count($req);
+
+            /*
+             * Required test result:
+             *   - The cache should be able to request AT LEAST 10 getPayment in a period of three seconds.
+             *      Initial tests shows that we could make at least 179 requests. NOTE: Pipelines just counted 6 calls.
+             *      For netcurl 6.1 initial tests showed up test results of 3818 requests.
+             *   - Each request should be able to respond under 1 second.
+             *   - The first $hasCache was initially disabled via __construct and should be false.
+             *   - The second hasCache is untouched and should be true.
+             */
+
+            // >= 5 for pipelines.
+            // >= 10 for own tests.
+            static::assertTrue(
+                (count($req) >= 5) &&
+                (float)$timeMed < 1 &&
+                !$hasCache
+                && $hasCacheDefault
+            );
+        }
+    }
+
+    /**
+     * Only run this when emulating colliding orders in the woocommerce plugin.
+     *
+     * @param bool $noAssert
+     * @return array
+     * @throws Exception
+     * @noinspection ParameterDefaultValueIsNotNullInspection
+     */
+    public function wooCommerceCollider($noAssert = false)
+    {
+        $this->unitSetup();
+        $incremental = 1430;
+        $customerData = $this->getHappyCustomerData();
+        $this->TEST->ECOM->addOrderLine('Product-1337', 'One simple orderline', 800, 25);
+        $this->TEST->ECOM->setBillingByGetAddress($customerData);
+        $this->TEST->ECOM->setCustomer('198305147715', '0808080808', '0707070707', 'test@test.com', 'NATURAL');
+        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+        $this->TEST->ECOM->setMetaData('metaKeyTestTime', time());
+        $this->TEST->ECOM->setMetaData('metaKeyTestMicroTime', microtime(true));
+        $this->TEST->ECOM->setPreferredId($incremental);
+        $response = $this->TEST->ECOM->createPayment($this->getMethodId());
+        if (!$noAssert) {
+            /** @noinspection PhpUndefinedFieldInspection */
+            static::assertTrue($response->bookPaymentStatus == 'BOOKED' || $response->bookPaymentStatus == 'SIGNING');
+        }
+
+        return $response;
+    }
+
+    /**
+     * @test Using PSP during simplified flow (with government id / SSN)
+     * @return array
+     * @throws Exception
+     */
+    public function generateSimpleSimplifiedPspResponse()
+    {
+        $this->unitSetup();
+
+        if (!$this->hasPsp()) {
+            static::markTestSkipped('There are no PAYMENT_PROVIDER method to test with.');
+            return;
+        }
+        $customerData = $this->getHappyCustomerData();
+        $this->TEST->ECOM->addOrderLine('Product-1337', 'One simple orderline', 800, 25);
+        $this->TEST->ECOM->setBillingByGetAddress($customerData);
+        $this->TEST->ECOM->setCustomer('198305147715', '0808080808', '0707070707', 'test@test.com', 'NATURAL');
+        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+        $response = $this->TEST->ECOM->createPayment($this->getMethodId('PAYMENT_PROVIDER'));
+        // In a perfect world, a booked payment for PSP should generate SIGNING as the payment occurs
+        // externally.
+        static::assertSame($response->bookPaymentStatus, 'SIGNING');
+
+        return $response;
+    }
+
+    /**
+     * @return bool
+     * @throws Exception
+     */
+    private function hasPsp()
+    {
+        $return = false;
+
+        $methods = $this->TEST->getCredentialControl();
+        foreach ($methods as $method) {
+            if (isset($method->type) && $method->type === 'PAYMENT_PROVIDER') {
+                $return = true;
+                break;
+            }
+            if (isset($method->specificType) && $method->specificType === 'PAYMENT_PROVIDER') {
+                $return = true;
+                break;
+            }
+        }
+        return $return;
+    }
+
+    /**
+     * @test Using PSP during simplified flow (without government id / SSN)
+     * @return array
+     * @throws Exception
+     */
+    public function generateSimpleSimplifiedPspWithoutGovernmentIdCompatibility()
+    {
+        $this->unitSetup();
+        if (!$this->hasPsp()) {
+            static::markTestSkipped('There are no PAYMENT_PROVIDER method to test with.');
+            return;
+        }
+
+        $customerData = $this->getHappyCustomerData();
+        $this->TEST->ECOM->setBillingByGetAddress($customerData);
+        $this->TEST->ECOM->setCustomer(null, '0808080808', '0707070707', 'test@test.com', 'NATURAL');
+        $this->TEST->ECOM->addOrderLine('Product-1337', 'One simple orderline', 800, 25);
+        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+        $response = $this->TEST->ECOM->createPayment($this->getMethodId('PAYMENT_PROVIDER'));
+        static::assertEquals($response->bookPaymentStatus, 'SIGNING');
+
+        return $response;
     }
 
     /**
@@ -1032,6 +919,42 @@ class resursBankTest extends TestCase
     }
 
     /**
+     * @test
+     * @throws Exception
+     */
+    public function unregisterCallbacksViaRest()
+    {
+        if (!$this->allowVersion()) {
+            static::markTestSkipped(
+                sprintf(
+                    'Special test limited to one PHP version (%s) detected. ' .
+                    'This is the wrong version (%s), so it is being skipped.',
+                    isset($_ENV['standalone_ecom']) ? $_ENV['standalone_ecom'] : 'Detection failed',
+                    PHP_VERSION
+                )
+            );
+            return;
+        }
+
+        $this->setRegisterCallback(true);
+
+        try {
+            $this->TEST->ECOM->unregisterEventCallback(255, true);
+        } catch (Exception $e) {
+            $this->bailOut($e);
+        }
+        $callbacks = $this->TEST->ECOM->getRegisteredEventCallback(255);
+        if (is_array($callbacks) && count($callbacks)) {
+            static::fail(
+                'unregisterCallbacks is currently not working for MP accounts. If this test runs with such ' .
+                'credential, this failure is natural.'
+            );
+        } else {
+            static::assertTrue((is_array($callbacks) && !count($callbacks)));
+        }
+    }
+
+    /**
      * @test Test registration of callbacks in three different ways - including backward compatibility.
      *
      * Note: We can not check whether the salt keys are properly set in realtime, but during our own
@@ -1054,7 +977,15 @@ class resursBankTest extends TestCase
             return;
         }
 
-        $this->unitSetup();
+        if (isset($this->TEST->ECOM) &&
+            method_exists($this->TEST->ECOM, 'getRegisterCallbacksViaRest')) {
+            if ($this->TEST->ECOM->getRegisterCallbacksViaRest() !== true) {
+                $this->unitSetup();
+            }
+        } else {
+            $this->unitSetup();
+        }
+
         $this->TEST->ECOM->setCallbackDigestSalt(
             uniqid(sha1(microtime(true)), true),
             RESURS_CALLBACK_TYPES::BOOKED
@@ -1130,61 +1061,6 @@ class resursBankTest extends TestCase
         if (!$noAssert) {
             static::assertSame($cbCount, 5);
         }
-    }
-
-    /**
-     * @test
-     * @throws Exception
-     */
-    public function unregisterCallbacksViaRest()
-    {
-        if (!$this->allowVersion()) {
-            static::markTestSkipped(
-                sprintf(
-                    'Special test limited to one PHP version (%s) detected. ' .
-                    'This is the wrong version (%s), so it is being skipped.',
-                    isset($_ENV['standalone_ecom']) ? $_ENV['standalone_ecom'] : 'Detection failed',
-                    PHP_VERSION
-                )
-            );
-            return;
-        }
-
-        $this->setRegisterCallback(true);
-
-        try {
-            $this->TEST->ECOM->unregisterEventCallback(255, true);
-        } catch (Exception $e) {
-            $this->bailOut($e);
-        }
-        $callbacks = $this->TEST->ECOM->getRegisteredEventCallback(255);
-        if (is_array($callbacks) && count($callbacks)) {
-            static::fail(
-                'unregisterCallbacks is currently not working for MP accounts. If this test runs with such ' .
-                'credential, this failure is natural.'
-            );
-        } else {
-            static::assertTrue((is_array($callbacks) && !count($callbacks)));
-        }
-    }
-
-    /**
-     * @return null
-     * @throws Exception
-     * @noinspection PhpUnusedPrivateMethodInspection
-     */
-    private function getPaymentMethodsData()
-    {
-        $paymentMethods = $this->TEST->share('paymentMethods');
-        if (empty($paymentMethods)) {
-            $this->getPaymentMethods();
-            $paymentMethods = $this->TEST->share('paymentMethods');
-        }
-        if (isset($paymentMethods[0])) {
-            return $paymentMethods[0];
-        }
-
-        return null;
     }
 
     /**
@@ -1343,6 +1219,120 @@ class resursBankTest extends TestCase
                 )
             );
         }
+    }
+
+    /**
+     * @test
+     *
+     * @param string $govId
+     * @param bool $staticProductPrice
+     * @return array
+     * @throws Exception
+     */
+    public function generateSimpleSimplifiedInvoiceQuantityOrder($govId = '198305147715', $staticProductPrice = false)
+    {
+        $this->unitSetup();
+        $customerData = $this->getHappyCustomerData();
+        $this->TEST->ECOM->addOrderLine(
+            'PR01',
+            'PR01',
+            $this->getProductPrice($staticProductPrice),
+            25,
+            'st',
+            'ORDER_LINE',
+            100
+        );
+        $this->TEST->ECOM->addOrderLine(
+            'PR02',
+            'PR02',
+            $this->getProductPrice($staticProductPrice),
+            25,
+            'st',
+            'ORDER_LINE',
+            100
+        );
+        $this->TEST->ECOM->addOrderLine(
+            'PR03',
+            'PR03',
+            $this->getProductPrice($staticProductPrice),
+            25,
+            'st',
+            'ORDER_LINE',
+            100
+        );
+        $this->TEST->ECOM->addOrderLine(
+            'PR04',
+            'PR04',
+            $this->getProductPrice($staticProductPrice),
+            25,
+            'st',
+            'ORDER_LINE',
+            100
+        );
+        $this->TEST->ECOM->setBillingByGetAddress($customerData);
+        $this->TEST->ECOM->setCustomer($govId, '0808080808', '0707070707', 'test@test.com', 'NATURAL');
+        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+        $this->TEST->ECOM->setMetaData('metaKeyTestTime', time());
+        $this->TEST->ECOM->setMetaData('metaKeyTestMicroTime', microtime(true));
+        $response = $this->TEST->ECOM->createPayment($this->getMethodId());
+
+        return $response;
+    }
+
+    /**
+     * @param bool $static
+     * @return int
+     */
+    public function getProductPrice($static = false)
+    {
+        if (!$static) {
+            return rand(30, 90);
+        }
+
+        return 90;
+    }
+
+    /**
+     * Get mathching result from payment.
+     *
+     * @param $paymentId
+     * @param array $requestFor
+     * @param bool $getAsData
+     * @return bool|array
+     * @throws Exception
+     */
+    private function getPaymentStatusQuantity($paymentId, $requestFor = [], $getAsData = false)
+    {
+        // This is from newer releases arrays instead of objects (unfortunately).
+        // Mostly because some objects can't be copied as their key values are manipulated
+        // in some foreach loops (which is very unwelcome).
+        $statusList = $this->TEST->ECOM->getPaymentDiffByStatus($paymentId);
+        $statusListTable = $this->TEST->ECOM->getPaymentDiffAsTable($statusList);
+        $expectedMatch = count($requestFor);
+        $matches = 0;
+
+        foreach ($requestFor as $type => $reqList) {
+            if (isset($reqList[1])) {
+                $setArt = $reqList[0];
+                $setQuantity = isset($reqList[1]) ? $reqList[1] : '';
+                foreach ($statusListTable as $article) {
+                    if ($article['artNo'] === $setArt && (int)$article[$type] === (int)$setQuantity) {
+                        $matches++;
+                    }
+                }
+            }
+        }
+
+        if ($getAsData) {
+            return [
+                'expectedMatch' => $expectedMatch,
+                'matches' => $matches,
+                'requestFor' => $requestFor,
+                'statusListTable' => $statusListTable,
+            ];
+        }
+
+        return $expectedMatch === $matches;
     }
 
     /**
@@ -1515,49 +1505,6 @@ class resursBankTest extends TestCase
         static::assertTrue(
             $paymentStatusQuantity
         );
-    }
-
-    /**
-     * Get mathching result from payment.
-     *
-     * @param $paymentId
-     * @param array $requestFor
-     * @param bool $getAsData
-     * @return bool|array
-     * @throws Exception
-     */
-    private function getPaymentStatusQuantity($paymentId, $requestFor = [], $getAsData = false)
-    {
-        // This is from newer releases arrays instead of objects (unfortunately).
-        // Mostly because some objects can't be copied as their key values are manipulated
-        // in some foreach loops (which is very unwelcome).
-        $statusList = $this->TEST->ECOM->getPaymentDiffByStatus($paymentId);
-        $statusListTable = $this->TEST->ECOM->getPaymentDiffAsTable($statusList);
-        $expectedMatch = count($requestFor);
-        $matches = 0;
-
-        foreach ($requestFor as $type => $reqList) {
-            if (isset($reqList[1])) {
-                $setArt = $reqList[0];
-                $setQuantity = isset($reqList[1]) ? $reqList[1] : '';
-                foreach ($statusListTable as $article) {
-                    if ($article['artNo'] === $setArt && (int)$article[$type] === (int)$setQuantity) {
-                        $matches++;
-                    }
-                }
-            }
-        }
-
-        if ($getAsData) {
-            return [
-                'expectedMatch' => $expectedMatch,
-                'matches' => $matches,
-                'requestFor' => $requestFor,
-                'statusListTable' => $statusListTable,
-            ];
-        }
-
-        return $expectedMatch === $matches;
     }
 
     /**
@@ -1961,8 +1908,8 @@ class resursBankTest extends TestCase
 
         try {
             // Running unreg through rest as of 1.3.31
+            $this->TEST->ECOM->setRegisterCallbacksViaRest();
             $this->setRegisterCallback(true);
-            $this->TEST->ECOM->setRegisterCallbacksViaRest(true);
             $this->TEST->ECOM->unregisterEventCallback(76, true);
             $this->TEST->ECOM->unregisterEventCallback(255, true);
         } catch (Exception $e) {
@@ -2027,8 +1974,11 @@ class resursBankTest extends TestCase
     public function getCallbacksByRest()
     {
         $this->setRegisterCallback(true);
+        $start = microtime(true);
         $callbackList = $this->TEST->ECOM->getCallBacksByRest(true);
-        static::assertGreaterThan(1, count($callbackList));
+        $end = microtime(true);
+        $diff = $end - $start;
+        static::assertGreaterThan(1, count($callbackList), 'Time diff is ' . $diff);
     }
 
     /**
@@ -2159,6 +2109,48 @@ class resursBankTest extends TestCase
     }
 
     /**
+     * @return bool
+     * @throws ExceptionHandler
+     */
+    private function canProxy()
+    {
+        $return = false;
+
+        $ipList = [
+            '212.63.208.',
+            '10.1.1.',
+            '81.231.10.114',
+        ];
+
+        $wrapperData = (new CurlWrapper())
+            ->setConfig((new WrapperConfig())->setUserAgent('ProxyTestAgent'))
+            ->request('https://ipv4.netcurl.org')->getParsed();
+        if (isset($wrapperData->ip)) {
+            foreach ($ipList as $ip) {
+                if (preg_match('/' . $ip . '/', $wrapperData->ip)) {
+                    $return = true;
+                    break;
+                }
+            }
+        }
+
+        return $return;
+    }
+
+    /**
+     * @param $addr
+     * @return bool
+     */
+    private function isProperIp($addr)
+    {
+        $not = ['127.0.0.1'];
+        return filter_var(
+                trim($addr),
+                FILTER_VALIDATE_IP
+            ) && !in_array(trim($addr), $not);
+    }
+
+    /**
      * @test
      * Put order with quantity 100. Annul 50, debit 50, credit 25. And then kill the full order.
      * Expected result is:
@@ -2281,5 +2273,24 @@ class resursBankTest extends TestCase
         $this->unitSetup();
         $this->TEST->ECOM->resetInvoiceNumber();
         static::assertTrue($this->TEST->unshare('thisKey'));
+    }
+
+    /**
+     * @return null
+     * @throws Exception
+     * @noinspection PhpUnusedPrivateMethodInspection
+     */
+    private function getPaymentMethodsData()
+    {
+        $paymentMethods = $this->TEST->share('paymentMethods');
+        if (empty($paymentMethods)) {
+            $this->getPaymentMethods();
+            $paymentMethods = $this->TEST->share('paymentMethods');
+        }
+        if (isset($paymentMethods[0])) {
+            return $paymentMethods[0];
+        }
+
+        return null;
     }
 }
