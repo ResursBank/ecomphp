@@ -68,7 +68,7 @@ if (!defined('ECOMPHP_VERSION')) {
     define('ECOMPHP_VERSION', (new Generic())->getVersionByAny(__FILE__, 3, ResursBank::class));
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20201110');
+    define('ECOMPHP_MODIFY_DATE', '20201215');
 }
 
 /**
@@ -5442,7 +5442,7 @@ class ResursBank
                 if (isset($parsedResponse->location)) {
                     $this->resetPayload();
 
-                    return $parsedResponse->location;
+                    return $this->getSecureUrl($parsedResponse->location);
                 } else {
                     if (isset($parsedResponse->error)) {
                         $error[] = $parsedResponse->error;
@@ -9137,6 +9137,22 @@ class ResursBank
     {
         $this->prepareAutoDebitableTypes();
         return $this->autoDebitableTypes;
+    }
+
+    /**
+     * @param $url
+     * @return string|string[]|null
+     * @since 1.3.47
+     */
+    public function getSecureUrl($url)
+    {
+        $return = $url;
+
+        if ($this->isFlag('HEAL_URL')) {
+            $return = preg_replace('/^http:/', 'https:', $returnLocation);
+        }
+
+        return $return;
     }
 
     /**
