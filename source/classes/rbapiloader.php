@@ -2073,6 +2073,7 @@ class ResursBank
 
     /**
      * @return bool
+     * @since 1.3.47
      */
     public function getRegisterCallbacksViaRest()
     {
