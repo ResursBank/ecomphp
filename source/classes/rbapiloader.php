@@ -9150,7 +9150,7 @@ class ResursBank
         $return = $url;
 
         if ($this->isFlag('HEAL_URL')) {
-            $return = preg_replace('/^http:/', 'https:', $returnLocation);
+            $return = preg_replace('/^http:/', 'https:', $return);
         }
 
         return $return;
