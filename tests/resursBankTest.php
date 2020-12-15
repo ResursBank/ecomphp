@@ -2279,20 +2279,10 @@ class resursBankTest extends TestCase
      */
     public function getVersions()
     {
-        $byComposer = (new Generic())->getVersionByComposer(__FILE__, 3);
+        // Not testing by composer since composer.json may eventually not have the version tag.
+        //$byComposer = (new Generic())->getVersionByComposer(__FILE__);
         $byGeneric = (new Generic())->getVersionByAny(__FILE__, 3, ResursBank::class);
-        static::assertTrue(!empty($byGeneric) && !empty(ECOMPHP_VERSION) && !empty($byComposer));
-    }
-
-    /**
-     * @test
-     * @testdox Clean up special test data from share file
-     */
-    public function finalTest()
-    {
-        $this->unitSetup();
-        $this->TEST->ECOM->resetInvoiceNumber();
-        static::assertTrue($this->TEST->unshare('thisKey'));
+        static::assertTrue(!empty($byGeneric) && !empty(ECOMPHP_VERSION));
     }
 
     /**
@@ -2312,5 +2302,16 @@ class resursBankTest extends TestCase
         }
 
         return null;
+    }
+
+    /**
+     * @test
+     * @testdox Clean up special test data from share file
+     */
+    public function finalTest()
+    {
+        $this->unitSetup();
+        $this->TEST->ECOM->resetInvoiceNumber();
+        static::assertTrue($this->TEST->unshare('thisKey'));
     }
 }
