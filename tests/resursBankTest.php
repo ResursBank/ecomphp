@@ -1548,7 +1548,7 @@ class resursBankTest extends TestCase
             $secondCode = $e->getCode();
         }
 
-        static::assertTrue($firstCode === 1007 && $secondCode === 'TEST_ERROR_CODE_AS_STRING_WITHOUT_CONSTANT');
+        static::assertTrue($firstCode === 1005 && $secondCode === 'TEST_ERROR_CODE_AS_STRING_WITHOUT_CONSTANT');
     }
 
     /**
