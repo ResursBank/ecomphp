@@ -79,7 +79,7 @@ if (!defined('ECOMPHP_MODIFY_DATE')) {
 /**
  * Class ResursBank
  * @package Resursbank\RBEcomPHP
- * @version 1.3.47
+ * @version 1.3.48
  */
 class ResursBank
 {
