@@ -960,7 +960,7 @@ class ResursBank
     {
         if (Flag::isFlag('ALLOW_ECOM_SESSION')) {
             try {
-                if (!session_id()) {
+                if (session_status() === PHP_SESSION_NONE) {
                     @session_start();
                     $this->ecomSession = session_id();
                     if (!empty($this->ecomSession)) {
