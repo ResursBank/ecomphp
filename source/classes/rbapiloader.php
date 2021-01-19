@@ -6472,8 +6472,16 @@ class ResursBank
      */
     public function getPayloadTotal()
     {
-        $orderData = $this->getOrderData();
-        return isset($orderData['totalAmount']) ? (float)$orderData['totalAmount'] : (float)0;
+        $return = 0;
+
+        try {
+            $orderData = $this->getOrderData();
+            $return = isset($orderData['totalAmount']) ? $orderData['totalAmount'] : 0;
+        } catch (Exception $e) {
+            // Just ignore this.
+        }
+
+        return (float)$return;
     }
 
     /**
