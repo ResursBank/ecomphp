@@ -464,14 +464,20 @@ class resursBankTest extends TestCase
      * Get the payment method ID from the internal getMethod()
      *
      * @param string $specificType
+     * @param bool $requireNoInit
      * @return mixed
      * @throws Exception
      * @noinspection ParameterDefaultValueIsNotNullInspection
      */
-    public function getMethodId($specificType = 'INVOICE')
+    public function getMethodId($specificType = 'INVOICE', $requireNoInit = false)
     {
-        $this->unitSetup();
-        $specificMethod = $this->getMethod($specificType);
+        if (empty($specificType)) {
+            $specificType = 'INVOICE';
+        }
+        if (!$requireNoInit) {
+            $this->unitSetup();
+        }
+        $specificMethod = $this->getMethod($specificType, 'NATURAL', $requireNoInit);
         if (isset($specificMethod->id)) {
             return $specificMethod->id;
         }
@@ -484,15 +490,18 @@ class resursBankTest extends TestCase
      *
      * @param string $specificType
      * @param string $customerType
+     * @param bool $requireNoInit
      * @return mixed
      * @throws Exception
      * @noinspection ParameterDefaultValueIsNotNullInspection
      */
-    public function getMethod($specificType = 'INVOICE', $customerType = 'NATURAL')
+    public function getMethod($specificType = 'INVOICE', $customerType = 'NATURAL', $requireNoInit = false)
     {
-        $this->unitSetup();
+        if (!$requireNoInit) {
+            $this->unitSetup();
+        }
         $return = null;
-        $this->getPaymentMethods(false);
+        $this->getPaymentMethods(false, $requireNoInit);
         $prePop = $this->TEST->share('paymentMethods');
         $methodGroup = array_pop($prePop);
         foreach ($methodGroup as $curMethod) {
@@ -515,11 +524,14 @@ class resursBankTest extends TestCase
      * @test
      * @testdox Test if getPaymentMethods work and in the same time cache it for future use
      * @param bool $noAssert
+     * @param bool $requireNoInit
      * @throws Exception
      */
-    public function getPaymentMethods($noAssert = false)
+    public function getPaymentMethods($noAssert = false, $requireNoInit = false)
     {
-        $this->unitSetup();
+        if (!$requireNoInit) {
+            $this->unitSetup();
+        }
         $methodList = $this->TEST->share('paymentMethods');
         /** @noinspection NotOptimalIfConditionsInspection */
         if ((is_array($methodList) && !count($methodList)) || !is_array($methodList)) {
@@ -2302,6 +2314,26 @@ class resursBankTest extends TestCase
         }
 
         return null;
+    }
+
+    /**
+     * @test
+     */
+    public function getMinMaxByAmount()
+    {
+        $this->unitSetup();
+        $customerData = $this->getHappyCustomerData();
+        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RCO);
+        $this->TEST->ECOM->setBillingByGetAddress($customerData);
+        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
+        $this->TEST->ECOM->setCustomer('8305147715', '0808080808', '0707070707', 'test@test.com', 'NATURAL');
+        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+        $this->TEST->ECOM->addOrderLine('PR01', 'PR01', 90, 25, 'st', 'ORDER_LINE', 50);
+        $result = $this->TEST->ECOM->getMinMaxByPayload($this->getMethodId(null, true));
+        $this->TEST->ECOM->createPayment(sha1(microtime(true)));
+        $checkoutResponse = $this->TEST->ECOM->getFullCheckoutResponse();
+        $hasIframeUrl = (bool)preg_match('/^http/', $checkoutResponse->iframeUrlExtracted);
+        static::assertTrue(($result && $hasIframeUrl));
     }
 
     /**

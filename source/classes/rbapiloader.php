@@ -59,6 +59,7 @@ use TorneLIB\Helpers\NetUtils;
 use TorneLIB\Model\Type\dataType;
 use TorneLIB\Model\Type\requestMethod;
 use TorneLIB\Module\Bit;
+use TorneLIB\Module\Network\Domain;
 use TorneLIB\Module\Network\NetWrapper;
 use TorneLIB\MODULE_NETWORK;
 use TorneLIB\Utils\Generic;
@@ -2741,7 +2742,6 @@ class ResursBank
      * Enforce another flow than the simplified flow
      *
      * @param int $flowType
-     *
      * @since 1.0.0
      * @since 1.1.0
      * @deprecated 1.0.26 Use setPreferredPaymentFlowService
@@ -2756,7 +2756,6 @@ class ResursBank
      * Configure EComPHP to use a specific flow
      *
      * @param int $flowType
-     *
      * @since 1.0.26
      * @since 1.1.26
      * @since 1.2.0
@@ -2783,6 +2782,7 @@ class ResursBank
      * @param $curlProxyAddr
      * @param $curlProxyType
      * @return ResursBank
+     * @throws Exception
      * @since 1.3.41
      */
     public function setProxy($curlProxyAddr, $curlProxyType)
@@ -3835,6 +3835,7 @@ class ResursBank
      * @param bool $limitByMinMax By default, ecom only shows priceinformation based on the $amount.
      * @param bool $bodyOnly
      * @return false|mixed|string|null
+     * @throws ExceptionHandler
      * @throws ResursException
      * @since 1.3.30
      */
@@ -3956,19 +3957,65 @@ class ResursBank
     /**
      * If payment amount is within allowed limits of payment method
      *
-     * @param $totalAmount
-     * @param $min
-     * @param $max
+     * @param int $totalAmount
+     * @param int $minimumAmount
+     * @param int $maxmimumAMount
      * @return bool
      */
-    public function getMinMax($totalAmount, $min, $max)
+    public function getMinMax($totalAmount = 0, $minimumAmount = 0, $maxmimumAMount = 0)
     {
         $return = false;
-        if ($totalAmount >= $min && $totalAmount <= $max) {
+        if ($totalAmount >= $minimumAmount && $totalAmount <= $maxmimumAMount) {
             $return = true;
         }
 
         return $return;
+    }
+
+    /**
+     * @param $paymentMethod
+     * @param int $totalAmount Not necessary if payload is present.
+     * @return bool
+     * @throws ResursException
+     */
+    public function getMinMaxByPayload($paymentMethod, $totalAmount = null)
+    {
+        if (is_string($paymentMethod)) {
+            $paymentMethod = $this->getPaymentMethodSpecific($paymentMethod);
+        } elseif (!is_object($paymentMethod)) {
+            throw new ResursException(
+                sprintf('%s: Wrong request specification.', __FUNCTION__),
+                RESURS_EXCEPTIONS::INTERNAL_MINMAX_EXCEPTION
+            );
+        }
+
+        $minLimit = 0;
+        $maxLimit = 0;
+        if (is_object($paymentMethod)) {
+            $minLimit = isset($paymentMethod->minLimit) ? $paymentMethod->minLimit : 0;
+            $maxLimit = isset($paymentMethod->maxLimit) ? $paymentMethod->maxLimit : 0;
+        }
+        $currentFlow = $this->getPreferredPaymentFlowService();
+        $this->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
+        $payloadTotal = $this->getPayloadTotal();
+        $this->setPreferredPaymentFlowService($currentFlow);
+
+        if ($totalAmount === null && $payloadTotal > 0) {
+            $totalAmount = $payloadTotal;
+        }
+
+        if (!$totalAmount) {
+            throw new ResursException(
+                sprintf('%s: Totalamount has no value.', __FUNCTION__),
+                RESURS_EXCEPTIONS::INTERNAL_MINMAX_EXCEPTION
+            );
+        }
+
+        return $this->getMinMax(
+            (float)$totalAmount,
+            $minLimit,
+            $maxLimit
+        );
     }
 
     /**
@@ -5551,7 +5598,6 @@ class ResursBank
      * Handle post errors and extract eventual errors from a http body
      *
      * @param $e
-     *
      * @throws Exception
      * @since 1.0.38
      * @since 1.1.38
@@ -5631,6 +5677,16 @@ class ResursBank
      */
     public function getFullCheckoutResponse()
     {
+        if (isset($this->fullCheckoutResponse->iframe) && !empty($this->fullCheckoutResponse->iframe)) {
+            $this->fullCheckoutResponse->iframeUrlExtracted = null;
+            $urlList = (new Domain())->getUrlsFromHtml($this->fullCheckoutResponse->iframe);
+            if (is_array($urlList) && count($urlList)) {
+                $url = array_pop($urlList);
+                if (!empty($url)) {
+                    $this->fullCheckoutResponse->iframeUrlExtracted = $url;
+                }
+            }
+        }
         return $this->fullCheckoutResponse;
     }
 
@@ -6512,7 +6568,7 @@ class ResursBank
         }
         throw new ResursException(
             sprintf(
-                '%s exception: could not fetch th ocShopScript from iframe.'
+                '%s exception: could not fetch th ocShopScript from iframe.', __FUNCTION__
             )
         );
     }
@@ -6590,7 +6646,6 @@ class ResursBank
      *
      * @param $arrObjData
      * @param array $arrSkipIndices
-     *
      * @return array
      */
     private function objectsIntoArray($arrObjData, $arrSkipIndices = [])
@@ -6605,7 +6660,7 @@ class ResursBank
                 if (is_object($value) || is_array($value)) {
                     $value = $this->objectsIntoArray($value, $arrSkipIndices); // recursive call
                 }
-                if (@in_array($index, $arrSkipIndices)) {
+                if (in_array($index, $arrSkipIndices, true)) {
                     continue;
                 }
                 $arrData[$index] = $value;
@@ -6625,7 +6680,6 @@ class ResursBank
      *
      * @param null $cardNumber
      * @param null $cardAmount
-     *
      * @since 1.0.2
      * @since 1.1.2
      */
