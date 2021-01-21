@@ -69,7 +69,7 @@ if (!defined('ECOMPHP_VERSION')) {
     define('ECOMPHP_VERSION', (new Generic())->getVersionByAny(__FILE__, 3, ResursBank::class));
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20210120');
+    define('ECOMPHP_MODIFY_DATE', '20210121');
 }
 
 /**
@@ -3021,8 +3021,13 @@ class ResursBank
                 if (empty($exceptionCode) || $exceptionCode === '0') {
                     $exceptionCode = RESURS_EXCEPTIONS::UNKOWN_SOAP_EXCEPTION_CODE_ZERO;
                 }
-                // Cast internal soap errors into a new, since the exception code is lost
-                throw new ResursException($exceptionMessage, $exceptionCode, $serviceRequestException);
+                // Cast internal soap errors into a new, since the exception code is lost,
+                // but also include which service that has been called.
+                throw new ResursException(
+                    sprintf('SOAP Service %s: %s', $serviceName, $exceptionMessage),
+                    $exceptionCode,
+                    $serviceRequestException
+                );
             }
             $ParsedResponse = $Service->getParsed();
             $ResponseCode = $Service->getCode();
