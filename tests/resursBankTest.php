@@ -1453,6 +1453,22 @@ class resursBankTest extends TestCase
 
     /**
      * @test
+     * @throws Exception
+     */
+    public function getPaymentTable()
+    {
+        $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
+        // Render a a table with the current payment diff.
+        $primaryTableDiff = $this->TEST->ECOM->getPaymentDiffByStatus($payment->paymentId);
+        // Get list with order lines based on what's supported for each product.
+        $primaryStatusList = $this->TEST->ECOM->getPaymentDiffByStatus($payment->paymentId, true);
+        static::assertTrue(
+            (count($primaryTableDiff) === 4 && count($primaryStatusList) === 4)
+        );
+    }
+
+    /**
+     * @test
      */
     public function annulByNetWrapper()
     {
