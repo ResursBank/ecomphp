@@ -931,7 +931,6 @@ class ResursBank
             $this->URLS[$ServiceName] = $this->environment . $ServiceName . '?wsdl';
         }
         $this->getSslValidation();
-
         return $this;
     }
 
@@ -2972,6 +2971,7 @@ class ResursBank
         $soapBody = null;
         if (!empty($serviceNameUrl) && !is_null($this->CURL)) {
             $Service = $this->CURL->request($serviceNameUrl);
+
             try {
                 // Using call_user_func_array requires the parameters at this level to be pushed into an array.
                 //$RequestService = call_user_func_array(array($Service, $serviceName), [$resursParameters]);
@@ -6699,7 +6699,7 @@ class ResursBank
     /**
      * Find out if a payment is creditable
      *
-     * @param array|string|object $paymentArrayOrPaymentId
+     * @param array|string|object|null $paymentArrayOrPaymentId
      * @return bool
      * @throws Exception
      */
@@ -6761,7 +6761,7 @@ class ResursBank
     /**
      * A payment is annullable if the payment is debitable
      *
-     * @param array|string|object $paymentArrayOrPaymentId
+     * @param array|string|object|null $paymentArrayOrPaymentId
      * @return bool
      * @throws Exception
      * @since 1.0.2
