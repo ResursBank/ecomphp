@@ -80,7 +80,7 @@ if (!defined('ECOMPHP_MODIFY_DATE')) {
 /**
  * Class ResursBank
  * @package Resursbank\RBEcomPHP
- * @version 1.3.52
+ * @version 1.3.53
  */
 class ResursBank
 {
@@ -2679,11 +2679,7 @@ class ResursBank
      * Trigger the registered callback event TEST if set. Returns true if trigger call was successful, otherwise false
      * (Observe that this not necessarily is a successful completion of the callback)
      *
-     * @param null $paramValue1
-     * @param null $paramValue2
-     * @param null $paramValue3
-     * @param null $paramValue4
-     * @param null $paramValue5
+     * @param array $params
      * @return bool
      * @throws ExceptionHandler
      * @since 1.0.2
