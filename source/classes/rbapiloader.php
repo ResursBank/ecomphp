@@ -2679,13 +2679,26 @@ class ResursBank
      * Trigger the registered callback event TEST if set. Returns true if trigger call was successful, otherwise false
      * (Observe that this not necessarily is a successful completion of the callback)
      *
+     * @param null $paramValue1
+     * @param null $paramValue2
+     * @param null $paramValue3
+     * @param null $paramValue4
+     * @param null $paramValue5
      * @return bool
-     * @throws Exception
+     * @throws ExceptionHandler
      * @since 1.0.2
      * @since 1.1.2
      */
-    public function triggerCallback()
-    {
+    public function triggerCallback($params = []) {
+        if (empty($params)) {
+            $params = [
+                rand(10000, 30000),
+                rand(10000, 30000),
+                rand(10000, 30000),
+                rand(10000, 30000),
+                rand(10000, 30000),
+            ];
+        }
         $this->InitializeServices();
         $envUrl = $this->env_test;
         $curEnv = $this->getEnvironment();
@@ -2696,13 +2709,7 @@ class ResursBank
         $eventRequest = $this->CURL->request($serviceUrl);
         $eventParameters = [
             'eventType' => 'TEST',
-            'param' => [
-                rand(10000, 30000),
-                rand(10000, 30000),
-                rand(10000, 30000),
-                rand(10000, 30000),
-                rand(10000, 30000),
-            ],
+            'param' => $params,
         ];
         try {
             /** @noinspection PhpUndefinedMethodInspection */
