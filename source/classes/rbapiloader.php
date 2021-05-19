@@ -787,7 +787,8 @@ class ResursBank
         $targetEnvironment = RESURS_ENVIRONMENTS::TEST,
         $debug = false,
         $paramFlagSet = []
-    ) {
+    )
+    {
         if (is_array($paramFlagSet) && count($paramFlagSet)) {
             $this->preSetEarlyFlags($paramFlagSet);
         }
@@ -1878,7 +1879,8 @@ class ResursBank
         $url = null,
         $expectedHttpAcceptCode = '200',
         $expectedHttpErrorCode = '403'
-    ) {
+    )
+    {
         $this->validateExternalUrl = [
             'url' => $url,
             'http_accept' => $expectedHttpAcceptCode,
@@ -1950,7 +1952,8 @@ class ResursBank
     public function setCallbackDigest(
         $digestSaltString = '',
         $callbackType = RESURS_CALLBACK_TYPES::NOT_SET
-    ) {
+    )
+    {
         return $this->setCallbackDigestSalt($digestSaltString, $callbackType);
     }
 
@@ -1967,7 +1970,8 @@ class ResursBank
     public function setCallbackDigestSalt(
         $digestSaltString = '',
         $callbackType = RESURS_CALLBACK_TYPES::NOT_SET
-    ) {
+    )
+    {
         // Make sure the digestSaltString is never empty
         if (!empty($digestSaltString)) {
             $currentDigest = $digestSaltString;
@@ -2116,7 +2120,8 @@ class ResursBank
         $digestData = [],
         $basicAuthUserName = null,
         $basicAuthPassword = null
-    ) {
+    )
+    {
         $registerCallbackException = null;
         $requestedCallbackType = $callbackType;
         $this->InitializeServices();
@@ -2476,7 +2481,8 @@ class ResursBank
         $callbackType = RESURS_CALLBACK_TYPES::NOT_SET,
         $isMultiple = false,
         $forceSoap = false
-    ) {
+    )
+    {
         $callbackArray = [];
         if ($isMultiple) {
             $this->BIT = new Bit();
@@ -2685,7 +2691,8 @@ class ResursBank
      * @since 1.0.2
      * @since 1.1.2
      */
-    public function triggerCallback($params = []) {
+    public function triggerCallback($params = [])
+    {
         if (empty($params)) {
             $params = [
                 rand(10000, 30000),
@@ -3725,7 +3732,8 @@ class ResursBank
         $returnBody = false,
         $callCss = 'costofpurchase.css',
         $hrefTarget = '_blank'
-    ) {
+    )
+    {
         $returnHtml = $this->postService('getCostOfPurchaseHtml', [
             'paymentMethodId' => $paymentMethod,
             'amount' => $amount,
@@ -3849,7 +3857,8 @@ class ResursBank
         $iframe = false,
         $limitByMinMax = true,
         $bodyOnly = false
-    ) {
+    )
+    {
         $return = '';
 
         if ($iframe) {
@@ -4662,7 +4671,8 @@ class ResursBank
         $unitMeasure = 'st',
         $articleType = 'ORDER_LINE',
         $quantity = 1
-    ) {
+    )
+    {
         $this->specLineCustomization = true;
 
         if (!is_array($this->SpecLines)) {
@@ -6095,7 +6105,8 @@ class ResursBank
         $postalArea,
         $postalCode,
         $country
-    ) {
+    )
+    {
         $ReturnAddress = [
             'fullName' => $fullName,
             'firstName' => $firstName,
@@ -6257,7 +6268,8 @@ class ResursBank
         $postalArea,
         $postalCode,
         $country
-    ) {
+    )
+    {
         $this->setAddressPayload(
             'address',
             $this->renderAddress(
@@ -6297,7 +6309,8 @@ class ResursBank
         $postalArea,
         $postalCode,
         $country
-    ) {
+    )
+    {
         $this->setAddressPayload(
             'deliveryAddress',
             $this->renderAddress(
@@ -6332,7 +6345,8 @@ class ResursBank
         $email = '',
         $customerType = '',
         $contactGovernmentId = ''
-    ) {
+    )
+    {
         if (!isset($this->Payload['customer'])) {
             $this->Payload['customer'] = [];
         }
@@ -6405,7 +6419,8 @@ class ResursBank
         $forceSigning = false,
         $backUrl = null,
         $encodeType = RESURS_URL_ENCODE_TYPES::NONE
-    ) {
+    )
+    {
         $SigningPayload['signing'] = [
             'successUrl' => $this->getEncodedSigningUrl($successUrl, RESURS_URL_ENCODE_TYPES::SUCCESSURL, $encodeType),
             'failUrl' => $this->getEncodedSigningUrl($failUrl, RESURS_URL_ENCODE_TYPES::FAILURL, $encodeType),
@@ -7365,7 +7380,8 @@ class ResursBank
         $customPayloadItemList = [],
         $runOnce = false,
         $skipSpecValidation = false
-    ) {
+    )
+    {
         return $this->paymentFinalize($paymentId, $customPayloadItemList, $runOnce, $skipSpecValidation);
     }
 
@@ -7387,7 +7403,8 @@ class ResursBank
         $customPayloadItemList = [],
         $runOnce = false,
         $skipSpecValidation = false
-    ) {
+    )
+    {
         if (!is_array($customPayloadItemList)) {
             $customPayloadItemList = [];
         }
@@ -7502,7 +7519,8 @@ class ResursBank
         $paymentId = '',
         $customPayloadItemList = [],
         $payloadType = RESURS_AFTERSHOP_RENDER_TYPES::NONE
-    ) {
+    )
+    {
         $finalAfterShopSpec = [
             'paymentId' => $paymentId,
         ];
@@ -7775,7 +7793,8 @@ class ResursBank
     public function sanitizeAfterShopSpec(
         $paymentIdOrPaymentObjectData = '',
         $renderType = RESURS_AFTERSHOP_RENDER_TYPES::NONE
-    ) {
+    )
+    {
 
         $returnSpecObject = [];
 
@@ -8103,7 +8122,8 @@ class ResursBank
         $byCallbackEvent = RESURS_CALLBACK_TYPES::NOT_SET,
         $callbackEventDataArrayOrString = [],
         $paymentMethodObject = null
-    ) {
+    )
+    {
 
         if (is_string($paymentIdOrPaymentObject)) {
             $paymentData = $this->getPayment($paymentIdOrPaymentObject, false);
@@ -8823,7 +8843,8 @@ class ResursBank
         $customPayloadItemList = [],
         $runOnce = false,
         $skipSpecValidation = false
-    ) {
+    )
+    {
         return $this->paymentAnnul($paymentId, $customPayloadItemList, $runOnce, $skipSpecValidation);
     }
 
@@ -8846,7 +8867,8 @@ class ResursBank
         $customPayloadItemList = [],
         $runOnce = false,
         $skipSpecValidation = false
-    ) {
+    )
+    {
         if (!is_array($customPayloadItemList)) {
             $customPayloadItemList = [];
         }
@@ -8893,7 +8915,8 @@ class ResursBank
         $customPayloadItemList = [],
         $runOnce = false,
         $skipSpecValidation = false
-    ) {
+    )
+    {
         return $this->paymentCredit($paymentId, $customPayloadItemList, $runOnce, $skipSpecValidation);
     }
 
@@ -8917,7 +8940,8 @@ class ResursBank
         $customPayloadItemList = [],
         $runOnce = false,
         $skipSpecValidation = false
-    ) {
+    )
+    {
         if (!is_array($customPayloadItemList)) {
             $customPayloadItemList = [];
         }
@@ -9142,7 +9166,8 @@ class ResursBank
      */
     public function getOrderStatusStringByReturnCode(
         $returnCode = RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET
-    ) {
+    )
+    {
         $returnValue = '';
 
         switch (true) {
@@ -9193,7 +9218,8 @@ class ResursBank
         $saltKey = '',
         $inboundDigest = '',
         $callbackResult = null
-    ) {
+    )
+    {
         $digestCompiled = $callbackPaymentId . (!is_null($callbackResult) ? $callbackResult : null) . $saltKey;
         $digestMd5 = strtoupper(md5($digestCompiled));
         $digestSha = strtoupper(sha1($digestCompiled));
