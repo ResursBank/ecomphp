@@ -4440,7 +4440,7 @@ class ResursBank
     }
 
     /**
-     * Set a logged in username (will be merged with the client name at aftershopFlow-level)
+     * Set a logged in username (will be merged with the client name at afterShopFlow-level)
      *
      * @param string $currentUsername
      *
