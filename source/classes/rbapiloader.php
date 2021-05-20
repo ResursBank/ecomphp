@@ -3493,9 +3493,9 @@ class ResursBank
             $this->paymentMethodNames = [];
             foreach ($methods as $objectMethod) {
                 if (isset($objectMethod->id) && !empty($objectMethod->id) && !in_array(
-                        $objectMethod->id,
-                        $this->paymentMethodNames
-                    )) {
+                    $objectMethod->id,
+                    $this->paymentMethodNames
+                )) {
                     $this->paymentMethodNames[$objectMethod->id] = $objectMethod->id;
                 }
             }
@@ -5039,9 +5039,9 @@ class ResursBank
                         $trimmedCustomerValue = $customerValue;
                     }
                     if (!is_array($customerValue) && !in_array(
-                            $customerKey,
-                            $mandatoryExtendedCustomerFields
-                        ) && empty($trimmedCustomerValue)) {
+                        $customerKey,
+                        $mandatoryExtendedCustomerFields
+                    ) && empty($trimmedCustomerValue)) {
                         unset($this->Payload['customer'][$customerKey]);
                     }
                 }
@@ -6770,7 +6770,8 @@ class ResursBank
         }
         throw new ResursException(
             sprintf(
-                '%s exception: could not fetch th ocShopScript from iframe.', __FUNCTION__
+                '%s exception: could not fetch th ocShopScript from iframe.',
+                __FUNCTION__
             )
         );
     }
@@ -8463,7 +8464,7 @@ class ResursBank
             }
             try {
                 $this->autoDebitablePaymentMethod = $this->getPaymentMethodSpecific($paymentData);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 throw new ResursException(
                     'getPaymentMethods Problem',
                     RESURS_EXCEPTIONS::PAYMENT_METHODS_ERROR,
