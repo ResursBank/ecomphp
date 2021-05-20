@@ -767,8 +767,6 @@ class ResursBank
      */
     private $autoDebitablePaymentMethod;
 
-    /////////// INITIALIZERS
-
     /**
      * Constructor method for Resurs Bank WorkFlows
      *
@@ -1673,9 +1671,6 @@ class ResursBank
         return $this;
     }
 
-
-    /////////// Standard getters and setters
-
     /**
      * Returns true if the URL call was set to be unsafe (disabled)
      *
@@ -1782,12 +1777,6 @@ class ResursBank
         return (new NetUtils())->getGitTagsByUrl($this->gitUrl);
     }
 
-
-
-
-
-    /////////// STRING BEHAVIOUR
-
     /**
      * Get current user agent info IF has been forced to set (returns null if we are using default)
      *
@@ -1812,9 +1801,6 @@ class ResursBank
     {
         $this->internalFlags = [];
     }
-
-
-    /////////// CALLBACK BEHAVIOUR HELPERS
 
     /**
      * Set a new url to the chosen test flow (this is prohibited in production sets)
@@ -2396,8 +2382,6 @@ class ResursBank
 
         return $return;
     }
-
-    /////////// SERVICE HELPERS AND INTERNAL FLOW FUNCTIONS
 
     /**
      * Retrieve the correct RCO url depending chosen environment.
@@ -4816,8 +4800,6 @@ class ResursBank
         return $this->Payload;
     }
 
-    /////////// OTHER BEHAVIOUR (AS HELPERS, MISCELLANEOUS)
-
     /**
      * Make sure that the payment spec only contains the data that each payment flow needs.
      *
@@ -5076,9 +5058,6 @@ class ResursBank
         return $this;
     }
 
-
-    ////// Client specific
-
     /**
      * @param string $htmlData
      * @return $this
@@ -5246,7 +5225,7 @@ class ResursBank
     }
 
     /**
-     * Set a logged in username (will be merged with the client name at aftershopFlow-level)
+     * Set a logged in username (will be merged with the client name at afterShopFlow-level)
      *
      * @param string $currentUsername
      *
@@ -5257,9 +5236,6 @@ class ResursBank
     {
         $this->loggedInUser = $currentUsername;
     }
-
-    /////////// LONG LIFE DEPRECATION
-    /// Belongs to the deprecated shopFlow emulation, used by the wooCommerce plugin amongst others
 
     /**
      * Set an initial shop url to use with Resurs Checkout
@@ -5397,10 +5373,6 @@ class ResursBank
     {
         return $this->E_DEPRECATED->getCanSkipGovernmentIdValidation();
     }
-
-
-    /////////// PRIMARY INTERNAL SHOP FLOW SECTION
-    ////// HELPERS
 
     /**
      * Get template fields by a specific payment method. This function retrieves the payment method in real time.
@@ -5729,8 +5701,6 @@ class ResursBank
             500
         );
     }
-
-    ////// MASTER SHOP FLOWS - PRIMARY BOOKING FUNCTIONS
 
     /**
      * Get current stored variable from customer session
@@ -6915,9 +6885,6 @@ class ResursBank
         return false;
     }
 
-
-    ////// HOSTED FLOW
-
     /**
      * Get the correct key value from a payment (or a payment object directly).
      *
@@ -6937,8 +6904,6 @@ class ResursBank
 
         return null;
     }
-
-    ////// MASTER SHOP FLOWS - THE OTHER ONES
 
     /**
      * Make sure a payment will always be returned correctly. If string, getPayment will run first. If array/object, it
@@ -6977,8 +6942,6 @@ class ResursBank
     {
         return $this->canDebit($paymentArrayOrPaymentId);
     }
-
-    /////////// AFTER SHOP ROUTINES
 
     /**
      * Find out if a payment is debitable
@@ -9137,8 +9100,6 @@ class ResursBank
         }
     }
 
-    ///////////// INTERNAL MEMORY LIMIT HANDLER BEGIN
-
     /**
      * @param bool $enable
      * @since 1.0.40
@@ -9249,8 +9210,6 @@ class ResursBank
     {
         $this->autoDebitableTypesActive = $activation;
     }
-    ///////////// INTERNAL MEMORY LIMIT HANDLER END
-
     /**
      * Magic function that will help us clean up unnecessary content. Future prepared.
      *
