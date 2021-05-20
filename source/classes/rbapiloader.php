@@ -3129,9 +3129,10 @@ class ResursBank
      * @param array $paymentMethods
      * @param bool $getAllMethods Manually configured psp-overrider
      * @return array
-     * @since 1.0.24
+     * @throws Exception
      * @since 1.1.24
      * @since 1.2.0
+     * @since 1.0.24
      */
     public function sanitizePaymentMethods($paymentMethods = [], $getAllMethods = false)
     {
@@ -3139,6 +3140,12 @@ class ResursBank
         $paymentService = $this->getPreferredPaymentFlowService();
         if (is_array($paymentMethods) && count($paymentMethods)) {
             foreach ($paymentMethods as $paymentMethodIndex => $paymentMethodData) {
+                if (!isset($paymentMethodData->type)) {
+                    throw new Exception(
+                        'Payment method is missing "type". ' .
+                        'Something may have gone wrong during the paymet methods fetching. Can not continue.'
+                    );
+                }
                 $type = $paymentMethodData->type;
                 $addMethod = true;
 
