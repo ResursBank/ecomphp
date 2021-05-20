@@ -976,6 +976,18 @@ class resursBankTest extends TestCase
                 RESURS_PAYMENT_STATUS_RETURNCODES::CREDITED
             ) === 'avbruten'
         );
+
+        RESURS_STATUS_RETURN_CODES::setReturnString(
+            [
+                RESURS_PAYMENT_STATUS_RETURNCODES::ANNULLED => 'annullerad'
+            ]
+        );
+
+        static::assertTrue(
+            $this->TEST->ECOM->getOrderStatusStringByReturnCode(
+                RESURS_PAYMENT_STATUS_RETURNCODES::ANNULLED
+            ) === 'annullerad'
+        );
     }
 
     /**
