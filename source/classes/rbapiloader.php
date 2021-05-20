@@ -2685,7 +2685,8 @@ class ResursBank
      * @since 1.0.2
      * @since 1.1.2
      */
-    public function triggerCallback($params = []) {
+    public function triggerCallback($params = [])
+    {
         if (empty($params)) {
             $params = [
                 rand(10000, 30000),
@@ -4640,7 +4641,7 @@ class ResursBank
     }
 
     /**
-     * Insert products in "virtual cart"
+     * Insert products in "virtual cart".
      *
      * @param string $articleNumberOrId
      * @param string $description
@@ -4669,7 +4670,7 @@ class ResursBank
             $this->SpecLines = [];
         }
 
-        if (is_null($articleType)) {
+        if (empty($articleType)) {
             $articleType = 'ORDER_LINE';
         }
 
