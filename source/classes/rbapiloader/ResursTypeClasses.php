@@ -2,6 +2,8 @@
 
 namespace Resursbank\RBEcomPHP;
 
+use Exception;
+
 /**
  * Class RESURS_FLOW_TYPES
  *
@@ -33,6 +35,56 @@ abstract class RESURS_FLOW_TYPES
 
     /** @deprecated Redundant name */
     const FLOW_MINIMALISTIC = 98;
+}
+
+/**
+ * Class RESURS_STATUS_RETURN
+ * @todo PSR4
+ * @package Resursbank\RBEcomPHP
+ */
+class RESURS_STATUS_RETURN_CODES
+{
+    private static $returnStrings = [
+        RESURS_PAYMENT_STATUS_RETURNCODES::PENDING => 'pending',
+        RESURS_PAYMENT_STATUS_RETURNCODES::PROCESSING => 'processing',
+        RESURS_PAYMENT_STATUS_RETURNCODES::COMPLETED => 'completed',
+        RESURS_PAYMENT_STATUS_RETURNCODES::ANNULLED => 'annul',
+        RESURS_PAYMENT_STATUS_RETURNCODES::CREDITED => 'credit',
+    ];
+
+    /**
+     * Set up return strings for statuses.
+     *
+     * @param $codeOrArray mixed RESURS_PAYMENT_STATUS_RETURNCODES or array with the return codes.
+     * @param $codeString string If $codeOrArray = RESURS_PAYMENT_STATUS_RETURNCODES, then set the return string here.
+     * @throws Exception
+     */
+    public static function setReturnString($codeOrArray, $codeString = null)
+    {
+        if (is_numeric($codeOrArray) && isset(self::$returnStrings[$codeOrArray])) {
+            if ($codeString !== null) {
+                self::$returnStrings[$codeOrArray] = $codeString;
+            } else {
+                throw new Exception('Status string must not be empty.', 400);
+            }
+        } elseif (is_array($codeOrArray)) {
+            // Do not replace the entire  array.
+            foreach ($codeOrArray as $key => $value) {
+                self::$returnStrings[$key] = $value;
+            }
+        } else {
+            throw new Exception('Must set returncodes as array or RESURS_PAYMENT_STATUS_RETURNCODES.', 400);
+        }
+    }
+
+    /**
+     * @param int $returnCode
+     * @return string|array
+     */
+    public static function getReturnString($returnCode = 0)
+    {
+        return isset(self::$returnStrings[$returnCode]) ? self::$returnStrings[$returnCode] : self::$returnStrings;
+    }
 }
 
 /**
@@ -191,7 +243,8 @@ abstract class RESURS_CALLBACK_REACHABILITY
  * Class RESURS_GETPAYMENT_REQUESTTYPE
  * @package Resursbank\RBEcomPHP
  */
-abstract class RESURS_GETPAYMENT_REQUESTTYPE {
+abstract class RESURS_GETPAYMENT_REQUESTTYPE
+{
     const SOAP = 1;
     const REST = 2;
 }
@@ -214,19 +267,60 @@ abstract class RESURS_PAYMENT_STATUS_RETURNCODES
      * Skip "not in use" since this off-value may cause flaws in status updates (true when matching false flags).
      */
     const NOT_IN_USE = 0;
-    const PAYMENT_PENDING = 1;
-    const PAYMENT_PROCESSING = 2;
-    const PAYMENT_COMPLETED = 4;
-    const PAYMENT_ANNULLED = 8;
-    const PAYMENT_CREDITED = 16;
-    const PAYMENT_AUTOMATICALLY_DEBITED = 32;
-    const PAYMENT_MANUAL_INSPECTION = 64;   // When an order by some reason gets stuck in manual inspections
-    const PAYMENT_STATUS_COULD_NOT_BE_SET = 128;  // No flags are set
+    const PENDING = 1;
+    const PROCESSING = 2;
+    const COMPLETED = 4;
+    const ANNULLED = 8;
+    const CREDITED = 16;
+    const AUTO_DEBITED = 32;
+    const MANUAL_INSPECTION = 64;
+    const ERROR = 128;
 
-    /** @deprecated Fallback status only, use PAYMENT_ANNULLED */
+    /**
+     * @var int
+     * @deprecated Redundant, use PENDING.
+     */
+    const PAYMENT_PENDING = 1;
+    /**
+     * @deprecated Redundant, use PROCESSING.
+     */
+    const PAYMENT_PROCESSING = 2;
+    /**
+     * @deprecated Redundant, use COMPLETED.
+     */
+    const PAYMENT_COMPLETED = 4;
+    /**
+     * @deprecated Redundant, use ANNULLED.
+     */
+    const PAYMENT_ANNULLED = 8;
+    /**
+     * @deprecated Redundant, use ANNULLED.
+     */
     const PAYMENT_CANCELLED = 8;
-    /** @deprecated Fallback status only, use PAYMENT_CREDITED */
+    /**
+     * @deprecated Redundant, use CREDITED.
+     */
+    const PAYMENT_CREDITED = 16;
+    /**
+     * @deprecated Redundant, use CREDITED.
+     */
     const PAYMENT_REFUND = 16;
+    /**
+     * @deprecated Use AUTO_DEBITED.
+     */
+    const PAYMENT_AUTOMATICALLY_DEBITED = 32;
+    /**
+     * @deprecated Use AUTO_DEBITED.
+     */
+    const AUTOMATICALLY_DEBITED = 32;
+    /**
+     * @deprecated Use MANUAL_INSPECTION.
+     */
+    const PAYMENT_MANUAL_INSPECTION = 64;   // When an order by some reason gets stuck in manual inspections.
+    /**
+     * @deprecated If this is necessary, something went really wrong. Then use ERROR instead.
+     */
+    const PAYMENT_STATUS_COULD_NOT_BE_SET = 128;
 }
 
 /**
@@ -401,7 +495,8 @@ abstract class ResursCountry extends RESURS_COUNTRY
 }
 
 if (!@class_exists('Bit') && @class_exists('MODULE_NETBITS')) {
-    class Bit extends MODULE_NETBITS {
+    class Bit extends MODULE_NETBITS
+    {
 
     }
 }

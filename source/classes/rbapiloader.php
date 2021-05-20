@@ -767,8 +767,6 @@ class ResursBank
      */
     private $autoDebitablePaymentMethod;
 
-    /////////// INITIALIZERS
-
     /**
      * Constructor method for Resurs Bank WorkFlows
      *
@@ -787,8 +785,7 @@ class ResursBank
         $targetEnvironment = RESURS_ENVIRONMENTS::TEST,
         $debug = false,
         $paramFlagSet = []
-    )
-    {
+    ) {
         if (is_array($paramFlagSet) && count($paramFlagSet)) {
             $this->preSetEarlyFlags($paramFlagSet);
         }
@@ -940,19 +937,6 @@ class ResursBank
     }
 
     /**
-     * @param $timeout
-     * @param false $useMillisec
-     * @return Netwrapper
-     * @throws Exception
-     * @since 1.3.47
-     */
-    public function setTimeout($timeout, $useMillisec = false)
-    {
-        $this->InitializeServices(false);
-        return $this->CURL->setTimeout($timeout, $useMillisec);
-    }
-
-    /**
      * Session usage
      *
      * @return bool
@@ -1023,15 +1007,6 @@ class ResursBank
         }
 
         return $return;
-    }
-
-    /**
-     * @return bool
-     * @since 1.3.27
-     */
-    public function getSslSecurityDisabled()
-    {
-        return $this->curlSslValidationDisable;
     }
 
     /**
@@ -1534,6 +1509,28 @@ class ResursBank
     }
 
     /**
+     * @param $timeout
+     * @param false $useMillisec
+     * @return Netwrapper
+     * @throws Exception
+     * @since 1.3.47
+     */
+    public function setTimeout($timeout, $useMillisec = false)
+    {
+        $this->InitializeServices(false);
+        return $this->CURL->setTimeout($timeout, $useMillisec);
+    }
+
+    /**
+     * @return bool
+     * @since 1.3.27
+     */
+    public function getSslSecurityDisabled()
+    {
+        return $this->curlSslValidationDisable;
+    }
+
+    /**
      * @param $enable
      * @return $this
      * @throws Exception
@@ -1698,9 +1695,6 @@ class ResursBank
         return $this;
     }
 
-
-    /////////// Standard getters and setters
-
     /**
      * Returns true if the URL call was set to be unsafe (disabled)
      *
@@ -1807,12 +1801,6 @@ class ResursBank
         return (new NetUtils())->getGitTagsByUrl($this->gitUrl);
     }
 
-
-
-
-
-    /////////// STRING BEHAVIOUR
-
     /**
      * Get current user agent info IF has been forced to set (returns null if we are using default)
      *
@@ -1837,9 +1825,6 @@ class ResursBank
     {
         $this->internalFlags = [];
     }
-
-
-    /////////// CALLBACK BEHAVIOUR HELPERS
 
     /**
      * Set a new url to the chosen test flow (this is prohibited in production sets)
@@ -1903,8 +1888,7 @@ class ResursBank
         $url = null,
         $expectedHttpAcceptCode = '200',
         $expectedHttpErrorCode = '403'
-    )
-    {
+    ) {
         $this->validateExternalUrl = [
             'url' => $url,
             'http_accept' => $expectedHttpAcceptCode,
@@ -1976,8 +1960,7 @@ class ResursBank
     public function setCallbackDigest(
         $digestSaltString = '',
         $callbackType = RESURS_CALLBACK_TYPES::NOT_SET
-    )
-    {
+    ) {
         return $this->setCallbackDigestSalt($digestSaltString, $callbackType);
     }
 
@@ -1994,8 +1977,7 @@ class ResursBank
     public function setCallbackDigestSalt(
         $digestSaltString = '',
         $callbackType = RESURS_CALLBACK_TYPES::NOT_SET
-    )
-    {
+    ) {
         // Make sure the digestSaltString is never empty
         if (!empty($digestSaltString)) {
             $currentDigest = $digestSaltString;
@@ -2144,8 +2126,7 @@ class ResursBank
         $digestData = [],
         $basicAuthUserName = null,
         $basicAuthPassword = null
-    )
-    {
+    ) {
         $registerCallbackException = null;
         $requestedCallbackType = $callbackType;
         $this->InitializeServices();
@@ -2426,8 +2407,6 @@ class ResursBank
         return $return;
     }
 
-    /////////// SERVICE HELPERS AND INTERNAL FLOW FUNCTIONS
-
     /**
      * Retrieve the correct RCO url depending chosen environment.
      *
@@ -2460,20 +2439,6 @@ class ResursBank
     }
 
     /**
-     * Returns true if Resurs Checkout is pointing at the POS endpoint
-     *
-     * @return bool
-     * @since 1.0.36
-     * @since 1.1.36
-     * @since 1.3.9
-     * @since 2.0.0
-     */
-    public function getPos()
-    {
-        return $this->envOmniPos;
-    }
-
-    /**
      * @param $requestedEnvironment
      * @return string
      * @since 1.3.27
@@ -2487,6 +2452,20 @@ class ResursBank
         }
 
         return $return;
+    }
+
+    /**
+     * Returns true if Resurs Checkout is pointing at the POS endpoint
+     *
+     * @return bool
+     * @since 1.0.36
+     * @since 1.1.36
+     * @since 1.3.9
+     * @since 2.0.0
+     */
+    public function getPos()
+    {
+        return $this->envOmniPos;
     }
 
     /**
@@ -2505,8 +2484,7 @@ class ResursBank
         $callbackType = RESURS_CALLBACK_TYPES::NOT_SET,
         $isMultiple = false,
         $forceSoap = false
-    )
-    {
+    ) {
         $callbackArray = [];
         if ($isMultiple) {
             $this->BIT = new Bit();
@@ -3176,9 +3154,10 @@ class ResursBank
      * @param array $paymentMethods
      * @param bool $getAllMethods Manually configured psp-overrider
      * @return array
-     * @since 1.0.24
+     * @throws Exception
      * @since 1.1.24
      * @since 1.2.0
+     * @since 1.0.24
      */
     public function sanitizePaymentMethods($paymentMethods = [], $getAllMethods = false)
     {
@@ -3186,6 +3165,12 @@ class ResursBank
         $paymentService = $this->getPreferredPaymentFlowService();
         if (is_array($paymentMethods) && count($paymentMethods)) {
             foreach ($paymentMethods as $paymentMethodIndex => $paymentMethodData) {
+                if (!isset($paymentMethodData->type)) {
+                    throw new Exception(
+                        'Payment method is missing "type". ' .
+                        'Something may have gone wrong during the paymet methods fetching. Can not continue.'
+                    );
+                }
                 $type = $paymentMethodData->type;
                 $addMethod = true;
 
@@ -3740,6 +3725,170 @@ class ResursBank
     }
 
     /**
+     * getPayment - Retrieves detailed information about a payment
+     *
+     * As of 1.3.13, SOAP has higher priority than REST. This might be a breaking change, since
+     * there will from now in (again) be a dependency of SoapClient. The flag GET_PAYMENT_BY_REST is
+     * obsolete and has no longer any effect.
+     *
+     * Exceptions thrown:
+     *      3/REST=>Order does not exist,
+     *      8/SOAP=>Reference does not exist,
+     *      404 is thrown when errors could not be fetched
+     *
+     * @param string $paymentId
+     * @param bool $requestCached Try fetch cached data before going for live data.
+     * @return mixed
+     * @throws ResursException
+     * @since 1.0.1
+     * @since 1.1.1
+     * @since 1.3.4 Refactored from this version
+     */
+    public function getPayment($paymentId = '', $requestCached = true)
+    {
+        $this->InitializeServices();
+        $rested = false;
+
+        $this->getPaymentRequests++;
+        if ($requestCached && isset($this->lastPaymentStored[$paymentId]->cached)) {
+            $lastRequest = time() - $this->lastPaymentStored[$paymentId]->cached;
+            if ($lastRequest <= $this->lastGetPaymentMaxCacheTime) {
+                $this->getPaymentCachedRequests++;
+                return $this->lastPaymentStored[$paymentId];
+            }
+        }
+
+        /**
+         * As REST based exceptions is more unsafe than the SOAP responses we use the SOAP as default method to get
+         * the payment data. REST throws a 404 exception with an extended body with errors when a payment does not
+         * exist. This behaviour is partially only half safe, since we don't know from moment to moment when this
+         * error body is present.
+         *
+         * @since 1.3.13
+         */
+        if ($this->isFlag('GET_PAYMENT_BY_REST') || !$this->SOAP_AVAILABLE) {
+            // This will ALWAYS run if SOAP is unavailable
+            try {
+                $rested = true;
+                $this->lastPaymentStored[$paymentId] = $this->getPaymentByRest($paymentId);
+                $this->getPaymentRequestMethod = RESURS_GETPAYMENT_REQUESTTYPE::REST;
+                $this->lastPaymentStored[$paymentId]->cached = time();
+                $this->lastPaymentStored[$paymentId]->requestMethod = $this->getPaymentRequestMethod;
+                $return = $this->lastPaymentStored[$paymentId];
+            } catch (ResursException $e) {
+                // 3 = The order does not exist, default REST error.
+                // If we for some reason get 404 errors here, the error should be rethrown as 3.
+                // If we for some unknown reason get 500+ errors, we can almost be sure that something else went wrong.
+                if ($e->getCode() === 404) {
+                    throw new ResursException($e->getMessage(), 3, $e);
+                }
+                if (!$this->SOAP_AVAILABLE && $e->getCode() === 51) {
+                    // Fail over on SSL certificate errors (first) as the domain for soap is different than RCO-rest.
+                    $rested = false;
+                } else {
+                    throw $e;
+                }
+            }
+        }
+
+        if (!$rested) {
+            try {
+                $this->lastPaymentStored[$paymentId] = $this->getPaymentBySoap($paymentId);
+                $this->getPaymentRequestMethod = RESURS_GETPAYMENT_REQUESTTYPE::SOAP;
+                $this->lastPaymentStored[$paymentId]->cached = time();
+                $this->lastPaymentStored[$paymentId]->requestMethod = $this->getPaymentRequestMethod;
+                $return = $this->lastPaymentStored[$paymentId];
+            } catch (Exception $e) {
+                // 8 = REFERENCED_DATA_DONT_EXISTS
+                throw $e;
+            }
+        }
+
+        return $return;
+    }
+
+    /**
+     * Check if flag is set and true
+     *
+     * @param string $flagKey
+     *
+     * @return bool
+     * @since 1.0.23
+     * @since 1.1.23
+     * @since 1.2.0
+     */
+    public function isFlag($flagKey = '')
+    {
+        if ($this->hasFlag($flagKey)) {
+            return ((bool)$this->getFlag($flagKey) ? true : false);
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if there is an internal flag set with current key
+     *
+     * @param string $flagKey
+     *
+     * @return bool
+     * @since 1.0.23
+     * @since 1.1.23
+     * @since 1.2.0
+     */
+    public function hasFlag($flagKey = '')
+    {
+        if (!is_null($this->getFlag($flagKey))) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param string $paymentId
+     * @return stdClass
+     * @throws ResursException
+     * @throws ExceptionHandler
+     * @since 1.3.13
+     * @since 1.1.40
+     * @since 1.0.40
+     * @deprecated Since 1.3.45, use the auto selective method (getPayment) instead.
+     */
+    public function getPaymentByRest($paymentId = '')
+    {
+        try {
+            // The look of this call makes it compatible to PHP 5.3 (without chaining)
+            return $this->CURL->request($this->getCheckoutUrl() . '/checkout/payments/' . $paymentId)->getParsed();
+        } catch (Exception $e) {
+            // Get internal exceptions before http responses
+            $exceptionTestBody = @json_decode($this->CURL->getBody());
+            if (isset($exceptionTestBody->errorCode) && isset($exceptionTestBody->description)) {
+                throw new ResursException($exceptionTestBody->description, $exceptionTestBody->errorCode, $e);
+            }
+            throw new ResursException($e->getMessage(), $e->getCode(), $e);
+        }
+    }
+
+    /**
+     * Retrieves detailed information about a payment.
+     *
+     * @param string $paymentId
+     *
+     * @return array|mixed|null
+     * @throws Exception
+     * @link  https://test.resurs.com/docs/x/moEW getPayment() documentation
+     * @since 1.0.31
+     * @since 1.1.31
+     * @since 1.2.4
+     * @since 1.3.4
+     */
+    public function getPaymentBySoap($paymentId = '')
+    {
+        return $this->postService('getPayment', ['paymentId' => $paymentId]);
+    }
+
+    /**
      * Automated function for getCostOfPurchaseHtml() - Returning content in UTF-8 formatted display if a body are
      * requested
      *
@@ -3761,8 +3910,7 @@ class ResursBank
         $returnBody = false,
         $callCss = 'costofpurchase.css',
         $hrefTarget = '_blank'
-    )
-    {
+    ) {
         $returnHtml = $this->postService('getCostOfPurchaseHtml', [
             'paymentMethodId' => $paymentMethod,
             'amount' => $amount,
@@ -3867,7 +4015,7 @@ class ResursBank
      * On multiple methods, the iframe is used by default! If fetch is false and no iframe is requested, this method
      * will instead return the URL directly to the requested.
      *
-     * @param string $paymentMethod Payment method as string or object (multiple methods allowed, due to DK).
+     * @param mixed $paymentMethod Payment method as string or object (multiple methods allowed, due to DK).
      * @param int $amount The amount to show the priceInformation with.
      * @param bool $fetch If ecom should try to download the content from the priceinfolink.
      * @param bool $iframe Pushes the priceinfolink into an iframe. Preferred is to have $fetch false here.
@@ -3879,14 +4027,13 @@ class ResursBank
      * @since 1.3.30
      */
     public function getCostOfPriceInformation(
-        $paymentMethod = '',
+        $paymentMethod = null,
         $amount = 0,
         $fetch = false,
         $iframe = false,
         $limitByMinMax = true,
         $bodyOnly = false
-    )
-    {
+    ) {
         $return = '';
 
         if ($iframe) {
@@ -4010,52 +4157,6 @@ class ResursBank
         }
 
         return $return;
-    }
-
-    /**
-     * @param $paymentMethod
-     * @param int $totalAmount Not necessary if payload is present.
-     * @return bool
-     * @throws ResursException
-     */
-    public function getMinMaxByPayload($paymentMethod, $totalAmount = null)
-    {
-        if (is_string($paymentMethod)) {
-            $paymentMethod = $this->getPaymentMethodSpecific($paymentMethod);
-        } elseif (!is_object($paymentMethod)) {
-            throw new ResursException(
-                sprintf('%s: Wrong request specification.', __FUNCTION__),
-                RESURS_EXCEPTIONS::INTERNAL_MINMAX_EXCEPTION
-            );
-        }
-
-        $minLimit = 0;
-        $maxLimit = 0;
-        if (is_object($paymentMethod)) {
-            $minLimit = isset($paymentMethod->minLimit) ? $paymentMethod->minLimit : 0;
-            $maxLimit = isset($paymentMethod->maxLimit) ? $paymentMethod->maxLimit : 0;
-        }
-        $currentFlow = $this->getPreferredPaymentFlowService();
-        $this->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
-        $payloadTotal = $this->getPayloadTotal();
-        $this->setPreferredPaymentFlowService($currentFlow);
-
-        if ($totalAmount === null && $payloadTotal > 0) {
-            $totalAmount = $payloadTotal;
-        }
-
-        if (!$totalAmount) {
-            throw new ResursException(
-                sprintf('%s: Totalamount has no value.', __FUNCTION__),
-                RESURS_EXCEPTIONS::INTERNAL_MINMAX_EXCEPTION
-            );
-        }
-
-        return $this->getMinMax(
-            (float)$totalAmount,
-            $minLimit,
-            $maxLimit
-        );
     }
 
     /**
@@ -4294,468 +4395,336 @@ class ResursBank
     }
 
     /**
-     * @param string $htmlData
-     * @return $this
-     * @since 1.4.0
-     * @deprecated Not spelled correctly. Use the proper one.
-     */
-    public function setCostOfPurcaseHtmlBefore($htmlData = '')
-    {
-        return $this->setCostOfPurchaseHtmlBefore($htmlData);
-    }
-
-    /**
-     * While generating a getCostOfPurchase where $returnBody is true, this function adds custom html before the
-     * returned html-code from Resurs Bank
-     *
-     * @param string $htmlData
-     * @return ResursBank
-     * @since 1.1.0
-     * @since 1.4.0
-     * @since 1.0.0
-     */
-    public function setCostOfPurchaseHtmlBefore($htmlData = '')
-    {
-        $this->getCostHtmlBefore = $htmlData;
-        return $this;
-    }
-
-    /**
-     * @param string $htmlData
-     * @return $this
-     * @deprecated Not spelled correctly. Use the proper one.
-     */
-    public function setCostOfPurcaseHtmlAfter($htmlData = '')
-    {
-        return $this->setCostOfPurchaseHtmlAfter($htmlData);
-    }
-
-    /**
-     * While generating a getCostOfPurchase where $returnBody is true, this function adds custom html after the
-     * returned html-code from Resurs Bank
-     *
-     * @param string $htmlData
-     * @return ResursBank
-     * @since 1.1.0
-     * @since 1.4.0
-     * @since 1.0.0
-     */
-    public function setCostOfPurchaseHtmlAfter($htmlData = '')
-    {
-        $this->getCostHtmlAfter = $htmlData;
-        return $this;
-    }
-
-    /**
-     * If you prefer to fetch anything that looks like a proxy if it mismatches to the REMOTE_ADDR, activate this
-     * (EXPERIMENTAL!!)
-     *
-     * @param bool $activated
-     *
-     * @since 1.0.2
-     * @since 1.1.2
-     */
-    public function setCustomerIpProxy($activated = false)
-    {
-        $this->preferCustomerProxy = $activated;
-    }
-
-    /**
-     * Quantity Recalculation of a getPayment. Also supports arrays.
-     *
-     * When ECom gets an article row that needs recalculation on quantity level, this method can be used.
-     * Note: The article row needs to be "completed" from the start, to get a successful recalculation.
-     * By means, you need a prepared "proper" payment already, where you only need to adjust the quantity
-     * values.
-     *
-     * @param array|stdClass $artObject
-     * @param int $quantity
-     *
-     * @return mixed
+     * @param $paymentMethod
+     * @param int $totalAmount Not necessary if payload is present.
+     * @return bool
      * @throws ResursException
-     * @since 1.3.20
-     * @since 1.0.47
-     * @since 1.1.47
      */
-    public function getRecalculatedQuantity($artObject, $quantity = -1)
+    public function getMinMaxByPayload($paymentMethod, $totalAmount = null)
     {
-        // If no quantity passed into this method, try to reuse quantity in the object.
-        if ($quantity === -1) {
-            if (isset($artObject->quantity)) {
-                $quantity = $artObject->quantity;
-            } elseif (isset($artObject['quantity'])) {
-                $quantity = $artObject['quantity'];
-            } else {
-                throw new ResursException(
-                    'A valid quantity is required for this recalculation.',
-                    RESURS_EXCEPTIONS::INTERNAL_QUANTITY_EXCEPTION
-                );
-            }
+        if (is_string($paymentMethod)) {
+            $paymentMethod = $this->getPaymentMethodSpecific($paymentMethod);
+        } elseif (!is_object($paymentMethod)) {
+            throw new ResursException(
+                sprintf('%s: Wrong request specification.', __FUNCTION__),
+                RESURS_EXCEPTIONS::INTERNAL_MINMAX_EXCEPTION
+            );
         }
 
-        if (is_object($artObject) &&
-            isset($artObject->unitAmountWithoutVat) &&
-            isset($artObject->vatPct) &&
-            isset($artObject->totalVatAmount) &&
-            isset($artObject->totalAmount)
-        ) {
-            $artObject->totalVatAmount = $this->getTotalVatAmount(
-                $artObject->unitAmountWithoutVat,
-                $artObject->vatPct,
-                $quantity
-            );
-            $artObject->totalAmount = $this->getTotalAmount(
-                $artObject->unitAmountWithoutVat,
-                $artObject->vatPct,
-                $quantity
-            );
-            $artObject->quantity = $quantity;
+        $minLimit = 0;
+        $maxLimit = 0;
+        if (is_object($paymentMethod)) {
+            $minLimit = isset($paymentMethod->minLimit) ? $paymentMethod->minLimit : 0;
+            $maxLimit = isset($paymentMethod->maxLimit) ? $paymentMethod->maxLimit : 0;
+        }
+        $currentFlow = $this->getPreferredPaymentFlowService();
+        $this->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
+        $payloadTotal = $this->getPayloadTotal();
+        $this->setPreferredPaymentFlowService($currentFlow);
+
+        if ($totalAmount === null && $payloadTotal > 0) {
+            $totalAmount = $payloadTotal;
         }
 
-        // If this one arrives as an array, handle this also.
-        if (is_array($artObject) &&
-            isset($artObject['unitAmountWithoutVat']) &&
-            isset($artObject['vatPct']) &&
-            isset($artObject['totalVatAmount']) &&
-            isset($artObject['totalAmount'])
-        ) {
-            $artObject['totalVatAmount'] = $this->getTotalVatAmount(
-                $artObject['unitAmountWithoutVat'],
-                $artObject['vatPct'],
-                $quantity
+        if (!$totalAmount) {
+            throw new ResursException(
+                sprintf('%s: Totalamount has no value.', __FUNCTION__),
+                RESURS_EXCEPTIONS::INTERNAL_MINMAX_EXCEPTION
             );
-            $artObject['totalAmount'] = $this->getTotalAmount(
-                $artObject['unitAmountWithoutVat'],
-                $artObject['vatPct'],
-                $quantity
-            );
-            $artObject['quantity'] = $quantity;
         }
 
-        return $artObject;
+        return $this->getMinMax(
+            (float)$totalAmount,
+            $minLimit,
+            $maxLimit
+        );
     }
 
     /**
-     * Lazy calculation of total amounts (make sure the VAT is an integer and not a decimal value).
-     *
-     * @param float $unitAmountWithoutVat
-     * @param int $vatPct
-     * @param int $quantity
-     * @return float|int
-     * @since 1.3.20
-     * @since 1.0.47
-     * @since 1.1.47
-     */
-    public function getTotalVatAmount($unitAmountWithoutVat, $vatPct, $quantity)
-    {
-        return ($unitAmountWithoutVat * $vatPct / 100) * $quantity;
-    }
-
-    /**
-     * Lazy calculation of total amounts (make sure the VAT is an integer and not a decimal value).
-     *
-     * @param $unitAmountWithoutVat
-     * @param $vatPct
-     * @param $quantity
-     * @return float|int
-     * @since 1.3.20
-     * @since 1.0.47
-     * @since 1.1.47
-     */
-    public function getTotalAmount($unitAmountWithoutVat, $vatPct, $quantity)
-    {
-        return ($unitAmountWithoutVat + ($unitAmountWithoutVat * $vatPct / 100)) * $quantity;
-    }
-
-    /**
-     * @return string
-     * @since 1.3.23
-     */
-    public function getRealClientName()
-    {
-        return $this->realClientName;
-    }
-
-    /**
-     * @param $clientName
-     * @since 1.3.23
-     */
-    public function setRealClientName($clientName)
-    {
-        $this->userSetClientName = true;
-        $this->realClientName = $clientName;
-    }
-
-    /**
-     * Set a logged in username (will be merged with the client name at afterShopFlow-level)
-     *
-     * @param string $currentUsername
-     *
-     * @since 1.0.0
-     * @since 1.1.0
-     */
-    public function setLoggedInUser($currentUsername = '')
-    {
-        $this->loggedInUser = $currentUsername;
-    }
-
-    /////////// OTHER BEHAVIOUR (AS HELPERS, MISCELLANEOUS)
-
-    /**
-     * Set an initial shop url to use with Resurs Checkout
-     * If this is not set, EComPHP will handle the shopUrl automatically.
-     * It is also possible to handle this through the manual payload as always.
-     *
-     * @param string $shopUrl
-     * @param bool $validateFormat Activate URL validation
+     * @return float
      * @throws Exception
-     * @since 1.0.4
-     * @since 1.1.4
+     * @since 1.3.49
      */
-    public function setShopUrl($shopUrl = '', $validateFormat = true)
+    public function getPayloadTotal()
     {
-        $this->InitializeServices();
-        if (!empty($shopUrl)) {
-            $this->checkoutShopUrl = $shopUrl;
+        $return = 0;
+
+        try {
+            $orderData = $this->getOrderData();
+            $return = isset($orderData['totalAmount']) ? $orderData['totalAmount'] : 0;
+        } catch (Exception $e) {
+            // Just ignore this.
         }
-        if ($validateFormat) {
-            $this->isNetWork();
-            $shopUrlValidate = $this->NETWORK->getUrlDomain($this->checkoutShopUrl);
-            $this->checkoutShopUrl = sprintf(
-                '%s://%s',
-                $shopUrlValidate[1],
-                $shopUrlValidate[0]
-            );
-        }
+
+        return (float)$return;
     }
 
     /**
-     * Make sure shopUrl are properly set by enabling this feature
+     * Return the final payload order data array
      *
-     * @param bool $validateEnabled
-     *
+     * @return array
+     * @throws Exception
      * @since 1.0.22
      * @since 1.1.22
      * @since 1.2.0
      */
-    public function setValidateCheckoutShopUrl($validateEnabled = true)
+    public function getOrderData()
     {
-        $this->validateCheckoutShopUrl = $validateEnabled;
+        $this->preparePayload();
+
+        return isset($this->Payload['orderData']) ? $this->Payload['orderData'] : [];
     }
 
     /**
-     * Override formTemplateFieldsetRules in case of important needs or unexpected changes
+     * Prepare the payload
      *
-     * @param $customerType
-     * @param $methodType
-     * @param $fieldArray
+     * @param string $payment_id_or_method
+     * @param array $payload
      *
-     * @return array
-     * @deprecated 1.0.8 Build your own integration please
-     * @deprecated 1.1.8 Build your own integration please
-     */
-    public function setFormTemplateRules($customerType, $methodType, $fieldArray)
-    {
-        /** @noinspection PhpDeprecationInspection */
-        return $this->E_DEPRECATED->setFormTemplateRules($customerType, $methodType, $fieldArray);
-    }
-
-    /**
-     * Get regular expression ruleset for a specific payment form field.
-     * If no form field name are given, all the fields are returned for a specific payment method.
-     * Parameters are case insensitive.
-     *
-     * @param string $formFieldName
-     * @param $countryCode
-     * @param $customerType
-     * @return array
      * @throws Exception
-     * @deprecated 1.0.8 Build your own integration please
-     * @deprecated 1.1.8 Build your own integration please
+     * @since 1.0.1
+     * @since 1.1.1
      */
-    public function getRegEx($formFieldName = '', $countryCode = '', $customerType = 'NATURAL')
+    private function preparePayload($payment_id_or_method = '', $payload = [])
     {
-        /** @noinspection PhpDeprecationInspection */
-        return $this->E_DEPRECATED->getRegEx($formFieldName, $countryCode, $customerType);
+        $this->InitializeServices();
+        $this->handlePayload($payload);
+
+        $updateStoreIdEvent = $this->event('update_store_id');
+        if (!is_null($updateStoreIdEvent)) {
+            $this->setStoreId($updateStoreIdEvent);
+        }
+
+        if (empty($this->defaultUnitMeasure)) {
+            $this->setDefaultUnitMeasure();
+        }
+        if ($this->getPreferredPaymentFlowService() === RESURS_FLOW_TYPES::NOT_SET) {
+            $this->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
+        }
+
+        if ($this->getPreferredPaymentFlowService() === RESURS_FLOW_TYPES::RESURS_CHECKOUT) {
+            if (empty($payment_id_or_method) && empty($this->preferredId)) {
+                throw new ResursException(
+                    'A payment method or payment id must be defined.',
+                    RESURS_EXCEPTIONS::CREATEPAYMENT_NO_ID_SET
+                );
+            }
+            $payment_id_or_method = $this->preferredId;
+        }
+        if (!count($this->Payload) && !$this->isFlag('USE_AFTERSHOP_RENDERING')) {
+            throw new ResursException(
+                'No payload are set for this payment.',
+                RESURS_EXCEPTIONS::BOOKPAYMENT_NO_BOOKDATA
+            );
+        }
+
+        // Obsolete way to handle multidimensional spec rows.
+        if (isset($this->Payload['specLine'])) {
+            if (isset($this->Payload['specLine']['artNo'])) {
+                $this->SpecLines[] = $this->Payload['specLine'];
+            } else {
+                if (is_array($this->Payload['specLine'])) {
+                    foreach ($this->Payload['specLine'] as $specRow) {
+                        $this->SpecLines[] = $specRow;
+                    }
+                }
+            }
+            unset($this->Payload['specLine']);
+            $this->renderPaymentSpec();
+        } elseif (isset($this->Payload['orderLines'])) {
+            $this->renderPaymentSpec();
+        } elseif (!isset($this->Payload['orderLines']) && count($this->SpecLines)) {
+            // Fix desynched order lines.
+            $this->Payload['orderLines'] = $this->SpecLines;
+            $this->renderPaymentSpec();
+        }
+        if ($this->getPreferredPaymentFlowService() === RESURS_FLOW_TYPES::HOSTED_FLOW ||
+            $this->getPreferredPaymentFlowService() === RESURS_FLOW_TYPES::SIMPLIFIED_FLOW
+        ) {
+            if (!isset($paymentDataPayload ['paymentData'])) {
+                $paymentDataPayload ['paymentData'] = [];
+            }
+            $paymentDataPayload['paymentData']['paymentMethodId'] = $payment_id_or_method;
+            $paymentDataPayload['paymentData']['preferredId'] = $this->getPreferredPaymentId();
+            $paymentDataPayload['paymentData']['customerIpAddress'] = $this->getCustomerIp();
+
+            if ($this->getPreferredPaymentFlowService() === RESURS_FLOW_TYPES::SIMPLIFIED_FLOW) {
+                if (!isset($this->Payload['storeId']) && !empty($this->storeId)) {
+                    $this->Payload['storeId'] = $this->storeId;
+                }
+            } else {
+                // The simplified flag control must run to be backward compatible with older services
+                if (isset($this->Payload['paymentData']['waitForFraudControl'])) {
+                    $this->Payload['waitForFraudControl'] = $this->Payload['paymentData']['waitForFraudControl'];
+                    unset($this->Payload['paymentData']['waitForFraudControl']);
+                }
+                if (isset($this->Payload['paymentData']['annulIfFrozen'])) {
+                    $this->Payload['annulIfFrozen'] = $this->Payload['paymentData']['annulIfFrozen'];
+                    unset($this->Payload['paymentData']['annulIfFrozen']);
+                }
+                if (isset($this->Payload['paymentData']['finalizeIfBooked'])) {
+                    $this->Payload['finalizeIfBooked'] = $this->Payload['paymentData']['finalizeIfBooked'];
+                    unset($this->Payload['paymentData']['finalizeIfBooked']);
+                }
+            }
+            $this->handlePayload($paymentDataPayload, true);
+        }
+        if ((
+            $this->getPreferredPaymentFlowService() == RESURS_FLOW_TYPES::RESURS_CHECKOUT ||
+            $this->getPreferredPaymentFlowService() == RESURS_FLOW_TYPES::HOSTED_FLOW
+        )
+        ) {
+            // Convert signing to checkout urls if exists (not recommended as failUrl might not always be the backUrl)
+            // However, those variables will only be replaced in the correct payload if they are not already there.
+            if (isset($this->Payload['signing'])) {
+                if ($this->getPreferredPaymentFlowService() == RESURS_FLOW_TYPES::HOSTED_FLOW) {
+                    if (isset($this->Payload['signing']['forceSigning'])) {
+                        $this->Payload['forceSigning'] = $this->Payload['signing']['forceSigning'];
+                    }
+                    if (!isset($this->Payload['failUrl']) && isset($this->Payload['signing']['failUrl'])) {
+                        $this->Payload['failUrl'] = $this->Payload['signing']['failUrl'];
+                    }
+                    if (!isset($this->Payload['backUrl']) && isset($this->Payload['signing']['backUrl'])) {
+                        $this->Payload['backUrl'] = $this->Payload['signing']['backUrl'];
+                    }
+                }
+                if (!isset($this->Payload['successUrl']) && isset($this->Payload['signing']['successUrl'])) {
+                    $this->Payload['successUrl'] = $this->Payload['signing']['successUrl'];
+                }
+                if (!isset($this->Payload['backUrl']) && isset($this->Payload['signing']['failUrl'])) {
+                    $this->Payload['backUrl'] = $this->Payload['signing']['failUrl'];
+                }
+                unset($this->Payload['signing']);
+            }
+            // Rules for customer only applies to checkout. As this also involves the hosted flow (see above) this
+            // must only specifically occur on the checkout
+            if ($this->getPreferredPaymentFlowService() == RESURS_FLOW_TYPES::RESURS_CHECKOUT) {
+                if (!isset($this->Payload['storeId']) && !empty($this->storeId)) {
+                    $this->Payload['storeId'] = $this->storeId;
+                }
+                if (isset($this->Payload['paymentData'])) {
+                    unset($this->Payload['paymentData']);
+                }
+
+                // By not removing fields on this kind of exception means that we need to protect the customer object.
+                if (isset($this->Payload['customer']['address'])) {
+                    $this->checkoutCustomerFieldSupport = true;
+                }
+
+                if (isset($this->Payload['customer']['deliveryAddress'])) {
+                    $this->checkoutCustomerFieldSupport = true;
+                }
+
+                if ($this->checkoutCustomerFieldSupport === false && isset($this->Payload['customer'])) {
+                    unset($this->Payload['customer']);
+                }
+
+                // Making sure sloppy developers uses shopUrl properly.
+                if (!isset($this->Payload['shopUrl'])) {
+                    if ($this->validateCheckoutShopUrl) {
+                        $shopUrlValidate = $this->NETWORK->getUrlDomain($this->checkoutShopUrl);
+                        $this->checkoutShopUrl = $shopUrlValidate[1] . '://' . $shopUrlValidate[0];
+                    }
+                    $this->Payload['shopUrl'] = $this->checkoutShopUrl;
+                }
+            }
+        }
+        // If card data has been included in the payload, make sure that the card data is validated if the payload
+        // has been sent by manual hands (deprecated mode)
+        if (isset($this->Payload['card'])) {
+            /** @noinspection PhpUndefinedFieldInspection */
+            if (isset($this->PaymentMethod->specificType)) {
+                /** @noinspection PhpUndefinedFieldInspection */
+                $this->validateCardData($this->PaymentMethod->specificType);
+            }
+        }
+
+        $eventReturns = $this->event('update_payload', $this->Payload);
+        if (!is_null($eventReturns)) {
+            $this->Payload = $eventReturns;
+        }
     }
 
     /**
-     * Returns a true/false for a specific form field value depending on the response created by
-     * getTemplateFieldsByMethodType.
+     * Compile user defined payload with payload that may have been pre-set by other calls
      *
-     * This function is a part of Resurs Bank streamline support and actually defines the recommended value whether the
-     * field should try propagate it's data from the current store values or not. Doing this, you may be able to hide
-     * form fields that already exists in the store, so the customer does not need to enter the values twice.
-     *
-     * @param string $formField The field you want to test
-     * @param bool $canThrow Make the function throw an exception instead of silently return false if
-     *                          getTemplateFieldsByMethodType has not been run yet
-     *
-     * @return bool Returns false if you should NOT hide the field
+     * @param array $userDefinedPayload
+     * @param bool $replacePayload Allow replacements of old payload data
      * @throws Exception
-     * @deprecated 1.0.8 Build your own integration please
-     * @deprecated 1.1.8 Build your own integration please
-     */
-    public function canHideFormField($formField = '', $canThrow = false)
-    {
-        /** @noinspection PhpDeprecationInspection */
-        return $this->E_DEPRECATED->canHideFormField($formField, $canThrow);
-    }
-
-    /**
-     * Get field set rules for web-forms
-     *
-     * $paymentMethodType can be both a string or a object. If it is a object, the function will handle the incoming
-     * data as it is the complete payment method configuration (meaning, data may be cached). In this case, it will
-     * take care of the types in the method itself. If it is a string, it will handle the data as the configuration has
-     * already been solved out.
-     *
-     * When building forms for a web shop, a specific number of fields are required to show on screen. This function
-     * brings the right fields automatically. The deprecated flow generates form fields and returns them to the shop
-     * owner platform, with the form fields that is required for the placing an order. It also returns a bunch of
-     * regular expressions that is used to validate that the fields is correctly filled in. This function partially
-     * emulates that flow, so the only thing a integrating developer needs to take care of is the html code itself.
-     *
-     * @link https://test.resurs.com/docs/x/s4A0 Regular expressions
-     * @param string|array $paymentMethodName
-     * @param string $customerType
-     * @param string $specificType
-     * @return array
-     * @deprecated 1.0.8 Build your own integration please
-     * @deprecated 1.1.8 Build your own integration please
-     */
-    public function getTemplateFieldsByMethodType($paymentMethodName = '', $customerType = '', $specificType = '')
-    {
-        /** @noinspection PhpDeprecationInspection */
-        return $this->E_DEPRECATED->getTemplateFieldsByMethodType($paymentMethodName, $customerType, $specificType);
-    }
-
-    /**
-     * Defines if we are allowed to skip government id validation. Payment provider methods
-     * normally does this when running in simplified mode. In other cases, validation will be
-     * handled by Resurs Bank and this setting should not be affected by this
-     *
-     * @return bool
-     */
-    public function getCanSkipGovernmentIdValidation()
-    {
-        return $this->E_DEPRECATED->getCanSkipGovernmentIdValidation();
-    }
-
-
-    ////// Client specific
-
-    /**
-     * Get template fields by a specific payment method. This function retrieves the payment method in real time.
-     *
-     * @param string $paymentMethodName
-     *
-     * @return array
-     * @throws Exception
-     * @deprecated 1.0.8 Build your own integration please
-     * @deprecated 1.1.8 Build your own integration please
-     */
-    public function getTemplateFieldsByMethod($paymentMethodName = '')
-    {
-        /** @noinspection PhpDeprecationInspection */
-        return $this->E_DEPRECATED->getTemplateFieldsByMethodType($this->getPaymentMethodSpecific($paymentMethodName));
-    }
-
-    /**
-     * Get form fields by a specific payment method. This function retrieves the payment method in real time.
-     *
-     * @param string $paymentMethodName
-     *
-     * @return array
-     * @throws Exception
-     * @deprecated 1.0.8 Build your own integration please
-     * @deprecated 1.1.8 Build your own integration please
-     */
-    public function getFormFieldsByMethod($paymentMethodName = '')
-    {
-        /** @noinspection PhpDeprecationInspection */
-        return $this->E_DEPRECATED->getTemplateFieldsByMethod($paymentMethodName);
-    }
-
-    /**
-     * Set your own order reference instead of taking the randomized one
-     *
-     * @param $myPreferredId
-     *
      * @since 1.0.2
      * @since 1.1.2
      */
-    public function setPreferredId($myPreferredId)
+    private function handlePayload($userDefinedPayload = [], $replacePayload = false)
     {
-        $this->preferredId = $myPreferredId;
-    }
-
-    /**
-     * Insert products in "virtual cart"
-     *
-     * @param string $articleNumberOrId
-     * @param string $description
-     * @param int $unitAmountWithoutVat
-     * @param int $vatPct
-     * @param string $unitMeasure
-     * @param string $articleType ORDER_LINE, DISCOUNT, SHIPPING_FEE
-     * @param int $quantity
-     * @throws Exception
-     * @since 1.0.2
-     * @since 1.1.2
-     * @since 1.2.0
-     */
-    public function addOrderLine(
-        $articleNumberOrId = '',
-        $description = '',
-        $unitAmountWithoutVat = 0,
-        $vatPct = 0,
-        $unitMeasure = 'st',
-        $articleType = 'ORDER_LINE',
-        $quantity = 1
-    )
-    {
-        $this->specLineCustomization = true;
-
-        if (!is_array($this->SpecLines)) {
-            $this->SpecLines = [];
-        }
-
-        if (is_null($articleType)) {
-            $articleType = 'ORDER_LINE';
-        }
-
-        // Simplified:
-        //   id, artNo, description, quantity, unitMeasure, unitAmountWithoutVat, vatPct, totalVatAmount, totalAmount
-        // Hosted:
-        //   artNo, description, quantity, unitMeasure, unitAmountWithoutVat, vatPct, totalVatAmount, totalAmount
-        // Checkout:
-        //   artNo, description, quantity, unitMeasure, unitAmountWithoutVat, vatPct, type
-
-        $duplicateArticle = false;
-        foreach ($this->SpecLines as $specIndex => $specRow) {
-            if ($specRow['artNo'] == $articleNumberOrId && $specRow['unitAmountWithoutVat'] == $unitAmountWithoutVat) {
-                $duplicateArticle = true;
-                $this->SpecLines[$specIndex]['quantity'] += $quantity;
+        $myFlow = $this->getPreferredPaymentFlowService();
+        if (is_array($userDefinedPayload) && count($userDefinedPayload)) {
+            foreach ($userDefinedPayload as $payloadKey => $payloadContent) {
+                if (!isset($this->Payload[$payloadKey]) && !$replacePayload) {
+                    $this->Payload[$payloadKey] = $payloadContent;
+                } else {
+                    // If the payload key already exists, there might be something that wants to share information.
+                    // In this case, append more data to the children
+                    if (is_array($userDefinedPayload[$payloadKey])) {
+                        foreach ($userDefinedPayload[$payloadKey] as $subKey => $subValue) {
+                            if (!isset($this->Payload[$payloadKey][$subKey])) {
+                                $this->Payload[$payloadKey][$subKey] = $subValue;
+                            } elseif ($replacePayload) {
+                                $this->Payload[$payloadKey][$subKey] = $subValue;
+                            }
+                        }
+                    } else {
+                        if (!isset($this->Payload[$payloadKey])) {
+                            $this->Payload[$payloadKey] = $payloadContent;
+                        }
+                    }
+                }
             }
         }
-        if (!$duplicateArticle) {
-            $specData = [
-                'artNo' => $articleNumberOrId,
-                'description' => $description,
-                'quantity' => $quantity,
-                'unitMeasure' => $unitMeasure,
-                'unitAmountWithoutVat' => $unitAmountWithoutVat,
-                'vatPct' => $vatPct,
-                'type' => !empty($articleType) ? $articleType : '',
-            ];
-            $newSpecData = $this->event('ecom_article_data', $specData);
-            if (!is_null($newSpecData) && is_array($newSpecData)) {
-                $specData = $newSpecData;
+        // Address and deliveryAddress should move to the correct location
+        if (isset($this->Payload['address'])) {
+            $this->Payload['customer']['address'] = $this->Payload['address'];
+            if ($myFlow == RESURS_FLOW_TYPES::HOSTED_FLOW && isset($this->Payload['customer']['address']['country'])) {
+                $this->Payload['customer']['address']['countryCode'] = $this->Payload['customer']['address']['country'];
             }
-            $this->SpecLines[] = $specData;
+            unset($this->Payload['address']);
         }
-        $this->renderPaymentSpec();
+        if (isset($this->Payload['deliveryAddress'])) {
+            $this->Payload['customer']['deliveryAddress'] = $this->Payload['deliveryAddress'];
+            if ($myFlow == RESURS_FLOW_TYPES::HOSTED_FLOW &&
+                isset($this->Payload['customer']['deliveryAddress']['country'])
+            ) {
+                $this->Payload['customer']['deliveryAddress']['countryCode'] =
+                    $this->Payload['customer']['deliveryAddress']['country'];
+            }
+            unset($this->Payload['deliveryAddress']);
+        }
+        if (isset($this->Payload['customer'])) {
+            $noCustomerType = false;
+            if ((
+                !isset($this->Payload['customer']['type'])) ||
+                isset($this->Payload['customer']['type']) &&
+                empty($this->Payload['customer']['type'])
+            ) {
+                $noCustomerType = true;
+            }
+            if ($noCustomerType) {
+                if (!empty($this->desiredPaymentMethod)) {
+                    $paymentMethodInfo = $this->getPaymentMethodSpecific($this->desiredPaymentMethod);
+                    if (isset($paymentMethodInfo->customerType)) {
+                        if (!is_array($paymentMethodInfo->customerType) && !empty($paymentMethodInfo->customerType)) {
+                            $this->Payload['customer']['type'] = $paymentMethodInfo->customerType;
+                        } else {
+                            // At this stage, we have no idea of which customer type it is about, so we will fail over
+                            // to NATURAL when it is not set by the customer itself. We could do a getAddress here, but
+                            // that may not be safe enough to decide customer types automatically. Also, it is in for
+                            // example hosted flow not even necessary to enter a government id here.
+                            // Besides this? It lowers the performance of the actions.
+                            $this->Payload['customer']['type'] = 'NATURAL';
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -4995,315 +4964,6 @@ class ResursBank
     }
 
     /**
-     * The new payment creation function (replaces bookPayment)
-     *
-     * For EComPHP 1.0.2 there is no need for any object conversion (or external parameters). Most of the parameters is
-     * about which preferred payment flow that is used, which should be set with the function
-     * setPreferredPaymentFlowService() instead. If no preferred are set, we will fall back to the simplified flow.
-     *
-     * @param string $payment_id_or_method For ResursCheckout the payment id are preferred before the payment method
-     * @param array $payload If there are any extra (or full) payload for the chosen payment, it should be placed here
-     *
-     * @return array
-     * @throws Exception
-     * @since 1.1.2
-     * @since 1.0.2
-     */
-    public function createPayment($payment_id_or_method = '', $payload = [])
-    {
-        if (!$this->hasServicesInitialization) {
-            $this->InitializeServices();
-        }
-        $myFlow = $this->getPreferredPaymentFlowService();
-        try {
-            if ($myFlow !== RESURS_FLOW_TYPES::RESURS_CHECKOUT) {
-                $this->desiredPaymentMethod = $payment_id_or_method;
-                $paymentMethodInfo = $this->getPaymentMethodSpecific($payment_id_or_method);
-                if (isset($paymentMethodInfo->type) && $paymentMethodInfo->type === 'PAYMENT_PROVIDER') {
-                    $this->paymentMethodIsPsp = true;
-                }
-                if (isset($paymentMethodInfo->id)) {
-                    $this->PaymentMethod = $paymentMethodInfo;
-                }
-            }
-        } catch (Exception $e) {
-        }
-        $this->preparePayload($payment_id_or_method, $payload);
-        if ($this->paymentMethodIsPsp) {
-            $this->clearPspCustomerPayload();
-        }
-
-        if ($this->forceExecute) {
-            $this->createPaymentExecuteCommand = $payment_id_or_method;
-
-            return ['status' => 'delayed'];
-        } else {
-            $bookPaymentResult = $this->createPaymentExecute($payment_id_or_method);
-        }
-
-        return $bookPaymentResult;
-    }
-
-    /////////// LONG LIFE DEPRECATION
-    /// Belongs to the deprecated shopFlow emulation, used by the wooCommerce plugin amongst others
-
-    /**
-     * Prepare the payload
-     *
-     * @param string $payment_id_or_method
-     * @param array $payload
-     *
-     * @throws Exception
-     * @since 1.0.1
-     * @since 1.1.1
-     */
-    private function preparePayload($payment_id_or_method = '', $payload = [])
-    {
-        $this->InitializeServices();
-        $this->handlePayload($payload);
-
-        $updateStoreIdEvent = $this->event('update_store_id');
-        if (!is_null($updateStoreIdEvent)) {
-            $this->setStoreId($updateStoreIdEvent);
-        }
-
-        if (empty($this->defaultUnitMeasure)) {
-            $this->setDefaultUnitMeasure();
-        }
-        if ($this->getPreferredPaymentFlowService() === RESURS_FLOW_TYPES::NOT_SET) {
-            $this->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::SIMPLIFIED_FLOW);
-        }
-
-        if ($this->getPreferredPaymentFlowService() === RESURS_FLOW_TYPES::RESURS_CHECKOUT) {
-            if (empty($payment_id_or_method) && empty($this->preferredId)) {
-                throw new ResursException(
-                    'A payment method or payment id must be defined.',
-                    RESURS_EXCEPTIONS::CREATEPAYMENT_NO_ID_SET
-                );
-            }
-            $payment_id_or_method = $this->preferredId;
-        }
-        if (!count($this->Payload) && !$this->isFlag('USE_AFTERSHOP_RENDERING')) {
-            throw new ResursException(
-                'No payload are set for this payment.',
-                RESURS_EXCEPTIONS::BOOKPAYMENT_NO_BOOKDATA
-            );
-        }
-
-        // Obsolete way to handle multidimensional spec rows.
-        if (isset($this->Payload['specLine'])) {
-            if (isset($this->Payload['specLine']['artNo'])) {
-                $this->SpecLines[] = $this->Payload['specLine'];
-            } else {
-                if (is_array($this->Payload['specLine'])) {
-                    foreach ($this->Payload['specLine'] as $specRow) {
-                        $this->SpecLines[] = $specRow;
-                    }
-                }
-            }
-            unset($this->Payload['specLine']);
-            $this->renderPaymentSpec();
-        } elseif (isset($this->Payload['orderLines'])) {
-            $this->renderPaymentSpec();
-        } elseif (!isset($this->Payload['orderLines']) && count($this->SpecLines)) {
-            // Fix desynched order lines.
-            $this->Payload['orderLines'] = $this->SpecLines;
-            $this->renderPaymentSpec();
-        }
-        if ($this->getPreferredPaymentFlowService() === RESURS_FLOW_TYPES::HOSTED_FLOW ||
-            $this->getPreferredPaymentFlowService() === RESURS_FLOW_TYPES::SIMPLIFIED_FLOW
-        ) {
-            if (!isset($paymentDataPayload ['paymentData'])) {
-                $paymentDataPayload ['paymentData'] = [];
-            }
-            $paymentDataPayload['paymentData']['paymentMethodId'] = $payment_id_or_method;
-            $paymentDataPayload['paymentData']['preferredId'] = $this->getPreferredPaymentId();
-            $paymentDataPayload['paymentData']['customerIpAddress'] = $this->getCustomerIp();
-
-            if ($this->getPreferredPaymentFlowService() === RESURS_FLOW_TYPES::SIMPLIFIED_FLOW) {
-                if (!isset($this->Payload['storeId']) && !empty($this->storeId)) {
-                    $this->Payload['storeId'] = $this->storeId;
-                }
-            } else {
-                // The simplified flag control must run to be backward compatible with older services
-                if (isset($this->Payload['paymentData']['waitForFraudControl'])) {
-                    $this->Payload['waitForFraudControl'] = $this->Payload['paymentData']['waitForFraudControl'];
-                    unset($this->Payload['paymentData']['waitForFraudControl']);
-                }
-                if (isset($this->Payload['paymentData']['annulIfFrozen'])) {
-                    $this->Payload['annulIfFrozen'] = $this->Payload['paymentData']['annulIfFrozen'];
-                    unset($this->Payload['paymentData']['annulIfFrozen']);
-                }
-                if (isset($this->Payload['paymentData']['finalizeIfBooked'])) {
-                    $this->Payload['finalizeIfBooked'] = $this->Payload['paymentData']['finalizeIfBooked'];
-                    unset($this->Payload['paymentData']['finalizeIfBooked']);
-                }
-            }
-            $this->handlePayload($paymentDataPayload, true);
-        }
-        if ((
-            $this->getPreferredPaymentFlowService() == RESURS_FLOW_TYPES::RESURS_CHECKOUT ||
-            $this->getPreferredPaymentFlowService() == RESURS_FLOW_TYPES::HOSTED_FLOW
-        )
-        ) {
-            // Convert signing to checkout urls if exists (not recommended as failUrl might not always be the backUrl)
-            // However, those variables will only be replaced in the correct payload if they are not already there.
-            if (isset($this->Payload['signing'])) {
-                if ($this->getPreferredPaymentFlowService() == RESURS_FLOW_TYPES::HOSTED_FLOW) {
-                    if (isset($this->Payload['signing']['forceSigning'])) {
-                        $this->Payload['forceSigning'] = $this->Payload['signing']['forceSigning'];
-                    }
-                    if (!isset($this->Payload['failUrl']) && isset($this->Payload['signing']['failUrl'])) {
-                        $this->Payload['failUrl'] = $this->Payload['signing']['failUrl'];
-                    }
-                    if (!isset($this->Payload['backUrl']) && isset($this->Payload['signing']['backUrl'])) {
-                        $this->Payload['backUrl'] = $this->Payload['signing']['backUrl'];
-                    }
-                }
-                if (!isset($this->Payload['successUrl']) && isset($this->Payload['signing']['successUrl'])) {
-                    $this->Payload['successUrl'] = $this->Payload['signing']['successUrl'];
-                }
-                if (!isset($this->Payload['backUrl']) && isset($this->Payload['signing']['failUrl'])) {
-                    $this->Payload['backUrl'] = $this->Payload['signing']['failUrl'];
-                }
-                unset($this->Payload['signing']);
-            }
-            // Rules for customer only applies to checkout. As this also involves the hosted flow (see above) this
-            // must only specifically occur on the checkout
-            if ($this->getPreferredPaymentFlowService() == RESURS_FLOW_TYPES::RESURS_CHECKOUT) {
-                if (!isset($this->Payload['storeId']) && !empty($this->storeId)) {
-                    $this->Payload['storeId'] = $this->storeId;
-                }
-                if (isset($this->Payload['paymentData'])) {
-                    unset($this->Payload['paymentData']);
-                }
-
-                // By not removing fields on this kind of exception means that we need to protect the customer object.
-                if (isset($this->Payload['customer']['address'])) {
-                    $this->checkoutCustomerFieldSupport = true;
-                }
-
-                if (isset($this->Payload['customer']['deliveryAddress'])) {
-                    $this->checkoutCustomerFieldSupport = true;
-                }
-
-                if ($this->checkoutCustomerFieldSupport === false && isset($this->Payload['customer'])) {
-                    unset($this->Payload['customer']);
-                }
-
-                // Making sure sloppy developers uses shopUrl properly.
-                if (!isset($this->Payload['shopUrl'])) {
-                    if ($this->validateCheckoutShopUrl) {
-                        $shopUrlValidate = $this->NETWORK->getUrlDomain($this->checkoutShopUrl);
-                        $this->checkoutShopUrl = sprintf(
-                            '%s://%s',
-                            $shopUrlValidate[1],
-                            $shopUrlValidate[0]
-                        );
-                    }
-                    $this->Payload['shopUrl'] = $this->checkoutShopUrl;
-                }
-            }
-        }
-        // If card data has been included in the payload, make sure that the card data is validated if the payload
-        // has been sent by manual hands (deprecated mode)
-        if (isset($this->Payload['card'])) {
-            /** @noinspection PhpUndefinedFieldInspection */
-            if (isset($this->PaymentMethod->specificType)) {
-                /** @noinspection PhpUndefinedFieldInspection */
-                $this->validateCardData($this->PaymentMethod->specificType);
-            }
-        }
-
-        $eventReturns = $this->event('update_payload', $this->Payload);
-        if (!is_null($eventReturns)) {
-            $this->Payload = $eventReturns;
-        }
-    }
-
-    /**
-     * Compile user defined payload with payload that may have been pre-set by other calls
-     *
-     * @param array $userDefinedPayload
-     * @param bool $replacePayload Allow replacements of old payload data
-     * @throws Exception
-     * @since 1.0.2
-     * @since 1.1.2
-     */
-    private function handlePayload($userDefinedPayload = [], $replacePayload = false)
-    {
-        $myFlow = $this->getPreferredPaymentFlowService();
-        if (is_array($userDefinedPayload) && count($userDefinedPayload)) {
-            foreach ($userDefinedPayload as $payloadKey => $payloadContent) {
-                if (!isset($this->Payload[$payloadKey]) && !$replacePayload) {
-                    $this->Payload[$payloadKey] = $payloadContent;
-                } else {
-                    // If the payload key already exists, there might be something that wants to share information.
-                    // In this case, append more data to the children
-                    if (is_array($userDefinedPayload[$payloadKey])) {
-                        foreach ($userDefinedPayload[$payloadKey] as $subKey => $subValue) {
-                            if (!isset($this->Payload[$payloadKey][$subKey])) {
-                                $this->Payload[$payloadKey][$subKey] = $subValue;
-                            } elseif ($replacePayload) {
-                                $this->Payload[$payloadKey][$subKey] = $subValue;
-                            }
-                        }
-                    } else {
-                        if (!isset($this->Payload[$payloadKey])) {
-                            $this->Payload[$payloadKey] = $payloadContent;
-                        }
-                    }
-                }
-            }
-        }
-        // Address and deliveryAddress should move to the correct location
-        if (isset($this->Payload['address'])) {
-            $this->Payload['customer']['address'] = $this->Payload['address'];
-            if ($myFlow == RESURS_FLOW_TYPES::HOSTED_FLOW && isset($this->Payload['customer']['address']['country'])) {
-                $this->Payload['customer']['address']['countryCode'] = $this->Payload['customer']['address']['country'];
-            }
-            unset($this->Payload['address']);
-        }
-        if (isset($this->Payload['deliveryAddress'])) {
-            $this->Payload['customer']['deliveryAddress'] = $this->Payload['deliveryAddress'];
-            if ($myFlow == RESURS_FLOW_TYPES::HOSTED_FLOW &&
-                isset($this->Payload['customer']['deliveryAddress']['country'])
-            ) {
-                $this->Payload['customer']['deliveryAddress']['countryCode'] =
-                    $this->Payload['customer']['deliveryAddress']['country'];
-            }
-            unset($this->Payload['deliveryAddress']);
-        }
-        if (isset($this->Payload['customer'])) {
-            $noCustomerType = false;
-            if ((
-                !isset($this->Payload['customer']['type'])) ||
-                isset($this->Payload['customer']['type']) &&
-                empty($this->Payload['customer']['type'])
-            ) {
-                $noCustomerType = true;
-            }
-            if ($noCustomerType) {
-                if (!empty($this->desiredPaymentMethod)) {
-                    $paymentMethodInfo = $this->getPaymentMethodSpecific($this->desiredPaymentMethod);
-                    if (isset($paymentMethodInfo->customerType)) {
-                        if (!is_array($paymentMethodInfo->customerType) && !empty($paymentMethodInfo->customerType)) {
-                            $this->Payload['customer']['type'] = $paymentMethodInfo->customerType;
-                        } else {
-                            // At this stage, we have no idea of which customer type it is about, so we will fail over
-                            // to NATURAL when it is not set by the customer itself. We could do a getAddress here, but
-                            // that may not be safe enough to decide customer types automatically. Also, it is in for
-                            // example hosted flow not even necessary to enter a government id here.
-                            // Besides this? It lowers the performance of the actions.
-                            $this->Payload['customer']['type'] = 'NATURAL';
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /**
      * Generates a unique "preferredId" (term from simplified and refers to orderReference) out of a date stamp.
      * Minimum length of maxLength is 14, but in that case only the timestamp will be returned
      *
@@ -5414,6 +5074,515 @@ class ResursBank
                 }
             }
         }
+    }
+
+    /**
+     * @param string $htmlData
+     * @return $this
+     * @since 1.4.0
+     * @deprecated Not spelled correctly. Use the proper one.
+     */
+    public function setCostOfPurcaseHtmlBefore($htmlData = '')
+    {
+        return $this->setCostOfPurchaseHtmlBefore($htmlData);
+    }
+
+    /**
+     * While generating a getCostOfPurchase where $returnBody is true, this function adds custom html before the
+     * returned html-code from Resurs Bank
+     *
+     * @param string $htmlData
+     * @return ResursBank
+     * @since 1.1.0
+     * @since 1.4.0
+     * @since 1.0.0
+     */
+    public function setCostOfPurchaseHtmlBefore($htmlData = '')
+    {
+        $this->getCostHtmlBefore = $htmlData;
+        return $this;
+    }
+
+    /**
+     * @param string $htmlData
+     * @return $this
+     * @deprecated Not spelled correctly. Use the proper one.
+     */
+    public function setCostOfPurcaseHtmlAfter($htmlData = '')
+    {
+        return $this->setCostOfPurchaseHtmlAfter($htmlData);
+    }
+
+    /**
+     * While generating a getCostOfPurchase where $returnBody is true, this function adds custom html after the
+     * returned html-code from Resurs Bank
+     *
+     * @param string $htmlData
+     * @return ResursBank
+     * @since 1.1.0
+     * @since 1.4.0
+     * @since 1.0.0
+     */
+    public function setCostOfPurchaseHtmlAfter($htmlData = '')
+    {
+        $this->getCostHtmlAfter = $htmlData;
+        return $this;
+    }
+
+    /**
+     * If you prefer to fetch anything that looks like a proxy if it mismatches to the REMOTE_ADDR, activate this
+     * (EXPERIMENTAL!!)
+     *
+     * @param bool $activated
+     *
+     * @since 1.0.2
+     * @since 1.1.2
+     */
+    public function setCustomerIpProxy($activated = false)
+    {
+        $this->preferCustomerProxy = $activated;
+    }
+
+    /**
+     * Quantity Recalculation of a getPayment. Also supports arrays.
+     *
+     * When ECom gets an article row that needs recalculation on quantity level, this method can be used.
+     * Note: The article row needs to be "completed" from the start, to get a successful recalculation.
+     * By means, you need a prepared "proper" payment already, where you only need to adjust the quantity
+     * values.
+     *
+     * @param array|stdClass $artObject
+     * @param int $quantity
+     *
+     * @return mixed
+     * @throws ResursException
+     * @since 1.3.20
+     * @since 1.0.47
+     * @since 1.1.47
+     */
+    public function getRecalculatedQuantity($artObject, $quantity = -1)
+    {
+        // If no quantity passed into this method, try to reuse quantity in the object.
+        if ($quantity === -1) {
+            if (isset($artObject->quantity)) {
+                $quantity = $artObject->quantity;
+            } elseif (isset($artObject['quantity'])) {
+                $quantity = $artObject['quantity'];
+            } else {
+                throw new ResursException(
+                    'A valid quantity is required for this recalculation.',
+                    RESURS_EXCEPTIONS::INTERNAL_QUANTITY_EXCEPTION
+                );
+            }
+        }
+
+        if (is_object($artObject) &&
+            isset($artObject->unitAmountWithoutVat) &&
+            isset($artObject->vatPct) &&
+            isset($artObject->totalVatAmount) &&
+            isset($artObject->totalAmount)
+        ) {
+            $artObject->totalVatAmount = $this->getTotalVatAmount(
+                $artObject->unitAmountWithoutVat,
+                $artObject->vatPct,
+                $quantity
+            );
+            $artObject->totalAmount = $this->getTotalAmount(
+                $artObject->unitAmountWithoutVat,
+                $artObject->vatPct,
+                $quantity
+            );
+            $artObject->quantity = $quantity;
+        }
+
+        // If this one arrives as an array, handle this also.
+        if (is_array($artObject) &&
+            isset($artObject['unitAmountWithoutVat']) &&
+            isset($artObject['vatPct']) &&
+            isset($artObject['totalVatAmount']) &&
+            isset($artObject['totalAmount'])
+        ) {
+            $artObject['totalVatAmount'] = $this->getTotalVatAmount(
+                $artObject['unitAmountWithoutVat'],
+                $artObject['vatPct'],
+                $quantity
+            );
+            $artObject['totalAmount'] = $this->getTotalAmount(
+                $artObject['unitAmountWithoutVat'],
+                $artObject['vatPct'],
+                $quantity
+            );
+            $artObject['quantity'] = $quantity;
+        }
+
+        return $artObject;
+    }
+
+    /**
+     * Lazy calculation of total amounts (make sure the VAT is an integer and not a decimal value).
+     *
+     * @param float $unitAmountWithoutVat
+     * @param int $vatPct
+     * @param int $quantity
+     * @return float|int
+     * @since 1.3.20
+     * @since 1.0.47
+     * @since 1.1.47
+     */
+    public function getTotalVatAmount($unitAmountWithoutVat, $vatPct, $quantity)
+    {
+        return ($unitAmountWithoutVat * $vatPct / 100) * $quantity;
+    }
+
+    /**
+     * Lazy calculation of total amounts (make sure the VAT is an integer and not a decimal value).
+     *
+     * @param $unitAmountWithoutVat
+     * @param $vatPct
+     * @param $quantity
+     * @return float|int
+     * @since 1.3.20
+     * @since 1.0.47
+     * @since 1.1.47
+     */
+    public function getTotalAmount($unitAmountWithoutVat, $vatPct, $quantity)
+    {
+        return ($unitAmountWithoutVat + ($unitAmountWithoutVat * $vatPct / 100)) * $quantity;
+    }
+
+    /**
+     * @return string
+     * @since 1.3.23
+     */
+    public function getRealClientName()
+    {
+        return $this->realClientName;
+    }
+
+    /**
+     * @param $clientName
+     * @since 1.3.23
+     */
+    public function setRealClientName($clientName)
+    {
+        $this->userSetClientName = true;
+        $this->realClientName = $clientName;
+    }
+
+    /**
+     * Set a logged in username (will be merged with the client name at afterShopFlow-level)
+     *
+     * @param string $currentUsername
+     *
+     * @since 1.0.0
+     * @since 1.1.0
+     */
+    public function setLoggedInUser($currentUsername = '')
+    {
+        $this->loggedInUser = $currentUsername;
+    }
+
+    /**
+     * Set an initial shop url to use with Resurs Checkout
+     * If this is not set, EComPHP will handle the shopUrl automatically.
+     * It is also possible to handle this through the manual payload as always.
+     *
+     * @param string $shopUrl
+     * @param bool $validateFormat Activate URL validation
+     * @throws Exception
+     * @since 1.0.4
+     * @since 1.1.4
+     */
+    public function setShopUrl($shopUrl = '', $validateFormat = true)
+    {
+        $this->InitializeServices();
+        if (!empty($shopUrl)) {
+            $this->checkoutShopUrl = $shopUrl;
+        }
+        if ($validateFormat) {
+            $this->isNetWork();
+            $shopUrlValidate = $this->NETWORK->getUrlDomain($this->checkoutShopUrl);
+            $this->checkoutShopUrl = sprintf(
+                '%s://%s',
+                $shopUrlValidate[1],
+                $shopUrlValidate[0]
+            );
+        }
+    }
+
+    /**
+     * Make sure shopUrl are properly set by enabling this feature
+     *
+     * @param bool $validateEnabled
+     *
+     * @since 1.0.22
+     * @since 1.1.22
+     * @since 1.2.0
+     */
+    public function setValidateCheckoutShopUrl($validateEnabled = true)
+    {
+        $this->validateCheckoutShopUrl = $validateEnabled;
+    }
+
+    /**
+     * Override formTemplateFieldsetRules in case of important needs or unexpected changes
+     *
+     * @param $customerType
+     * @param $methodType
+     * @param $fieldArray
+     *
+     * @return array
+     * @deprecated 1.0.8 Build your own integration please
+     * @deprecated 1.1.8 Build your own integration please
+     */
+    public function setFormTemplateRules($customerType, $methodType, $fieldArray)
+    {
+        /** @noinspection PhpDeprecationInspection */
+        return $this->E_DEPRECATED->setFormTemplateRules($customerType, $methodType, $fieldArray);
+    }
+
+    /**
+     * Get regular expression ruleset for a specific payment form field.
+     * If no form field name are given, all the fields are returned for a specific payment method.
+     * Parameters are case insensitive.
+     *
+     * @param string $formFieldName
+     * @param $countryCode
+     * @param $customerType
+     * @return array
+     * @throws Exception
+     * @deprecated 1.0.8 Build your own integration please
+     * @deprecated 1.1.8 Build your own integration please
+     */
+    public function getRegEx($formFieldName = '', $countryCode = '', $customerType = 'NATURAL')
+    {
+        /** @noinspection PhpDeprecationInspection */
+        return $this->E_DEPRECATED->getRegEx($formFieldName, $countryCode, $customerType);
+    }
+
+    /**
+     * Returns a true/false for a specific form field value depending on the response created by
+     * getTemplateFieldsByMethodType.
+     *
+     * This function is a part of Resurs Bank streamline support and actually defines the recommended value whether the
+     * field should try propagate it's data from the current store values or not. Doing this, you may be able to hide
+     * form fields that already exists in the store, so the customer does not need to enter the values twice.
+     *
+     * @param string $formField The field you want to test
+     * @param bool $canThrow Make the function throw an exception instead of silently return false if
+     *                          getTemplateFieldsByMethodType has not been run yet
+     *
+     * @return bool Returns false if you should NOT hide the field
+     * @throws Exception
+     * @deprecated 1.0.8 Build your own integration please
+     * @deprecated 1.1.8 Build your own integration please
+     */
+    public function canHideFormField($formField = '', $canThrow = false)
+    {
+        /** @noinspection PhpDeprecationInspection */
+        return $this->E_DEPRECATED->canHideFormField($formField, $canThrow);
+    }
+
+    /**
+     * Get field set rules for web-forms
+     *
+     * $paymentMethodType can be both a string or a object. If it is a object, the function will handle the incoming
+     * data as it is the complete payment method configuration (meaning, data may be cached). In this case, it will
+     * take care of the types in the method itself. If it is a string, it will handle the data as the configuration has
+     * already been solved out.
+     *
+     * When building forms for a web shop, a specific number of fields are required to show on screen. This function
+     * brings the right fields automatically. The deprecated flow generates form fields and returns them to the shop
+     * owner platform, with the form fields that is required for the placing an order. It also returns a bunch of
+     * regular expressions that is used to validate that the fields is correctly filled in. This function partially
+     * emulates that flow, so the only thing a integrating developer needs to take care of is the html code itself.
+     *
+     * @link https://test.resurs.com/docs/x/s4A0 Regular expressions
+     * @param string|array $paymentMethodName
+     * @param string $customerType
+     * @param string $specificType
+     * @return array
+     * @deprecated 1.0.8 Build your own integration please
+     * @deprecated 1.1.8 Build your own integration please
+     */
+    public function getTemplateFieldsByMethodType($paymentMethodName = '', $customerType = '', $specificType = '')
+    {
+        /** @noinspection PhpDeprecationInspection */
+        return $this->E_DEPRECATED->getTemplateFieldsByMethodType($paymentMethodName, $customerType, $specificType);
+    }
+
+    /**
+     * Defines if we are allowed to skip government id validation. Payment provider methods
+     * normally does this when running in simplified mode. In other cases, validation will be
+     * handled by Resurs Bank and this setting should not be affected by this
+     *
+     * @return bool
+     */
+    public function getCanSkipGovernmentIdValidation()
+    {
+        return $this->E_DEPRECATED->getCanSkipGovernmentIdValidation();
+    }
+
+    /**
+     * Get template fields by a specific payment method. This function retrieves the payment method in real time.
+     *
+     * @param string $paymentMethodName
+     *
+     * @return array
+     * @throws Exception
+     * @deprecated 1.0.8 Build your own integration please
+     * @deprecated 1.1.8 Build your own integration please
+     */
+    public function getTemplateFieldsByMethod($paymentMethodName = '')
+    {
+        /** @noinspection PhpDeprecationInspection */
+        return $this->E_DEPRECATED->getTemplateFieldsByMethodType($this->getPaymentMethodSpecific($paymentMethodName));
+    }
+
+    /**
+     * Get form fields by a specific payment method. This function retrieves the payment method in real time.
+     *
+     * @param string $paymentMethodName
+     *
+     * @return array
+     * @throws Exception
+     * @deprecated 1.0.8 Build your own integration please
+     * @deprecated 1.1.8 Build your own integration please
+     */
+    public function getFormFieldsByMethod($paymentMethodName = '')
+    {
+        /** @noinspection PhpDeprecationInspection */
+        return $this->E_DEPRECATED->getTemplateFieldsByMethod($paymentMethodName);
+    }
+
+    /**
+     * Set your own order reference instead of taking the randomized one
+     *
+     * @param $myPreferredId
+     *
+     * @since 1.0.2
+     * @since 1.1.2
+     */
+    public function setPreferredId($myPreferredId)
+    {
+        $this->preferredId = $myPreferredId;
+    }
+
+    /**
+     * Insert products in "virtual cart".
+     *
+     * @param string $articleNumberOrId
+     * @param string $description
+     * @param int $unitAmountWithoutVat
+     * @param int $vatPct
+     * @param string $unitMeasure
+     * @param string $articleType ORDER_LINE, DISCOUNT, SHIPPING_FEE
+     * @param int $quantity
+     * @throws Exception
+     * @since 1.0.2
+     * @since 1.1.2
+     * @since 1.2.0
+     */
+    public function addOrderLine(
+        $articleNumberOrId = '',
+        $description = '',
+        $unitAmountWithoutVat = 0,
+        $vatPct = 0,
+        $unitMeasure = 'st',
+        $articleType = 'ORDER_LINE',
+        $quantity = 1
+    ) {
+        $this->specLineCustomization = true;
+
+        if (!is_array($this->SpecLines)) {
+            $this->SpecLines = [];
+        }
+
+        if (empty($articleType)) {
+            $articleType = 'ORDER_LINE';
+        }
+
+        // Simplified:
+        //   id, artNo, description, quantity, unitMeasure, unitAmountWithoutVat, vatPct, totalVatAmount, totalAmount
+        // Hosted:
+        //   artNo, description, quantity, unitMeasure, unitAmountWithoutVat, vatPct, totalVatAmount, totalAmount
+        // Checkout:
+        //   artNo, description, quantity, unitMeasure, unitAmountWithoutVat, vatPct, type
+
+        $duplicateArticle = false;
+        foreach ($this->SpecLines as $specIndex => $specRow) {
+            if ($specRow['artNo'] == $articleNumberOrId && $specRow['unitAmountWithoutVat'] == $unitAmountWithoutVat) {
+                $duplicateArticle = true;
+                $this->SpecLines[$specIndex]['quantity'] += $quantity;
+            }
+        }
+        if (!$duplicateArticle) {
+            $specData = [
+                'artNo' => $articleNumberOrId,
+                'description' => $description,
+                'quantity' => $quantity,
+                'unitMeasure' => $unitMeasure,
+                'unitAmountWithoutVat' => $unitAmountWithoutVat,
+                'vatPct' => $vatPct,
+                'type' => !empty($articleType) ? $articleType : '',
+            ];
+            $newSpecData = $this->event('ecom_article_data', $specData);
+            if (!is_null($newSpecData) && is_array($newSpecData)) {
+                $specData = $newSpecData;
+            }
+            $this->SpecLines[] = $specData;
+        }
+        $this->renderPaymentSpec();
+    }
+
+    /**
+     * The new payment creation function (replaces bookPayment)
+     *
+     * For EComPHP 1.0.2 there is no need for any object conversion (or external parameters). Most of the parameters is
+     * about which preferred payment flow that is used, which should be set with the function
+     * setPreferredPaymentFlowService() instead. If no preferred are set, we will fall back to the simplified flow.
+     *
+     * @param string $payment_id_or_method For ResursCheckout the payment id are preferred before the payment method
+     * @param array $payload If there are any extra (or full) payload for the chosen payment, it should be placed here
+     *
+     * @return array
+     * @throws Exception
+     * @since 1.1.2
+     * @since 1.0.2
+     */
+    public function createPayment($payment_id_or_method = '', $payload = [])
+    {
+        if (!$this->hasServicesInitialization) {
+            $this->InitializeServices();
+        }
+        $myFlow = $this->getPreferredPaymentFlowService();
+        try {
+            if ($myFlow !== RESURS_FLOW_TYPES::RESURS_CHECKOUT) {
+                $this->desiredPaymentMethod = $payment_id_or_method;
+                $paymentMethodInfo = $this->getPaymentMethodSpecific($payment_id_or_method);
+                if (isset($paymentMethodInfo->type) && $paymentMethodInfo->type === 'PAYMENT_PROVIDER') {
+                    $this->paymentMethodIsPsp = true;
+                }
+                if (isset($paymentMethodInfo->id)) {
+                    $this->PaymentMethod = $paymentMethodInfo;
+                }
+            }
+        } catch (Exception $e) {
+        }
+        $this->preparePayload($payment_id_or_method, $payload);
+        if ($this->paymentMethodIsPsp) {
+            $this->clearPspCustomerPayload();
+        }
+
+        if ($this->forceExecute) {
+            $this->createPaymentExecuteCommand = $payment_id_or_method;
+
+            return ['status' => 'delayed'];
+        } else {
+            $bookPaymentResult = $this->createPaymentExecute($payment_id_or_method);
+        }
+
+        return $bookPaymentResult;
     }
 
     /**
@@ -5586,10 +5755,6 @@ class ResursBank
         );
     }
 
-
-    /////////// PRIMARY INTERNAL SHOP FLOW SECTION
-    ////// HELPERS
-
     /**
      * Get current stored variable from customer session
      *
@@ -5705,6 +5870,22 @@ class ResursBank
     }
 
     /**
+     * @param $url
+     * @return string|string[]|null
+     * @since 1.3.47
+     */
+    public function getSecureUrl($url)
+    {
+        $return = $url;
+
+        if ($this->isFlag('HEAL_URL')) {
+            $return = preg_replace('/^http:/', 'https:', $return);
+        }
+
+        return $return;
+    }
+
+    /**
      * Returns a possible origin source from the iframe request.
      *
      * @param string $extractFrom
@@ -5752,8 +5933,6 @@ class ResursBank
         }
         return $this->fullCheckoutResponse;
     }
-
-    ////// MASTER SHOP FLOWS - PRIMARY BOOKING FUNCTIONS
 
     /**
      * Book signed payment
@@ -6155,8 +6334,7 @@ class ResursBank
         $postalArea,
         $postalCode,
         $country
-    )
-    {
+    ) {
         $ReturnAddress = [
             'fullName' => $fullName,
             'firstName' => $firstName,
@@ -6318,8 +6496,7 @@ class ResursBank
         $postalArea,
         $postalCode,
         $country
-    )
-    {
+    ) {
         $this->setAddressPayload(
             'address',
             $this->renderAddress(
@@ -6359,8 +6536,7 @@ class ResursBank
         $postalArea,
         $postalCode,
         $country
-    )
-    {
+    ) {
         $this->setAddressPayload(
             'deliveryAddress',
             $this->renderAddress(
@@ -6395,8 +6571,7 @@ class ResursBank
         $email = '',
         $customerType = '',
         $contactGovernmentId = ''
-    )
-    {
+    ) {
         if (!isset($this->Payload['customer'])) {
             $this->Payload['customer'] = [];
         }
@@ -6448,6 +6623,8 @@ class ResursBank
         $this->setSigning($successUrl, $backUrl);
     }
 
+    //// PAYLOAD HANDLER!
+
     /**
      * Configure signing data for the payload. Supports partial url encoding since (1.3.15/1.1.42).
      * Encoding is usually not a problem when using "nice urls".
@@ -6469,8 +6646,7 @@ class ResursBank
         $forceSigning = false,
         $backUrl = null,
         $encodeType = RESURS_URL_ENCODE_TYPES::NONE
-    )
-    {
+    ) {
         $SigningPayload['signing'] = [
             'successUrl' => $this->getEncodedSigningUrl($successUrl, RESURS_URL_ENCODE_TYPES::SUCCESSURL, $encodeType),
             'failUrl' => $this->getEncodedSigningUrl($failUrl, RESURS_URL_ENCODE_TYPES::FAILURL, $encodeType),
@@ -6595,25 +6771,6 @@ class ResursBank
     }
 
     /**
-     * @return float
-     * @throws Exception
-     * @since 1.3.49
-     */
-    public function getPayloadTotal()
-    {
-        $return = 0;
-
-        try {
-            $orderData = $this->getOrderData();
-            $return = isset($orderData['totalAmount']) ? $orderData['totalAmount'] : 0;
-        } catch (Exception $e) {
-            // Just ignore this.
-        }
-
-        return (float)$return;
-    }
-
-    /**
      * @return array
      */
     public function getSpecLines()
@@ -6636,7 +6793,8 @@ class ResursBank
         }
         throw new ResursException(
             sprintf(
-                '%s exception: could not fetch th ocShopScript from iframe.', __FUNCTION__
+                '%s exception: could not fetch th ocShopScript from iframe.',
+                __FUNCTION__
             )
         );
     }
@@ -6706,8 +6864,6 @@ class ResursBank
 
         return false;
     }
-
-    //// PAYLOAD HANDLER!
 
     /**
      * Convert objects to array data - recursive function when casting is not enough
@@ -6947,9 +7103,6 @@ class ResursBank
         return $orderLinesByStatus;
     }
 
-
-    ////// HOSTED FLOW
-
     /**
      * Merge a "getPayment" by each payment diff. This function uses way better keying than the
      * prior method getPaymentByStatuses() which supports "duplicate articles with diffing prices".
@@ -6999,8 +7152,6 @@ class ResursBank
 
         return $paymentDiff;
     }
-
-    ////// MASTER SHOP FLOWS - THE OTHER ONES
 
     /**
      * @param $row
@@ -7065,8 +7216,6 @@ class ResursBank
         }
         return (array)$return;
     }
-
-    /////////// AFTER SHOP ROUTINES
 
     /**
      * Render a table with completed data about each orderline.
@@ -7430,8 +7579,7 @@ class ResursBank
         $customPayloadItemList = [],
         $runOnce = false,
         $skipSpecValidation = false
-    )
-    {
+    ) {
         return $this->paymentFinalize($paymentId, $customPayloadItemList, $runOnce, $skipSpecValidation);
     }
 
@@ -7453,8 +7601,7 @@ class ResursBank
         $customPayloadItemList = [],
         $runOnce = false,
         $skipSpecValidation = false
-    )
-    {
+    ) {
         if (!is_array($customPayloadItemList)) {
             $customPayloadItemList = [];
         }
@@ -7569,8 +7716,7 @@ class ResursBank
         $paymentId = '',
         $customPayloadItemList = [],
         $payloadType = RESURS_AFTERSHOP_RENDER_TYPES::NONE
-    )
-    {
+    ) {
         $finalAfterShopSpec = [
             'paymentId' => $paymentId,
         ];
@@ -7843,8 +7989,7 @@ class ResursBank
     public function sanitizeAfterShopSpec(
         $paymentIdOrPaymentObjectData = '',
         $renderType = RESURS_AFTERSHOP_RENDER_TYPES::NONE
-    )
-    {
+    ) {
 
         $returnSpecObject = [];
 
@@ -7958,22 +8103,6 @@ class ResursBank
         }
 
         return $createdBy;
-    }
-
-    /**
-     * Return the final payload order data array
-     *
-     * @return array
-     * @throws Exception
-     * @since 1.0.22
-     * @since 1.1.22
-     * @since 1.2.0
-     */
-    public function getOrderData()
-    {
-        $this->preparePayload();
-
-        return isset($this->Payload['orderData']) ? $this->Payload['orderData'] : [];
     }
 
     /**
@@ -8176,8 +8305,7 @@ class ResursBank
         $byCallbackEvent = RESURS_CALLBACK_TYPES::NOT_SET,
         $callbackEventDataArrayOrString = [],
         $paymentMethodObject = null
-    )
-    {
+    ) {
 
         if (is_string($paymentIdOrPaymentObject)) {
             $paymentData = $this->getPayment($paymentIdOrPaymentObject, false);
@@ -8356,7 +8484,7 @@ class ResursBank
             }
             try {
                 $this->autoDebitablePaymentMethod = $this->getPaymentMethodSpecific($paymentData);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 throw new ResursException(
                     'getPaymentMethods Problem',
                     RESURS_EXCEPTIONS::PAYMENT_METHODS_ERROR,
@@ -8697,174 +8825,6 @@ class ResursBank
     }
 
     /**
-     * getPayment - Retrieves detailed information about a payment
-     *
-     * As of 1.3.13, SOAP has higher priority than REST. This might be a breaking change, since
-     * there will from now in (again) be a dependency of SoapClient. The flag GET_PAYMENT_BY_REST is
-     * obsolete and has no longer any effect.
-     *
-     * Exceptions thrown:
-     *      3/REST=>Order does not exist,
-     *      8/SOAP=>Reference does not exist,
-     *      404 is thrown when errors could not be fetched
-     *
-     * @param string $paymentId
-     * @param bool $requestCached Try fetch cached data before going for live data.
-     * @return mixed
-     * @throws ResursException
-     * @since 1.0.1
-     * @since 1.1.1
-     * @since 1.3.4 Refactored from this version
-     */
-    public function getPayment($paymentId = '', $requestCached = true)
-    {
-        $this->InitializeServices();
-        $rested = false;
-
-        $this->getPaymentRequests++;
-        if ($requestCached && isset($this->lastPaymentStored[$paymentId]->cached)) {
-            $lastRequest = time() - $this->lastPaymentStored[$paymentId]->cached;
-            if ($lastRequest <= $this->lastGetPaymentMaxCacheTime) {
-                $this->getPaymentCachedRequests++;
-                return $this->lastPaymentStored[$paymentId];
-            }
-        }
-
-        /**
-         * As REST based exceptions is more unsafe than the SOAP responses we use the SOAP as default method to get
-         * the payment data. REST throws a 404 exception with an extended body with errors when a payment does not
-         * exist. This behaviour is partially only half safe, since we don't know from moment to moment when this
-         * error body is present.
-         *
-         * @since 1.3.13
-         */
-        if ($this->isFlag('GET_PAYMENT_BY_REST') || !$this->SOAP_AVAILABLE) {
-            // This will ALWAYS run if SOAP is unavailable
-            try {
-                $rested = true;
-                $this->lastPaymentStored[$paymentId] = $this->getPaymentByRest($paymentId);
-                $this->getPaymentRequestMethod = RESURS_GETPAYMENT_REQUESTTYPE::REST;
-                $this->lastPaymentStored[$paymentId]->cached = time();
-                $this->lastPaymentStored[$paymentId]->requestMethod = $this->getPaymentRequestMethod;
-                $return = $this->lastPaymentStored[$paymentId];
-            } catch (ResursException $e) {
-                // 3 = The order does not exist, default REST error.
-                // If we for some reason get 404 errors here, the error should be rethrown as 3.
-                // If we for some unknown reason get 500+ errors, we can almost be sure that something else went wrong.
-                if ($e->getCode() === 404) {
-                    throw new ResursException($e->getMessage(), 3, $e);
-                }
-                if (!$this->SOAP_AVAILABLE && $e->getCode() === 51) {
-                    // Fail over on SSL certificate errors (first) as the domain for soap is different than RCO-rest.
-                    $rested = false;
-                } else {
-                    throw $e;
-                }
-            }
-        }
-
-        if (!$rested) {
-            try {
-                $this->lastPaymentStored[$paymentId] = $this->getPaymentBySoap($paymentId);
-                $this->getPaymentRequestMethod = RESURS_GETPAYMENT_REQUESTTYPE::SOAP;
-                $this->lastPaymentStored[$paymentId]->cached = time();
-                $this->lastPaymentStored[$paymentId]->requestMethod = $this->getPaymentRequestMethod;
-                $return = $this->lastPaymentStored[$paymentId];
-            } catch (Exception $e) {
-                // 8 = REFERENCED_DATA_DONT_EXISTS
-                throw $e;
-            }
-        }
-
-        return $return;
-    }
-
-    /**
-     * Check if flag is set and true
-     *
-     * @param string $flagKey
-     *
-     * @return bool
-     * @since 1.0.23
-     * @since 1.1.23
-     * @since 1.2.0
-     */
-    public function isFlag($flagKey = '')
-    {
-        if ($this->hasFlag($flagKey)) {
-            return ((bool)$this->getFlag($flagKey) ? true : false);
-        }
-
-        return false;
-    }
-
-    /**
-     * Check if there is an internal flag set with current key
-     *
-     * @param string $flagKey
-     *
-     * @return bool
-     * @since 1.0.23
-     * @since 1.1.23
-     * @since 1.2.0
-     */
-    public function hasFlag($flagKey = '')
-    {
-        if (!is_null($this->getFlag($flagKey))) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * @param string $paymentId
-     * @return stdClass
-     * @throws ResursException
-     * @throws ExceptionHandler
-     * @since 1.3.13
-     * @since 1.1.40
-     * @since 1.0.40
-     * @deprecated Since 1.3.45, use the auto selective method (getPayment) instead.
-     */
-    public function getPaymentByRest($paymentId = '')
-    {
-        try {
-            // The look of this call makes it compatible to PHP 5.3 (without chaining)
-            return $this->CURL->request(
-                '%s/checkout/payments/%s',
-                $this->getCheckoutUrl(),
-                $paymentId
-            )->getParsed();
-        } catch (Exception $e) {
-            // Get internal exceptions before http responses
-            $exceptionTestBody = @json_decode($this->CURL->getBody());
-            if (isset($exceptionTestBody->errorCode) && isset($exceptionTestBody->description)) {
-                throw new ResursException($exceptionTestBody->description, $exceptionTestBody->errorCode, $e);
-            }
-            throw new ResursException($e->getMessage(), $e->getCode(), $e);
-        }
-    }
-
-    /**
-     * Retrieves detailed information about a payment.
-     *
-     * @param string $paymentId
-     *
-     * @return array|mixed|null
-     * @throws Exception
-     * @link  https://test.resurs.com/docs/x/moEW getPayment() documentation
-     * @since 1.0.31
-     * @since 1.1.31
-     * @since 1.2.4
-     * @since 1.3.4
-     */
-    public function getPaymentBySoap($paymentId = '')
-    {
-        return $this->postService('getPayment', ['paymentId' => $paymentId]);
-    }
-
-    /**
      * For test purposes only.
      *
      * @return int|null
@@ -8901,8 +8861,7 @@ class ResursBank
         $customPayloadItemList = [],
         $runOnce = false,
         $skipSpecValidation = false
-    )
-    {
+    ) {
         return $this->paymentAnnul($paymentId, $customPayloadItemList, $runOnce, $skipSpecValidation);
     }
 
@@ -8925,8 +8884,7 @@ class ResursBank
         $customPayloadItemList = [],
         $runOnce = false,
         $skipSpecValidation = false
-    )
-    {
+    ) {
         if (!is_array($customPayloadItemList)) {
             $customPayloadItemList = [];
         }
@@ -8973,8 +8931,7 @@ class ResursBank
         $customPayloadItemList = [],
         $runOnce = false,
         $skipSpecValidation = false
-    )
-    {
+    ) {
         return $this->paymentCredit($paymentId, $customPayloadItemList, $runOnce, $skipSpecValidation);
     }
 
@@ -8998,8 +8955,7 @@ class ResursBank
         $customPayloadItemList = [],
         $runOnce = false,
         $skipSpecValidation = false
-    )
-    {
+    ) {
         if (!is_array($customPayloadItemList)) {
             $customPayloadItemList = [];
         }
@@ -9212,8 +9168,6 @@ class ResursBank
         $this->fraudStatusAllowed = $enable;
     }
 
-    ///////////// INTERNAL MEMORY LIMIT HANDLER BEGIN
-
     /**
      * @param $returnCode
      *
@@ -9222,33 +9176,30 @@ class ResursBank
      * @since 1.1.26
      * @since 1.2.0
      */
-    public function getOrderStatusStringByReturnCode(
-        $returnCode = RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET
-    )
+    public function getOrderStatusStringByReturnCode($returnCode = RESURS_PAYMENT_STATUS_RETURNCODES::ERROR)
     {
         $returnValue = '';
 
         switch (true) {
-            case $returnCode & (RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING):
-                $returnValue = 'pending';
+            case $returnCode & (RESURS_PAYMENT_STATUS_RETURNCODES::PENDING):
+                $returnValue = RESURS_STATUS_RETURN_CODES::getReturnString(RESURS_PAYMENT_STATUS_RETURNCODES::PENDING);
                 break;
-            case $returnCode & (RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PROCESSING):
-                $returnValue = 'processing';
+            case $returnCode & (RESURS_PAYMENT_STATUS_RETURNCODES::PROCESSING):
+                $returnValue = RESURS_STATUS_RETURN_CODES::getReturnString(RESURS_PAYMENT_STATUS_RETURNCODES::PROCESSING);
                 break;
-            case $returnCode & (
-                    RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED |
-                    RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_AUTOMATICALLY_DEBITED
-                );
+            case $returnCode & (RESURS_PAYMENT_STATUS_RETURNCODES::COMPLETED |
+                    RESURS_PAYMENT_STATUS_RETURNCODES::AUTO_DEBITED
+                ):
                 // Return completed by default here, regardless of what actually has happened to the order
                 // to maintain compatibility. If the payment has been finalized instantly, it is not here you'd
                 // like to use another status. It's in your own code.
-                $returnValue = 'completed';
+                $returnValue = RESURS_STATUS_RETURN_CODES::getReturnString(RESURS_PAYMENT_STATUS_RETURNCODES::COMPLETED);
                 break;
-            case $returnCode & (RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_ANNULLED);
-                $returnValue = 'annul';
+            case $returnCode & (RESURS_PAYMENT_STATUS_RETURNCODES::ANNULLED):
+                $returnValue = RESURS_STATUS_RETURN_CODES::getReturnString(RESURS_PAYMENT_STATUS_RETURNCODES::ANNULLED);
                 break;
-            case $returnCode & (RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_CREDITED);
-                $returnValue = 'credit';
+            case $returnCode & (RESURS_PAYMENT_STATUS_RETURNCODES::CREDITED):
+                $returnValue = RESURS_STATUS_RETURN_CODES::getReturnString(RESURS_PAYMENT_STATUS_RETURNCODES::CREDITED);
                 break;
             default:
                 break;
@@ -9276,8 +9227,7 @@ class ResursBank
         $saltKey = '',
         $inboundDigest = '',
         $callbackResult = null
-    )
-    {
+    ) {
         $digestCompiled = $callbackPaymentId . (!is_null($callbackResult) ? $callbackResult : null) . $saltKey;
         $digestMd5 = strtoupper(md5($digestCompiled));
         $digestSha = strtoupper(sha1($digestCompiled));
@@ -9304,22 +9254,6 @@ class ResursBank
     }
 
     /**
-     * @param $url
-     * @return string|string[]|null
-     * @since 1.3.47
-     */
-    public function getSecureUrl($url)
-    {
-        $return = $url;
-
-        if ($this->isFlag('HEAL_URL')) {
-            $return = preg_replace('/^http:/', 'https:', $return);
-        }
-
-        return $return;
-    }
-
-    /**
      * Activates or disables the auto debited payments discovery. Default enables this function.
      *
      * @param bool $activation
@@ -9331,8 +9265,6 @@ class ResursBank
     {
         $this->autoDebitableTypesActive = $activation;
     }
-    ///////////// INTERNAL MEMORY LIMIT HANDLER END
-
     /**
      * Magic function that will help us clean up unnecessary content. Future prepared.
      *

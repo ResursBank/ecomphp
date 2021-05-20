@@ -359,7 +359,6 @@ class resursBankTest extends TestCase
     private function allowVersion()
     {
         $return = false;
-
         $saE = explode('|', $_ENV['standalone_ecom']);
         if (is_array($saE) && count($saE)) {
             foreach ($saE as $textVersion) {
@@ -411,7 +410,7 @@ class resursBankTest extends TestCase
         $response = $this->TEST->ECOM->createPayment($this->getMethodId());
         if (!$noAssert) {
             /** @noinspection PhpUndefinedFieldInspection */
-            static::assertTrue($response->bookPaymentStatus == 'BOOKED' || $response->bookPaymentStatus == 'SIGNING');
+            static::assertTrue($response->bookPaymentStatus === 'BOOKED' || $response->bookPaymentStatus === 'SIGNING');
         }
 
         return $response;
@@ -657,7 +656,7 @@ class resursBankTest extends TestCase
         $response = $this->TEST->ECOM->createPayment($this->getMethodId());
         if (!$noAssert) {
             /** @noinspection PhpUndefinedFieldInspection */
-            static::assertTrue($response->bookPaymentStatus == 'BOOKED' || $response->bookPaymentStatus == 'SIGNING');
+            static::assertTrue($response->bookPaymentStatus === 'BOOKED' || $response->bookPaymentStatus === 'SIGNING');
         }
 
         return $response;
@@ -951,6 +950,44 @@ class resursBankTest extends TestCase
         }
 
         static::assertTrue($noCriticalTrue);
+    }
+
+    /**
+     * @test
+     * @noinspection PhpUnitTestsInspection
+     */
+    public function returnCodes()
+    {
+        $this->unitSetup();
+
+        static::assertTrue(
+            $this->TEST->ECOM->getOrderStatusStringByReturnCode(
+                RESURS_PAYMENT_STATUS_RETURNCODES::CREDITED
+            ) === 'credit'
+        );
+
+        RESURS_STATUS_RETURN_CODES::setReturnString(
+            RESURS_PAYMENT_STATUS_RETURNCODES::CREDITED,
+            'avbruten'
+        );
+
+        static::assertTrue(
+            $this->TEST->ECOM->getOrderStatusStringByReturnCode(
+                RESURS_PAYMENT_STATUS_RETURNCODES::CREDITED
+            ) === 'avbruten'
+        );
+
+        RESURS_STATUS_RETURN_CODES::setReturnString(
+            [
+                RESURS_PAYMENT_STATUS_RETURNCODES::ANNULLED => 'annullerad'
+            ]
+        );
+
+        static::assertTrue(
+            $this->TEST->ECOM->getOrderStatusStringByReturnCode(
+                RESURS_PAYMENT_STATUS_RETURNCODES::ANNULLED
+            ) === 'annullerad'
+        );
     }
 
     /**
@@ -2314,25 +2351,6 @@ class resursBankTest extends TestCase
     }
 
     /**
-     * @return null
-     * @throws Exception
-     * @noinspection PhpUnusedPrivateMethodInspection
-     */
-    private function getPaymentMethodsData()
-    {
-        $paymentMethods = $this->TEST->share('paymentMethods');
-        if (empty($paymentMethods)) {
-            $this->getPaymentMethods();
-            $paymentMethods = $this->TEST->share('paymentMethods');
-        }
-        if (isset($paymentMethods[0])) {
-            return $paymentMethods[0];
-        }
-
-        return null;
-    }
-
-    /**
      * @test
      */
     public function getMinMaxByAmount()
@@ -2361,5 +2379,24 @@ class resursBankTest extends TestCase
         $this->unitSetup();
         $this->TEST->ECOM->resetInvoiceNumber();
         static::assertTrue($this->TEST->unshare('thisKey'));
+    }
+
+    /**
+     * @return null
+     * @throws Exception
+     * @noinspection PhpUnusedPrivateMethodInspection
+     */
+    private function getPaymentMethodsData()
+    {
+        $paymentMethods = $this->TEST->share('paymentMethods');
+        if (empty($paymentMethods)) {
+            $this->getPaymentMethods();
+            $paymentMethods = $this->TEST->share('paymentMethods');
+        }
+        if (isset($paymentMethods[0])) {
+            return $paymentMethods[0];
+        }
+
+        return null;
     }
 }
