@@ -656,7 +656,7 @@ class resursBankTest extends TestCase
         $response = $this->TEST->ECOM->createPayment($this->getMethodId());
         if (!$noAssert) {
             /** @noinspection PhpUndefinedFieldInspection */
-            static::assertTrue($response->bookPaymentStatus == 'BOOKED' || $response->bookPaymentStatus == 'SIGNING');
+            static::assertTrue($response->bookPaymentStatus === 'BOOKED' || $response->bookPaymentStatus === 'SIGNING');
         }
 
         return $response;
@@ -950,6 +950,32 @@ class resursBankTest extends TestCase
         }
 
         static::assertTrue($noCriticalTrue);
+    }
+
+    /**
+     * @test
+     * @noinspection PhpUnitTestsInspection
+     */
+    public function returnCodes()
+    {
+        $this->unitSetup();
+
+        static::assertTrue(
+            $this->TEST->ECOM->getOrderStatusStringByReturnCode(
+                RESURS_PAYMENT_STATUS_RETURNCODES::CREDITED
+            ) === 'credit'
+        );
+
+        RESURS_STATUS_RETURN_CODES::setReturnString(
+            RESURS_PAYMENT_STATUS_RETURNCODES::CREDITED,
+            'avbruten'
+        );
+
+        static::assertTrue(
+            $this->TEST->ECOM->getOrderStatusStringByReturnCode(
+                RESURS_PAYMENT_STATUS_RETURNCODES::CREDITED
+            ) === 'avbruten'
+        );
     }
 
     /**

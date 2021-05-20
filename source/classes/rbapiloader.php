@@ -3477,9 +3477,9 @@ class ResursBank
             $this->paymentMethodNames = [];
             foreach ($methods as $objectMethod) {
                 if (isset($objectMethod->id) && !empty($objectMethod->id) && !in_array(
-                    $objectMethod->id,
-                    $this->paymentMethodNames
-                )) {
+                        $objectMethod->id,
+                        $this->paymentMethodNames
+                    )) {
                     $this->paymentMethodNames[$objectMethod->id] = $objectMethod->id;
                 }
             }
@@ -5021,9 +5021,9 @@ class ResursBank
                         $trimmedCustomerValue = $customerValue;
                     }
                     if (!is_array($customerValue) && !in_array(
-                        $customerKey,
-                        $mandatoryExtendedCustomerFields
-                    ) && empty($trimmedCustomerValue)) {
+                            $customerKey,
+                            $mandatoryExtendedCustomerFields
+                        ) && empty($trimmedCustomerValue)) {
                         unset($this->Payload['customer'][$customerKey]);
                     }
                 }
@@ -9119,32 +9119,30 @@ class ResursBank
      * @since 1.1.26
      * @since 1.2.0
      */
-    public function getOrderStatusStringByReturnCode(
-        $returnCode = RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_STATUS_COULD_NOT_BE_SET
-    ) {
+    public function getOrderStatusStringByReturnCode($returnCode = RESURS_PAYMENT_STATUS_RETURNCODES::ERROR)
+    {
         $returnValue = '';
 
         switch (true) {
-            case $returnCode & (RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PENDING):
-                $returnValue = 'pending';
+            case $returnCode & (RESURS_PAYMENT_STATUS_RETURNCODES::PENDING):
+                $returnValue = RESURS_STATUS_RETURN_CODES::getReturnString(RESURS_PAYMENT_STATUS_RETURNCODES::PENDING);
                 break;
-            case $returnCode & (RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_PROCESSING):
-                $returnValue = 'processing';
+            case $returnCode & (RESURS_PAYMENT_STATUS_RETURNCODES::PROCESSING):
+                $returnValue = RESURS_STATUS_RETURN_CODES::getReturnString(RESURS_PAYMENT_STATUS_RETURNCODES::PROCESSING);
                 break;
-            case $returnCode & (
-                    RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_COMPLETED |
-                    RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_AUTOMATICALLY_DEBITED
-                );
+            case $returnCode & (RESURS_PAYMENT_STATUS_RETURNCODES::COMPLETED |
+                    RESURS_PAYMENT_STATUS_RETURNCODES::AUTO_DEBITED
+                ):
                 // Return completed by default here, regardless of what actually has happened to the order
                 // to maintain compatibility. If the payment has been finalized instantly, it is not here you'd
                 // like to use another status. It's in your own code.
-                $returnValue = 'completed';
+                $returnValue = RESURS_STATUS_RETURN_CODES::getReturnString(RESURS_PAYMENT_STATUS_RETURNCODES::COMPLETED);
                 break;
-            case $returnCode & (RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_ANNULLED);
-                $returnValue = 'annul';
+            case $returnCode & (RESURS_PAYMENT_STATUS_RETURNCODES::ANNULLED):
+                $returnValue = RESURS_STATUS_RETURN_CODES::getReturnString(RESURS_PAYMENT_STATUS_RETURNCODES::ANNULLED);
                 break;
-            case $returnCode & (RESURS_PAYMENT_STATUS_RETURNCODES::PAYMENT_CREDITED);
-                $returnValue = 'credit';
+            case $returnCode & (RESURS_PAYMENT_STATUS_RETURNCODES::CREDITED):
+                $returnValue = RESURS_STATUS_RETURN_CODES::getReturnString(RESURS_PAYMENT_STATUS_RETURNCODES::CREDITED);
                 break;
             default:
                 break;
