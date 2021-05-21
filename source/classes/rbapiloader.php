@@ -58,7 +58,6 @@ use TorneLIB\Exception\ExceptionHandler;
 use TorneLIB\Helpers\NetUtils;
 use TorneLIB\Model\Type\dataType;
 use TorneLIB\Model\Type\requestMethod;
-use TorneLIB\Module\Bit;
 use TorneLIB\Module\Network\Domain;
 use TorneLIB\Module\Network\NetWrapper;
 use TorneLIB\MODULE_NETWORK;
@@ -358,12 +357,6 @@ class ResursBank
      * @since 1.1.1
      */
     private $NETWORK;
-    /**
-     * Another way to handle bitmasks (might be deprecated in future releases)
-     *
-     * @var Bit
-     */
-    private $BIT;
     /**
      * Deprecated flow class (for forms etc)
      *
@@ -923,8 +916,6 @@ class ResursBank
         if (($cTimeout = $this->getFlag('CURL_TIMEOUT')) > 0) {
             $this->CURL->setTimeout($cTimeout);
         }
-        $this->BIT = new Bit();
-
         $this->wsdlServices = [];
         foreach ($this->ServiceRequestList as $reqType => $reqService) {
             $this->wsdlServices[$reqService] = true;
@@ -1379,25 +1370,25 @@ class ResursBank
     {
         $return = null;
 
-        if ($callbackType == RESURS_CALLBACK_TYPES::ANNULMENT) {
+        if ($callbackType === RESURS_CALLBACK_TYPES::ANNULMENT) {
             $return = 'ANNULMENT';
         }
-        if ($callbackType == RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL) {
+        if ($callbackType === RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL) {
             $return = 'AUTOMATIC_FRAUD_CONTROL';
         }
-        if ($callbackType == RESURS_CALLBACK_TYPES::FINALIZATION) {
+        if ($callbackType === RESURS_CALLBACK_TYPES::FINALIZATION) {
             $return = 'FINALIZATION';
         }
-        if ($callbackType == RESURS_CALLBACK_TYPES::TEST) {
+        if ($callbackType === RESURS_CALLBACK_TYPES::TEST) {
             $return = 'TEST';
         }
-        if ($callbackType == RESURS_CALLBACK_TYPES::UNFREEZE) {
+        if ($callbackType === RESURS_CALLBACK_TYPES::UNFREEZE) {
             $return = 'UNFREEZE';
         }
-        if ($callbackType == RESURS_CALLBACK_TYPES::UPDATE) {
+        if ($callbackType === RESURS_CALLBACK_TYPES::UPDATE) {
             $return = 'UPDATE';
         }
-        if ($callbackType == RESURS_CALLBACK_TYPES::BOOKED) {
+        if ($callbackType === RESURS_CALLBACK_TYPES::BOOKED) {
             $return = 'BOOKED';
         }
 
@@ -2471,7 +2462,7 @@ class ResursBank
     /**
      * Simplifies removal of callbacks even when they does not exist at first.
      *
-     * @param int $callbackType
+     * @param int $callbackTypeData
      * @param bool $isMultiple Consider callback type bit range when true, where the value 255 is all callbacks at once.
      * @param bool $forceSoap
      * @return array|bool
@@ -2487,19 +2478,15 @@ class ResursBank
     ) {
         $callbackArray = [];
         if ($isMultiple) {
-            $this->BIT = new Bit();
-            $this->BIT->setBitStructure(
-                [
-                    'UNFREEZE' => RESURS_CALLBACK_TYPES::UNFREEZE,
-                    'ANNULMENT' => RESURS_CALLBACK_TYPES::ANNULMENT,
-                    'AUTOMATIC_FRAUD_CONTROL' => RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL,
-                    'FINALIZATION' => RESURS_CALLBACK_TYPES::FINALIZATION,
-                    'TEST' => RESURS_CALLBACK_TYPES::TEST,
-                    'UPDATE' => RESURS_CALLBACK_TYPES::UPDATE,
-                    'BOOKED' => RESURS_CALLBACK_TYPES::BOOKED,
-                ]
-            );
-            $callbackTypes = $this->BIT->getBitArray($callbackType);
+            $callbackTypes = [
+                'UNFREEZE',
+                'ANNULMENT',
+                'AUTOMATIC_FRAUD_CONTROL',
+                'FINALIZATION',
+                'TEST',
+                'UPDATE',
+                'BOOKED',
+            ];
             // Fetch list of currently present callbacks at Resurs Bank.
             $callbackArray = $this->getCallBacksByRest(true);
         }
@@ -2511,18 +2498,18 @@ class ResursBank
         }
 
         $unregisteredCallbacks = [];
-        foreach ($callbackTypes as $callbackType) {
-            if ($isMultiple && is_array($callbackArray) && !isset($callbackArray[$callbackType])) {
+        foreach ($callbackTypes as $callbackTypeData) {
+            if ($isMultiple && is_array($callbackArray) && !isset($callbackArray[$callbackTypeData])) {
                 // Skip this callback request if it's not present at Resurs Bank and no errors occurred
                 // during first request.
                 continue;
             }
 
-            if (!empty($callbackType)) {
-                if ($this->registerCallbacksViaRest && $callbackType !== 'UPDATE' && !$forceSoap) {
+            if (!empty($callbackTypeData)) {
+                if ($this->registerCallbacksViaRest && $callbackTypeData !== 'UPDATE' && !$forceSoap) {
                     $this->InitializeServices();
                     $serviceUrl = sprintf('%s/callbacks', $this->getCheckoutUrl());
-                    $renderCallbackUrl = sprintf('%s/%s', $serviceUrl, $callbackType);
+                    $renderCallbackUrl = sprintf('%s/%s', $serviceUrl, $callbackTypeData);
                     try {
                         $curlResponse = $this->CURL->request(
                             $renderCallbackUrl,
@@ -2539,7 +2526,7 @@ class ResursBank
                         if (!$isMultiple) {
                             return true;
                         } else {
-                            $unregisteredCallbacks[$callbackType] = true;
+                            $unregisteredCallbacks[$callbackTypeData] = true;
                         }
                     }
                 } else {
@@ -2548,7 +2535,7 @@ class ResursBank
                         // Proper SOAP request.
                         $curlSoapRequest = $this->CURL->request($this->getServiceUrl('unregisterEventCallback'));
                         $curlSoapRequest->unregisterEventCallback(
-                            ['eventType' => $callbackType]
+                            ['eventType' => $callbackTypeData]
                         );
                         $curlCode = $curlSoapRequest->getCode();
                     } catch (Exception $e) {
@@ -2559,7 +2546,7 @@ class ResursBank
                         if (!$isMultiple) {
                             return true;
                         } else {
-                            $unregisteredCallbacks[$callbackType] = true;
+                            $unregisteredCallbacks[$callbackTypeData] = true;
                         }
                     }
                 }
@@ -3016,7 +3003,8 @@ class ResursBank
                     }
                     if (isset($objectDetails->userErrorMessage)) {
                         $errorTypeDescription = (
-                        isset($objectDetails->errorTypeDescription) ? sprintf('[%s] ', $objectDetails->errorTypeDescription) : ''
+                        isset($objectDetails->errorTypeDescription) ? sprintf('[%s] ',
+                            $objectDetails->errorTypeDescription) : ''
                         );
                         $exceptionMessage = $errorTypeDescription . $objectDetails->userErrorMessage;
                         if (isset($previousException->faultstring)) {
@@ -7993,26 +7981,22 @@ class ResursBank
 
         $returnSpecObject = [];
 
-        $this->BIT->setBitStructure(
-            [
-                'FINALIZE' => RESURS_AFTERSHOP_RENDER_TYPES::FINALIZE,
-                'CREDIT' => RESURS_AFTERSHOP_RENDER_TYPES::CREDIT,
-                'ANNUL' => RESURS_AFTERSHOP_RENDER_TYPES::ANNUL,
-                'AUTHORIZE' => RESURS_AFTERSHOP_RENDER_TYPES::AUTHORIZE,
-            ]
-        );
-
         $sanitizedPaymentDiff = $this->getPaymentDiffByAbility($paymentIdOrPaymentObjectData);
         $canDebitObject = $sanitizedPaymentDiff['DEBIT'];
         $canCreditObject = $sanitizedPaymentDiff['CREDIT'];
         $canAnnulObject = $sanitizedPaymentDiff['ANNUL'];
 
-        if ($this->BIT->isBit(RESURS_AFTERSHOP_RENDER_TYPES::FINALIZE, $renderType)) {
-            $returnSpecObject = $canDebitObject;
-        } elseif ($this->BIT->isBit(RESURS_AFTERSHOP_RENDER_TYPES::CREDIT, $renderType)) {
-            $returnSpecObject = $canCreditObject;
-        } elseif ($this->BIT->isBit(RESURS_AFTERSHOP_RENDER_TYPES::ANNUL, $renderType)) {
-            $returnSpecObject = $canAnnulObject;
+        switch (true) {
+            case $renderType & RESURS_AFTERSHOP_RENDER_TYPES::FINALIZE:
+                $returnSpecObject = $canDebitObject;
+                break;
+            case $renderType & RESURS_AFTERSHOP_RENDER_TYPES::CREDIT:
+                $returnSpecObject = $canCreditObject;
+                break;
+            case $renderType & RESURS_AFTERSHOP_RENDER_TYPES::ANNUL:
+                $returnSpecObject = $canAnnulObject;
+                break;
+            default:
         }
 
         return $returnSpecObject;
