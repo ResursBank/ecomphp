@@ -2498,18 +2498,18 @@ class ResursBank
         }
 
         $unregisteredCallbacks = [];
-        foreach ($callbackTypes as $callbackTypeData) {
-            if ($isMultiple && is_array($callbackArray) && !isset($callbackArray[$callbackTypeData])) {
+        foreach ($callbackTypes as $callbackTypeName) {
+            if ($isMultiple && is_array($callbackArray) && !isset($callbackArray[$callbackTypeName])) {
                 // Skip this callback request if it's not present at Resurs Bank and no errors occurred
                 // during first request.
                 continue;
             }
 
-            if (!empty($callbackTypeData)) {
-                if ($this->registerCallbacksViaRest && $callbackTypeData !== 'UPDATE' && !$forceSoap) {
+            if (!empty($callbackTypeName)) {
+                if ($this->registerCallbacksViaRest && $callbackTypeName !== 'UPDATE' && !$forceSoap) {
                     $this->InitializeServices();
                     $serviceUrl = sprintf('%s/callbacks', $this->getCheckoutUrl());
-                    $renderCallbackUrl = sprintf('%s/%s', $serviceUrl, $callbackTypeData);
+                    $renderCallbackUrl = sprintf('%s/%s', $serviceUrl, $callbackTypeName);
                     try {
                         $curlResponse = $this->CURL->request(
                             $renderCallbackUrl,
@@ -2526,7 +2526,7 @@ class ResursBank
                         if (!$isMultiple) {
                             return true;
                         } else {
-                            $unregisteredCallbacks[$callbackTypeData] = true;
+                            $unregisteredCallbacks[$callbackTypeName] = true;
                         }
                     }
                 } else {
@@ -2535,7 +2535,7 @@ class ResursBank
                         // Proper SOAP request.
                         $curlSoapRequest = $this->CURL->request($this->getServiceUrl('unregisterEventCallback'));
                         $curlSoapRequest->unregisterEventCallback(
-                            ['eventType' => $callbackTypeData]
+                            ['eventType' => $callbackTypeName]
                         );
                         $curlCode = $curlSoapRequest->getCode();
                     } catch (Exception $e) {
@@ -2546,7 +2546,7 @@ class ResursBank
                         if (!$isMultiple) {
                             return true;
                         } else {
-                            $unregisteredCallbacks[$callbackTypeData] = true;
+                            $unregisteredCallbacks[$callbackTypeName] = true;
                         }
                     }
                 }
