@@ -810,7 +810,11 @@ class ResursBank
         // this can manually be pushed into ECom by using the setAutoDebitableType().
         $this->setAutoDebitableType('SWISH');
 
-        $this->checkoutShopUrl = $this->hasHttps(true) . '://' . $this->getHostnameByServer();
+        $this->checkoutShopUrl = sprintf(
+            '%s://%s',
+            $this->hasHttps(true),
+            $this->getHostnameByServer()
+        );
         $this->soapOptions['cache_wsdl'] = (defined('WSDL_CACHE_BOTH') ? WSDL_CACHE_BOTH : true);
         $this->soapOptions['ssl_method'] = (defined('SOAP_SSL_METHOD_TLS') ? SOAP_SSL_METHOD_TLS : false);
 
@@ -926,7 +930,7 @@ class ResursBank
             $this->wsdlServices[$reqService] = true;
         }
         foreach ($this->wsdlServices as $ServiceName => $isAvailableBoolean) {
-            $this->URLS[$ServiceName] = $this->environment . $ServiceName . '?wsdl';
+            $this->URLS[$ServiceName] = sprintf('%s%s?wsdl', $this->environment, $ServiceName);
         }
         $this->getSslValidation();
         return $this;
@@ -1435,9 +1439,18 @@ class ResursBank
     public function setUserAgent($MyUserAgent = '')
     {
         if (!empty($MyUserAgent)) {
-            $this->myUserAgent = $MyUserAgent . ' +' . $this->getVersionFull() .
-                (defined('PHP_VERSION') ? '/PHP-' . PHP_VERSION : '');
+            $this->myUserAgent = sprintf(
+                '%s +%s/PHP-%s',
+                $MyUserAgent,
+                $this->getVersionFull(),
+                PHP_VERSION
+            );
         } else {
+            $this->myUserAgent = sprintf(
+                '%s/PHP-%s',
+                $this->getVersionFull(),
+                PHP_VERSION
+            );
             $this->myUserAgent = $this->getVersionFull() . (defined('PHP_VERSION') ? '/PHP-' . PHP_VERSION : '');
         }
         if ($this->customerUserAgentPush && isset($_SERVER['HTTP_USER_AGENT'])) {
@@ -1459,11 +1472,22 @@ class ResursBank
      */
     public function getVersionFull($getDecimals = false)
     {
+        $return = sprintf(
+            '%s_%s',
+            $this->clientName,
+            $this->versionToDecimals()
+        );
+
         if (!$getDecimals) {
-            return $this->clientName . ' v' . $this->version . '-' . $this->lastUpdate;
+            $return = sprintf(
+                '%s v%s-%s',
+                $this->clientName,
+                $this->version,
+                $this->lastUpdate
+            );
         }
 
-        return $this->clientName . '_' . $this->versionToDecimals();
+        return $return;
     }
 
     /**
@@ -1734,7 +1758,7 @@ class ResursBank
     public function getVersionNumber($getDecimals = false)
     {
         if (!$getDecimals) {
-            return $this->version; // . "-" . $this->lastUpdate;
+            return $this->version;
         } else {
             return $this->versionToDecimals();
         }
@@ -1820,7 +1844,7 @@ class ResursBank
             if (preg_match('/^http/i', $testDecoded)) {
                 $newUrl = $testDecoded;
             } else {
-                $newUrl = 'https://' . $newUrl;
+                $newUrl = sprintf('https://%s', $newUrl);
             }
         }
         if ($FlowType == RESURS_FLOW_TYPES::SIMPLIFIED_FLOW) {
@@ -2173,8 +2197,8 @@ class ResursBank
         ////// DIGEST CONFIGURATION FINISH
         if ($this->registerCallbacksViaRest && $callbackType !== RESURS_CALLBACK_TYPES::UPDATE) {
             $registerBy = 'rest';
-            $serviceUrl = $this->getCheckoutUrl() . '/callbacks';
-            $renderCallbackUrl = $serviceUrl . '/' . $renderCallback['eventType'];
+            $serviceUrl = sprintf('%s/callbacks', $this->getCheckoutUrl());
+            $renderCallbackUrl = sprintf('%s/%s', $serviceUrl, $renderCallback['eventType']);
             if (isset($renderCallback['eventType'])) {
                 unset($renderCallback['eventType']);
             }
@@ -2497,8 +2521,8 @@ class ResursBank
             if (!empty($callbackType)) {
                 if ($this->registerCallbacksViaRest && $callbackType !== 'UPDATE' && !$forceSoap) {
                     $this->InitializeServices();
-                    $serviceUrl = $this->getCheckoutUrl() . '/callbacks';
-                    $renderCallbackUrl = $serviceUrl . '/' . $callbackType;
+                    $serviceUrl = sprintf('%s/callbacks', $this->getCheckoutUrl());
+                    $renderCallbackUrl = sprintf('%s/%s', $serviceUrl, $callbackType);
                     try {
                         $curlResponse = $this->CURL->request(
                             $renderCallbackUrl,
@@ -2575,7 +2599,9 @@ class ResursBank
                     500
                 );
             }
-            $ResursResponse = $this->CURL->request($this->getCheckoutUrl() . '/callbacks')->getParsed();
+            $ResursResponse = $this->CURL->request(
+                sprintf('%s/callbacks', $this->getCheckoutUrl())
+            )->getParsed();
         } catch (Exception $restException) {
             $message = $restException->getMessage();
             $code = $restException->getCode();
@@ -2608,7 +2634,7 @@ class ResursBank
                     if (is_object($extendedClass) && method_exists($extendedClass, 'getParsed')) {
                         $parsedExtended = $extendedClass->getParsed();
                         if (isset($parsedExtended->description)) {
-                            $message .= ' (' . $parsedExtended->description . ')';
+                            $message .= sprintf(' (%s)', $parsedExtended->description);
                         }
                         if (isset($parsedExtended->code) && $parsedExtended->code > 0) {
                             $code = $parsedExtended->code;
@@ -2990,12 +3016,11 @@ class ResursBank
                     }
                     if (isset($objectDetails->userErrorMessage)) {
                         $errorTypeDescription = (
-                        isset($objectDetails->errorTypeDescription) ? '[' .
-                            $objectDetails->errorTypeDescription . '] ' : ''
+                        isset($objectDetails->errorTypeDescription) ? sprintf('[%s] ', $objectDetails->errorTypeDescription) : ''
                         );
                         $exceptionMessage = $errorTypeDescription . $objectDetails->userErrorMessage;
                         if (isset($previousException->faultstring)) {
-                            $exceptionMessage .= ' (' . $previousException->getMessage() . ') ';
+                            $exceptionMessage .= sprintf(' (%s) ', $previousException->getMessage());
                         }
                         $fixableByYou = isset($objectDetails->fixableByYou) ? $objectDetails->fixableByYou : null;
                         if ($fixableByYou == 'false') {
@@ -3510,7 +3535,11 @@ class ResursBank
             throw new ResursException('Payment id and to must be set.');
         }
         $this->InitializeServices();
-        $url = $this->getCheckoutUrl() . '/checkout/payments/' . $paymentId . '/updatePaymentReference';
+        $url = sprintf(
+            '%s/checkout/payments/%s/updatePaymentReference',
+            $this->getCheckoutUrl(),
+            $paymentId
+        );
         try {
             $result = $this->CURL->request(
                 $url,
@@ -3891,7 +3920,7 @@ class ResursBank
             // Check if there are any target set, somewhere in the returned html. If true, we'll consider
             // this already done somewhere else.
             if (!preg_match('/target=/is', $returnHtml)) {
-                $returnHtml = preg_replace('/href=/is', 'target="' . $hrefTarget . '" href=', $returnHtml);
+                $returnHtml = preg_replace('/href=/is', sprintf('target="%s" href=', $hrefTarget), $returnHtml);
             }
         }
         if ($returnBody) {
@@ -3900,41 +3929,40 @@ class ResursBank
                 isset($specific->description) &&
                 empty($specific->description) ? $specific->description : 'Payment information'
             );
-            $returnBodyHtml = '
+            $returnBodyHtml = sprintf('
                 <html>
                 <head>
                     <meta charset="UTF-8">
-                    <title>' . $methodDescription . '</title>
-            ';
+                    <title>%s</title>
+            ', $methodDescription);
             if (is_null($callCss)) {
                 $callCss = 'costofpurchase.css';
             }
             if (!empty($callCss)) {
                 if (!is_array($callCss)) {
-                    $returnBodyHtml .= '<link rel="stylesheet" media="all" type="text/css" href="' .
-                        $callCss .
-                        '">' .
-                        "\n";
+                    $returnBodyHtml .= sprintf(
+                        '<link rel="stylesheet" media="all" type="text/css" href="%s">', $callCss);
                 } else {
                     foreach ($callCss as $cssLink) {
-                        $returnBodyHtml .= '<link rel="stylesheet" media="all" type="text/css" href="' .
-                            $cssLink .
-                            '">' .
-                            "\n";
+                        $returnBodyHtml .= sprintf(
+                            '<link rel="stylesheet" media="all" type="text/css" href="%s">', $cssLink
+                        );
                     }
                 }
             }
-            $returnBodyHtml .= '
+            $returnBodyHtml .= sprintf('
                 </head>
                 <body>
-
-                ' . $this->getCostHtmlBefore . '
-                ' . $returnHtml . '
-                ' . $this->getCostHtmlAfter . '
-
+                %s
+                %s
+                %s
                 </body>
                 </html>
-            ';
+            ',
+                $this->getCostHtmlBefore,
+                $returnHtml,
+                $this->getCostHtmlAfter
+            );
             $returnHtml = $returnBodyHtml;
         }
 
@@ -4194,7 +4222,7 @@ class ResursBank
         foreach ($urlData as $urlObj) {
             if (isset($urlObj->url) && isset($urlObj->appendPriceLast)) {
                 foreach ($finder as $findWord) {
-                    if (preg_match('/' . $findWord . '/', $urlObj->url)) {
+                    if (preg_match(sprintf('/%s/', $findWord), $urlObj->url)) {
                         $return = $urlObj->url;
                         break;
                     }
@@ -4301,22 +4329,27 @@ class ResursBank
      * Make sure that the amount are properly appended to an URL.
      *
      * @param string $URL
-     * @param int $Amount
-     * @param string $Parameter
+     * @param int $amount
+     * @param string $parameter
      *
      * @return string
      * @since 1.0.0
      * @since 1.1.0
      */
-    private function priceAppender($URL = '', $Amount = 0, $Parameter = 'amount')
+    private function priceAppender($URL = '', $amount = 0, $parameter = 'amount')
     {
         if (isset($this->priceAppenderParameter) && !empty($this->priceAppenderParameter)) {
-            $Parameter = $this->priceAppenderParameter;
+            $parameter = $this->priceAppenderParameter;
         }
         if (preg_match('/=$/', $URL)) {
-            return $URL . $Amount;
+            return $URL . $amount;
         } else {
-            return $URL . '&' . $Parameter . '=' . $Amount;
+            return sprintf(
+                '%s&%s=%s',
+                $URL,
+                $parameter,
+                $amount
+            );
         }
     }
 
@@ -4344,7 +4377,12 @@ class ResursBank
             }
             ${$key} = $value;
         }
-        $templateFile = sprintf('%s/%s.%s', __DIR__ . '/../templates', $templateName, $extension);
+        $templateFile = sprintf(
+            '%s/%s.%s',
+            __DIR__ . '/../templates',
+            $templateName,
+            $extension
+        );
         if (file_exists($templateFile)) {
             ob_start();
             /** @noinspection PhpIncludeInspection */
@@ -5264,7 +5302,11 @@ class ResursBank
         if ($validateFormat) {
             $this->isNetWork();
             $shopUrlValidate = $this->NETWORK->getUrlDomain($this->checkoutShopUrl);
-            $this->checkoutShopUrl = $shopUrlValidate[1] . '://' . $shopUrlValidate[0];
+            $this->checkoutShopUrl = sprintf(
+                '%s://%s',
+                $shopUrlValidate[1],
+                $shopUrlValidate[0]
+            );
         }
     }
 
@@ -5617,7 +5659,11 @@ class ResursBank
 
             return $myFlowResponse;
         } elseif ($myFlow === RESURS_FLOW_TYPES::RESURS_CHECKOUT) {
-            $checkoutUrl = $this->getCheckoutUrl() . '/checkout/payments/' . $payment_id_or_method;
+            $checkoutUrl = sprintf(
+                '%s/checkout/payments/%s',
+                $this->getCheckoutUrl(),
+                $payment_id_or_method
+            );
             try {
                 $checkoutResponse = $this->CURL->request(
                     $checkoutUrl,
@@ -6800,7 +6846,7 @@ class ResursBank
             RESURS_FLOW_TYPES::RESURS_CHECKOUT
         );
         $updateOrderLinesResponse = $this->CURL->request(
-            $this->getCheckoutUrl() . '/checkout/payments/' . $paymentId,
+            sprintf('%s/checkout/payments/%s', $this->getCheckoutUrl(), $paymentId),
             ['orderLines' => $sanitizedOutputOrderLines],
             requestMethod::METHOD_PUT,
             dataType::JSON
@@ -8031,14 +8077,18 @@ class ResursBank
         // flag CREATED_BY_NO_CLIENT_NAME. If unset, ecomphp_decimalVersionNumber will be shown.
         if (!$this->isFlag('CREATED_BY_NO_CLIENT_NAME')) {
             if (!$this->userSetClientName) {
-                $createdBy = $this->realClientName . '_' . $this->getVersionNumber(true);
+                $createdBy = sprintf(
+                    '%s_%s',
+                    $this->realClientName,
+                    $this->getVersionNumber(true)
+                );
             } else {
                 $createdBy = $this->realClientName;
             }
 
             // If logged in user is set by client or plugin, add this to the createdBy string.
             if (!empty($this->loggedInUser)) {
-                $createdBy .= '/' . $this->loggedInUser;
+                $createdBy .= sprintf('/%s', $this->loggedInUser);
             }
         } else {
             // If client or plugin chose to exclude client name, we'll still look for a logged in user.
