@@ -32,6 +32,7 @@ require_once(__DIR__ . '/hooks.php');
 use Exception;
 use PHPUnit\Framework\TestCase;
 use ReflectionException;
+use RESURS_EXCEPTIONS;
 use ResursException;
 use TorneLIB\Config\Flag;
 use TorneLIB\Exception\ExceptionHandler;
@@ -337,7 +338,7 @@ class resursBankTest extends TestCase
 
         $this->unitSetup();
         $payment = $this->generateSimpleSimplifiedInvoiceOrder(true, '198101010000');
-        if (isset($payment->paymentId) && $payment->bookPaymentStatus === 'FROZEN') {
+        if (isset($payment->paymentId, $payment->bookPaymentStatus) && $payment->bookPaymentStatus === 'FROZEN') {
             // Verified frozen.
             try {
                 $this->TEST->ECOM->finalizePayment($payment->paymentId);
@@ -345,7 +346,7 @@ class resursBankTest extends TestCase
                 $this->bailOut($e);
                 static::assertSame(
                     $e->getCode(),
-                    \RESURS_EXCEPTIONS::ECOMMERCEERROR_NOT_ALLOWED_IN_CURRENT_STATE,
+                    RESURS_EXCEPTIONS::ECOMMERCEERROR_NOT_ALLOWED_IN_CURRENT_STATE,
                     'Finalization properly prohibited by current state'
                 );
             }
