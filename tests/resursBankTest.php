@@ -26,7 +26,6 @@ if (!isset($_ENV['standalone_ecom'])) {
 
 require_once(__DIR__ . '/../vendor/autoload.php');
 require_once(__DIR__ . '/classes/ResursBankTestClass.php');
-require_once(__DIR__ . '/hooks.php');
 
 // Resurs Bank usages
 use Exception;
@@ -41,7 +40,6 @@ use TorneLIB\Model\Type\requestMethod;
 use TorneLIB\Module\Config\WrapperConfig;
 use TorneLIB\Module\Network\NetWrapper;
 use TorneLIB\Module\Network\Wrappers\CurlWrapper;
-use TorneLIB\MODULE_CURL;
 use TorneLIB\Utils\Generic;
 use TorneLIB\Utils\Memory;
 use function in_array;
@@ -235,7 +233,7 @@ class resursBankTest extends TestCase
 
         $this->TEST->ECOM->getAddress($this->flowHappyCustomer);
 
-        /** @var MODULE_CURL $lastCurlHandle */
+        /** @var NetWrapper $lastCurlHandle */
         $lastCurlHandle = $this->TEST->ECOM->getCurlHandle(true);
         $curlResponse = $lastCurlHandle->getParsed();
         static::assertEquals(
