@@ -190,17 +190,6 @@ abstract class RESURS_AFTERSHOP_RENDER_TYPES
 }
 
 /**
- * Class RESURS_METAHASH_TYPES
- */
-abstract class RESURS_METAHASH_TYPES
-{
-    const HASH_DISABLED = 0;
-    const HASH_ORDERLINES = 1;
-    const HASH_CUSTOMER = 2;
-}
-
-
-/**
  * Class RESURS_CURL_METHODS Curl HTTP methods
  *
  * @since 1.0.26
