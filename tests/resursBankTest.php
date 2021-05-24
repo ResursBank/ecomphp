@@ -26,12 +26,12 @@ if (!isset($_ENV['standalone_ecom'])) {
 
 require_once(__DIR__ . '/../vendor/autoload.php');
 require_once(__DIR__ . '/classes/ResursBankTestClass.php');
-require_once(__DIR__ . '/hooks.php');
 
 // Resurs Bank usages
 use Exception;
 use PHPUnit\Framework\TestCase;
 use ReflectionException;
+use RESURS_EXCEPTIONS;
 use ResursException;
 use TorneLIB\Config\Flag;
 use TorneLIB\Exception\ExceptionHandler;
@@ -40,7 +40,6 @@ use TorneLIB\Model\Type\requestMethod;
 use TorneLIB\Module\Config\WrapperConfig;
 use TorneLIB\Module\Network\NetWrapper;
 use TorneLIB\Module\Network\Wrappers\CurlWrapper;
-use TorneLIB\MODULE_CURL;
 use TorneLIB\Utils\Generic;
 use TorneLIB\Utils\Memory;
 use function in_array;
@@ -234,7 +233,7 @@ class resursBankTest extends TestCase
 
         $this->TEST->ECOM->getAddress($this->flowHappyCustomer);
 
-        /** @var MODULE_CURL $lastCurlHandle */
+        /** @var NetWrapper $lastCurlHandle */
         $lastCurlHandle = $this->TEST->ECOM->getCurlHandle(true);
         $curlResponse = $lastCurlHandle->getParsed();
         static::assertEquals(
@@ -337,7 +336,7 @@ class resursBankTest extends TestCase
 
         $this->unitSetup();
         $payment = $this->generateSimpleSimplifiedInvoiceOrder(true, '198101010000');
-        if (isset($payment->paymentId) && $payment->bookPaymentStatus === 'FROZEN') {
+        if (isset($payment->paymentId, $payment->bookPaymentStatus) && $payment->bookPaymentStatus === 'FROZEN') {
             // Verified frozen.
             try {
                 $this->TEST->ECOM->finalizePayment($payment->paymentId);
@@ -345,7 +344,7 @@ class resursBankTest extends TestCase
                 $this->bailOut($e);
                 static::assertSame(
                     $e->getCode(),
-                    \RESURS_EXCEPTIONS::ECOMMERCEERROR_NOT_ALLOWED_IN_CURRENT_STATE,
+                    RESURS_EXCEPTIONS::ECOMMERCEERROR_NOT_ALLOWED_IN_CURRENT_STATE,
                     'Finalization properly prohibited by current state'
                 );
             }
