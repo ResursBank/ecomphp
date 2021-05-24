@@ -40,7 +40,6 @@ if (class_exists('ResursBank', ECOM_CLASS_EXISTS_AUTOLOAD) &&
 }
 
 require_once(__DIR__ . '/rbapiloader/ResursForms.php');
-require_once(__DIR__ . '/rbapiloader/ResursTypeClasses.php');
 require_once(__DIR__ . '/rbapiloader/ResursException.php');
 
 if (file_exists(__DIR__ . '/../../vendor/autoload.php')) {
@@ -49,6 +48,8 @@ if (file_exists(__DIR__ . '/../../vendor/autoload.php')) {
 
 use Exception;
 use RESURS_EXCEPTIONS;
+use Resursbank\Ecommerce\OrderStatusCode;
+use Resursbank\Ecommerce\Types\PaymentStatus;
 use ResursException;
 use stdClass;
 use TorneLIB\Config\Flag;
@@ -62,6 +63,7 @@ use TorneLIB\Module\Network\Domain;
 use TorneLIB\Module\Network\NetWrapper;
 use TorneLIB\MODULE_NETWORK;
 use TorneLIB\Utils\Generic;
+use TorneLIB\Utils\Memory;
 
 // Globals starts here. But should be deprecated if version tag can be fetched through their doc-blocks.
 if (!defined('ECOMPHP_VERSION')) {
@@ -126,7 +128,7 @@ class ResursBank
      *
      * @var array
      */
-    var $soapOptions = [
+    public $soapOptions = [
         'exceptions' => 1,
         'connection_timeout' => 60,
         'login' => '',
@@ -787,6 +789,7 @@ class ResursBank
         if (defined('MEMORY_SAFE_LIMIT')) {
             $memSafeLimit = MEMORY_SAFE_LIMIT;
         }
+
         $memoryLimit = defined('MEMORY_SAFE_LIMIT') && !empty($memSafeLimit) ? $memSafeLimit : -1;
         $this->getMemoryLimitAdjusted('128M', $memoryLimit);
 
@@ -6632,88 +6635,21 @@ class ResursBank
         $successUrl = '',
         $failUrl = '',
         $forceSigning = false,
-        $backUrl = null,
-        $encodeType = RESURS_URL_ENCODE_TYPES::NONE
+        $backUrl = null
     ) {
         $SigningPayload['signing'] = [
-            'successUrl' => $this->getEncodedSigningUrl($successUrl, RESURS_URL_ENCODE_TYPES::SUCCESSURL, $encodeType),
-            'failUrl' => $this->getEncodedSigningUrl($failUrl, RESURS_URL_ENCODE_TYPES::FAILURL, $encodeType),
+            'successUrl' => $successUrl,
+            'failUrl' => $successUrl,
             'forceSigning' => $forceSigning,
         ];
-        if (!is_null($backUrl)) {
-            $SigningPayload['backUrl'] = $this->getEncodedSigningUrl(
-                $backUrl,
-                RESURS_URL_ENCODE_TYPES::BACKURL,
-                $encodeType
-            );
+        if ($backUrl !== null) {
+            $SigningPayload['backUrl'] = $backUrl;
         }
         $this->handlePayload($SigningPayload);
 
         // Return data from this method to confirm output (used with tests) but may help developers
         // check their urls also.
         return $SigningPayload;
-    }
-
-    /**
-     * @param $currentUrl
-     * @param $urlType RESURS_URL_ENCODE_TYPES
-     * @param $requestBits RESURS_URL_ENCODE_TYPES
-     * @return string
-     * @since 1.3.15
-     * @since 1.0.42
-     * @since 1.1.42
-     */
-    private function getEncodedSigningUrl($currentUrl, $urlType, $requestBits)
-    {
-        if ($urlType & $requestBits) {
-            $currentUrl = $this->getEncodedUrl($currentUrl, $requestBits);
-        }
-
-        return (string)$currentUrl;
-    }
-
-    /**
-     * @param $url
-     * @param $urlType RESURS_URL_ENCODE_TYPES
-     * @return string
-     * @since 1.3.15
-     * @since 1.0.42
-     * @since 1.1.42
-     * @noinspection PhpDeprecationInspection
-     */
-    private function getEncodedUrl($url, $urlType)
-    {
-        try {
-            if ($urlType & RESURS_URL_ENCODE_TYPES::PATH_ONLY) {
-                $urlParsed = parse_url($url);
-
-                if (is_array($urlParsed)) {
-                    $queryStartEncoded = '?';
-                    $queryStartDecoded = '';
-                    if ($urlType & RESURS_URL_ENCODE_TYPES::LEAVE_FIRST_PART) {
-                        $queryStartEncoded = '';
-                        $queryStartDecoded = '?';
-                    }
-                    $encodedQuery = rawurlencode($queryStartEncoded . $urlParsed['query']);
-                    if ($urlType & RESURS_URL_ENCODE_TYPES::LEAVE_FIRST_PART) {
-                        $encodedQuery = preg_replace('/%3D/', '=', $encodedQuery, 1);
-                    }
-                    $url = sprintf(
-                        '%s://%s%s%s',
-                        $urlParsed['scheme'],
-                        $urlParsed['host'],
-                        isset($urlParsed['path']) ? $urlParsed['path'] : '/',
-                        $queryStartDecoded . $encodedQuery
-                    );
-                }
-            } else {
-                $url = rawurlencode($url);
-            }
-        } catch (Exception $e) {
-            $url = null;
-        }
-
-        return (string)$url;
     }
 
     /**
@@ -9160,30 +9096,30 @@ class ResursBank
      * @since 1.1.26
      * @since 1.2.0
      */
-    public function getOrderStatusStringByReturnCode($returnCode = RESURS_PAYMENT_STATUS_RETURNCODES::ERROR)
+    public function getOrderStatusStringByReturnCode($returnCode = null)
     {
         $returnValue = '';
 
         switch (true) {
-            case $returnCode & (RESURS_PAYMENT_STATUS_RETURNCODES::PENDING):
-                $returnValue = RESURS_STATUS_RETURN_CODES::getReturnString(RESURS_PAYMENT_STATUS_RETURNCODES::PENDING);
+            case $returnCode & (PaymentStatus::PENDING):
+                $returnValue = OrderStatusCode::getReturnString(PaymentStatus::PENDING);
                 break;
-            case $returnCode & (RESURS_PAYMENT_STATUS_RETURNCODES::PROCESSING):
-                $returnValue = RESURS_STATUS_RETURN_CODES::getReturnString(RESURS_PAYMENT_STATUS_RETURNCODES::PROCESSING);
+            case $returnCode & (PaymentStatus::PROCESSING):
+                $returnValue = OrderStatusCode::getReturnString(PaymentStatus::PROCESSING);
                 break;
-            case $returnCode & (RESURS_PAYMENT_STATUS_RETURNCODES::COMPLETED |
-                    RESURS_PAYMENT_STATUS_RETURNCODES::AUTO_DEBITED
+            case $returnCode & (PaymentStatus::COMPLETED |
+                    PaymentStatus::AUTO_DEBITED
                 ):
                 // Return completed by default here, regardless of what actually has happened to the order
                 // to maintain compatibility. If the payment has been finalized instantly, it is not here you'd
                 // like to use another status. It's in your own code.
-                $returnValue = RESURS_STATUS_RETURN_CODES::getReturnString(RESURS_PAYMENT_STATUS_RETURNCODES::COMPLETED);
+                $returnValue = OrderStatusCode::getReturnString(PaymentStatus::COMPLETED);
                 break;
-            case $returnCode & (RESURS_PAYMENT_STATUS_RETURNCODES::ANNULLED):
-                $returnValue = RESURS_STATUS_RETURN_CODES::getReturnString(RESURS_PAYMENT_STATUS_RETURNCODES::ANNULLED);
+            case $returnCode & (PaymentStatus::ANNULLED):
+                $returnValue = OrderStatusCode::getReturnString(PaymentStatus::ANNULLED);
                 break;
-            case $returnCode & (RESURS_PAYMENT_STATUS_RETURNCODES::CREDITED):
-                $returnValue = RESURS_STATUS_RETURN_CODES::getReturnString(RESURS_PAYMENT_STATUS_RETURNCODES::CREDITED);
+            case $returnCode & (PaymentStatus::CREDITED):
+                $returnValue = OrderStatusCode::getReturnString(PaymentStatus::CREDITED);
                 break;
             default:
                 break;
@@ -9212,7 +9148,7 @@ class ResursBank
         $inboundDigest = '',
         $callbackResult = null
     ) {
-        $digestCompiled = $callbackPaymentId . (!is_null($callbackResult) ? $callbackResult : null) . $saltKey;
+        $digestCompiled = $callbackPaymentId . ($callbackResult !== null ? $callbackResult : null) . $saltKey;
         $digestMd5 = strtoupper(md5($digestCompiled));
         $digestSha = strtoupper(sha1($digestCompiled));
         $realInboundDigest = strtoupper($inboundDigest);

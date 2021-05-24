@@ -4,7 +4,8 @@
     "license": "Apache-2.0",
     "require": {
         "tornevall/tornelib-php-netcurl": "^6.1",
-        "tornevall/tornelib-php-network": "^6.1"
+        "tornevall/tornelib-php-network": "^6.1",
+        "resursbank/ecomphp-deprecated": "dev-master"
     },
     "config": {
         "preferred-install": {
@@ -20,6 +21,9 @@
     "autoload": {
         "files": [
             "source/classes/rbapiloader.php"
-        ]
+        ],
+        "psr-4": {
+            "Resursbank\\Ecommerce\\": "src"
+        }
     }
 }
