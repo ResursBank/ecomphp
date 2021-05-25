@@ -32,6 +32,8 @@ use Exception;
 use PHPUnit\Framework\TestCase;
 use ReflectionException;
 use RESURS_EXCEPTIONS;
+use Resursbank\Ecommerce\OrderStatusCode;
+use Resursbank\Ecommerce\Types\OrderStatus;
 use ResursException;
 use TorneLIB\Config\Flag;
 use TorneLIB\Exception\ExceptionHandler;
@@ -961,24 +963,24 @@ class resursBankTest extends TestCase
 
         static::assertTrue(
             $this->TEST->ECOM->getOrderStatusStringByReturnCode(
-                RESURS_PAYMENT_STATUS_RETURNCODES::CREDITED
+                OrderStatus::CREDITED
             ) === 'credit'
         );
 
-        RESURS_STATUS_RETURN_CODES::setReturnString(
-            RESURS_PAYMENT_STATUS_RETURNCODES::CREDITED,
+        OrderStatusCode::setReturnString(
+            OrderStatus::CREDITED,
             'avbruten'
         );
 
         static::assertTrue(
             $this->TEST->ECOM->getOrderStatusStringByReturnCode(
-                RESURS_PAYMENT_STATUS_RETURNCODES::CREDITED
+                OrderStatus::CREDITED
             ) === 'avbruten'
         );
 
-        RESURS_STATUS_RETURN_CODES::setReturnString(
+        OrderStatusCode::setReturnString(
             [
-                RESURS_PAYMENT_STATUS_RETURNCODES::ANNULLED => 'annullerad'
+                OrderStatus::ANNULLED => 'annullerad'
             ]
         );
 

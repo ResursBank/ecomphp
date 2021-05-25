@@ -48,8 +48,8 @@ if (file_exists(__DIR__ . '/../../vendor/autoload.php')) {
 
 use Exception;
 use RESURS_EXCEPTIONS;
-use Resursbank\Ecommerce\OrderStatusCode;
-use Resursbank\Ecommerce\Types\PaymentStatus;
+use Resursbank\Ecommerce\Types\OrderStatus;
+use Resursbank\Ecommerce\Types\OrderStatusCode;
 use ResursException;
 use stdClass;
 use TorneLIB\Config\Flag;
@@ -791,7 +791,7 @@ class ResursBank
         }
 
         $memoryLimit = defined('MEMORY_SAFE_LIMIT') && !empty($memSafeLimit) ? $memSafeLimit : -1;
-        $this->getMemoryLimitAdjusted('128M', $memoryLimit);
+        Memory::getMemoryAdjusted('128M', $memoryLimit);
 
         if (is_bool($debug) && $debug) {
             $this->debug = $debug;
@@ -1030,110 +1030,6 @@ class ResursBank
     public function getSslValidation()
     {
         return $this->curlSslValidationDisable;
-    }
-
-    /**
-     * Enforce automatic adjustment if memory limit is set too low (or your defined value).
-     *
-     * @param string $minLimit
-     * @param string $maxLimit
-     * @return bool
-     */
-    public function getMemoryLimitAdjusted($minLimit = '256M', $maxLimit = '-1')
-    {
-        $return = false;
-        $currentLimit = $this->getBytes(ini_get('memory_limit'));
-        $myLimit = $this->getBytes($minLimit);
-        if ($currentLimit <= $myLimit) {
-            $return = $this->setMemoryLimit($maxLimit);
-        }
-        return $return;
-    }
-
-    /**
-     * WP Style byte conversion for memory limits.
-     *
-     * @param $value
-     * @return mixed
-     */
-    public function getBytes($value)
-    {
-        $value = strtolower(trim($value));
-        $bytes = (int)$value;
-
-        if (false !== strpos($value, 't')) {
-            $bytes *= 1024 * 1024 * 1024 * 1024;
-        } elseif (false !== strpos($value, 'g')) {
-            $bytes *= 1024 * 1024 * 1024;
-        } elseif (false !== strpos($value, 'm')) {
-            $bytes *= 1024 * 1024;
-        } elseif (false !== strpos($value, 'k')) {
-            $bytes *= 1024;
-        } elseif (false !== strpos($value, 'b')) {
-            $bytes *= 1;
-        }
-
-        // Deal with large (float) values which run into the maximum integer size.
-        return min($bytes, PHP_INT_MAX);
-    }
-
-    /**
-     * Set new memory limit for PHP.
-     *
-     * @param string $newLimitValue
-     * @return bool
-     */
-    public function setMemoryLimit($newLimitValue = '512M')
-    {
-        $return = false;
-
-        $oldMemoryValue = $this->getBytes(ini_get('memory_limit'));
-        if ($this->getIniSettable('memory_limit')) {
-            $blindIniSet = ini_set('memory_limit', $newLimitValue) !== false ? true : false;
-            $newMemoryValue = $this->getBytes(ini_get('memory_limit'));
-            $return = $blindIniSet && $oldMemoryValue !== $newMemoryValue ? true : false;
-        }
-
-        return $return;
-    }
-
-    /**
-     * Check if the setting is settable with ini_set(). Partially borrowed from WordPress.
-     *
-     * @param $setting
-     * @return bool
-     */
-    public function getIniSettable($setting)
-    {
-        static $ini_all;
-
-        if (!function_exists('ini_set')) {
-            return false;
-        }
-
-        if (!isset($ini_all)) {
-            $ini_all = false;
-            // Sometimes `ini_get_all()` is disabled via the `disable_functions` option for "security purposes".
-            if (function_exists('ini_get_all')) {
-                $ini_all = ini_get_all();
-            }
-        }
-
-        // Bit operator to workaround https://bugs.php.net/bug.php?id=44936 which changes access level
-        // to 63 in PHP 5.2.6 - 5.2.17.
-        if (isset($ini_all[$setting]['access']) &&
-            (INI_ALL === ($ini_all[$setting]['access'] & 7)
-                || INI_USER === ($ini_all[$setting]['access'] & 7))
-        ) {
-            return true;
-        }
-
-        // If we were unable to retrieve the details, fail gracefully to assume it's changeable.
-        if (!is_array($ini_all)) {
-            return true;
-        }
-
-        return false;
     }
 
     /**
@@ -9101,25 +8997,25 @@ class ResursBank
         $returnValue = '';
 
         switch (true) {
-            case $returnCode & (PaymentStatus::PENDING):
-                $returnValue = OrderStatusCode::getReturnString(PaymentStatus::PENDING);
+            case $returnCode & (OrderStatus::PENDING):
+                $returnValue = OrderStatusCode::getReturnString(OrderStatus::PENDING);
                 break;
-            case $returnCode & (PaymentStatus::PROCESSING):
-                $returnValue = OrderStatusCode::getReturnString(PaymentStatus::PROCESSING);
+            case $returnCode & (OrderStatus::PROCESSING):
+                $returnValue = OrderStatusCode::getReturnString(OrderStatus::PROCESSING);
                 break;
-            case $returnCode & (PaymentStatus::COMPLETED |
-                    PaymentStatus::AUTO_DEBITED
+            case $returnCode & (OrderStatus::COMPLETED |
+                    OrderStatus::AUTO_DEBITED
                 ):
                 // Return completed by default here, regardless of what actually has happened to the order
                 // to maintain compatibility. If the payment has been finalized instantly, it is not here you'd
                 // like to use another status. It's in your own code.
-                $returnValue = OrderStatusCode::getReturnString(PaymentStatus::COMPLETED);
+                $returnValue = OrderStatusCode::getReturnString(OrderStatus::COMPLETED);
                 break;
-            case $returnCode & (PaymentStatus::ANNULLED):
-                $returnValue = OrderStatusCode::getReturnString(PaymentStatus::ANNULLED);
+            case $returnCode & (OrderStatus::ANNULLED):
+                $returnValue = OrderStatusCode::getReturnString(OrderStatus::ANNULLED);
                 break;
-            case $returnCode & (PaymentStatus::CREDITED):
-                $returnValue = OrderStatusCode::getReturnString(PaymentStatus::CREDITED);
+            case $returnCode & (OrderStatus::CREDITED):
+                $returnValue = OrderStatusCode::getReturnString(OrderStatus::CREDITED);
                 break;
             default:
                 break;

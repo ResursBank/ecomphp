@@ -1,9 +1,8 @@
 <?php
 
-namespace Resursbank\Ecommerce;
+namespace Resursbank\Ecommerce\Types;
 
 use Exception;
-use Resursbank\Ecommerce\Types\OrderStatus;
 
 /**
  * Class OrderStatusCode

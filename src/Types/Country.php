@@ -1,6 +1,6 @@
 <?php
 
-namespace Resursbank\Ecommerce;
+namespace Resursbank\Ecommerce\Types;
 
 /**
  * Class Country
