@@ -6490,10 +6490,10 @@ class ResursBank
     ) {
         $SigningPayload['signing'] = [
             'successUrl' => $successUrl,
-            'failUrl' => $successUrl,
+            'failUrl' => $failUrl,
             'forceSigning' => $forceSigning,
         ];
-        if ($backUrl !== null) {
+        if (!empty($backUrl) && is_string($backUrl)) {
             $SigningPayload['backUrl'] = $backUrl;
         }
         $this->handlePayload($SigningPayload);
