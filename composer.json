@@ -5,7 +5,7 @@
     "require": {
         "tornevall/tornelib-php-netcurl": "^6.1",
         "tornevall/tornelib-php-network": "^6.1",
-        "resursbank/ecomphp-deprecated": "dev-master"
+        "resursbank/ecomphp-deprecated": "^0.0.1"
     },
     "config": {
         "preferred-install": {
