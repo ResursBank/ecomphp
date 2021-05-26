@@ -27,4 +27,16 @@ class OrderStatus
 
     /** @var int Order was finalized instantly after the booking (SWISH, INTERNET, etc). */
     const AUTO_DEBITED = 32;
+
+    /**
+     * Orders stuck in frozen mode.
+     * @var int
+     */
+    const MANUAL_INSPECTION = 64;
+
+    /**
+     * @var int
+     * @deprecated If this doesn't work, we have worse problems.
+     */
+    const ERROR = 128;
 }
