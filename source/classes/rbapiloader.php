@@ -1442,7 +1442,6 @@ class ResursBank
                 $this->getVersionFull(),
                 PHP_VERSION
             );
-            $this->myUserAgent = $this->getVersionFull() . (defined('PHP_VERSION') ? '/PHP-' . PHP_VERSION : '');
         }
         if ($this->customerUserAgentPush && isset($_SERVER['HTTP_USER_AGENT'])) {
             $this->myUserAgent .= sprintf(
