@@ -39,9 +39,6 @@ if (class_exists('ResursBank', ECOM_CLASS_EXISTS_AUTOLOAD) &&
     return;
 }
 
-require_once(__DIR__ . '/rbapiloader/ResursForms.php');
-require_once(__DIR__ . '/rbapiloader/ResursException.php');
-
 if (file_exists(__DIR__ . '/../../vendor/autoload.php')) {
     require_once(__DIR__ . '/../../vendor/autoload.php');
 }
@@ -70,7 +67,7 @@ if (!defined('ECOMPHP_VERSION')) {
     define('ECOMPHP_VERSION', (new Generic())->getVersionByAny(__FILE__, 3, ResursBank::class));
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20210412');
+    define('ECOMPHP_MODIFY_DATE', '20210525');
 }
 
 /**

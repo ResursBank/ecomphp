@@ -32,8 +32,8 @@ use Exception;
 use PHPUnit\Framework\TestCase;
 use ReflectionException;
 use RESURS_EXCEPTIONS;
-use Resursbank\Ecommerce\OrderStatusCode;
 use Resursbank\Ecommerce\Types\OrderStatus;
+use Resursbank\Ecommerce\Types\OrderStatusCode;
 use ResursException;
 use TorneLIB\Config\Flag;
 use TorneLIB\Exception\ExceptionHandler;
@@ -46,7 +46,7 @@ use TorneLIB\Utils\Generic;
 use TorneLIB\Utils\Memory;
 use function in_array;
 
-(new Memory())->setMemoryLimit('-1');
+Memory::setMemory('-1');
 
 class resursBankTest extends TestCase
 {
@@ -980,7 +980,7 @@ class resursBankTest extends TestCase
 
         OrderStatusCode::setReturnString(
             [
-                OrderStatus::ANNULLED => 'annullerad'
+                OrderStatus::ANNULLED => 'annullerad',
             ]
         );
 
