@@ -774,7 +774,7 @@ class ResursBank
      *
      * @param string $login
      * @param string $password
-     * @param int $isTestEnvironment
+     * @param int $targetEnvironment
      * @param bool $debug
      * @param array $paramFlagSet
      * @throws Exception
@@ -782,7 +782,7 @@ class ResursBank
     function __construct(
         $login = '',
         $password = '',
-        $isTestEnvironment = RESURS_ENVIRONMENTS::TEST,
+        $targetEnvironment = RESURS_ENVIRONMENTS::TEST,
         $debug = false,
         $paramFlagSet = []
     ) {
@@ -820,7 +820,7 @@ class ResursBank
         $this->soapOptions['ssl_method'] = (defined('SOAP_SSL_METHOD_TLS') ? SOAP_SSL_METHOD_TLS : false);
 
         $this->setAuthentication($login, $password);
-        $this->setEnvironment((int)$isTestEnvironment);
+        $this->setEnvironment((int)$targetEnvironment);
         $this->setUserAgent();
         $this->E_DEPRECATED = new RESURS_DEPRECATED_FLOW();
     }
