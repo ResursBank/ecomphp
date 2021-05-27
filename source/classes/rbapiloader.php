@@ -60,8 +60,8 @@ use TorneLIB\Data\Password;
 use TorneLIB\Exception\ExceptionHandler;
 use TorneLIB\Helpers\NetUtils;
 use TorneLIB\IO\Data\Strings;
-use TorneLIB\Model\Type\dataType;
-use TorneLIB\Model\Type\requestMethod;
+use TorneLIB\Model\Type\DataType;
+use TorneLIB\Model\Type\RequestMethod;
 use TorneLIB\Module\Network\Domain;
 use TorneLIB\Module\Network\NetWrapper;
 use TorneLIB\MODULE_NETWORK;
@@ -1215,7 +1215,7 @@ class ResursBank
         $parsedResponse = $this->CURL->request(
             $getRegisteredCallbackUrl,
             null,
-            requestMethod::METHOD_POST
+            RequestMethod::POST
         )->getRegisteredEventCallback(['eventType' => $fetchThisCallback]);
 
         return $parsedResponse;
@@ -2054,8 +2054,8 @@ class ResursBank
                 $renderedResponse = $this->CURL->request(
                     $renderCallbackUrl,
                     $renderCallback,
-                    requestMethod::METHOD_POST,
-                    dataType::JSON
+                    RequestMethod::POST,
+                    DataType::JSON
                 );
                 $code = $this->CURL->getCode();
             } catch (Exception $e) {
@@ -2068,7 +2068,7 @@ class ResursBank
             // We are not using postService here, since we are dependent on the
             // response code rather than the response itself
             /** @noinspection PhpUndefinedMethodInspection */
-            $renderedResponse = $this->CURL->request($renderCallbackUrl, null, requestMethod::METHOD_POST);
+            $renderedResponse = $this->CURL->request($renderCallbackUrl, null, RequestMethod::POST);
             $renderedResponse->registerEventCallback($renderCallback);
             $code = $renderedResponse->getCode();
         }
@@ -2154,8 +2154,8 @@ class ResursBank
                 $this->CURL->request(
                     $ExternalAPI,
                     $ExternalPostData,
-                    requestMethod::METHOD_POST,
-                    dataType::JSON
+                    RequestMethod::POST,
+                    DataType::JSON
                 );
                 $WebResponse = $this->CURL->getParsed();
             } catch (Exception $e) {
@@ -2373,8 +2373,8 @@ class ResursBank
                         $curlResponse = $this->CURL->request(
                             $renderCallbackUrl,
                             [],
-                            requestMethod::METHOD_DELETE,
-                            dataType::JSON
+                            RequestMethod::DELETE,
+                            DataType::JSON
                         );
                         $curlCode = $curlResponse->getCode();
                     } catch (Exception $e) {
@@ -3386,8 +3386,8 @@ class ResursBank
             $result = $this->CURL->request(
                 $url,
                 ['paymentReference' => $to],
-                requestMethod::METHOD_PUT,
-                dataType::JSON
+                RequestMethod::PUT,
+                DataType::JSON
             );
         } catch (Exception $e) {
             $exceptionFromBody = $this->CURL->getBody();
@@ -5512,8 +5512,8 @@ class ResursBank
                 $checkoutResponse = $this->CURL->request(
                     $checkoutUrl,
                     $this->Payload,
-                    requestMethod::METHOD_POST,
-                    dataType::JSON
+                    RequestMethod::POST,
+                    DataType::JSON
                 );
                 $parsedResponse = $checkoutResponse->getParsed();
                 $responseCode = $checkoutResponse->getCode();
@@ -5566,8 +5566,8 @@ class ResursBank
                 $hostedResponse = $this->CURL->request(
                     $hostedUrl,
                     $this->Payload,
-                    requestMethod::METHOD_POST,
-                    dataType::JSON
+                    RequestMethod::POST,
+                    DataType::JSON
                 );
                 $parsedResponse = $hostedResponse->getParsed();
                 // Do not trust response codes!
@@ -6621,8 +6621,8 @@ class ResursBank
         $updateOrderLinesResponse = $this->CURL->request(
             sprintf('%s/checkout/payments/%s', $this->getCheckoutUrl(), $paymentId),
             ['orderLines' => $sanitizedOutputOrderLines],
-            requestMethod::METHOD_PUT,
-            dataType::JSON
+            RequestMethod::PUT,
+            DataType::JSON
         );
         $updateOrderLinesResponseCode = $this->CURL->getCode($updateOrderLinesResponse);
         if ($updateOrderLinesResponseCode >= 400) {
