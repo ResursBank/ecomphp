@@ -85,7 +85,7 @@ if (!defined('ECOMPHP_MODIFY_DATE')) {
 /**
  * Class ResursBank
  * @package Resursbank\RBEcomPHP
- * @version 1.3.53
+ * @version 1.3.55
  */
 class ResursBank
 {
@@ -779,7 +779,7 @@ class ResursBank
      * @param array $paramFlagSet
      * @throws Exception
      */
-    function __construct(
+    public function __construct(
         $login = '',
         $password = '',
         $targetEnvironment = RESURS_ENVIRONMENTS::TEST,
