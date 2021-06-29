@@ -74,7 +74,7 @@ if (!defined('ECOMPHP_VERSION')) {
     define('ECOMPHP_VERSION', (new Generic())->getVersionByAny(__FILE__, 3, ResursBank::class));
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20210526');
+    define('ECOMPHP_MODIFY_DATE', '20210629');
 }
 
 /**
@@ -790,13 +790,15 @@ class ResursBank
             $this->preSetEarlyFlags($paramFlagSet);
         }
 
-        $memSafeLimit = -1;
-        if (defined('MEMORY_SAFE_LIMIT')) {
-            $memSafeLimit = MEMORY_SAFE_LIMIT;
+        // Avoid conflicts with missing class.
+        if (class_exists('TorneLIB\Utils\Memory')) {
+            $memSafeLimit = -1;
+            if (defined('MEMORY_SAFE_LIMIT')) {
+                $memSafeLimit = MEMORY_SAFE_LIMIT;
+            }
+            $memoryLimit = defined('MEMORY_SAFE_LIMIT') && !empty($memSafeLimit) ? $memSafeLimit : -1;
+            Memory::getMemoryAdjusted('128M', $memoryLimit);
         }
-
-        $memoryLimit = defined('MEMORY_SAFE_LIMIT') && !empty($memSafeLimit) ? $memSafeLimit : -1;
-        Memory::getMemoryAdjusted('128M', $memoryLimit);
 
         if (is_bool($debug) && $debug) {
             $this->debug = $debug;

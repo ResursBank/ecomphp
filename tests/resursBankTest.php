@@ -347,7 +347,7 @@ class resursBankTest extends TestCase
                 static::assertSame(
                     $e->getCode(),
                     RESURS_EXCEPTIONS::ECOMMERCEERROR_NOT_ALLOWED_IN_CURRENT_STATE,
-                    'Finalization properly prohibited by current state'
+                    sprintf('Finalization properly prohibited by current state (%s)', $e->getMessage())
                 );
             }
         }
