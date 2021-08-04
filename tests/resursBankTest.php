@@ -1539,6 +1539,36 @@ class resursBankTest extends TestCase
 
     /**
      * @test
+     * @throws ExceptionHandler
+     * @throws ResursException
+     */
+    public function finalizeSeparately()
+    {
+        if (!$this->allowVersion()) {
+            static::markTestSkipped(
+                sprintf(
+                    'Special test limited to one PHP version (%s) detected. ' .
+                    'This is the wrong version (%s), so it is being skipped.',
+                    isset($_ENV['standalone_ecom']) ? $_ENV['standalone_ecom'] : 'Detection failed',
+                    PHP_VERSION
+                )
+            );
+            return;
+        }
+        $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
+        $paymentId = $payment->paymentId;
+
+        $this->TEST->ECOM->addOrderLine('Deldebitering', 'Varor', 1000, 25, 'st', 'ORDER_LINE', 5);
+        $this->TEST->ECOM->setFinalizeWithoutSpec();
+        $this->TEST->ECOM->finalizePayment($paymentId);
+        sleep(6);
+        $paymentData = $this->TEST->ECOM->getPayment($paymentId);
+        // This is not an actual test that should be asserted (yet).
+        static::assertTrue(true);
+    }
+
+    /**
+     * @test
      * @throws Exception
      */
     public function creditSomethingElse()

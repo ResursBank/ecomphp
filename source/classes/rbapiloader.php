@@ -765,6 +765,10 @@ class ResursBank
      * @var object
      */
     private $autoDebitablePaymentMethod;
+    /**
+     * @var bool
+     */
+    private $finalizeWithoutOrderRows;
 
     /**
      * Constructor method for Resurs Bank WorkFlows
@@ -7355,6 +7359,14 @@ class ResursBank
     }
 
     /**
+     * @return $this
+     */
+    public function setFinalizeWithoutSpec() {
+        $this->finalizeWithoutOrderRows = true;
+        return $this;
+    }
+
+    /**
      * Aftershop Payment Finalization (DEBIT)
      *
      * @param $paymentId
@@ -7414,6 +7426,15 @@ class ResursBank
         }
         $this->aftershopPrepareMetaData($paymentId);
         try {
+            if ($this->finalizeWithoutOrderRows) {
+                if (isset($afterShopObject['specLines'])) {
+                    unset($afterShopObject['specLines']);
+                }
+                if (isset($afterShopObject['partPaymentSpec']['specLines'])) {
+                    unset($afterShopObject['partPaymentSpec']['specLines']);
+                    unset($afterShopObject['partPaymentSpec']['totalVatAmount']);
+                }
+            }
             $afterShopResponseCode = $this->postService('finalizePayment', $afterShopObject, true);
             if ($afterShopResponseCode >= 200 && $afterShopResponseCode < 300) {
                 $this->resetPayload();
