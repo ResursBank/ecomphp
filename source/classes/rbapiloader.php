@@ -73,7 +73,7 @@ if (!defined('ECOMPHP_VERSION')) {
     define('ECOMPHP_VERSION', (new Generic())->getVersionByAny(__FILE__, 3, ResursBank::class));
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20210804');
+    define('ECOMPHP_MODIFY_DATE', '20210805');
 }
 
 /**
@@ -84,7 +84,7 @@ if (!defined('ECOMPHP_MODIFY_DATE')) {
 /**
  * Class ResursBank
  * @package Resursbank\RBEcomPHP
- * @version 1.3.56
+ * @version 1.3.57
  */
 class ResursBank
 {
