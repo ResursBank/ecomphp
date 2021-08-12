@@ -7497,7 +7497,7 @@ class ResursBank
     private function getAfterShopObjectByPayload(
         $paymentId = '',
         $customPayloadItemList = [],
-        $payloadType
+        $payloadType = ''
     ) {
         $finalAfterShopSpec = [
             'paymentId' => $paymentId,
@@ -7770,7 +7770,7 @@ class ResursBank
      */
     public function sanitizeAfterShopSpec(
         $paymentIdOrPaymentObjectData = '',
-        $renderType
+        $renderType = 0
     ) {
 
         $returnSpecObject = [];
