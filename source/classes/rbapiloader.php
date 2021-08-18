@@ -62,9 +62,9 @@ use TorneLIB\Helpers\NetUtils;
 use TorneLIB\IO\Data\Strings;
 use TorneLIB\Model\Type\DataType;
 use TorneLIB\Model\Type\RequestMethod;
+use TorneLIB\Module\Network;
 use TorneLIB\Module\Network\Domain;
 use TorneLIB\Module\Network\NetWrapper;
-use TorneLIB\MODULE_NETWORK;
 use TorneLIB\Utils\Generic;
 use TorneLIB\Utils\Security;
 
@@ -357,7 +357,7 @@ class ResursBank
     /**
      * Class for handling Network related checks
      *
-     * @var MODULE_NETWORK
+     * @var Network
      * @since 1.0.1
      * @since 1.1.1
      */
@@ -1594,7 +1594,7 @@ class ResursBank
     {
         // Import driver on demand.
         if ($this->NETWORK === null) {
-            $this->NETWORK = new MODULE_NETWORK();
+            $this->NETWORK = new Network();
         }
     }
 
