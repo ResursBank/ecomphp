@@ -5312,11 +5312,11 @@ class ResursBank
      *
      * @param string $articleNumberOrId
      * @param string $description
-     * @param int $unitAmountWithoutVat
+     * @param int|float|double $unitAmountWithoutVat
      * @param int $vatPct
      * @param string $unitMeasure
      * @param string $articleType ORDER_LINE, DISCOUNT, SHIPPING_FEE
-     * @param int $quantity
+     * @param int|float|double $quantity
      * @throws Exception
      * @since 1.0.2
      * @since 1.1.2
