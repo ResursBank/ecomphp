@@ -32,6 +32,7 @@ use Exception;
 use PHPUnit\Framework\TestCase;
 use ReflectionException;
 use RESURS_EXCEPTIONS;
+use Resursbank\Ecommerce\Helpers\Helper;
 use Resursbank\Ecommerce\Types\OrderStatus;
 use Resursbank\Ecommerce\Types\OrderStatusCode;
 use ResursException;
@@ -2073,6 +2074,19 @@ class resursBankTest extends TestCase
         }
 
         static::assertTrue($noCriticalTrue);
+    }
+
+    /**
+     * @test
+     */
+    public function getTranslation()
+    {
+        $helper = new Helper();
+        $helper->setLanguage('da');
+        $languageContent = $helper->getLanguage();
+        static::assertTrue(
+            is_object($languageContent) || is_array($languageContent)
+        );
     }
 
     /**
