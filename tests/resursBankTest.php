@@ -2076,6 +2076,19 @@ class resursBankTest extends TestCase
     }
 
     /**
+     * @test
+     * @throws ExceptionHandler
+     * @throws ResursException
+     */
+    public function getPaymentWithoutPayment()
+    {
+        $this->unitSetup();
+
+        static::expectExceptionCode(1006);
+        $this->TEST->ECOM->getPayment();
+    }
+
+    /**
      * @throws Exception
      * @test
      */
