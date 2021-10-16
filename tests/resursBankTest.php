@@ -2092,13 +2092,81 @@ class resursBankTest extends TestCase
     /**
      * @test
      */
-    public function getTranslation()
+    public function getTranslationDanish()
     {
         $helper = new Helper();
         $helper->setLanguage('da');
         $languageContent = $helper->getLanguage();
+        $pnrFormat = $helper->getPhrase('error-pnr-format');
         static::assertTrue(
-            is_object($languageContent) || is_array($languageContent)
+            (is_object($languageContent) || is_array($languageContent)) &&
+            $pnrFormat === 'Du skal angive et gyldigt personnummer'
+        );
+    }
+
+    /**
+     * @test
+     */
+    public function getTranslationSwedish()
+    {
+        $helper = new Helper();
+        $helper->setLanguage('sv');
+        $languageContent = $helper->getLanguage();
+        $closePhrase = $helper->getPhrase('Change');
+        $validationForEmptyGovId = $helper->getPhrase('forEmpty', ['validation', 'govId']);
+        $pspPhraseList = $helper->getPhrase('pspCard', ['paymentMethods']);
+        $pspTrustly = $helper->getPhraseByMethod('pspTrustly');
+        $partPaymentInfo = $helper->getMethodInfo('partPayment');
+        $methods = $helper->getMethodsByPhrases();
+        static::assertTrue(
+            count($languageContent) &&
+            $closePhrase === 'Ändra' &&
+            $validationForEmptyGovId === 'Ange personnummer' &&
+            is_array($pspPhraseList) &&
+            is_array($pspTrustly) &&
+            $partPaymentInfo === 'Välj hur du vill dela upp ditt köp när fakturan kommer' &&
+            count($methods) > 1
+        );
+    }
+
+    /**
+     * @test
+     * @throws Exception
+     */
+    public function getTranslationByEcom()
+    {
+        $this->unitSetup();
+        $methods = $this->TEST->ECOM->getPaymentMethods();
+
+        if (count($methods) < 4) {
+            static::markTestSkipped('Test can not perform with missing payment methods (this account is missing some).');
+            return;
+        }
+
+        $partPayment = $this->TEST->ECOM->getMethodTranslation('PARTPAYMENT', 'sv');
+        $revolving = $this->TEST->ECOM->getMethodTranslation('REVOLVING_CREDIT', 'sv');
+        $swish = $this->TEST->ECOM->getMethodTranslation('SWISH', 'sv');
+        $newCard = $this->TEST->ECOM->getMethodTranslation('NEWCARD', 'sv');
+
+        static::assertTrue(
+            count($methods) &&
+            !empty($partPayment['title']) &&
+            $revolving['info'] === 'Se alla dina köp i Resurs Banks app' &&
+            (isset($swish['mobileText']) && $swish['mobileText'] === 'Ditt mobilnummer: {{mobileNumber}}') &&
+            $newCard['title'] === 'Betala hela eller dela beloppet'
+        );
+    }
+
+    /**
+     * @test
+     */
+    public function getSnakeCaseTranslationMethods()
+    {
+        $this->unitSetup();
+        $snakified = (new Helper())->setLanguage('sv')->getMethodsByPhrases(true);
+        static::assertTrue(
+            !empty($snakified) &&
+            in_array('revolving_credit', $snakified, true)
         );
     }
 

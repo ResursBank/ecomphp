@@ -46,6 +46,7 @@ if (file_exists(__DIR__ . '/../../vendor/autoload.php')) {
 use Exception;
 use ReflectionException;
 use RESURS_EXCEPTIONS;
+use Resursbank\Ecommerce\Helpers\Helper;
 use Resursbank\Ecommerce\Types\AftershopAction;
 use Resursbank\Ecommerce\Types\Callback;
 use Resursbank\Ecommerce\Types\CheckoutType;
@@ -3261,6 +3262,106 @@ class ResursBank
     }
 
     /**
+     * @param $paymentMethodIdOrFactorObject
+     * @param $language
+     * @return array|mixed|string
+     * @throws Exception
+     */
+    public function getMethodTranslation($paymentMethodIdOrFactorObject, $language)
+    {
+        $by = '';
+        if (is_string($paymentMethodIdOrFactorObject)) {
+            $methodObject = $this->getPaymentMethodSpecific($paymentMethodIdOrFactorObject, true);
+            if (isset($methodObject->id) && $methodObject->id === $paymentMethodIdOrFactorObject) {
+                // If method has data in its id, set id to higher priority. Because that's
+                // how those translations work for some reason.
+                $by = 'id';
+            }
+            $paymentMethodIdOrFactorObject = $methodObject;
+        }
+        $return = '';
+        $helper = (new Helper())->setLanguage($language);
+        $methodList = $helper->getMethodsByPhrases();
+        if (isset($paymentMethodIdOrFactorObject->id)) {
+            $lCaseId = strtolower($paymentMethodIdOrFactorObject->id);
+            $lCaseType = strtolower(str_replace('_', '', $paymentMethodIdOrFactorObject->type));
+            $lCasePsp = sprintf('psp%s', strtolower($paymentMethodIdOrFactorObject->specificType));
+
+            // This method is not merged into parent since that uglifies the code more than I wish.
+            if (in_array($lCaseId, $methodList, true) ||
+                in_array($lCaseType, $methodList, true) ||
+                in_array($lCasePsp, $methodList, true)
+            ) {
+                // Currently unsupported is methods that is not correctly defined in getPaymentMethods.
+                // For example: newRevolvingCredit and resursCard. Those has to be handled separately.
+                if (in_array($lCaseType, $methodList, true) && $by !== 'id') {
+                    $return = $helper->getPhraseByMethod($lCaseType);
+                } elseif (in_array($lCasePsp, $methodList, true) && $by !== 'id') {
+                    $return = $helper->getPhraseByMethod($lCasePsp);
+                } elseif (in_array($lCaseId, $methodList, true)) {
+                    $return = $helper->getPhraseByMethod($lCaseId);
+                } elseif (in_array($lCasePsp, $methodList, true)) {
+                    // Fall back like a wimp once again.
+                    $return = $helper->getPhraseByMethod($lCasePsp);
+                }
+            }
+        }
+
+        return $return;
+    }
+
+    /**
+     * Fetch one specific payment method only, from Resurs Bank.
+     *
+     * As of v1.3.41 this method also accept getPayment()-objects as long as it contains a totalAmount and the used
+     * paymentMethodId. In that case, it will extract the name from the payment and use it to fetch the used payment
+     * method.
+     *
+     * @param string $specificMethodId Payment method id or a getPayment()-object
+     * @return array If not found, array will be empty
+     * @throws Exception
+     * @since 1.0.0
+     * @since 1.1.0
+     * @since 1.3.0
+     */
+    public function getPaymentMethodSpecific($specificMethodId = '', $byTypes = false)
+    {
+        if (is_object($specificMethodId) &&
+            isset($specificMethodId->totalAmount) &&
+            isset($specificMethodId->paymentMethodId)
+        ) {
+            $specificMethodId = $specificMethodId->paymentMethodId;
+        }
+
+        $methods = $this->getPaymentMethods([], true);
+        $methodArray = [];
+        if (is_array($methods)) {
+            foreach ($methods as $objectMethod) {
+                if (isset($objectMethod->id) &&
+                    !empty($specificMethodId)
+                ) {
+                    if (strtolower($objectMethod->id) === strtolower($specificMethodId)) {
+                        $methodArray = $objectMethod;
+                    }
+
+                    if (empty($methodArray) && $byTypes) {
+                        if (strtolower($objectMethod->type) === strtolower($specificMethodId)) {
+                            $methodArray = $objectMethod;
+                        } elseif (strtolower($objectMethod->specificType) === strtolower($specificMethodId)) {
+                            $methodArray = $objectMethod;
+                        }
+                    }
+                    if (!empty($methodArray)) {
+                        break;
+                    }
+                }
+            }
+        }
+
+        return $methodArray;
+    }
+
+    /**
      * @param int $keepCacheTimeInSeconds Number of seconds we fetch data from cache instead of live after first call.
      * @since 1.3.26
      */
@@ -3805,46 +3906,6 @@ class ResursBank
         }
 
         return $returnHtml;
-    }
-
-    /**
-     * Fetch one specific payment method only, from Resurs Bank.
-     *
-     * As of v1.3.41 this method also accept getPayment()-objects as long as it contains a totalAmount and the used
-     * paymentMethodId. In that case, it will extract the name from the payment and use it to fetch the used payment
-     * method.
-     *
-     * @param string $specificMethodId Payment method id or a getPayment()-object
-     * @return array If not found, array will be empty
-     * @throws Exception
-     * @since 1.0.0
-     * @since 1.1.0
-     * @since 1.3.0
-     */
-    public function getPaymentMethodSpecific($specificMethodId = '')
-    {
-        if (is_object($specificMethodId) &&
-            isset($specificMethodId->totalAmount) &&
-            isset($specificMethodId->paymentMethodId)
-        ) {
-            $specificMethodId = $specificMethodId->paymentMethodId;
-        }
-
-        $methods = $this->getPaymentMethods([], true);
-        $methodArray = [];
-        if (is_array($methods)) {
-            foreach ($methods as $objectMethod) {
-                if (isset($objectMethod->id) &&
-                    !empty($specificMethodId) &&
-                    strtolower($objectMethod->id) === strtolower($specificMethodId)
-                ) {
-                    $methodArray = $objectMethod;
-                    break;
-                }
-            }
-        }
-
-        return $methodArray;
     }
 
     /**
@@ -7348,15 +7409,6 @@ class ResursBank
     }
 
     /**
-     * @return $this
-     */
-    public function setFinalizeWithoutSpec()
-    {
-        $this->finalizeWithoutOrderRows = true;
-        return $this;
-    }
-
-    /**
      * Aftershop Payment Finalization (DEBIT)
      *
      * @param $paymentId
@@ -8623,6 +8675,15 @@ class ResursBank
         }
 
         return $return;
+    }
+
+    /**
+     * @return $this
+     */
+    public function setFinalizeWithoutSpec()
+    {
+        $this->finalizeWithoutOrderRows = true;
+        return $this;
     }
 
     /**
