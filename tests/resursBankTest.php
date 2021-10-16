@@ -1691,13 +1691,14 @@ class resursBankTest extends TestCase
     /**
      * @test
      * @throws Exception
+     * @noinspection PhpUnusedLocalVariableInspection
      */
     public function getPaymentMethodsCache()
     {
         $this->unitSetup();
         $methodArray = [];
         $counter = 0;
-        $this->TEST->ECOM->getPaymentMethods();
+        $methodList = $this->TEST->ECOM->getPaymentMethods([], true);
         $startTime = microtime(true);
         while ($counter++ <= 20) {
             $methodArray[] = $this->TEST->ECOM->getPaymentMethods();
