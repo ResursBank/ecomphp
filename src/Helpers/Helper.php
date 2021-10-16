@@ -6,6 +6,9 @@ use Exception;
 use TorneLIB\IO\Data\Content;
 use TorneLIB\IO\Data\Strings;
 
+/**
+ * Class Helper Helper functions in ecom, currently for translations.
+ */
 class Helper
 {
     const TRANSLATION_SWEDISH = 'sv';
@@ -183,9 +186,10 @@ class Helper
     /**
      * Get payment method list with supported translations.
      *
-     * @param bool $snakeCase
+     * @param bool $snakeCase By using snake_case transformations we may get better control over stored translations.
      * @return array
      * @throws Exception
+     * @todo Investigate snake_case types instead of in_array-exact-matches in the primary ecom fetcher.
      */
     public function getMethodsByPhrases($snakeCase = false)
     {
