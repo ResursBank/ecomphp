@@ -2999,7 +2999,7 @@ class ResursBank
      * @since 1.2.0
      * @since 1.0.24
      */
-    public function sanitizePaymentMethods($paymentMethods = [], $getAllMethods = false)
+    public function sanitizePaymentMethods($paymentMethods = [], $getAllMethods = true)
     {
         $realPaymentMethods = [];
         $paymentService = $this->getPreferredPaymentFlowService();
