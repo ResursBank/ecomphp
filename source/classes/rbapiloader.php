@@ -2953,7 +2953,7 @@ class ResursBank
      * @since 1.1.0
      * @link  https://test.resurs.com/docs/display/ecom/Get+Payment+Methods
      */
-    public function getPaymentMethods($parameters = [], $getAllMethods = false)
+    public function getPaymentMethods($parameters = [], $getAllMethods = true)
     {
         $this->InitializeServices();
 
