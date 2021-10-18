@@ -3585,7 +3585,7 @@ class ResursBank
     public function getPayment($paymentId = '', $requestCached = true)
     {
         $this->InitializeServices();
-        $rested = false;
+        $getByRestRequest = false;
 
         $this->getPaymentRequests++;
         if ($requestCached && isset($this->lastPaymentStored[$paymentId]->cached)) {
@@ -3607,7 +3607,7 @@ class ResursBank
         if ($this->isFlag('GET_PAYMENT_BY_REST') || !$this->SOAP_AVAILABLE) {
             // This will ALWAYS run if SOAP is unavailable
             try {
-                $rested = true;
+                $getByRestRequest = true;
                 $this->lastPaymentStored[$paymentId] = $this->getPaymentByRest($paymentId);
                 $this->getPaymentRequestMethod = RESURS_GETPAYMENT_REQUESTTYPE::REST;
                 $this->lastPaymentStored[$paymentId]->cached = time();
@@ -3622,14 +3622,14 @@ class ResursBank
                 }
                 if (!$this->SOAP_AVAILABLE && $e->getCode() === 51) {
                     // Fail over on SSL certificate errors (first) as the domain for soap is different than RCO-rest.
-                    $rested = false;
+                    $getByRestRequest = false;
                 } else {
                     throw $e;
                 }
             }
         }
 
-        if (!$rested) {
+        if (!$getByRestRequest) {
             try {
                 $this->lastPaymentStored[$paymentId] = $this->getPaymentBySoap($paymentId);
                 $this->getPaymentRequestMethod = RESURS_GETPAYMENT_REQUESTTYPE::SOAP;
