@@ -851,6 +851,20 @@ class resursBankTest extends TestCase
 
     /**
      * @test
+     */
+    public function updateBadReference()
+    {
+        $this->unitSetup();
+
+        static::expectException('ResursException');
+        $this->TEST->ECOM->updatePaymentReference(
+            sprintf('nope_%s', md5(uniqid('pre', true))),
+            sprintf('nope_%s', md5(uniqid('post', true)))
+        );
+    }
+
+    /**
+     * @test
      * @testdox Disabling this for now as it is extremely annoying during tests.
      * @throws Exception
      */
