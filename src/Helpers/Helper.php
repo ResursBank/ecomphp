@@ -88,7 +88,10 @@ class Helper
         $return = null;
 
         foreach ($this->preloadedLanguage as $translationType => $translationItems) {
-            if (isset($translationItems->translation) && count($translationItems->translation)) {
+            if (isset($translationItems->translation) &&
+                is_array($translationItems->translation) &&
+                count($translationItems->translation)
+            ) {
                 foreach ($translationItems->translation as $translationObject) {
                     if (isset($translationObject->{'@attributes'}) &&
                         $translationObject->{'@attributes'}->class &&
