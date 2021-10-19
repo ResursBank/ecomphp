@@ -36,6 +36,7 @@ use Resursbank\Ecommerce\Types\OrderStatus;
 use Resursbank\Ecommerce\Types\OrderStatusCode;
 use ResursException;
 use TorneLIB\Config\Flag;
+use TorneLIB\Data\Aes;
 use TorneLIB\Exception\ExceptionHandler;
 use TorneLIB\Model\Type\dataType;
 use TorneLIB\Model\Type\requestMethod;
@@ -2427,6 +2428,22 @@ class resursBankTest extends TestCase
         $checkoutResponse = $this->TEST->ECOM->getFullCheckoutResponse();
         $hasIframeUrl = (bool)preg_match('/^http/', $checkoutResponse->iframeUrlExtracted);
         static::assertTrue(($result && $hasIframeUrl));
+    }
+
+    /**
+     * @test
+     */
+    public function aesCrypt()
+    {
+        $ecomEncrypt = (new Aes())
+            ->setAesKeys(sha1('key'), sha1('iv'))
+            ->aesEncrypt('Hello World');
+
+        $ecomDecrypt = (new Aes())
+            ->setAesKeys(sha1('key'), sha1('iv'))
+            ->aesDecrypt($ecomEncrypt);
+
+        static::assertTrue(strlen($ecomEncrypt) > 5 && $ecomDecrypt === 'Hello World');
     }
 
     /**
