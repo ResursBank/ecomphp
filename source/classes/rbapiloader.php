@@ -1134,11 +1134,9 @@ class ResursBank
         }
 
         if ($validate) {
-            if (!$this->validateCredentials($this->current_environment, $username, $password)) {
+            if (!($result = $this->getValidatedCredentials())) {
                 throw new ResursException('Invalid credentials!', 401);
             }
-            // Returning boolean is normally used for test cases.
-            $result = true;
         }
 
         return $result;
@@ -1168,9 +1166,18 @@ class ResursBank
             );
         }
         if (!empty($username)) {
+            $this->setEnvironment($environment);
             $this->setAuthentication($username, $password);
         }
+        //$this->InitializeServices();
 
+        return $this->getValidatedCredentials();
+    }
+
+    /**
+     * @return bool
+     */
+    private function getValidatedCredentials() {
         try {
             $this->getRegisteredEventCallback(Callback::BOOKED);
             $result = true;
