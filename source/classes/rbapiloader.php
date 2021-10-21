@@ -1169,7 +1169,6 @@ class ResursBank
             $this->setEnvironment($environment);
             $this->setAuthentication($username, $password);
         }
-        //$this->InitializeServices();
 
         return $this->getValidatedCredentials();
     }
