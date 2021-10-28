@@ -488,6 +488,18 @@ class resursBankTest extends TestCase
     }
 
     /**
+     * @test
+     * @throws Exception
+     */
+    public function simplyPaymentMethods()
+    {
+        $this->unitSetup();
+        $paymentMethods = $this->TEST->ECOM->getPaymentMethods();
+
+        static::assertTrue(count($paymentMethods) > 1);
+    }
+
+    /**
      * Get a method that suites our needs of TYPE or SPECIFIC TYPE (not method ID), with the help from getPaymentMethods
      *
      * @param string $specificType
