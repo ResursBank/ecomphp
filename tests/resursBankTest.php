@@ -2530,6 +2530,16 @@ class resursBankTest extends TestCase
 
     /**
      * @test
+     */
+    public function requiredFieldsSimplified()
+    {
+        $this->unitSetup();
+        $invoiceFields = $this->TEST->ECOM->getSimplifiedRequiredFields('INVOICE');
+        static::assertTrue(in_array('phone', $invoiceFields, true));
+    }
+
+    /**
+     * @test
      * @testdox Clean up special test data from share file
      */
     public function finalTest()
