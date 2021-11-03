@@ -4061,6 +4061,7 @@ class ResursBank
 
     /**
      * @param $customerType
+     * @param null $paymentMethod
      * @return array
      */
     private function getSimplifiedFieldArray($customerType)
