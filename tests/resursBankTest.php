@@ -32,6 +32,7 @@ use Exception;
 use PHPUnit\Framework\TestCase;
 use ReflectionException;
 use RESURS_EXCEPTIONS;
+use Resursbank\Ecommerce\Service\Merchant\MerchantApi;
 use Resursbank\Ecommerce\Service\Translation;
 use Resursbank\Ecommerce\Types\OrderStatus;
 use Resursbank\Ecommerce\Types\OrderStatusCode;
@@ -64,6 +65,8 @@ class resursBankTest extends TestCase
      * @var bool
      */
     protected $useMerchant = true;
+
+    protected $merchantBearerToken = '';
 
     // Defaults.
     private $username = 'ecomphpPipelineTest';
@@ -370,15 +373,14 @@ class resursBankTest extends TestCase
                 $higherThan = implode('.', $envFix);
                 $envFix[1]++;
                 $lowerThan = implode('.', $envFix);
-                if (
-                    (
-                        version_compare(PHP_VERSION, $higherThan, '>') &&
+                if ((
+                    version_compare(PHP_VERSION, $higherThan, '>') &&
                         version_compare(
                             PHP_VERSION,
                             $lowerThan,
                             '<'
                         )
-                    )
+                )
                     || preg_match(sprintf('/^%s/', $textVersion), PHP_VERSION)
                 ) {
                     $return = true;
@@ -488,18 +490,6 @@ class resursBankTest extends TestCase
     }
 
     /**
-     * @test
-     * @throws Exception
-     */
-    public function simplyPaymentMethods()
-    {
-        $this->unitSetup();
-        $paymentMethods = $this->TEST->ECOM->getPaymentMethods();
-
-        static::assertTrue(count($paymentMethods) > 1);
-    }
-
-    /**
      * Get a method that suites our needs of TYPE or SPECIFIC TYPE (not method ID), with the help from getPaymentMethods
      *
      * @param string $specificType
@@ -520,9 +510,9 @@ class resursBankTest extends TestCase
         $methodGroup = array_pop($prePop);
         foreach ($methodGroup as $curMethod) {
             if ((
-                    $curMethod->specificType === $specificType ||
+                $curMethod->specificType === $specificType ||
                     $curMethod->type === $specificType
-                ) &&
+            ) &&
                 in_array($customerType, (array)$curMethod->customerType)
             ) {
                 $this->TEST->share('METHOD_' . $specificType);
@@ -561,6 +551,18 @@ class resursBankTest extends TestCase
         if (!$noAssert) {
             static::assertGreaterThan(1, $paymentMethods);
         }
+    }
+
+    /**
+     * @test
+     * @throws Exception
+     */
+    public function simplyPaymentMethods()
+    {
+        $this->unitSetup();
+        $paymentMethods = $this->TEST->ECOM->getPaymentMethods();
+
+        static::assertTrue(count($paymentMethods) > 1);
     }
 
     /**
@@ -2548,6 +2550,71 @@ class resursBankTest extends TestCase
         $this->unitSetup();
         $invoiceFields = $this->TEST->ECOM->getSimplifiedRequiredFields('INVOICE');
         static::assertTrue(in_array('phone', $invoiceFields, true));
+    }
+
+    /**
+     * @test
+     */
+    public function getMerchantStores()
+    {
+        if (!$this->hasEnv()) {
+            static::markTestSkipped('Merchant API is not ready for testing.');
+            return;
+        }
+
+        $merchant = $this->setMerchantToken();
+
+        static::assertTrue(count($merchant->getStores()) > 0);
+    }
+
+    /**
+     * @test
+     */
+    public function setMerchantToken()
+    {
+        if (!$this->hasEnv()) {
+            static::markTestSkipped('Merchant API is not ready for testing.');
+            return;
+        }
+        $merchant = new MerchantApi();
+        $merchant
+            ->setClientId(getenv('CLIENT_ID'))
+            ->setClientSecret(getenv('CLIENT_SECRET'))
+            ->setScope(getenv('SCOPE'))
+            ->setGrantType(getenv('GRANT_TYPE'));
+
+        $this->merchantBearerToken = $merchant->getToken()->getAccessToken();
+
+        static::assertTrue(strlen($merchant->getToken()->getAccessToken()) > 100);
+
+        return $merchant;
+    }
+
+    /**
+     *
+     */
+    private function hasEnv()
+    {
+        $return = false;
+        if (file_exists(__DIR__ . '/.env')) {
+            $return = true;
+            $lines = file(__DIR__ . '/.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            foreach ($lines as $line) {
+                if (strpos(trim($line), '#') === 0) {
+                    continue;
+                }
+                list($name, $value) = explode('=', $line, 2);
+                $name = trim($name);
+                $value = trim($value);
+                if (!array_key_exists($name, $_SERVER) && !array_key_exists($name, $_ENV)) {
+                    putenv(sprintf('%s=%s', $name, $value));
+                    $_ENV[$name] = $value;
+                    $_SERVER[$name] = $value;
+                }
+            }
+        }
+
+        return $return;
     }
 
     /**
