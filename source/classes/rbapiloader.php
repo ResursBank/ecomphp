@@ -46,7 +46,7 @@ if (file_exists(__DIR__ . '/../../vendor/autoload.php')) {
 use Exception;
 use ReflectionException;
 use RESURS_EXCEPTIONS;
-use Resursbank\Ecommerce\Helpers\Helper;
+use Resursbank\Ecommerce\Service\Translation;
 use Resursbank\Ecommerce\Types\AftershopAction;
 use Resursbank\Ecommerce\Types\Callback;
 use Resursbank\Ecommerce\Types\CheckoutType;
@@ -3287,7 +3287,7 @@ class ResursBank
             $paymentMethodIdOrFactorObject = $methodObject;
         }
         $return = '';
-        $helper = (new Helper())->setLanguage($language);
+        $helper = (new Translation())->setLanguage($language);
         $methodList = $helper->getMethodsByPhrases();
         if (isset($paymentMethodIdOrFactorObject->id)) {
             $lCaseId = strtolower($paymentMethodIdOrFactorObject->id);

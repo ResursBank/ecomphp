@@ -32,7 +32,7 @@ use Exception;
 use PHPUnit\Framework\TestCase;
 use ReflectionException;
 use RESURS_EXCEPTIONS;
-use Resursbank\Ecommerce\Helpers\Helper;
+use Resursbank\Ecommerce\Service\Translation;
 use Resursbank\Ecommerce\Types\OrderStatus;
 use Resursbank\Ecommerce\Types\OrderStatusCode;
 use ResursException;
@@ -2122,7 +2122,7 @@ class resursBankTest extends TestCase
      */
     public function getTranslationDanish()
     {
-        $helper = new Helper();
+        $helper = new Translation();
         $helper->setLanguage('da');
         $languageContent = $helper->getLanguage();
         $pnrFormat = $helper->getPhrase('error-pnr-format');
@@ -2137,7 +2137,7 @@ class resursBankTest extends TestCase
      */
     public function getTranslationSwedish()
     {
-        $helper = new Helper();
+        $helper = new Translation();
         $helper->setLanguage('sv');
         $languageContent = $helper->getLanguage();
         $closePhrase = $helper->getPhrase('Change');
@@ -2191,7 +2191,7 @@ class resursBankTest extends TestCase
     public function getSnakeCaseTranslationMethods()
     {
         $this->unitSetup();
-        $snakified = (new Helper())->setLanguage('sv')->getMethodsByPhrases(true);
+        $snakified = (new Translation())->setLanguage('sv')->getMethodsByPhrases(true);
         static::assertTrue(
             !empty($snakified) &&
             in_array('revolving_credit', $snakified, true)
