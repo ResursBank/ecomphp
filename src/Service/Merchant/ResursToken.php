@@ -2,7 +2,7 @@
 
 namespace Resursbank\Ecommerce\Service\Merchant;
 
-class Token
+class ResursToken
 {
     private $accessToken;
     private $tokenType;

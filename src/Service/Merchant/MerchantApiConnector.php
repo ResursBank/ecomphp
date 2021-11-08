@@ -23,7 +23,7 @@ class MerchantApiConnector
         'prod' => '??',
     ];
     /**
-     * @var Token
+     * @var ResursToken
      */
     protected $token;
     /**
@@ -213,7 +213,7 @@ class MerchantApiConnector
                 RequestMethod::POST
             )->getParsed();
 
-            $this->token = new Token(
+            $this->token = new ResursToken(
                 $tokenParsedResponse->access_token,
                 $tokenParsedResponse->token_type,
                 $tokenParsedResponse->expires_in
