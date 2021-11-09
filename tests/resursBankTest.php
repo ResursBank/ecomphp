@@ -66,6 +66,10 @@ class resursBankTest extends TestCase
      */
     protected $useMerchant = true;
 
+    /**
+     * Bearer token "storage". Using this as the database.
+     * @var string
+     */
     protected $merchantBearerToken = '';
 
     // Defaults.
@@ -374,13 +378,13 @@ class resursBankTest extends TestCase
                 $envFix[1]++;
                 $lowerThan = implode('.', $envFix);
                 if ((
-                    version_compare(PHP_VERSION, $higherThan, '>') &&
+                        version_compare(PHP_VERSION, $higherThan, '>') &&
                         version_compare(
                             PHP_VERSION,
                             $lowerThan,
                             '<'
                         )
-                )
+                    )
                     || preg_match(sprintf('/^%s/', $textVersion), PHP_VERSION)
                 ) {
                     $return = true;
@@ -510,9 +514,9 @@ class resursBankTest extends TestCase
         $methodGroup = array_pop($prePop);
         foreach ($methodGroup as $curMethod) {
             if ((
-                $curMethod->specificType === $specificType ||
+                    $curMethod->specificType === $specificType ||
                     $curMethod->type === $specificType
-            ) &&
+                ) &&
                 in_array($customerType, (array)$curMethod->customerType)
             ) {
                 $this->TEST->share('METHOD_' . $specificType);
@@ -2555,7 +2559,7 @@ class resursBankTest extends TestCase
     /**
      * @test
      */
-    public function getMerchantStores()
+    public function getMerchantStoresAndMethods()
     {
         if (!$this->hasEnv()) {
             static::markTestSkipped('Merchant API is not ready for testing.');
@@ -2563,8 +2567,19 @@ class resursBankTest extends TestCase
         }
 
         $merchant = $this->setMerchantToken();
+        $merchant->setBearer($this->merchantBearerToken);
 
-        static::assertTrue(count($merchant->getStores()) > 0);
+        // Test API call for stores.
+        $storeList = $merchant->getStores();
+        $storeUuid = $merchant->getStoreByIdNum(90102);
+        // Fetching payment methods requires either the numeric store id or the long UUID. Both are accepted
+        // by ecom.
+        $paymentMethodsResponse = $merchant->getPaymentMethods($storeUuid);
+
+        static::assertTrue(
+            count($storeList) > 0 &&
+            count((array)$paymentMethodsResponse) > 0
+        );
     }
 
     /**
@@ -2591,7 +2606,8 @@ class resursBankTest extends TestCase
     }
 
     /**
-     *
+     * Has environment file? Used for protecting unique merchant API secrets/tokens.
+     * If exists, read it and generate env()-data.
      */
     private function hasEnv()
     {
@@ -2618,17 +2634,6 @@ class resursBankTest extends TestCase
     }
 
     /**
-     * @test
-     * @testdox Clean up special test data from share file
-     */
-    public function finalTest()
-    {
-        $this->unitSetup();
-        $this->TEST->ECOM->resetInvoiceNumber();
-        static::assertTrue($this->TEST->unshare('thisKey'));
-    }
-
-    /**
      * @return null
      * @throws Exception
      * @noinspection PhpUnusedPrivateMethodInspection
@@ -2645,5 +2650,16 @@ class resursBankTest extends TestCase
         }
 
         return null;
+    }
+
+    /**
+     * @test
+     * @testdox Clean up special test data from share file
+     */
+    public function finalTest()
+    {
+        $this->unitSetup();
+        $this->TEST->ECOM->resetInvoiceNumber();
+        static::assertTrue($this->TEST->unshare('thisKey'));
     }
 }

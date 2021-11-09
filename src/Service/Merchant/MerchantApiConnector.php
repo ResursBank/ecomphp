@@ -3,6 +3,7 @@
 namespace Resursbank\Ecommerce\Service\Merchant;
 
 use Exception;
+use TorneLIB\Exception\ExceptionHandler;
 use TorneLIB\Model\Type\RequestMethod;
 use TorneLIB\Module\Network\NetWrapper;
 
@@ -73,16 +74,62 @@ class MerchantApiConnector
     }
 
     /**
+     * @param string $merchantToken
      * @return $this
      */
-    public function setBearer()
+    public function setBearer($merchantToken = '')
     {
-        $this->connection->setHeader('Authorization', sprintf('Bearer %s', $this->getAccessToken()));
+        if (empty($merchantToken) && !empty($this->token->getAccessToken())) {
+            $useBearerToken = $this->token->getAccessToken();
+        } else {
+            $useBearerToken = $merchantToken;
+        }
+
+        $this->connection->setHeader('Authorization', sprintf('Bearer %s', $useBearerToken));
 
         return $this;
     }
 
     /**
+     * @param $resource
+     * @return string
+     */
+    private function getRequestUrl($resource)
+    {
+        return sprintf(
+            '%s%s/%s',
+            $this->getApiUrl(),
+            $this->getMerchantApiUrlService(),
+            $resource
+        );
+    }
+
+    /**
+     * Compile a request to the API, so all requests look the same.
+     *
+     * @param $resource
+     * @param $data
+     * @param int $requestMethod
+     * @return mixed
+     * @throws ExceptionHandler
+     */
+    public function getMerchantRequest($resource, $data = null, $requestMethod = RequestMethod::GET)
+    {
+        // Parsed responses may contain:
+        // content->[],
+        // page->number, size, totaltElements, totalPages
+        // Note: This may be necessary when looking for content with large sized arrays.
+
+        return $this->getMerchantConnection()->request(
+            $this->getRequestUrl($resource),
+            (array)$data,
+            $requestMethod
+        )->getParsed();
+    }
+
+    /**
+     * Make sure the Jwt request for tokens are properly set up before allowing usage.
+     *
      * @return bool
      */
     public function isJwtReady()
@@ -91,6 +138,8 @@ class MerchantApiConnector
     }
 
     /**
+     * Set the client id for the merchant requests.
+     *
      * @param $clientId
      * @return $this
      */
@@ -102,6 +151,8 @@ class MerchantApiConnector
     }
 
     /**
+     * If all data for the Jwt is filled, then make requests allowable.
+     *
      * @return $this
      */
     private function setPreparedJwtInit()
@@ -118,6 +169,8 @@ class MerchantApiConnector
     }
 
     /**
+     * Set a secret for the API.
+     *
      * @param $clientSecret
      * @return $this
      */
@@ -129,6 +182,8 @@ class MerchantApiConnector
     }
 
     /**
+     * Set the request scope for the API.
+     *
      * @param $clientScope
      * @return $this
      */
@@ -140,6 +195,8 @@ class MerchantApiConnector
     }
 
     /**
+     * Set the grant type for the API.
+     *
      * @param $grantType
      * @return $this
      */
@@ -151,6 +208,11 @@ class MerchantApiConnector
     }
 
     /**
+     * This method works almost like getConnection(), with the difference that each request will also include
+     * the bearer token, which is normally not happening in the real connection (which you can see that we
+     * call from here). We can set the bearer statically from the setHeader method, but for this particular
+     * moment we won't do this.
+     *
      * @return NetWrapper
      * @throws Exception
      */
@@ -167,6 +229,8 @@ class MerchantApiConnector
     }
 
     /**
+     * Check if this set up API has a bearer token ready.
+     *
      * @return bool
      */
     private function hasConnectionBearer()
@@ -177,6 +241,7 @@ class MerchantApiConnector
 
     /**
      * Create and/or return communications wrapper.
+     *
      * @return NetWrapper
      */
     public function getConnection()
@@ -202,6 +267,8 @@ class MerchantApiConnector
     }
 
     /**
+     * Get a ResursToken.
+     *
      * @throws Exception
      */
     public function getToken()

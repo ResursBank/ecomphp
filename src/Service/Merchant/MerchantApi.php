@@ -2,6 +2,7 @@
 
 namespace Resursbank\Ecommerce\Service\Merchant;
 
+use Exception;
 use TorneLIB\Exception\ExceptionHandler;
 
 class MerchantApi extends MerchantApiConnector
@@ -12,22 +13,44 @@ class MerchantApi extends MerchantApiConnector
      */
     public function getStores()
     {
-        return ($this->getMerchantConnection()->request(
-            $this->getRequestUrl('stores')
-        )->getParsed())->{'content'};
+        return $this->getMerchantRequest('stores')->content;
     }
 
     /**
-     * @param $resource
-     * @return string
+     * @param $idNum
+     * @throws ExceptionHandler
      */
-    private function getRequestUrl($resource)
+    public function getStoreByIdNum($idNum)
     {
-        return sprintf(
-            '%s%s/%s',
-            $this->getApiUrl(),
-            $this->getMerchantApiUrlService(),
-            $resource
-        );
+        $return = '';
+        $storeList = $this->getStores();
+
+        foreach ($storeList as $store) {
+            if ((int)$store->nationalStoreId === (int)$idNum) {
+                $return = $store->id;
+                break;
+            }
+        }
+
+        if (empty($return)) {
+            throw new Exception(sprintf('There is no store with id %s.', $idNum), 1900);
+        }
+
+        return $return;
+    }
+
+    /**
+     * @param $storeId
+     * @return mixed|string
+     * @throws ExceptionHandler
+     */
+    public function getPaymentMethods($storeId)
+    {
+        return $this->getMerchantRequest(
+            sprintf(
+                'stores/%s/payment_methods',
+                is_numeric($storeId) ? $this->getStoreByIdNum($storeId) : $storeId
+            )
+        )->paymentMethods;
     }
 }
