@@ -2565,16 +2565,21 @@ class resursBankTest extends TestCase
             static::markTestSkipped('Merchant API is not ready for testing.');
             return;
         }
+        $this->unitSetup();
 
         $merchant = $this->setMerchantToken();
         $merchant->setBearer($this->merchantBearerToken);
 
         // Test API call for stores.
         $storeList = $merchant->getStores();
+        // Prepare store id at init to avoid reusing it in all calls being made in the system.
+        // If store id is used on each method call, that store id will have higher priority than the one
+        // that was set for internal use.
+        $merchant->setStoreId(90102);
         $storeUuid = $merchant->getStoreByIdNum(90102);
         // Fetching payment methods requires either the numeric store id or the long UUID. Both are accepted
         // by ecom.
-        $paymentMethodsResponse = $merchant->getPaymentMethods($storeUuid);
+        $paymentMethodsResponse = $merchant->getPaymentMethods();
 
         static::assertTrue(
             count($storeList) > 0 &&
