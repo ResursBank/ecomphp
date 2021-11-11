@@ -1863,7 +1863,6 @@ class ResursBank
      */
     public function getSaltKey($complexity = 1, $setMax = null)
     {
-
         $retp = null;
         $characterListArray = [
             'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
@@ -2324,7 +2323,7 @@ class ResursBank
     /**
      * Simplifies removal of callbacks even when they does not exist at first.
      *
-     * @param int $callbackTypeData
+     * @param int $callbackType
      * @param bool $isMultiple Consider callback type bit range when true, where the value 255 is all callbacks at once.
      * @param bool $forceSoap
      * @return array|bool
