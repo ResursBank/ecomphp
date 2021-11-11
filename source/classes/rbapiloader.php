@@ -114,6 +114,11 @@ class ResursBank
      */
     public $username;
 
+    /**
+     * @var bool
+     */
+    private $registerCallbacksFailover = false;
+
     ///// Environment and API
     /**
      * The password used with the webservices
@@ -1863,7 +1868,6 @@ class ResursBank
      */
     public function getSaltKey($complexity = 1, $setMax = null)
     {
-
         $retp = null;
         $characterListArray = [
             'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
@@ -1958,6 +1962,24 @@ class ResursBank
     }
 
     /**
+     * @return $this
+     */
+    public function setRegisterCallbackFailover()
+    {
+        $this->registerCallbacksFailover = true;
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function getRegisterCallbackFailover()
+    {
+        return $this->registerCallbacksFailover;
+    }
+
+
+    /**
      * Register a callback URL with Resurs Bank
      *
      * @param int $callbackType
@@ -2046,7 +2068,7 @@ class ResursBank
             );
         }
         ////// DIGEST CONFIGURATION FINISH
-        if ($this->registerCallbacksViaRest && $callbackType !== Callback::UPDATE) {
+        if ($this->registerCallbacksViaRest) {
             $registerBy = 'rest';
             $serviceUrl = sprintf('%s/callbacks', $this->getCheckoutUrl());
             $renderCallbackUrl = sprintf('%s/%s', $serviceUrl, $renderCallback['eventType']);
@@ -2086,6 +2108,21 @@ class ResursBank
             }
 
             return true;
+        }
+
+        if ($this->getRegisterCallbackFailover() && !$this->getRegisterCallbacksViaRest()) {
+            $this->registerCallbacksViaRest = true;
+            $return = $this->setRegisterCallback(
+                $callbackType,
+                $callbackUriTemplate,
+                $digestData,
+                $basicAuthUserName,
+                $basicAuthPassword
+            );
+            $this->registerCallbacksViaRest = false;
+            if ($return) {
+                return $return;
+            }
         }
 
         throw new ResursException(
