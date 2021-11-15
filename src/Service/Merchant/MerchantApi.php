@@ -3,10 +3,19 @@
 namespace Resursbank\Ecommerce\Service\Merchant;
 
 use Exception;
+use Resursbank\Ecommerce\Service\Merchant\Api\getPaymentMethodsResponse;
+use Resursbank\Ecommerce\Service\Merchant\Model\PaymentMethods;
 use TorneLIB\Exception\ExceptionHandler;
 
 class MerchantApi extends MerchantApiConnector
 {
+    /**
+     * Store id to use during full session.
+     *
+     * @var string
+     */
+    private $storeId = '';
+
     /**
      * @return array
      * @throws ExceptionHandler
@@ -17,6 +26,42 @@ class MerchantApi extends MerchantApiConnector
     }
 
     /**
+     * @param $storeId
+     * @throws ExceptionHandler
+     */
+    public function setStoreId($storeId)
+    {
+        if (!empty($storeId)) {
+            $this->storeId = $this->getStoreByIdNum($storeId);
+        }
+
+        return $this;
+    }
+
+    /**
+     * StoreID Automation. Making sure that we are always using a proper store id, regardless of how it is pushed
+     * into the API.
+     *
+     * @param string $storeId
+     * @return string
+     * @throws ExceptionHandler
+     */
+    public function getStoreId($storeId = null)
+    {
+        if (!empty($storeId)) {
+            $return = is_numeric($storeId) ? $this->getStoreByIdNum($storeId) : $storeId;
+        } elseif (!empty($this->storeId)) {
+            $return = is_numeric($this->storeId) ? $this->getStoreByIdNum($this->storeId) : $this->storeId;
+        } else {
+            $return = '';
+        }
+
+        return $return;
+    }
+
+    /**
+     * Transform a numeric store id to Resurs internal.
+     *
      * @param $idNum
      * @throws ExceptionHandler
      */
@@ -26,7 +71,7 @@ class MerchantApi extends MerchantApiConnector
         $storeList = $this->getStores();
 
         foreach ($storeList as $store) {
-            if ((int)$store->nationalStoreId === (int)$idNum) {
+            if ((int)$store->nationalStoreId === (int)$idNum || $store->id === $idNum) {
                 $return = $store->id;
                 break;
             }
@@ -44,13 +89,15 @@ class MerchantApi extends MerchantApiConnector
      * @return mixed|string
      * @throws ExceptionHandler
      */
-    public function getPaymentMethods($storeId)
+    public function getPaymentMethods($storeId = null)
     {
-        return $this->getMerchantRequest(
-            sprintf(
-                'stores/%s/payment_methods',
-                is_numeric($storeId) ? $this->getStoreByIdNum($storeId) : $storeId
-            )
-        )->paymentMethods;
+        return new PaymentMethods(
+            $this->getMerchantRequest(
+                sprintf(
+                    'stores/%s/payment_methods',
+                    $this->getStoreId($storeId)
+                )
+            )->paymentMethods
+        );
     }
 }
