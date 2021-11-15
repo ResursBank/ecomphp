@@ -171,7 +171,8 @@ class MerchantApiConnector
                 }
                 throw new Exception(
                     $e->getMessage(),
-                    4001
+                    4001,
+                    $e
                 );
             }
             throw $e;
