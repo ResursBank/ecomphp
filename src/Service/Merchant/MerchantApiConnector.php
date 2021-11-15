@@ -119,7 +119,7 @@ class MerchantApiConnector
     /**
      * @return bool
      */
-    private function hasExpiredToken(): bool
+    public function hasExpiredToken(): bool
     {
         $return = true;
 

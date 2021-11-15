@@ -34,6 +34,7 @@ use ReflectionException;
 use RESURS_EXCEPTIONS;
 use Resursbank\Ecommerce\Service\Merchant\MerchantApi;
 use Resursbank\Ecommerce\Service\Merchant\Model\Method;
+use Resursbank\Ecommerce\Service\Merchant\ResursToken;
 use Resursbank\Ecommerce\Service\Translation;
 use Resursbank\Ecommerce\Types\OrderStatus;
 use Resursbank\Ecommerce\Types\OrderStatusCode;
@@ -2580,12 +2581,15 @@ class resursBankTest extends TestCase
             ->setClientSecret(getenv('CLIENT_SECRET'))
             ->setScope(getenv('SCOPE'))
             ->setGrantType(getenv('GRANT_TYPE'));
-
         $ma->setBearer('expiredToken');
         $stores = $ma->getStores();
         static::assertTrue(count($stores) > 0);
     }
 
+    /**
+     * @return ResursToken|void
+     * @throws Exception
+     */
     private function getNewToken()
     {
         if (!$this->hasEnv()) {
