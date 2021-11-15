@@ -17,25 +17,20 @@ class MerchantApi extends MerchantApiConnector
     private $storeId = '';
 
     /**
-     * @return array
+     * @param $storeId
+     * @return mixed|string
      * @throws ExceptionHandler
      */
-    public function getStores(): array {
-        return $this->getMerchantRequest('stores')->content;
-    }
-
-	/**
-	 * @param $storeId
-	 *
-	 * @return MerchantApi
-	 * @throws ExceptionHandler
-	 */
-    public function setStoreId($storeId): MerchantApi {
-        if (!empty($storeId)) {
-            $this->storeId = $this->getStoreByIdNum($storeId);
-        }
-
-        return $this;
+    public function getPaymentMethods($storeId = null)
+    {
+        return new PaymentMethods(
+            $this->getMerchantRequest(
+                sprintf(
+                    'stores/%s/payment_methods',
+                    $this->getStoreId($storeId)
+                )
+            )->paymentMethods
+        );
     }
 
     /**
@@ -47,7 +42,8 @@ class MerchantApi extends MerchantApiConnector
      * @return string
      * @throws ExceptionHandler
      */
-    public function getStoreId(string $storeId = ''): string {
+    public function getStoreId(string $storeId = ''): string
+    {
         if (!empty($storeId)) {
             $return = is_numeric($storeId) ? $this->getStoreByIdNum($storeId) : $storeId;
         } elseif (!empty($this->storeId)) {
@@ -59,15 +55,31 @@ class MerchantApi extends MerchantApiConnector
         return $return;
     }
 
-	/**
-	 * Transform a numeric store id to Resurs internal.
-	 *
-	 * @param $idNum
-	 *
-	 * @return string
-	 * @throws ExceptionHandler
-	 */
-    public function getStoreByIdNum($idNum): string {
+    /**
+     * @param $storeId
+     *
+     * @return MerchantApi
+     * @throws ExceptionHandler
+     */
+    public function setStoreId($storeId): MerchantApi
+    {
+        if (!empty($storeId)) {
+            $this->storeId = $this->getStoreByIdNum($storeId);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Transform a numeric store id to Resurs internal.
+     *
+     * @param $idNum
+     *
+     * @return string
+     * @throws ExceptionHandler
+     */
+    public function getStoreByIdNum($idNum): string
+    {
         $return = '';
         $storeList = $this->getStores();
 
@@ -86,19 +98,11 @@ class MerchantApi extends MerchantApiConnector
     }
 
     /**
-     * @param $storeId
-     * @return mixed|string
+     * @return array
      * @throws ExceptionHandler
      */
-    public function getPaymentMethods($storeId = null)
+    public function getStores(): array
     {
-        return new PaymentMethods(
-            $this->getMerchantRequest(
-                sprintf(
-                    'stores/%s/payment_methods',
-                    $this->getStoreId($storeId)
-                )
-            )->paymentMethods
-        );
+        return $this->getMerchantRequest('stores')->content;
     }
 }

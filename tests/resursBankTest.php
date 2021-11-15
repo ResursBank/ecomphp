@@ -48,6 +48,7 @@ use TorneLIB\Module\Network\NetWrapper;
 use TorneLIB\Module\Network\Wrappers\CurlWrapper;
 use TorneLIB\Utils\Generic;
 use TorneLIB\Utils\Memory;
+use function count;
 use function in_array;
 
 Memory::setMemory('-1');
@@ -2547,64 +2548,150 @@ class resursBankTest extends TestCase
         static::assertTrue(strlen($ecomEncrypt) > 5 && $ecomDecrypt === 'Hello World');
     }
 
-	/**
-	 * @throws ExceptionHandler
-	 * @test
-	 */
-    public function badToken() {
-    	$ma = new MerchantApi();
-    	$ma->setBearer('eyJraWQiOiIxY2IwNmE0YS0zNDY1LTRmMTEtYWMzZC1kOGJiMmJkYjFlYjciLCJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiJpbnRlZ3JhdGlvbiIsInN1YiI6InNhcmF3aW50c2UiLCJpc3MiOiJpbnRlZ3JhdGlvbiIsImNvbnNlbnRzIjpbXSwiY2hhbm5lbFR5cGUiOiJFQ09NTUVSQ0UiLCJleHAiOjE2MzY0NTA0MzEsImF1dGhNZXRob2QiOiJUT0tFTiIsImlhdCI6MTYzNjQ0NjgzMSwianRpIjoiMGI2NTg1ZjktMTQxMy00YTQzLTlhYTEtMmYxNTRlZTA3NGE2IiwiYXV0aG9yaXRpZXMiOlsibWVyY2hhbnQtYXBpIl19.GpJd4-iu0-tbAIB75iUjlN5WSQMbdxhhvvu6lHiz4RY3aOuwSCLJQyt-JSGR2LFUpT3-9WB-NCVvCg8YoalPfxGsI-bLj7NVL5m9onv3DhV7GSqwI5eKF3Fd8dTX6zyKHyC_IpzqA65c9iMplP8ERRsvNrYLS_AUtPSwjjd5HDLCuh1-vTxhe0eG8kr0Ty47itJca2de2Ym7VVjc1b8PQpnDt1BRJPDI79hcgB3jvicOT4ufC1wGKzdkf09gliP0QP_wZocQEoHGJvr4d18w40ZXvi8_C1vVPDsELVQqUtaCRGD3pr_jbPv1htLRqsT316SHC6sqmkmNBRw9ymUJZQ');
-    	$ma->getStores();
+    /**
+     * @throws ExceptionHandler
+     * @test
+     */
+    public function badToken()
+    {
+        $ma = new MerchantApi();
+        $ma->setBearer('eyJraWQiOiIxY2IwNmE0YS0zNDY1LTRmMTEtYWMzZC1kOGJiMmJkYjFlYjciLCJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiJpbnRlZ3JhdGlvbiIsInN1YiI6InNhcmF3aW50c2UiLCJpc3MiOiJpbnRlZ3JhdGlvbiIsImNvbnNlbnRzIjpbXSwiY2hhbm5lbFR5cGUiOiJFQ09NTUVSQ0UiLCJleHAiOjE2MzY0NTA0MzEsImF1dGhNZXRob2QiOiJUT0tFTiIsImlhdCI6MTYzNjQ0NjgzMSwianRpIjoiMGI2NTg1ZjktMTQxMy00YTQzLTlhYTEtMmYxNTRlZTA3NGE2IiwiYXV0aG9yaXRpZXMiOlsibWVyY2hhbnQtYXBpIl19.GpJd4-iu0-tbAIB75iUjlN5WSQMbdxhhvvu6lHiz4RY3aOuwSCLJQyt-JSGR2LFUpT3-9WB-NCVvCg8YoalPfxGsI-bLj7NVL5m9onv3DhV7GSqwI5eKF3Fd8dTX6zyKHyC_IpzqA65c9iMplP8ERRsvNrYLS_AUtPSwjjd5HDLCuh1-vTxhe0eG8kr0Ty47itJca2de2Ym7VVjc1b8PQpnDt1BRJPDI79hcgB3jvicOT4ufC1wGKzdkf09gliP0QP_wZocQEoHGJvr4d18w40ZXvi8_C1vVPDsELVQqUtaCRGD3pr_jbPv1htLRqsT316SHC6sqmkmNBRw9ymUJZQ');
+        $ma->getStores();
     }
 
-	/**
-	 * @throws ExceptionHandler
-	 * @test
-	 */
-    public function badRenewToken() {
-	    if (!$this->hasEnv()) {
-		    static::markTestSkipped('Merchant API is not ready for testing.');
-		    return;
-	    }
-	    $ma = new MerchantApi();
-	    $ma
-		    ->setClientId(getenv('CLIENT_ID'))
-		    ->setClientSecret(getenv('CLIENT_SECRET'))
-		    ->setScope(getenv('SCOPE'))
-		    ->setGrantType(getenv('GRANT_TYPE'));
+    /**
+     * @throws ExceptionHandler
+     * @test
+     */
+    public function badRenewToken()
+    {
+        if (!$this->hasEnv()) {
+            static::markTestSkipped('Merchant API is not ready for testing.');
+            return;
+        }
+        $ma = new MerchantApi();
+        $ma
+            ->setClientId(getenv('CLIENT_ID'))
+            ->setClientSecret(getenv('CLIENT_SECRET'))
+            ->setScope(getenv('SCOPE'))
+            ->setGrantType(getenv('GRANT_TYPE'));
 
-	    $ma->setBearer('eyJraWQiOiIxY2IwNmE0YS0zNDY1LTRmMTEtYWMzZC1kOGJiMmJkYjFlYjciLCJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiJpbnRlZ3JhdGlvbiIsInN1YiI6InNhcmF3aW50c2UiLCJpc3MiOiJpbnRlZ3JhdGlvbiIsImNvbnNlbnRzIjpbXSwiY2hhbm5lbFR5cGUiOiJFQ09NTUVSQ0UiLCJleHAiOjE2MzY0NTA0MzEsImF1dGhNZXRob2QiOiJUT0tFTiIsImlhdCI6MTYzNjQ0NjgzMSwianRpIjoiMGI2NTg1ZjktMTQxMy00YTQzLTlhYTEtMmYxNTRlZTA3NGE2IiwiYXV0aG9yaXRpZXMiOlsibWVyY2hhbnQtYXBpIl19.GpJd4-iu0-tbAIB75iUjlN5WSQMbdxhhvvu6lHiz4RY3aOuwSCLJQyt-JSGR2LFUpT3-9WB-NCVvCg8YoalPfxGsI-bLj7NVL5m9onv3DhV7GSqwI5eKF3Fd8dTX6zyKHyC_IpzqA65c9iMplP8ERRsvNrYLS_AUtPSwjjd5HDLCuh1-vTxhe0eG8kr0Ty47itJca2de2Ym7VVjc1b8PQpnDt1BRJPDI79hcgB3jvicOT4ufC1wGKzdkf09gliP0QP_wZocQEoHGJvr4d18w40ZXvi8_C1vVPDsELVQqUtaCRGD3pr_jbPv1htLRqsT316SHC6sqmkmNBRw9ymUJZQ');
-    	$stores = $ma->getStores();
-    	static::assertTrue(count($stores) > 0);
+        $ma->setBearer('expiredToken');
+        $stores = $ma->getStores();
+        static::assertTrue(count($stores) > 0);
     }
 
-	/**
-	 * @test
-	 */
-    public function badRenewDetectExpiredToken() {
-	    if (!$this->hasEnv()) {
-		    static::markTestSkipped('Merchant API is not ready for testing.');
-		    return;
-	    }
+    private function getNewToken()
+    {
+        if (!$this->hasEnv()) {
+            static::markTestSkipped('Merchant API is not ready for testing.');
+            return;
+        }
+        $merchantApiDatabaseEmulator = new MerchantApi();
+        $merchantApiDatabaseEmulator
+            ->setClientId(getenv('CLIENT_ID'))
+            ->setClientSecret(getenv('CLIENT_SECRET'))
+            ->setScope(getenv('SCOPE'))
+            ->setGrantType(getenv('GRANT_TYPE'));
 
-	    $ma = new MerchantApi();
-	    $ma
-		    ->setClientId(getenv('CLIENT_ID'))
-		    ->setClientSecret(getenv('CLIENT_SECRET'))
-		    ->setScope(getenv('SCOPE'))
-		    ->setGrantType(getenv('GRANT_TYPE'));
-    	$databaseEmulatedToken = $ma->getToken();
+        return $merchantApiDatabaseEmulator->getToken();
+    }
 
-    	$currentMerchant = new MerchantApi();
-    	$currentMerchant->setStoredToken(
-    		$databaseEmulatedToken->getAccessToken(),
-		    $databaseEmulatedToken->getTokenType(),
-		    $databaseEmulatedToken->getExpire(),
-		    $databaseEmulatedToken->getTokenRegisterTime()
-	    );
-	    $stores = $currentMerchant->getStores();
+    /**
+     * @test
+     */
+    public function merchantUseExistingToken()
+    {
+        if (!$this->hasEnv()) {
+            static::markTestSkipped('Merchant API is not ready for testing.');
+            return;
+        }
 
-	    static::assertTrue(count($stores) > 0);
+        // Since we do not have a database handler for the MerchantAPI in Ecom tests, we will render a valid
+        // token for this test before we start.
+        $databaseEmulatedToken = $this->getNewToken();
+
+        /**
+         * For this part, we generate a new MerchantAPI connection that is supposed to act as it was a live
+         * connection.
+         * @var MerchantApi $currentMerchant
+         */
+        $currentMerchant = new MerchantApi();
+
+        // Instead of using the user + secret at this point, we put the token that we already have from the
+        // datastore (above). In this case, this token is not expired. Take not here, that if you run with this variant
+        // you will become the responsible part to keep your token renewed.
+        $currentMerchant->setStoredToken(
+            $databaseEmulatedToken->getAccessToken(),
+            $databaseEmulatedToken->getTokenType(),
+            $databaseEmulatedToken->getExpire(),
+            $databaseEmulatedToken->getTokenRegisterTime()
+        );
+        $stores = $currentMerchant->getStores();
+
+        static::assertTrue(count($stores) > 0);
+    }
+
+    /**
+     * @test
+     * @throws ExceptionHandler
+     */
+    public function combinedTokination()
+    {
+        // Initialize test with the token, that we have "stored" in a database.
+        $databaseEmulatedToken = $this->getNewToken();
+
+        /**
+         * Out live connector.
+         * @var MerchantApi $currentMerchant
+         */
+        $currentMerchant = new MerchantApi();
+        $currentMerchant
+            ->setClientId(getenv('CLIENT_ID'))
+            ->setClientSecret(getenv('CLIENT_SECRET'))
+            ->setScope(getenv('SCOPE'))
+            ->setGrantType(getenv('GRANT_TYPE'))
+            ->setStoredToken(
+                $databaseEmulatedToken->getAccessToken(),
+                $databaseEmulatedToken->getTokenType(),
+                $databaseEmulatedToken->getExpire(),
+                $databaseEmulatedToken->getTokenRegisterTime()
+            );
+
+        $stores = $currentMerchant->getStores();
+
+        static::assertTrue(count($stores) > 0);
+    }
+
+    /**
+     * @test
+     * @throws ExceptionHandler
+     */
+    public function combinedTokenFailure()
+    {
+        // Initialize test with the token, that we have "stored" in a database.
+        $databaseEmulatedToken = $this->getNewToken();
+
+        /**
+         * Out live connector.
+         * @var MerchantApi $currentMerchant
+         */
+        $currentMerchant = new MerchantApi();
+        $currentMerchant
+            ->setClientId(getenv('CLIENT_ID'))
+            ->setClientSecret(getenv('CLIENT_SECRET'))
+            ->setScope(getenv('SCOPE'))
+            ->setGrantType(getenv('GRANT_TYPE'))
+            ->setStoredToken(
+                $databaseEmulatedToken->getAccessToken(),
+                $databaseEmulatedToken->getTokenType(),
+                $databaseEmulatedToken->getExpire(),
+                time()-86400
+            );
+
+        $stores = $currentMerchant->getStores();
+
+        static::assertTrue(count($stores) > 0);
     }
 
     /**
@@ -2681,7 +2768,6 @@ class resursBankTest extends TestCase
 
         return $merchant;
     }
-
 
 
     /**
