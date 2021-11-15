@@ -3,6 +3,8 @@
 namespace Resursbank\Ecommerce\Service\Merchant;
 
 use Exception;
+use Resursbank\Ecommerce\Service\Merchant\Api\getPaymentMethodsResponse;
+use Resursbank\Ecommerce\Service\Merchant\Model\PaymentMethods;
 use TorneLIB\Exception\ExceptionHandler;
 
 class MerchantApi extends MerchantApiConnector
@@ -89,11 +91,13 @@ class MerchantApi extends MerchantApiConnector
      */
     public function getPaymentMethods($storeId = null)
     {
-        return $this->getMerchantRequest(
-            sprintf(
-                'stores/%s/payment_methods',
-                $this->getStoreId($storeId)
-            )
-        )->paymentMethods;
+        return new PaymentMethods(
+            $this->getMerchantRequest(
+                sprintf(
+                    'stores/%s/payment_methods',
+                    $this->getStoreId($storeId)
+                )
+            )->paymentMethods
+        );
     }
 }
