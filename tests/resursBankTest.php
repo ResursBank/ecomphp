@@ -2554,8 +2554,13 @@ class resursBankTest extends TestCase
      */
     public function badToken()
     {
+        if (!$this->hasEnv()) {
+            static::markTestSkipped('Merchant API is not ready for testing.');
+            return;
+        }
+
         $ma = new MerchantApi();
-        $ma->setBearer('eyJraWQiOiIxY2IwNmE0YS0zNDY1LTRmMTEtYWMzZC1kOGJiMmJkYjFlYjciLCJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiJpbnRlZ3JhdGlvbiIsInN1YiI6InNhcmF3aW50c2UiLCJpc3MiOiJpbnRlZ3JhdGlvbiIsImNvbnNlbnRzIjpbXSwiY2hhbm5lbFR5cGUiOiJFQ09NTUVSQ0UiLCJleHAiOjE2MzY0NTA0MzEsImF1dGhNZXRob2QiOiJUT0tFTiIsImlhdCI6MTYzNjQ0NjgzMSwianRpIjoiMGI2NTg1ZjktMTQxMy00YTQzLTlhYTEtMmYxNTRlZTA3NGE2IiwiYXV0aG9yaXRpZXMiOlsibWVyY2hhbnQtYXBpIl19.GpJd4-iu0-tbAIB75iUjlN5WSQMbdxhhvvu6lHiz4RY3aOuwSCLJQyt-JSGR2LFUpT3-9WB-NCVvCg8YoalPfxGsI-bLj7NVL5m9onv3DhV7GSqwI5eKF3Fd8dTX6zyKHyC_IpzqA65c9iMplP8ERRsvNrYLS_AUtPSwjjd5HDLCuh1-vTxhe0eG8kr0Ty47itJca2de2Ym7VVjc1b8PQpnDt1BRJPDI79hcgB3jvicOT4ufC1wGKzdkf09gliP0QP_wZocQEoHGJvr4d18w40ZXvi8_C1vVPDsELVQqUtaCRGD3pr_jbPv1htLRqsT316SHC6sqmkmNBRw9ymUJZQ');
+        $ma->setBearer('invalidToken');
         $ma->getStores();
     }
 
