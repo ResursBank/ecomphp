@@ -20,17 +20,17 @@ class MerchantApi extends MerchantApiConnector
      * @return array
      * @throws ExceptionHandler
      */
-    public function getStores()
-    {
+    public function getStores(): array {
         return $this->getMerchantRequest('stores')->content;
     }
 
-    /**
-     * @param $storeId
-     * @throws ExceptionHandler
-     */
-    public function setStoreId($storeId)
-    {
+	/**
+	 * @param $storeId
+	 *
+	 * @return MerchantApi
+	 * @throws ExceptionHandler
+	 */
+    public function setStoreId($storeId): MerchantApi {
         if (!empty($storeId)) {
             $this->storeId = $this->getStoreByIdNum($storeId);
         }
@@ -42,12 +42,12 @@ class MerchantApi extends MerchantApiConnector
      * StoreID Automation. Making sure that we are always using a proper store id, regardless of how it is pushed
      * into the API.
      *
-     * @param string $storeId
+     * @param string|null $storeId
+     *
      * @return string
      * @throws ExceptionHandler
      */
-    public function getStoreId($storeId = null)
-    {
+    public function getStoreId(string $storeId = ''): string {
         if (!empty($storeId)) {
             $return = is_numeric($storeId) ? $this->getStoreByIdNum($storeId) : $storeId;
         } elseif (!empty($this->storeId)) {
@@ -59,14 +59,15 @@ class MerchantApi extends MerchantApiConnector
         return $return;
     }
 
-    /**
-     * Transform a numeric store id to Resurs internal.
-     *
-     * @param $idNum
-     * @throws ExceptionHandler
-     */
-    public function getStoreByIdNum($idNum)
-    {
+	/**
+	 * Transform a numeric store id to Resurs internal.
+	 *
+	 * @param $idNum
+	 *
+	 * @return string
+	 * @throws ExceptionHandler
+	 */
+    public function getStoreByIdNum($idNum): string {
         $return = '';
         $storeList = $this->getStores();
 

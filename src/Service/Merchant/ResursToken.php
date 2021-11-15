@@ -2,40 +2,73 @@
 
 namespace Resursbank\Ecommerce\Service\Merchant;
 
-class ResursToken
-{
-    private $accessToken;
-    private $tokenType;
-    private $tokenExpire;
+class ResursToken {
+	/**
+	 * @var string
+	 */
+	private $accessToken;
+	/**
+	 * @var string
+	 */
+	private $tokenType;
+	/**
+	 * Number of seconds for the token validity.
+	 * @var int
+	 */
+	private $tokenExpire;
+	/**
+	 * Timestamp for when the token was registered.
+	 * @var int
+	 */
+	private $tokenRegisterTime;
+	/**
+	 * Ending timestamp for the token validity.
+	 * @var int
+	 */
+	private $validEndTime;
 
-    public function __construct($accessToken, $tokenType, $tokenExpire)
-    {
-        $this->accessToken = $accessToken;
-        $this->tokenType = $tokenType;
-        $this->tokenExpire = $tokenExpire;
-    }
+	public function __construct($accessToken, $tokenType, $tokenExpire, $tokenRegisterTime) {
+		$this->accessToken       = $accessToken;
+		$this->tokenType         = $tokenType;
+		$this->tokenExpire       = $tokenExpire;
+		$this->tokenRegisterTime = $tokenRegisterTime;
+		// Future timestamp for how long the token can be used.
+		$this->validEndTime = $tokenRegisterTime + $this->tokenExpire;
+	}
 
-    /**
-     * @return string
-     */
-    public function getAccessToken()
-    {
-        return (string)$this->accessToken;
-    }
+	/**
+	 * Return the timestamp for when the token was registered.
+	 * @return int
+	 */
+	public function getTokenRegisterTime(): int {
+		return $this->tokenRegisterTime;
+	}
 
-    /**
-     * @return string
-     */
-    public function getTokenType()
-    {
-        return (string)$this->tokenType;
-    }
+	/**
+	 * @return int
+	 */
+	public function getValidEndTime(): int {
+		return $this->validEndTime;
+	}
 
-    /**
-     * @return int
-     */
-    public function getExpire()
-    {
-        return (int)$this->tokenExpire;
-    }
+	/**
+	 * @return string
+	 */
+	public function getAccessToken(): string {
+		return $this->accessToken;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getTokenType(): string {
+		return $this->tokenType;
+	}
+
+	/**
+	 * @return int
+	 */
+	public function getExpire(): int {
+		return $this->tokenExpire;
+	}
 }

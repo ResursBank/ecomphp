@@ -7,7 +7,8 @@
         "tornevall/tornelib-php-network": "^6.1",
         "resursbank/ecomphp-deprecated": ">=0",
         "ext-json": "*",
-        "ext-soap": "*"
+        "ext-soap": "*",
+        "phpunit/phpunit": "^9.5"
     },
     "config": {
         "preferred-install": {
