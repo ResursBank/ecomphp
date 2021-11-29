@@ -1603,6 +1603,17 @@ class resursBankTest extends TestCase
     }
 
     /**
+     * @throws Exception
+     * @test
+     */
+    public function isDebitable() {
+        $this->unitSetup();
+        $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
+        static::assertTrue($this->TEST->ECOM->canDebit($payment->paymentId));
+    }
+
+
+    /**
      * @test
      * @throws Exception
      */
