@@ -6966,12 +6966,7 @@ class ResursBank
     public function canDebit($paymentArrayOrPaymentId = [])
     {
         $status = (array)$this->getPaymentContent($paymentArrayOrPaymentId, 'status');
-        // IS_DEBITED - DEBITABLE
-        if (in_array('DEBITABLE', $status)) {
-            return true;
-        }
-
-        return false;
+        return in_array('DEBITABLE', $status) && !$this->isFrozen($paymentArrayOrPaymentId);
     }
 
     /**
