@@ -2636,7 +2636,7 @@ class resursBankTest extends TestCase
                 if (strpos(trim($line), '#') === 0) {
                     continue;
                 }
-                list($name, $value) = explode('=', $line, 2);
+                [$name, $value] = explode('=', $line, 2);
                 $name = trim($name);
                 $value = trim($value);
                 if (!array_key_exists($name, $_SERVER) && !array_key_exists($name, $_ENV)) {
