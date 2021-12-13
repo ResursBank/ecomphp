@@ -119,6 +119,11 @@ class ResursBank
      */
     private $registerCallbacksFailover = false;
 
+    /**
+     * @var bool
+     */
+    private $timeoutExceptions = false;
+
     ///// Environment and API
     /**
      * The password used with the webservices
@@ -2852,6 +2857,15 @@ class ResursBank
     }
 
     /**
+     * @return bool
+     * @since 1.3.66
+     */
+    public function hasTimeouts()
+    {
+        return $this->timeoutExceptions;
+    }
+
+    /**
      * Speak with webservices
      *
      * @param string $serviceName
@@ -2876,6 +2890,9 @@ class ResursBank
                 //$RequestService = call_user_func_array(array($Service, $serviceName), [$resursParameters]);
                 $RequestService = $Service->$serviceName($resursParameters);
             } catch (Exception $serviceRequestException) {
+                if ($serviceRequestException->getCode() === 28) {
+                    $this->timeoutExceptions = true;
+                }
                 // Try to fetch previous exception (This is what we actually want)
                 $previousException = $serviceRequestException->getPrevious();
                 $previousExceptionCode = null;
