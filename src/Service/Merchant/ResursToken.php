@@ -28,7 +28,15 @@ class ResursToken
      */
     private $validEndTime;
 
-    public function __construct($accessToken, $tokenType, $tokenExpire, $tokenRegisterTime)
+    /**
+     * Build up the requested token.
+     *
+     * @param string $accessToken
+     * @param string $tokenType
+     * @param int $tokenExpire
+     * @param int $tokenRegisterTime
+     */
+    public function __construct(string $accessToken, string $tokenType, int $tokenExpire, int $tokenRegisterTime)
     {
         $this->accessToken = $accessToken;
         $this->tokenType = $tokenType;

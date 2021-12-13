@@ -2550,7 +2550,6 @@ class resursBankTest extends TestCase
     }
 
     /**
-     * @throws ExceptionHandler
      * @test
      */
     public function badToken()
@@ -2560,9 +2559,13 @@ class resursBankTest extends TestCase
             return;
         }
 
-        $ma = new MerchantApi();
-        $ma->setBearer('invalidToken');
-        $ma->getStores();
+        try {
+            $ma = new MerchantApi();
+            $ma->setBearer('invalidToken');
+            $ma->getStores();
+        } catch (Exception $e) {
+            static::assertTrue($e->getCode() === 4001 || $e->getCode() === 401);
+        }
     }
 
     /**

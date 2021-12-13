@@ -117,13 +117,17 @@ class MerchantApiConnector
     }
 
     /**
+     * Checks whether the Resurs Token is still valid or expired.
+     *
      * @return bool
      */
     public function hasExpiredToken(): bool
     {
         $return = true;
 
-        if (!empty($this->token) && time() < $this->token->getValidEndTime()) {
+        if (!empty($this->token) &&
+            time() < $this->token->getValidEndTime()
+        ) {
             $return = false;
         }
 
@@ -350,7 +354,7 @@ class MerchantApiConnector
      *
      * @return $this
      */
-    public function setStoredToken($accessToken, $tokenType, $tokenExpire, $tokenRegisterTime)
+    public function setStoredToken($accessToken, $tokenType, $tokenExpire, $tokenRegisterTime): MerchantApiConnector
     {
         $this->token = new ResursToken(
             $accessToken,

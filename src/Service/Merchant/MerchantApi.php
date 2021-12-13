@@ -17,11 +17,11 @@ class MerchantApi extends MerchantApiConnector
     private $storeId = '';
 
     /**
-     * @param $storeId
-     * @return mixed|string
+     * @param null $storeId
+     * @return PaymentMethods
      * @throws ExceptionHandler
      */
-    public function getPaymentMethods($storeId = null)
+    public function getPaymentMethods($storeId = null): PaymentMethods
     {
         return new PaymentMethods(
             $this->getMerchantRequest(
@@ -73,8 +73,7 @@ class MerchantApi extends MerchantApiConnector
     /**
      * Transform a numeric store id to Resurs internal.
      *
-     * @param $idNum
-     *
+     * @param int|string $idNum
      * @return string
      * @throws ExceptionHandler
      */
