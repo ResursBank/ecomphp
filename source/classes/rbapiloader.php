@@ -121,7 +121,9 @@ class ResursBank
     private $registerCallbacksFailover = false;
 
     /**
+     * Timeout controller, marked as true if one or more API request indicates timeout.
      * @var bool
+     * @since 1.3.66
      */
     private $timeoutException = false;
 
@@ -1914,7 +1916,7 @@ class ResursBank
         $numchars = [];
         for ($i = 0; $i < $max; $i++) {
             $charListId = rand(0, count($characterListArray) - 1);
-            // Set $numchars[ $charListId ] to a zero a value if not set before.
+            // Set $numchars[$charListId] to a zero a value if not set before.
             // This might render ugly notices about undefined offsets in some cases.
             if (!isset($numchars[$charListId])) {
                 $numchars[$charListId] = 0;
@@ -2858,6 +2860,7 @@ class ResursBank
     }
 
     /**
+     * Timeout controller, marked as true if one or more API request indicates timeout.
      * @return bool
      * @since 1.3.66
      */
@@ -2867,14 +2870,21 @@ class ResursBank
     }
 
     /**
+     * Timeout controller, marked as true if one or more API request indicates timeout.
+     * This method is supposed to not crash the entire system, but only mark timeout events.
+     *
      * @param Exception $e
+     * @since 1.3.66
      */
-    private function timeoutControl($e) {
-        // Curl throws 28 and the wrapper for SoapClient throws code 1015 (from netcurl 6.1.5), on timeouts.
-        if ($e->getCode() === 28 ||
-            $e->getCode() === Constants::LIB_NETCURL_SOAP_TIMEOUT
-        ) {
-            $this->timeoutException = true;
+    private function timeoutControl($e)
+    {
+        if ($e instanceof Exception) {
+            // Curl throws 28 and the wrapper for SoapClient throws code 1015 (from netcurl 6.1.5), on timeouts.
+            if ($e->getCode() === 28 ||
+                $e->getCode() === Constants::LIB_NETCURL_SOAP_TIMEOUT
+            ) {
+                $this->timeoutException = true;
+            }
         }
     }
 
