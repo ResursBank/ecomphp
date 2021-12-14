@@ -40,6 +40,7 @@ use Resursbank\Ecommerce\Types\OrderStatusCode;
 use ResursException;
 use TorneLIB\Config\Flag;
 use TorneLIB\Data\Aes;
+use TorneLIB\Exception\Constants;
 use TorneLIB\Exception\ExceptionHandler;
 use TorneLIB\Model\Type\DataType;
 use TorneLIB\Model\Type\RequestMethod;
@@ -136,6 +137,37 @@ class resursBankTest extends TestCase
     }
 
     /**
+     * Check if the initial test has failed due timeouts. This checker has only effect on the pipelines.
+     *
+     * @return bool
+     */
+    private function getTimeoutDetected()
+    {
+        if (Flag::getFlag('TIMEOUT_DETECTED')) {
+            $this->skipTimeoutTest();
+        }
+        return $this->timeoutDetected;
+    }
+
+    /**
+     * Just mark the test incomplete on timeouts.
+     */
+    private function skipTimeoutTest()
+    {
+        static::markTestIncomplete('API timeouts detected. We will probably not be able to complete this test suite.');
+    }
+
+    /**
+     * @param $e
+     */
+    private function markTimeout($e)
+    {
+        if ($e->getCode() === 28 || $e->getCode() === Constants::LIB_NETCURL_SOAP_TIMEOUT) {
+            Flag::setFlag('TIMEOUT_DETECTED', true);
+        }
+    }
+
+    /**
      * @test
      * @testdox Tests API credentials and getPaymentMethods.
      * @throws Exception
@@ -143,7 +175,17 @@ class resursBankTest extends TestCase
     public function apiPaymentMethodsWithCredentials()
     {
         $this->unitSetup();
-        $methods = $this->TEST->getCredentialControl();
+
+        try {
+            $methods = $this->TEST->getCredentialControl();
+        } catch (Exception $e) {
+            $this->markTimeout($e);
+        }
+
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
+
         static::assertTrue((count($methods) > 0));
     }
 
@@ -154,6 +196,10 @@ class resursBankTest extends TestCase
      */
     public function apiPaymentMethodsWithWrongCredentials()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
+
         $this->unitSetup();
         try {
             $this->TEST->getCredentialControl(false);
@@ -238,6 +284,10 @@ class resursBankTest extends TestCase
      */
     public function getAddressCurlHandle()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
+
         $this->unitSetup();
         if (!class_exists('\SimpleXMLElement')) {
             static::markTestSkipped('SimpleXMLElement missing');
@@ -271,6 +321,10 @@ class resursBankTest extends TestCase
      */
     public function preMetaData()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
+
         $this->unitSetup();
         $this->TEST->ECOM->addOrderLine('Product-1337', 'One simple orderline', 800, 25);
         $this->TEST->ECOM->setMetaData('inboundKey', 'inboundValue');
@@ -287,6 +341,10 @@ class resursBankTest extends TestCase
      */
     public function setMetaData()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
+
         $this->unitSetup();
         $this->TEST->ECOM->addOrderLine('Product-1337', 'One simple orderline', 800, 25);
         try {
@@ -305,6 +363,10 @@ class resursBankTest extends TestCase
      */
     public function setMetaDataDuplicate()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
+
         $this->unitSetup();
         $this->TEST->ECOM->addOrderLine('Product-1337', 'One simple orderline', 800, 25);
         $this->TEST->ECOM->setMetaData('inboundKey', 'inboundValue', false);
@@ -322,6 +384,10 @@ class resursBankTest extends TestCase
      */
     public function findPaymentByGovId()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
+
         $this->unitSetup();
         $payments = $this->TEST->ECOM->findPayments(['governmentId' => '8305147715']);
         static::assertTrue(is_array($payments) && count($payments));
@@ -334,6 +400,10 @@ class resursBankTest extends TestCase
      */
     public function finalizeFrozen()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
+
         if (!$this->allowVersion()) {
             static::markTestSkipped(
                 sprintf(
@@ -407,6 +477,10 @@ class resursBankTest extends TestCase
      */
     public function generateSimpleSimplifiedInvoiceOrder($noAssert = false, $govId = '198305147715')
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
+
         $this->unitSetup();
         $preferredId = md5(uniqid(microtime(true), true));
         $this->TEST->ECOM->setPreferredId($preferredId);
@@ -456,6 +530,10 @@ class resursBankTest extends TestCase
      */
     public function getAddress($noAssert = false)
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
+
         $this->unitSetup();
         $happyCustomer = $this->TEST->ECOM->getAddress($this->flowHappyCustomer);
         $this->TEST->share('happyCustomer', $happyCustomer, false);
@@ -480,6 +558,10 @@ class resursBankTest extends TestCase
      */
     public function getMethodId($specificType = 'INVOICE', $requireNoInit = false)
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
+
         if (empty($specificType)) {
             $specificType = 'INVOICE';
         }
@@ -506,6 +588,10 @@ class resursBankTest extends TestCase
      */
     public function getMethod($specificType = 'INVOICE', $customerType = 'NATURAL', $requireNoInit = false)
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
+
         if (!$requireNoInit) {
             $this->unitSetup();
         }
@@ -538,6 +624,10 @@ class resursBankTest extends TestCase
      */
     public function getPaymentMethods($noAssert = false, $requireNoInit = false)
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
+
         if (!$requireNoInit) {
             $this->unitSetup();
         }
@@ -564,6 +654,9 @@ class resursBankTest extends TestCase
      */
     public function simplyPaymentMethods()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $this->unitSetup();
         $paymentMethods = $this->TEST->ECOM->getPaymentMethods();
 
@@ -579,6 +672,9 @@ class resursBankTest extends TestCase
      */
     public function generateHostedInvoiceOrder($noAssert = false, $govId = '198305147715')
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $this->unitSetup();
         $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::HOSTED_FLOW);
         $preferredId = md5(uniqid(microtime(true), true));
@@ -600,6 +696,9 @@ class resursBankTest extends TestCase
      */
     public function getPaymentCached()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $this->unitSetup();
         $apiWithoutCache = new ResursBank($this->username, $this->password, null, false, ['setApiCache' => false]);
         $hasCache = $apiWithoutCache->getApiCache();
@@ -665,6 +764,9 @@ class resursBankTest extends TestCase
      */
     public function wooCommerceCollider($noAssert = false)
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $this->unitSetup();
         $incremental = 1430;
         $customerData = $this->getHappyCustomerData();
@@ -691,6 +793,9 @@ class resursBankTest extends TestCase
      */
     public function generateSimpleSimplifiedPspResponse()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $this->unitSetup();
 
         if (!$this->hasPsp()) {
@@ -716,6 +821,10 @@ class resursBankTest extends TestCase
      */
     private function hasPsp()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
+
         $return = false;
 
         $methods = $this->TEST->getCredentialControl();
@@ -739,6 +848,10 @@ class resursBankTest extends TestCase
      */
     public function generateSimpleSimplifiedPspWithoutGovernmentIdCompatibility()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
+
         $this->unitSetup();
         if (!$this->hasPsp()) {
             static::markTestSkipped('There are no PAYMENT_PROVIDER method to test with.');
@@ -765,6 +878,10 @@ class resursBankTest extends TestCase
      */
     public function ncCache()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
+
         if (!defined('NETCURL_VERSION')) {
             static::markTestSkipped('NETCURL_VERSION is not defined, so this is probably not 6.1.0');
             return;
@@ -785,6 +902,10 @@ class resursBankTest extends TestCase
      */
     public function getOrderData()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
+
         $this->unitSetup();
         // Removing automation of billing address as it is not this function we're testing here.
         // And since getAddress may break the other part of the test, we run this manually.
@@ -809,6 +930,10 @@ class resursBankTest extends TestCase
      */
     public function getAnnuityMethods()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
+
         $this->unitSetup();
         $annuityObjectList = $this->TEST->ECOM->getPaymentMethodsByAnnuity();
         $annuityIdList = $this->TEST->ECOM->getPaymentMethodsByAnnuity(true);
@@ -821,6 +946,10 @@ class resursBankTest extends TestCase
      */
     public function findPaymentsXmlBody()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
+
         $this->unitSetup();
         $paymentScanList = $this->TEST->ECOM->findPayments(['statusSet' => ['IS_DEBITED']], 1, 10, [
             'ascending' => false,
@@ -838,6 +967,10 @@ class resursBankTest extends TestCase
      */
     public function updateStrangePaymentReference()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
+
         $this->unitSetup();
         $showFrames = false;
         $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
@@ -875,6 +1008,10 @@ class resursBankTest extends TestCase
      */
     public function updateBadReference()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
+
         $this->unitSetup();
 
         static::expectException('ResursException');
@@ -891,6 +1028,10 @@ class resursBankTest extends TestCase
      */
     public function getCostOfPurchase()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
+
         $this->unitSetup();
         $result = $this->TEST->ECOM->getCostOfPurchase('PARTPAYMENT', '10000');
         //$result = $this->TEST->ECOM->getCostOfPurchase($this->getMethodId(), '10000');
@@ -911,6 +1052,9 @@ class resursBankTest extends TestCase
      */
     public function hashedSpecLines()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $this->unitSetup();
         $customerData = $this->getHappyCustomerData();
         $this->TEST->ECOM->addOrderLine('Product-1337', 'One simple orderline, red', 800, 25);
@@ -957,6 +1101,10 @@ class resursBankTest extends TestCase
      */
     public function getEmptyCallbacksListSecond()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
+
         if (!$this->allowVersion()) {
             static::markTestSkipped(
                 sprintf(
@@ -994,6 +1142,9 @@ class resursBankTest extends TestCase
      */
     public function returnCodes()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $this->unitSetup();
 
         static::assertTrue(
@@ -1032,6 +1183,9 @@ class resursBankTest extends TestCase
      */
     public function unregisterCallbacksViaRest()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         if (!$this->allowVersion()) {
             static::markTestSkipped(
                 sprintf(
@@ -1073,6 +1227,9 @@ class resursBankTest extends TestCase
      */
     public function setRegisterCallback($noAssert = false)
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         if (!$this->allowVersion()) {
             static::markTestSkipped(
                 sprintf(
@@ -1176,6 +1333,9 @@ class resursBankTest extends TestCase
      */
     public function getPaymentWrong()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $this->unitSetup();
         try {
             $this->TEST->ECOM->getPayment('FAIL_HERE');
@@ -1192,6 +1352,9 @@ class resursBankTest extends TestCase
      */
     public function getPaymentWrongByRest()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $this->unitSetup();
         $this->TEST->ECOM->setFlag('GET_PAYMENT_BY_REST');
         $this->TEST->ECOM->getPayment('FAIL_HERE');
@@ -1211,6 +1374,9 @@ class resursBankTest extends TestCase
      */
     public function getPaymentWrongRest()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $this->unitSetup();
         try {
             $this->TEST->ECOM->setFlag('GET_PAYMENT_BY_REST');
@@ -1229,6 +1395,9 @@ class resursBankTest extends TestCase
      */
     public function getPaymentFailSoap()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $this->unitSetup();
         try {
             $this->TEST->ECOM->getPayment('FAIL_HERE');
@@ -1246,6 +1415,9 @@ class resursBankTest extends TestCase
      */
     public function validateCredentials()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $this->unitSetup();
         $isNotValid = $this->TEST->ECOM->validateCredentials(RESURS_ENVIRONMENTS::TEST, 'fail', 'fail');
         $isValid = $this->TEST->ECOM->validateCredentials(
@@ -1271,6 +1443,9 @@ class resursBankTest extends TestCase
      */
     public function annulAndDebitedPaymentQuantityProperMethod()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         if (!$this->allowVersion()) {
             static::markTestSkipped(
                 sprintf(
@@ -1339,6 +1514,9 @@ class resursBankTest extends TestCase
      */
     public function generateSimpleSimplifiedInvoiceQuantityOrder($govId = '198305147715', $staticProductPrice = false)
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $this->unitSetup();
         $customerData = $this->getHappyCustomerData();
         $this->TEST->ECOM->addOrderLine(
@@ -1452,6 +1630,9 @@ class resursBankTest extends TestCase
      */
     public function annulDebitAndCreditPaymentQuantityProperMethod()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         if (!$this->allowVersion()) {
             static::markTestSkipped(
                 sprintf(
@@ -1505,6 +1686,9 @@ class resursBankTest extends TestCase
      */
     public function annulStd()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         if (!$this->allowVersion()) {
             static::markTestSkipped(
                 sprintf(
@@ -1530,6 +1714,9 @@ class resursBankTest extends TestCase
      */
     public function getPaymentTable()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
         // Render a a table with the current payment diff.
         $primaryTableDiff = $this->TEST->ECOM->getPaymentDiffByStatus($payment->paymentId);
@@ -1545,6 +1732,10 @@ class resursBankTest extends TestCase
      */
     public function annulByNetWrapper()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
+
         $xml = '<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:res="http://ecommerce.resurs.com/v4/msg/aftershopflow">  
   <SOAP-ENV:Body>  
     <res:annulPayment>  
@@ -1579,6 +1770,9 @@ class resursBankTest extends TestCase
      */
     public function finalizeSeparately()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         if (!$this->allowVersion()) {
             static::markTestSkipped(
                 sprintf(
@@ -1606,7 +1800,11 @@ class resursBankTest extends TestCase
      * @throws Exception
      * @test
      */
-    public function isDebitable() {
+    public function isDebitable()
+    {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $this->unitSetup();
         $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
         static::assertTrue($this->TEST->ECOM->canDebit($payment->paymentId));
@@ -1619,6 +1817,9 @@ class resursBankTest extends TestCase
      */
     public function creditSomethingElse()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         if (!$this->allowVersion()) {
             static::markTestSkipped(
                 sprintf(
@@ -1698,6 +1899,9 @@ class resursBankTest extends TestCase
      */
     public function failUpdatePaymentReference()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $this->unitSetup();
         try {
             $this->TEST->ECOM->updatePaymentReference('not_this', 'not_that');
@@ -1741,6 +1945,9 @@ class resursBankTest extends TestCase
      */
     public function getPaymentMethodsCache()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $this->unitSetup();
         $methodArray = [];
         $counter = 0;
@@ -1771,6 +1978,9 @@ class resursBankTest extends TestCase
      */
     public function getPaymentMethodsByType()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $this->unitSetup();
         $methods = $this->TEST->ECOM->getPaymentMethodsByType('INVOICE');
 
@@ -1782,6 +1992,9 @@ class resursBankTest extends TestCase
      */
     public function getPriceInfo()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $this->unitSetup();
         $myMethods = $this->TEST->ECOM->getPaymentMethods();
 
@@ -1825,6 +2038,9 @@ class resursBankTest extends TestCase
      */
     public function finalizeWithoutInvoiceId()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         if (!$this->allowVersion()) {
             static::markTestSkipped(
                 sprintf(
@@ -1967,6 +2183,9 @@ class resursBankTest extends TestCase
      */
     public function getRcoFrame()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $this->unitSetup();
         $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
         $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
@@ -2004,6 +2223,9 @@ class resursBankTest extends TestCase
      */
     public function getPaymentByRest()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
         $this->TEST->ECOM->setFlag('GET_PAYMENT_BY_REST');
         $paymentId = $payment->paymentId;
@@ -2032,6 +2254,9 @@ class resursBankTest extends TestCase
      */
     public function getOwnOrigin()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $this->unitSetup();
         $this->TEST->ECOM->setFlag('STORE_ORIGIN');
         $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RESURS_CHECKOUT);
@@ -2057,6 +2282,10 @@ class resursBankTest extends TestCase
      */
     public function getEmptyCallbacksList()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
+
         /**
          * Standard request returns:
          *   array(
@@ -2098,6 +2327,9 @@ class resursBankTest extends TestCase
      */
     public function getEmptyCallbacksRestFailover()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $this->unitSetup();
         Flag::setFlag('unregisterRestFallback');
 
@@ -2129,6 +2361,9 @@ class resursBankTest extends TestCase
      */
     public function getPaymentWithoutPayment()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $this->unitSetup();
 
         static::expectExceptionCode(1006);
@@ -2181,6 +2416,9 @@ class resursBankTest extends TestCase
      */
     public function getTranslationByEcom()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $this->unitSetup();
         $methods = $this->TEST->ECOM->getPaymentMethods();
 
@@ -2222,6 +2460,9 @@ class resursBankTest extends TestCase
      */
     public function getCallbacksBySoapTypes()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $this->setRegisterCallback(true);
         $callbackList = $this->TEST->ECOM->getRegisteredEventCallback(12);
         static::assertCount(2, $callbackList);
@@ -2233,6 +2474,9 @@ class resursBankTest extends TestCase
      */
     public function getCallbacksByRest()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $this->setRegisterCallback(true);
         $start = microtime(true);
         $callbackList = $this->TEST->ECOM->getCallBacksByRest(true);
@@ -2247,6 +2491,9 @@ class resursBankTest extends TestCase
      */
     public function getCallbacksByRestFailover()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $this->setRegisterCallback(true);
         Flag::setFlag('callback_rest_500');
         $callbackList = $this->TEST->ECOM->getCallBacksByRest();
@@ -2260,6 +2507,9 @@ class resursBankTest extends TestCase
      */
     public function unregCallbacks()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $username = '';
         $password = '';
 
@@ -2302,6 +2552,9 @@ class resursBankTest extends TestCase
      */
     public function proxyByBookRcoHalfway()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         try {
             if (!$this->canProxy()) {
                 static::markTestSkipped('Can not perform proxy tests with this client. Skipped.');
@@ -2418,6 +2671,10 @@ class resursBankTest extends TestCase
      */
     public function cancelMixedPayment()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
+
         if (!$this->allowVersion()) {
             static::markTestSkipped(
                 sprintf(
@@ -2527,6 +2784,9 @@ class resursBankTest extends TestCase
      */
     public function getMinMaxByAmount()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $this->unitSetup();
         $customerData = $this->getHappyCustomerData();
         $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::RCO);
@@ -2573,6 +2833,9 @@ class resursBankTest extends TestCase
      */
     public function getMerchantStoresAndMethods()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         if (!$this->hasEnv()) {
             static::markTestSkipped('Merchant API is not ready for testing.');
             return;
@@ -2615,6 +2878,9 @@ class resursBankTest extends TestCase
      */
     public function setMerchantToken()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         if (!$this->hasEnv()) {
             static::markTestSkipped('Merchant API is not ready for testing.');
             return;
@@ -2647,7 +2913,7 @@ class resursBankTest extends TestCase
                 if (strpos(trim($line), '#') === 0) {
                     continue;
                 }
-                [$name, $value] = explode('=', $line, 2);
+                list($name, $value) = explode('=', $line, 2);
                 $name = trim($name);
                 $value = trim($value);
                 if (!array_key_exists($name, $_SERVER) && !array_key_exists($name, $_ENV)) {
@@ -2668,6 +2934,9 @@ class resursBankTest extends TestCase
      */
     private function getPaymentMethodsData()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $paymentMethods = $this->TEST->share('paymentMethods');
         if (empty($paymentMethods)) {
             $this->getPaymentMethods();
@@ -2686,6 +2955,9 @@ class resursBankTest extends TestCase
      */
     public function finalTest()
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
         $this->unitSetup();
         $this->TEST->ECOM->resetInvoiceNumber();
         static::assertTrue($this->TEST->unshare('thisKey'));
