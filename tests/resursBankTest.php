@@ -143,10 +143,11 @@ class resursBankTest extends TestCase
      */
     private function getTimeoutDetected()
     {
-        if (Flag::getFlag('TIMEOUT_DETECTED')) {
+        $timeoutDetected = Flag::getFlag('TIMEOUT_DETECTED');
+        if ($timeoutDetected) {
             $this->skipTimeoutTest();
         }
-        return $this->timeoutDetected;
+        return $timeoutDetected;
     }
 
     /**
@@ -154,7 +155,7 @@ class resursBankTest extends TestCase
      */
     private function skipTimeoutTest()
     {
-        static::markTestIncomplete('API timeouts detected. We will probably not be able to complete this test suite.');
+        static::fail('API timeouts detected. We will probably not be able to complete this test suite.');
     }
 
     /**
