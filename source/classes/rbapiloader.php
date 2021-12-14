@@ -5920,9 +5920,7 @@ class ResursBank
             }
         }
         if (method_exists($e, 'getMessage')) {
-            if ($e->getCode() === Constants::LIB_NETCURL_SOAP_TIMEOUT || $e->getCode() === 28) {
-                $this->timeoutException = true;
-            }
+            $this->timeoutControl($e);
             /** @noinspection PhpUndefinedMethodInspection */
             throw new ResursException($e->getMessage(), $e->getCode(), $e);
         }
