@@ -58,6 +58,7 @@ use stdClass;
 use TorneLIB\Config\Flag;
 use TorneLIB\Data\Compress;
 use TorneLIB\Data\Password;
+use TorneLIB\Exception\Constants;
 use TorneLIB\Exception\ExceptionHandler;
 use TorneLIB\Helpers\NetUtils;
 use TorneLIB\IO\Data\Strings;
@@ -122,7 +123,7 @@ class ResursBank
     /**
      * @var bool
      */
-    private $timeoutExceptions = false;
+    private $timeoutException = false;
 
     ///// Environment and API
     /**
@@ -2860,9 +2861,21 @@ class ResursBank
      * @return bool
      * @since 1.3.66
      */
-    public function hasTimeouts()
+    public function hasTimeoutException()
     {
-        return $this->timeoutExceptions;
+        return $this->timeoutException;
+    }
+
+    /**
+     * @param Exception $e
+     */
+    private function timeoutControl($e) {
+        // Curl throws 28 and the wrapper for SoapClient throws code 1015 (from netcurl 6.1.5), on timeouts.
+        if ($e->getCode() === 28 ||
+            $e->getCode() === Constants::LIB_NETCURL_SOAP_TIMEOUT
+        ) {
+            $this->timeoutException = true;
+        }
     }
 
     /**
@@ -2890,9 +2903,7 @@ class ResursBank
                 //$RequestService = call_user_func_array(array($Service, $serviceName), [$resursParameters]);
                 $RequestService = $Service->$serviceName($resursParameters);
             } catch (Exception $serviceRequestException) {
-                if ($serviceRequestException->getCode() === 28) {
-                    $this->timeoutExceptions = true;
-                }
+                $this->timeoutControl($serviceRequestException);
                 // Try to fetch previous exception (This is what we actually want)
                 $previousException = $serviceRequestException->getPrevious();
                 $previousExceptionCode = null;
@@ -3547,6 +3558,7 @@ class ResursBank
                 DataType::JSON
             );
         } catch (Exception $e) {
+            $this->timeoutControl($e);
             $exceptionFromBody = $this->CURL->getBody();
 
             if (is_string($exceptionFromBody) && !empty($exceptionFromBody)) {
@@ -3776,6 +3788,8 @@ class ResursBank
                 $this->lastPaymentStored[$paymentId]->requestMethod = $this->getPaymentRequestMethod;
                 $return = $this->lastPaymentStored[$paymentId];
             } catch (ResursException $e) {
+                // Do run timeoutControl but don't stop at this moment, since we also run failovers.
+                $this->timeoutControl($e);
                 // 3 = The order does not exist, default REST error.
                 // If we for some reason get 404 errors here, the error should be rethrown as 3.
                 // If we for some unknown reason get 500+ errors, we can almost be sure that something else went wrong.
@@ -3799,6 +3813,7 @@ class ResursBank
                 $this->lastPaymentStored[$paymentId]->requestMethod = $this->getPaymentRequestMethod;
                 $return = $this->lastPaymentStored[$paymentId];
             } catch (Exception $e) {
+                $this->timeoutControl($e);
                 // 8 = REFERENCED_DATA_DONT_EXISTS
                 throw $e;
             }
@@ -3861,6 +3876,7 @@ class ResursBank
             // The look of this call makes it compatible to PHP 5.3 (without chaining)
             return $this->CURL->request($this->getCheckoutUrl() . '/checkout/payments/' . $paymentId)->getParsed();
         } catch (Exception $e) {
+            $this->timeoutControl($e);
             // Get internal exceptions before http responses
             $exceptionTestBody = @json_decode($this->CURL->getBody());
             if (isset($exceptionTestBody->errorCode) && isset($exceptionTestBody->description)) {
@@ -4500,7 +4516,8 @@ class ResursBank
             $orderData = $this->getOrderData();
             $return = isset($orderData['totalAmount']) ? $orderData['totalAmount'] : 0;
         } catch (Exception $e) {
-            // Just ignore this.
+            // Track timeouts and ignore errors.
+            $this->timeoutControl($e);
         }
 
         return (float)$return;
@@ -5616,6 +5633,7 @@ class ResursBank
                 }
             }
         } catch (Exception $e) {
+            $this->timeoutControl($e);
         }
         $this->preparePayload($payment_id_or_method, $payload);
         if ($this->paymentMethodIsPsp) {
@@ -5746,7 +5764,8 @@ class ResursBank
                             }
                         }
                     } catch (Exception $e) {
-                        // Ignore on internal errors.
+                        $this->timeoutControl($e);
+                        // Ignore on internal errors, but track timeouts.
                     }
 
                     return $parsedResponse->html;
@@ -5760,6 +5779,7 @@ class ResursBank
                     throw new ResursException(implode("\n", $error), $responseCode);
                 }
             } catch (Exception $e) {
+                // Do not run timeoutControl from here - this is done through handlePostErrors.
                 $this->handlePostErrors($e);
             }
 
@@ -5900,6 +5920,9 @@ class ResursBank
             }
         }
         if (method_exists($e, 'getMessage')) {
+            if ($e->getCode() === Constants::LIB_NETCURL_SOAP_TIMEOUT || $e->getCode() === 28) {
+                $this->timeoutException = true;
+            }
             /** @noinspection PhpUndefinedMethodInspection */
             throw new ResursException($e->getMessage(), $e->getCode(), $e);
         }
@@ -6724,6 +6747,7 @@ class ResursBank
                 try {
                     $this->preparePayload();
                 } catch (Exception $e) {
+                    $this->timeoutControl($e);
                     /**
                      * @since 1.3.16
                      */
@@ -7583,6 +7607,7 @@ class ResursBank
                 AftershopAction::FINALIZE
             );
         } catch (Exception $afterShopObjectException) {
+            $this->timeoutControl($afterShopObjectException);
             // No rows to finalize? Check if this was auto debited by internal rules, or throw back error.
             if ($afterShopObjectException->getCode() === RESURS_EXCEPTIONS::BOOKPAYMENT_NO_BOOKDATA &&
                 (
@@ -7627,6 +7652,9 @@ class ResursBank
                 return true;
             }
         } catch (Exception $finalizationException) {
+            // Avoid timeout control here, since the soapCall apparently can throw exceptions that matches
+            // curl timeouts (28).
+
             // Possible invoice error codes:
             // 28 = ECOMMERCEERROR_NOT_ALLOWED_INVOICE_ID
             // 29 ECOMMERCEERROR_ALREADY_EXISTS_INVOICE_ID
@@ -7931,6 +7959,7 @@ class ResursBank
         try {
             $checkPayment = $this->getPayment($paymentId);
         } catch (Exception $e) {
+            $this->timeoutControl($e);
             $customErrorMessage = $e->getMessage();
         }
         if (!isset($checkPayment->id) && !empty($customErrorMessage)) {
@@ -8623,6 +8652,7 @@ class ResursBank
             }
             $this->addMetaData($paymentId, 'CustomerId', $this->customerId);
         } catch (Exception $metaResponseException) {
+            $this->timeoutControl($metaResponseException);
         }
 
         return true;
@@ -8649,6 +8679,7 @@ class ResursBank
         try {
             $currentInvoiceTest = $this->getNextInvoiceNumber();
         } catch (Exception $e) {
+            $this->timeoutControl($e);
         }
         $paymentScanTypes = ['IS_DEBITED', 'IS_CREDITED', 'IS_ANNULLED'];
 
