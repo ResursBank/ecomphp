@@ -75,7 +75,7 @@ if (!defined('ECOMPHP_VERSION')) {
     define('ECOMPHP_VERSION', (new Generic())->getVersionByAny(__FILE__, 3, ResursBank::class));
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20211214');
+    define('ECOMPHP_MODIFY_DATE', '20211215');
 }
 
 /**
@@ -86,7 +86,7 @@ if (!defined('ECOMPHP_MODIFY_DATE')) {
 /**
  * Class ResursBank
  * @package Resursbank\RBEcomPHP
- * @version 1.3.66
+ * @version 1.3.67
  */
 class ResursBank
 {
@@ -2473,13 +2473,14 @@ class ResursBank
      * object will be empty. Developer note: Changing this behaviour so all event types is always returned even if they
      * don't exist (meaning ecomphp fills in what's missing) might break plugins that is already in production.
      *
-     * @param bool $ReturnAsArray
+     * @param bool $returnAsAssocArray
+     * @param bool $skipFailOver
      * @return array
-     * @throws Exception
+     * @throws ResursException
      * @link  https://test.resurs.com/docs/display/ecom/ECommerce+PHP+Library#ECommercePHPLibrary-getCallbacksByRest
      * @since 1.0.1
      */
-    public function getCallBacksByRest($ReturnAsArray = false)
+    public function getCallBacksByRest($returnAsAssocArray = false, $skipFailOver = false)
     {
         $ResursResponse = [];
         $hasUpdate = false;
@@ -2501,12 +2502,12 @@ class ResursBank
             $code = $restException->getCode();
 
             $failover = false;
-            if ($code >= 500) {
+            if ($code >= 500 && !$skipFailOver) {
                 try {
                     $failover = true;
                     $hasUpdate = true;
                     $ResursResponse = $this->getRegisteredEventCallback(255);
-                    if (!$ReturnAsArray && is_array($ResursResponse)) {
+                    if (!$returnAsAssocArray && is_array($ResursResponse)) {
                         foreach ($ResursResponse as $callbackKey => $callbackUrl) {
                             $callbackClass = new stdClass();
                             $callbackClass->eventType = $callbackKey;
@@ -2538,7 +2539,7 @@ class ResursBank
                 throw new ResursException($message, $code, $restException);
             }
         }
-        if ($ReturnAsArray) {
+        if ($returnAsAssocArray) {
             $ResursResponseArray = [];
             if (is_array($ResursResponse) && count($ResursResponse)) {
                 foreach ($ResursResponse as $object) {
