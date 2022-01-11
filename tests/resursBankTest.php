@@ -1087,12 +1087,12 @@ class resursBankTest extends TestCase
     {
         /** @noinspection SuspiciousBinaryOperationInspection */
         static::assertTrue(
-            ((255 & RESURS_CALLBACK_TYPES::FINALIZATION) ? true : false) &&
-            ((8 & RESURS_CALLBACK_TYPES::FINALIZATION) ? true : false) &&
-            ((24 & RESURS_CALLBACK_TYPES::TEST) ? true : false) &&
-            ((12 & RESURS_CALLBACK_TYPES::FINALIZATION && RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL) ? true : false) &&
-            ((56 & RESURS_CALLBACK_TYPES::FINALIZATION && RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL) ? true : false) &&
-            ((RESURS_CALLBACK_TYPES::FINALIZATION | RESURS_CALLBACK_TYPES::AUTOMATIC_FRAUD_CONTROL | RESURS_CALLBACK_TYPES::TEST) === 28)
+            ((255 & Callback::FINALIZATION) ? true : false) &&
+            ((8 & Callback::FINALIZATION) ? true : false) &&
+            ((24 & Callback::TEST) ? true : false) &&
+            ((12 & Callback::FINALIZATION && Callback::AUTOMATIC_FRAUD_CONTROL) ? true : false) &&
+            ((56 & Callback::FINALIZATION && Callback::AUTOMATIC_FRAUD_CONTROL) ? true : false) &&
+            ((Callback::FINALIZATION | Callback::AUTOMATIC_FRAUD_CONTROL | Callback::TEST) === 28)
         );
     }
 
