@@ -35,6 +35,7 @@ use RESURS_EXCEPTIONS;
 use Resursbank\Ecommerce\Service\Merchant\MerchantApi;
 use Resursbank\Ecommerce\Service\Merchant\Model\Method;
 use Resursbank\Ecommerce\Service\Translation;
+use Resursbank\Ecommerce\Types\Callback;
 use Resursbank\Ecommerce\Types\OrderStatus;
 use Resursbank\Ecommerce\Types\OrderStatusCode;
 use ResursException;
@@ -90,10 +91,10 @@ class resursBankTest extends TestCase
     private $flowHappyCustomerName = 'Vincent Williamsson Alexandersson';
     /** @noinspection PhpUnusedPrivateFieldInspection */
     /** @var string Landing page for callbacks */
-    private $callbackUrl = 'https://test.resurs.com/signdummy/index.php?isCallback=1';
+    private $callbackUrl = 'https://demoshop.resurs.com/tools/index.php?isCallback=1';
 
     /** @var string Landing page for signings */
-    private $signUrl = 'https://test.resurs.com/signdummy/index.php?isSigningUrl=1';
+    private $signUrl = 'https://demoshop.resurs.com/tools/index.php?isSigningUrl=1';
 
     /**
      * @test
@@ -1261,7 +1262,7 @@ class resursBankTest extends TestCase
         $this->TEST->ECOM->setCallbackDigestSalt(uniqid(md5(microtime(true)), true));
 
         $cbCount = 0;
-        $templateUrl = 'https://test.resurs.com/callbacks/';
+        $templateUrl = 'https://demoshop.resurs.com/tools/index.php';
 
         // Phase 1: Register callback with local salt key.
         if ($this->TEST->ECOM->setRegisterCallback(
