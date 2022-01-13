@@ -921,6 +921,21 @@ class ResursBank
         } else {
             $this->CURL = new Netwrapper();
         }
+
+        if (defined('HTTP_PROXY')) {
+            $this->CURL->setProxy(HTTP_PROXY, defined('HTTP_PROXY_TYPE') ? HTTP_PROXY_TYPE : 0);
+        } elseif (isset($_SERVER['HTTP_PROXY'])) {
+            $this->CURL->setProxy(
+                $_SERVER['HTTP_PROXY'],
+                isset($_SERVER['HTTP_PROXY_TYPE']) ? $_SERVER['HTTP_PROXY_TYPE'] : 0
+            );
+        } elseif (Flag::getFlag('HTTP_PROXY')) {
+            $this->CURL->setProxy(
+                Flag::getFlag('HTTP_PROXY'),
+                Flag::getFlag('HTTP_PROXY_TYPE') ? Flag::getFlag('HTTP_PROXY_TYPE') : 0
+            );
+        }
+
         if (method_exists($this->CURL, 'setIdentifiers')) {
             $this->CURL->setIdentifiers(true);
         }

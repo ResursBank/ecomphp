@@ -48,11 +48,13 @@ use TorneLIB\Model\Type\RequestMethod;
 use TorneLIB\Module\Config\WrapperConfig;
 use TorneLIB\Module\Network\NetWrapper;
 use TorneLIB\Module\Network\Wrappers\CurlWrapper;
+use TorneLIB\Module\Network\Wrappers\SoapClientWrapper;
 use TorneLIB\Utils\Generic;
 use TorneLIB\Utils\Memory;
 use function in_array;
 
 Memory::setMemory('-1');
+//Flag::setFlag('HTTP_PROXY', '212.63.208.8:80');
 
 class resursBankTest extends TestCase
 {
@@ -661,6 +663,13 @@ class resursBankTest extends TestCase
         }
         $this->unitSetup();
         $paymentMethods = $this->TEST->ECOM->getPaymentMethods();
+        /**
+         * @var $handle SoapClientWrapper
+         */
+        /*$handle = $this->TEST->ECOM->getCurlHandle();
+        $headers = $handle->getLastRequestHeaders();
+        $request = $handle->getLastRequest();
+        $fullRequest = $headers . $request;*/
 
         static::assertTrue(count($paymentMethods) > 1);
     }
@@ -1755,8 +1764,8 @@ class resursBankTest extends TestCase
                 )->request(
                     'https://test.resurs.com/ecommerce-test/ws/V4/AfterShopFlowService',
                     $xml,
-                    requestMethod::METHOD_POST,
-                    dataType::SOAP_XML
+                    RequestMethod::POST,
+                    DataType::SOAP_XML
                 );
         } catch (ExceptionHandler $e) {
             /** @var CurlWrapper $extended */
