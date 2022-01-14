@@ -180,6 +180,7 @@ class resursBankTest extends TestCase
     {
         $this->unitSetup();
 
+        $method = [];
         try {
             $methods = $this->TEST->getCredentialControl();
         } catch (Exception $e) {
