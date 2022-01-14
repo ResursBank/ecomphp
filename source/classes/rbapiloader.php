@@ -886,6 +886,41 @@ class ResursBank
     }
 
     /**
+     * Function to make sure that we can handle proxies on multiple levels.
+     */
+    private function prepareProxy($curlProxyAddr = '', $curlProxyType = '')
+    {
+        $hasProxy = false;
+        if (!empty($curlProxyAddr) && !empty($curlProxyType)) {
+            $this->CURL->setProxy($curlProxyAddr, $curlProxyAddr);
+            $hasProxy = true;
+        } elseif (defined('HTTP_PROXY')) {
+            $this->CURL->setProxy(HTTP_PROXY, defined('HTTP_PROXY_TYPE') ? HTTP_PROXY_TYPE : 0);
+            $hasProxy = true;
+        } elseif (isset($_SERVER['HTTP_PROXY'])) {
+            $this->CURL->setProxy(
+                $_SERVER['HTTP_PROXY'],
+                isset($_SERVER['HTTP_PROXY_TYPE']) ? $_SERVER['HTTP_PROXY_TYPE'] : 0
+            );
+            $hasProxy = true;
+        } elseif (Flag::getFlag('HTTP_PROXY')) {
+            $this->CURL->setProxy(
+                Flag::getFlag('HTTP_PROXY'),
+                Flag::getFlag('HTTP_PROXY_TYPE') ? Flag::getFlag('HTTP_PROXY_TYPE') : 0
+            );
+            $hasProxy = true;
+        }
+
+        if ($hasProxy && Flag::hasFlag('request_fulluri')) {
+            $currentConfig = $this->CURL->getConfig();
+            $currentConfig->setDualStreamHttp('request_fulluri', Flag::getFlag('request_fulluri'));
+            $this->CURL->setConfig($currentConfig);
+        }
+
+        return $this;
+    }
+
+    /**
      * Everything that communicates with Resurs Bank should go here, whether is is web services or curl/json data. The
      * former name of this function is InitializeWsdl, but since we are handling nonWsdl-calls differently, but still
      * needs some kind of compatibility in dirty code structures, everything needs to be done from here. For now. In
@@ -922,20 +957,6 @@ class ResursBank
             $this->CURL = new Netwrapper();
         }
 
-        if (defined('HTTP_PROXY')) {
-            $this->CURL->setProxy(HTTP_PROXY, defined('HTTP_PROXY_TYPE') ? HTTP_PROXY_TYPE : 0);
-        } elseif (isset($_SERVER['HTTP_PROXY'])) {
-            $this->CURL->setProxy(
-                $_SERVER['HTTP_PROXY'],
-                isset($_SERVER['HTTP_PROXY_TYPE']) ? $_SERVER['HTTP_PROXY_TYPE'] : 0
-            );
-        } elseif (Flag::getFlag('HTTP_PROXY')) {
-            $this->CURL->setProxy(
-                Flag::getFlag('HTTP_PROXY'),
-                Flag::getFlag('HTTP_PROXY_TYPE') ? Flag::getFlag('HTTP_PROXY_TYPE') : 0
-            );
-        }
-
         if (method_exists($this->CURL, 'setIdentifiers')) {
             $this->CURL->setIdentifiers(true);
         }
@@ -953,6 +974,9 @@ class ResursBank
         foreach ($this->wsdlServices as $ServiceName => $isAvailableBoolean) {
             $this->URLS[$ServiceName] = sprintf('%s%s?wsdl', $this->environment, $ServiceName);
         }
+
+        $this->prepareProxy();
+
         return $this;
     }
 
@@ -2710,9 +2734,7 @@ class ResursBank
      */
     public function setProxy($curlProxyAddr, $curlProxyType)
     {
-        $CURL = $this->getCurlHandle();
-        $CURL->setProxy($curlProxyAddr, $curlProxyType);
-        $this->setCurlHandle($CURL);
+        $this->prepareProxy($curlProxyAddr, $curlProxyType);
 
         return $this;
     }
@@ -2923,6 +2945,8 @@ class ResursBank
         $serviceNameUrl = $this->getServiceUrl($serviceName);
         $soapBody = null;
         if (!empty($serviceNameUrl) && !is_null($this->CURL)) {
+            $this->prepareProxy();
+
             $Service = $this->CURL->request($serviceNameUrl);
 
             try {

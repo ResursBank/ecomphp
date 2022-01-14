@@ -54,7 +54,8 @@ use TorneLIB\Utils\Memory;
 use function in_array;
 
 Memory::setMemory('-1');
-//Flag::setFlag('HTTP_PROXY', '212.63.208.8:80');
+Flag::setFlag('HTTP_PROXY', '212.63.208.8:80');
+Flag::setFlag('request_fulluri', false);
 
 class resursBankTest extends TestCase
 {
@@ -663,6 +664,7 @@ class resursBankTest extends TestCase
             return;
         }
         $this->unitSetup();
+        $this->TEST->ECOM->setWsdlCache(false);
         $paymentMethods = $this->TEST->ECOM->getPaymentMethods();
         /**
          * @var $handle SoapClientWrapper
