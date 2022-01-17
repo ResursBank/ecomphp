@@ -54,8 +54,8 @@ use TorneLIB\Utils\Memory;
 use function in_array;
 
 Memory::setMemory('-1');
-Flag::setFlag('HTTP_PROXY', '212.63.208.8:80');
-Flag::setFlag('request_fulluri', false);
+/*Flag::setFlag('HTTP_PROXY', '212.63.208.8:80');
+Flag::setFlag('request_fulluri', false);*/
 
 class resursBankTest extends TestCase
 {
