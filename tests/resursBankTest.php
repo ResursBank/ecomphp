@@ -48,11 +48,14 @@ use TorneLIB\Model\Type\RequestMethod;
 use TorneLIB\Module\Config\WrapperConfig;
 use TorneLIB\Module\Network\NetWrapper;
 use TorneLIB\Module\Network\Wrappers\CurlWrapper;
+use TorneLIB\Module\Network\Wrappers\SoapClientWrapper;
 use TorneLIB\Utils\Generic;
 use TorneLIB\Utils\Memory;
 use function in_array;
 
 Memory::setMemory('-1');
+/*Flag::setFlag('HTTP_PROXY', '212.63.208.8:80');
+Flag::setFlag('request_fulluri', false);*/
 
 class resursBankTest extends TestCase
 {
@@ -661,7 +664,15 @@ class resursBankTest extends TestCase
             return;
         }
         $this->unitSetup();
+        $this->TEST->ECOM->setWsdlCache(false);
         $paymentMethods = $this->TEST->ECOM->getPaymentMethods();
+        /**
+         * @var $handle SoapClientWrapper
+         */
+        /*$handle = $this->TEST->ECOM->getCurlHandle();
+        $headers = $handle->getLastRequestHeaders();
+        $request = $handle->getLastRequest();
+        $fullRequest = $headers . $request;*/
 
         static::assertTrue(count($paymentMethods) > 1);
     }
@@ -679,18 +690,26 @@ class resursBankTest extends TestCase
             return;
         }
         $this->unitSetup();
-        $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::HOSTED_FLOW);
-        $preferredId = md5(uniqid(microtime(true), true));
-        $this->TEST->ECOM->setPreferredId($preferredId);
-        $customerData = $this->getHappyCustomerData();
-        $this->TEST->ECOM->addOrderLine('Product-1337', 'One simple orderline', 800, 25);
-        $this->TEST->ECOM->setBillingByGetAddress($customerData);
-        $this->TEST->ECOM->setCustomer($govId, '0808080808', '0707070707', 'test@test.com', 'NATURAL');
-        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
-        $this->TEST->ECOM->setMetaData('metaKeyTestTime', time());
-        $this->TEST->ECOM->setMetaData('metaKeyTestMicroTime', microtime(true));
-        $response = $this->TEST->ECOM->createPayment($this->getMethodId());
-        static::assertTrue((bool)preg_match('/hostedflow/i', $response));
+        try {
+            $this->TEST->ECOM->setPreferredPaymentFlowService(RESURS_FLOW_TYPES::HOSTED_FLOW);
+            $preferredId = md5(uniqid(microtime(true), true));
+            $this->TEST->ECOM->setPreferredId($preferredId);
+            $customerData = $this->getHappyCustomerData();
+            $this->TEST->ECOM->addOrderLine('Product-1337', 'One simple orderline', 800, 25);
+            $this->TEST->ECOM->setBillingByGetAddress($customerData);
+            $this->TEST->ECOM->setCustomer($govId, '0808080808', '0707070707', 'test@test.com', 'NATURAL');
+            $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+            $this->TEST->ECOM->setMetaData('metaKeyTestTime', time());
+            $this->TEST->ECOM->setMetaData('metaKeyTestMicroTime', microtime(true));
+            $response = $this->TEST->ECOM->createPayment($this->getMethodId());
+            static::assertTrue((bool)preg_match('/hostedflow/i', $response));
+        } catch (Exception $exception) {
+            if ($exception->getCode() === 28) {
+                static::markTestSkipped('Test timeout. Temporary ignoring this test.');
+                return;
+            }
+            throw $exception;
+        }
     }
 
     /**
@@ -1756,8 +1775,8 @@ class resursBankTest extends TestCase
                 )->request(
                     'https://test.resurs.com/ecommerce-test/ws/V4/AfterShopFlowService',
                     $xml,
-                    requestMethod::METHOD_POST,
-                    dataType::SOAP_XML
+                    RequestMethod::POST,
+                    DataType::SOAP_XML
                 );
         } catch (ExceptionHandler $e) {
             /** @var CurlWrapper $extended */
@@ -2564,7 +2583,7 @@ class resursBankTest extends TestCase
                 return;
             }
         } catch (Exception $e) {
-            static::markTestIncomplete(
+            static::markTestSkipped(
                 sprintf(
                     'Error %d during proxytest: %s',
                     $e->getCode(),
