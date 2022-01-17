@@ -2583,7 +2583,7 @@ class resursBankTest extends TestCase
                 return;
             }
         } catch (Exception $e) {
-            static::markTestIncomplete(
+            static::markTestSkipped(
                 sprintf(
                     'Error %d during proxytest: %s',
                     $e->getCode(),
