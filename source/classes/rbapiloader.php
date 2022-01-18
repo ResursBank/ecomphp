@@ -58,7 +58,6 @@ use stdClass;
 use TorneLIB\Config\Flag;
 use TorneLIB\Data\Compress;
 use TorneLIB\Data\Password;
-use TorneLIB\Exception\Constants;
 use TorneLIB\Exception\ExceptionHandler;
 use TorneLIB\Helpers\NetUtils;
 use TorneLIB\IO\Data\Strings;
@@ -2918,9 +2917,10 @@ class ResursBank
     private function timeoutControl($e)
     {
         if ($e instanceof Exception) {
+            // Constants::LIB_NETCURL_SOAP_TIMEOUT = 1015
             // Curl throws 28 and the wrapper for SoapClient throws code 1015 (from netcurl 6.1.5), on timeouts.
             if ($e->getCode() === 28 ||
-                $e->getCode() === Constants::LIB_NETCURL_SOAP_TIMEOUT
+                $e->getCode() === 1015
             ) {
                 $this->timeoutException = true;
             }
