@@ -890,32 +890,34 @@ class ResursBank
     private function prepareProxy($curlProxyAddr = '', $curlProxyType = '')
     {
         $hasProxy = false;
-        if (!empty($curlProxyAddr) && !empty($curlProxyType)) {
-            $this->CURL->setProxy($curlProxyAddr, $curlProxyAddr);
-            $hasProxy = true;
-        } elseif (defined('HTTP_PROXY')) {
-            $this->CURL->setProxy(HTTP_PROXY, defined('HTTP_PROXY_TYPE') ? HTTP_PROXY_TYPE : 0);
-            $hasProxy = true;
-        } elseif (isset($_SERVER['HTTP_PROXY'])) {
-            $this->CURL->setProxy(
-                $_SERVER['HTTP_PROXY'],
-                isset($_SERVER['HTTP_PROXY_TYPE']) ? $_SERVER['HTTP_PROXY_TYPE'] : 0
-            );
-            $hasProxy = true;
-        } elseif (Flag::getFlag('HTTP_PROXY')) {
-            $this->CURL->setProxy(
-                Flag::getFlag('HTTP_PROXY'),
-                Flag::getFlag('HTTP_PROXY_TYPE') ? Flag::getFlag('HTTP_PROXY_TYPE') : 0
-            );
-            $hasProxy = true;
-        }
+        // Make sure we don't use the wrapper before it is set.
+        if (!empty($this->CURL)) {
+            if (!empty($curlProxyAddr) && !empty($curlProxyType)) {
+                $this->CURL->setProxy($curlProxyAddr, $curlProxyAddr);
+                $hasProxy = true;
+            } elseif (defined('HTTP_PROXY')) {
+                $this->CURL->setProxy(HTTP_PROXY, defined('HTTP_PROXY_TYPE') ? HTTP_PROXY_TYPE : 0);
+                $hasProxy = true;
+            } elseif (isset($_SERVER['HTTP_PROXY'])) {
+                $this->CURL->setProxy(
+                    $_SERVER['HTTP_PROXY'],
+                    isset($_SERVER['HTTP_PROXY_TYPE']) ? $_SERVER['HTTP_PROXY_TYPE'] : 0
+                );
+                $hasProxy = true;
+            } elseif (Flag::getFlag('HTTP_PROXY')) {
+                $this->CURL->setProxy(
+                    Flag::getFlag('HTTP_PROXY'),
+                    Flag::getFlag('HTTP_PROXY_TYPE') ? Flag::getFlag('HTTP_PROXY_TYPE') : 0
+                );
+                $hasProxy = true;
+            }
 
-        if ($hasProxy && Flag::hasFlag('request_fulluri')) {
-            $currentConfig = $this->CURL->getConfig();
-            $currentConfig->setDualStreamHttp('request_fulluri', Flag::getFlag('request_fulluri'));
-            $this->CURL->setConfig($currentConfig);
+            if ($hasProxy && Flag::hasFlag('request_fulluri')) {
+                $currentConfig = $this->CURL->getConfig();
+                $currentConfig->setDualStreamHttp('request_fulluri', Flag::getFlag('request_fulluri'));
+                $this->CURL->setConfig($currentConfig);
+            }
         }
-
         return $this;
     }
 
