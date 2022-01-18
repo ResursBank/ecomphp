@@ -1,6 +1,7 @@
 # - 1.3.68
 
 * Learning how to handle Resurs Bank timeouts in scenarios where it is normally not catched by the internal PHP clients.
+* Updated better support for proxy setups (where SoapClient is the most problematic on proxy connections).
 * [ECOMPHP-442](https://resursbankplugins.atlassian.net/browse/ECOMPHP-442) Constants::LIB_NETCURL_SOAP_TIMEOUT undefined for instances where composer is missing data from exception constants
 
 # - 1.3.64
