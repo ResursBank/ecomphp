@@ -702,6 +702,7 @@ class resursBankTest extends TestCase
             $this->TEST->ECOM->setMetaData('metaKeyTestTime', time());
             $this->TEST->ECOM->setMetaData('metaKeyTestMicroTime', microtime(true));
             $response = $this->TEST->ECOM->createPayment($this->getMethodId());
+            printf("Hosted test responded with URL %s ...", $response);
             static::assertTrue((bool)preg_match('/hostedflow/i', $response));
         } catch (Exception $exception) {
             if ($exception->getCode() === 28) {
