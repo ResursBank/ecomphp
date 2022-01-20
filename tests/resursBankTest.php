@@ -57,6 +57,8 @@ Memory::setMemory('-1');
 /*Flag::setFlag('HTTP_PROXY', '212.63.208.8:80');
 Flag::setFlag('request_fulluri', false);*/
 
+printf("IP address for this test is %s.", (new NetWrapper())->request('https://ipv4.netcurl.org/ip.php')->getBody());
+
 class resursBankTest extends TestCase
 {
     /**

@@ -563,7 +563,7 @@ class ResursBank
      */
     private $fraudStatusAllowed = false;
     /**
-     * @var RESURS_FLOW_TYPES
+     * @var CheckoutType
      */
     private $enforceService = null;
     /**
@@ -2787,7 +2787,7 @@ class ResursBank
     /**
      * Return the current set "preferred payment service" (hosted, checkout, simplified)
      *
-     * @return RESURS_FLOW_TYPES
+     * @return CheckoutType
      * @since 1.0.0
      * @since 1.1.0
      * @deprecated 1.0.26 Use getPreferredPaymentFlowService
@@ -5762,7 +5762,7 @@ class ResursBank
 
         // Using this function to validate that card data info is properly set up
         // during the deprecation state in >= 1.0.2/1.1.1
-        if ($myFlow === RESURS_FLOW_TYPES::SIMPLIFIED_FLOW) {
+        if ($myFlow === CheckoutType::SIMPLIFIED_FLOW) {
             $paymentMethodInfo = $this->getPaymentMethodSpecific($payment_id_or_method);
             if (isset($paymentMethodInfo) && is_object($paymentMethodInfo)) {
                 if (isset($paymentMethodInfo->specificType) &&
