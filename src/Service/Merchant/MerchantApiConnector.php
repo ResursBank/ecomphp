@@ -1,4 +1,9 @@
 <?php
+/**
+ * Copyright © Resurs Bank AB. All rights reserved.
+ * See LICENSE for license details.
+ */
+declare(strict_types=1);
 
 namespace Resursbank\Ecommerce\Service\Merchant;
 
@@ -149,38 +154,24 @@ class MerchantApiConnector
     {
         // Parsed responses may contain:
         // content->[],
-        // page->number, size, totaltElements, totalPages
+        // page->number, size, totalElements, totalPages
         // Note: This may be necessary when looking for content with large sized arrays.
 
         if ($this->hasExpiredToken() && $this->isJwtReady() && !$this->isRenewedToken) {
             $this->getRenewedToken();
         }
 
-        try {
-            return $this->getMerchantConnection()->request(
-                $this->getRequestUrl($resource),
-                (array)$data,
-                $requestMethod
-            )->getParsed();
-        } catch (Exception $e) {
-            if ((!isset($this->token) || empty($this->token)) && $e->getCode() === 401) {
-                if ($this->isJwtReady() && !$this->isRenewedToken) {
-                    $this->getRenewedToken();
-
-                    return $this->getMerchantRequest(
-                        $resource,
-                        $data,
-                        $requestMethod
-                    );
-                }
-                throw new Exception(
-                    $e->getMessage(),
-                    4001,
-                    $e
-                );
-            }
-            throw $e;
-        }
+        /*
+         * Exceptions that occurs at this point should very much be handled by merchants (at least for now).
+         * We've removed an automation that was placed within a try-catch block here before that was checking
+         * for 401-auth errors and, when necessary automatically renewed the token. A helper like this may
+         * likely be a security issue and should be handled by the remote, instead of this module.
+         */
+        return $this->getMerchantConnection()->request(
+            $this->getRequestUrl($resource),
+            (array)$data,
+            $requestMethod
+        )->getParsed();
     }
 
     /**

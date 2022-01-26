@@ -1,4 +1,9 @@
 <?php
+/**
+ * Copyright © Resurs Bank AB. All rights reserved.
+ * See LICENSE for license details.
+ */
+declare(strict_types=1);
 
 namespace Resursbank\Ecommerce\Service\Merchant;
 
@@ -102,6 +107,6 @@ class MerchantApi extends MerchantApiConnector
      */
     public function getStores(): array
     {
-        return $this->getMerchantRequest('stores')->content;
+        return (array)$this->getMerchantRequest('stores')->content;
     }
 }
