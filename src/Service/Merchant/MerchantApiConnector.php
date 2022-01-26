@@ -336,7 +336,6 @@ class MerchantApiConnector
      * from another service.
      *
      * @param $connection
-     *
      * @return MerchantApiConnector
      */
     public function setConnection($connection): MerchantApiConnector
