@@ -85,7 +85,7 @@ class MerchantApiConnector
             $useBearerToken = $merchantToken;
         }
 
-        $this->connection->setHeader('Authorization', sprintf('Bearer %s', $useBearerToken));
+        $this->getConnection()->setHeader('Authorization', sprintf('Bearer %s', $useBearerToken));
 
         return $this;
     }
