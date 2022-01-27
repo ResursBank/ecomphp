@@ -1650,6 +1650,17 @@ class resursBankTest extends TestCase
 
     /**
      * @test
+     * @throws Exception
+     */
+    public function annulBad()
+    {
+        $this->unitSetup();
+        static::expectException('ResursException');
+        $this->TEST->ECOM->annulPayment(sha1(time()));
+    }
+
+    /**
+     * @test
      *
      * Put order with quantity 100. Annul 50, debit 50, credit 25.
      *
@@ -3098,7 +3109,7 @@ class resursBankTest extends TestCase
                 if (strpos(trim($line), '#') === 0) {
                     continue;
                 }
-                list($name, $value) = explode('=', $line, 2);
+                [$name, $value] = explode('=', $line, 2);
                 $name = trim($name);
                 $value = trim($value);
                 if (!array_key_exists($name, $_SERVER) && !array_key_exists($name, $_ENV)) {
