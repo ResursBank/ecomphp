@@ -4257,15 +4257,16 @@ class ResursBank
     /**
      * If payment amount is within allowed limits of payment method
      *
-     * @param flaot $totalAmount
-     * @param int $minimumAmount
-     * @param int $maxmimumAMount
+     * @param int|float $totalAmount
+     * @param int|float $minimumAmount
+     * @param int|float $maxmimumAMount
      * @return bool
      */
     public function getMinMax($totalAmount = 0, $minimumAmount = 0, $maxmimumAMount = 0)
     {
         $return = false;
-        if ($totalAmount >= $minimumAmount && $totalAmount <= $maxmimumAMount) {
+
+        if ((float)$totalAmount >= (float)$minimumAmount && (float)$totalAmount <= (float)$maxmimumAMount) {
             $return = true;
         }
 
@@ -8277,6 +8278,7 @@ class ResursBank
                     ) &&
                     $useQuantity > 0
                 ) {
+                    //$articleType = isset($orderRow['type']) ? $orderRow['type'] : null;
                     $orderRow = $this->getPurgedPaymentRow(
                         $statusRow,
                         [
@@ -8290,6 +8292,9 @@ class ResursBank
                         ],
                         $this->getPaymentDefaultPurgeSet ? true : false
                     );
+                    /*if (!empty($articleType) && $articleType !== 'ORDER_LINE') {
+                        $orderRow['type'] = $articleType;
+                    }*/
 
                     if (!$this->skipAfterShopPaymentValidation) {
                         $useUnitAmount = $orderRow['unitAmountWithoutVat'];
