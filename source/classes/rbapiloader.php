@@ -4259,17 +4259,12 @@ class ResursBank
      *
      * @param flaot $totalAmount
      * @param int $minimumAmount
-     * @param int $maxmimumAMount
+     * @param int $maxmimumAmount
      * @return bool
      */
-    public function getMinMax($totalAmount = 0, $minimumAmount = 0, $maxmimumAMount = 0)
+    public function getMinMax($totalAmount = 0, $minimumAmount = 0, $maxmimumAmount = 0)
     {
-        $return = false;
-        if ($totalAmount >= $minimumAmount && $totalAmount <= $maxmimumAMount) {
-            $return = true;
-        }
-
-        return $return;
+        return (float)$totalAmount >= (float)$minimumAmount && (float)$totalAmount <= (float)$maxmimumAmount;
     }
 
     /**
