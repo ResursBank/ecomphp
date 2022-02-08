@@ -502,6 +502,12 @@ class resursBankTest extends TestCase
         $this->TEST->ECOM->setMetaData('metaKeyTestTime', time());
         $this->TEST->ECOM->setMetaData('metaKeyTestMicroTime', microtime(true));
         $response = $this->TEST->ECOM->createPayment($this->getMethodId());
+
+        $paymentId = isset($response->paymentId) ? $response->paymentId : '';
+        if ($response->bookPaymentStatus === 'BOOKED') {
+            $getPayment = $this->TEST->ECOM->getPayment($paymentId);
+        }
+
         if (!$noAssert) {
             /** @noinspection PhpUndefinedFieldInspection */
             static::assertTrue($response->bookPaymentStatus === 'BOOKED' || $response->bookPaymentStatus === 'SIGNING');
@@ -1529,6 +1535,35 @@ class resursBankTest extends TestCase
                 )
             );
         }
+    }
+
+    /**
+     * Temporary testing.
+     */
+    public function finalizeDiscount() {
+/*        if ($this->getTimeoutDetected()) {
+            return;
+        }
+        $this->unitSetup();
+        $customerData = $this->getHappyCustomerData();
+        $this->TEST->ECOM->setBillingByGetAddress($customerData);
+        $this->TEST->ECOM->setCustomer('8305147715', '0808080808', '0707070707', 'test@test.com', 'NATURAL');
+        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+        $this->TEST->ECOM->addOrderLine('Produkt', 'Vara', 1000, 25, 'st');
+        $this->TEST->ECOM->addOrderLine('Rabatt', 'Billigare', 250, 0, 'st', 'DISCOUNT', 1);
+        $response = $this->TEST->ECOM->createPayment($this->getMethodId());
+        $payment = $response->paymentId;
+
+        $firstPayment = $this->TEST->ECOM->getPayment($payment);
+
+        echo "Wait...\n";
+        sleep(3);
+        $this->TEST->ECOM->setGetPaymentMatchKeys(['artNo', 'description', 'unitMeasure']);
+        $this->TEST->ECOM->addOrderLine('Nyrabatt', 'ÄnnuBilligare', 250, 0, 'st', 'DISCOUNT', 1);
+        $this->TEST->ECOM->creditPayment($payment, null, false, true);
+        echo "Wait...\n";
+        sleep(3);
+        $secondPayment = $this->TEST->ECOM->getPayment($payment);*/
     }
 
     /**
