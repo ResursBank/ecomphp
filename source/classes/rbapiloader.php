@@ -4269,9 +4269,6 @@ class ResursBank
         if ((float)$totalAmount >= (float)$minimumAmount && (float)$totalAmount <= (float)$maxmimumAMount) {
             $return = true;
         }
-        if ((float)$totalAmount === 0.00 && (float)$minimumAmount === 0.00 && (float)$maxmimumAMount === 0.00) {
-            $return = true;
-        }
 
         return $return;
     }
