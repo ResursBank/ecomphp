@@ -7616,9 +7616,10 @@ class ResursBank
         $paymentId = '',
         $customPayloadItemList = [],
         $runOnce = false,
-        $skipSpecValidation = false
+        $skipSpecValidation = false,
+        $specificSpecLines = false
     ) {
-        return $this->paymentFinalize($paymentId, $customPayloadItemList, $runOnce, $skipSpecValidation);
+        return $this->paymentFinalize($paymentId, $customPayloadItemList, $runOnce, $skipSpecValidation, $specificSpecLines);
     }
 
     /**
@@ -7638,8 +7639,11 @@ class ResursBank
         $paymentId = '',
         $customPayloadItemList = [],
         $runOnce = false,
-        $skipSpecValidation = false
+        $skipSpecValidation = false,
+        $specificSpecLines = false
     ) {
+        $this->validatePayloadItems($specificSpecLines);
+
         if (!is_array($customPayloadItemList)) {
             $customPayloadItemList = [];
         }
@@ -8994,9 +8998,10 @@ class ResursBank
         $paymentId = '',
         $customPayloadItemList = [],
         $runOnce = false,
-        $skipSpecValidation = false
+        $skipSpecValidation = false,
+        $specificSpecLines = false
     ) {
-        return $this->paymentCredit($paymentId, $customPayloadItemList, $runOnce, $skipSpecValidation);
+        return $this->paymentCredit($paymentId, $customPayloadItemList, $runOnce, $skipSpecValidation, $specificSpecLines);
     }
 
     /**
@@ -9008,6 +9013,7 @@ class ResursBank
      * @param array $customPayloadItemList
      * @param bool $runOnce Only run this once, throw second time
      * @param bool $skipSpecValidation Set to true, you're skipping validation of order rows.
+     * @param bool $specificSpecLines Usage or addOrderLine is expected.
      * @return bool
      * @throws Exception
      * @since 1.0.22
@@ -9018,8 +9024,11 @@ class ResursBank
         $paymentId = '',
         $customPayloadItemList = [],
         $runOnce = false,
-        $skipSpecValidation = false
+        $skipSpecValidation = false,
+        $specificSpecLines = false
     ) {
+        $this->validatePayloadItems($specificSpecLines);
+
         if (!is_array($customPayloadItemList)) {
             $customPayloadItemList = [];
         }
@@ -9401,5 +9410,31 @@ class ResursBank
             ),
             501
         );
+    }
+
+    /**
+     * When using addOrderLine to build a payload there is always a chance to
+     * end up with an empty payload for natural reasons. This method validates
+     * a flag initially passed to finalizePayment / creditPayment to determine
+     * whether we should allow such API calls without any items specified in our
+     * payload.
+     *
+     * @param $specificSpecLines
+     * @return void
+     * @throws Exception
+     */
+    private function validatePayloadItems(
+        $specificSpecLines = false
+    ) {
+        if ($specificSpecLines &&
+            (
+                !is_array($this->SpecLines) ||
+                !count($this->SpecLines)
+            )
+        ) {
+            throw new Exception(
+                'Unexpected empty payload. This would affect the entire payment. Aborting execution.'
+            );
+        }
     }
 }
