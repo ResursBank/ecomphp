@@ -7609,6 +7609,7 @@ class ResursBank
      * @param array $customPayloadItemList
      * @param bool $runOnce
      * @param bool $skipSpecValidation
+     * @param bool $specificSpecLines See validatePayloadItems for information.
      * @return bool
      * @throws Exception
      */
@@ -7629,6 +7630,7 @@ class ResursBank
      * @param array $customPayloadItemList
      * @param bool $runOnce Only run this once, throw second time
      * @param bool $skipSpecValidation Set to true, you're skipping validation of order rows.
+     * @param bool $specificSpecLines See validatePayloadItems for information.
      * @return bool
      * @throws Exception
      * @since 1.0.22
@@ -8991,6 +8993,7 @@ class ResursBank
      * @param array $customPayloadItemList
      * @param bool $runOnce
      * @param bool $skipSpecValidation
+     * @param bool $specificSpecLines See validatePayloadItems for information.
      * @return bool
      * @throws Exception
      */
@@ -9013,7 +9016,7 @@ class ResursBank
      * @param array $customPayloadItemList
      * @param bool $runOnce Only run this once, throw second time
      * @param bool $skipSpecValidation Set to true, you're skipping validation of order rows.
-     * @param bool $specificSpecLines Usage or addOrderLine is expected.
+     * @param bool $specificSpecLines See validatePayloadItems for information.
      * @return bool
      * @throws Exception
      * @since 1.0.22
