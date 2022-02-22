@@ -2837,6 +2837,50 @@ class resursBankTest extends TestCase
     }
 
     /**
+     * Specials temporary.
+     * @throws Exception
+     */
+    public function afterShopOverride() {
+        $bookSigned = true;
+        $isFinalized = true;
+        $paymentid = '20220221162143-0349992132';
+        $this->unitSetup();
+        $this->TEST->ECOM->disablePaymentValidation(true);
+        if (!$bookSigned) {
+            $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true, 10);
+            print_r($payment);
+            $paymentid = isset($payment->paymentId) ? $payment->paymentId : null;
+        } else {
+            if (!$isFinalized) {
+                echo "Book Signed!\n";
+                try {
+                    $this->TEST->ECOM->bookSignedPayment($paymentid);
+                } catch (Exception $e) {
+                    echo "Error: " . $e->getMessage() . "\n";
+                }
+                sleep(1);
+                echo "Finalize Payment!\n";
+                try {
+                    $this->TEST->ECOM->finalizePayment($paymentid);
+                } catch (Exception $e) {
+                    echo "Error: " . $e->getMessage() ."\n";
+                }
+                sleep(2);
+                echo "DONE!\n";
+            } else {
+                //$this->TEST->ECOM->setFlag('no_row_validation', true);
+                //$this->TEST->ECOM->addOrderLine('enbart-positiv-tt-2', 'enbart-positiv-tt-2', 20, 0);
+                //$this->TEST->ECOM->addOrderLine('negativ-tt-1', 'negativ-tt-1', -10, 0);
+                $this->TEST->ECOM->addOrderLine('korv', 'mos', 100, 25);
+                $this->TEST->ECOM->creditPayment($paymentid);
+                sleep(2);
+            }
+            $result = $this->TEST->ECOM->getPayment($paymentid);
+            print_R($result);
+        }
+    }
+
+    /**
      * @test Three ways to fetch current version.
      * @throws ExceptionHandler
      * @throws ReflectionException
