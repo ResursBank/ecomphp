@@ -85,7 +85,7 @@ if (!defined('ECOMPHP_MODIFY_DATE')) {
 /**
  * Class ResursBank
  * @package Resursbank\RBEcomPHP
- * @version 1.3.72
+ * @version 1.3.73
  */
 class ResursBank
 {
@@ -5092,7 +5092,7 @@ class ResursBank
         if (!empty($this->preferredId) && !$force) {
             return $this->preferredId;
         }
-        $timestamp = strftime('%Y%m%d%H%M%S', time());
+        $timestamp = date('YmdHis', time());
         if ($dualUniq) {
             $uniq = uniqid(sha1(uniqid(rand(), true)), true);
         } else {
