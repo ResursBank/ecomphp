@@ -74,7 +74,7 @@ if (!defined('ECOMPHP_VERSION')) {
     define('ECOMPHP_VERSION', (new Generic())->getVersionByAny(__FILE__, 3, ResursBank::class));
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20220222');
+    define('ECOMPHP_MODIFY_DATE', '20220228');
 }
 
 /**
@@ -4921,7 +4921,7 @@ class ResursBank
                     }
                 }
                 if ($myFlow === CheckoutType::SIMPLIFIED_FLOW) {
-                    $this->SpecLines[$specIndex]['id'] = ($specIndex) + 1;
+                    $this->SpecLines[$specIndex]['id'] = $specIndex + 1;
                 }
                 if ($myFlow === CheckoutType::HOSTED_FLOW || $myFlow === CheckoutType::SIMPLIFIED_FLOW) {
                     if ($this->isFlag('ALWAYS_RENDER_TOTALS') && isset($specRow['totalVatAmount'])) {
