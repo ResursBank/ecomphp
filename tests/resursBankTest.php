@@ -92,7 +92,7 @@ class resursBankTest extends TestCase
 
     // MP.
     private $usernameMP = 'ecomPhpPipelineWeb';
-    private $passwordMP = 'm7O2O7V6zXZOy54DIk4L3SM1oWp73itU';
+    private $passwordMP = 'nIeZe3825F16f033lIB81G3778MJn9l5';
 
     private $flowHappyCustomer = '8305147715';
     private $flowHappyCustomerName = 'Vincent Williamsson Alexandersson';
