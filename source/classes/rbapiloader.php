@@ -85,7 +85,7 @@ if (!defined('ECOMPHP_MODIFY_DATE')) {
 /**
  * Class ResursBank
  * @package Resursbank\RBEcomPHP
- * @version 1.3.73
+ * @version 1.3.74
  */
 class ResursBank
 {
@@ -783,6 +783,14 @@ class ResursBank
     private $finalizeWithoutOrderRows;
 
     /**
+     * Setting getPaymentValidation to false means that everything calculated in the afterShopFlow should be accepted
+     * without any pre-getPayment validation.
+     * @var bool
+     * @since 1.3.74
+     */
+    private $getPaymentValidation = true;
+
+    /**
      * Constructor method for Resurs Bank WorkFlows
      *
      * This method prepares initial variables for the workflow. No connections are being made from this point.
@@ -882,6 +890,27 @@ class ResursBank
             return true;
         }
         throw new ResursException('Flags can not be empty!', 500);
+    }
+
+    /**
+     * @param $validationMode
+     * @return $this
+     * @since 1.3.74
+     */
+    public function setGetPaymentValidation($validationMode)
+    {
+        $this->getPaymentValidation = $validationMode;
+
+        return $this;
+    }
+
+    /**
+     * @return bool
+     * @since 1.3.74
+     */
+    public function getGetPaymentValidation()
+    {
+        return $this->getPaymentValidation;
     }
 
     /**
@@ -8189,6 +8218,11 @@ class ResursBank
     {
         $return = [];
         $id = 0;
+
+        // Just use what we have without validation.
+        if (!$this->getPaymentValidation) {
+            return $currentOrderLines;
+        }
 
         foreach ($currentOrderLines as $idx => $orderRow) {
             $found = false;
