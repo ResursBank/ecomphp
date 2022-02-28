@@ -85,7 +85,7 @@ if (!defined('ECOMPHP_MODIFY_DATE')) {
 /**
  * Class ResursBank
  * @package Resursbank\RBEcomPHP
- * @version 1.3.75
+ * @version 1.3.76
  */
 class ResursBank
 {
@@ -5671,10 +5671,12 @@ class ResursBank
         //   artNo, description, quantity, unitMeasure, unitAmountWithoutVat, vatPct, type
 
         $duplicateArticle = false;
-        foreach ($this->SpecLines as $specIndex => $specRow) {
-            if ($specRow['artNo'] == $articleNumberOrId && $specRow['unitAmountWithoutVat'] == $unitAmountWithoutVat) {
-                $duplicateArticle = true;
-                $this->SpecLines[$specIndex]['quantity'] += $quantity;
+        if ($this->bookPaymentValidation) {
+            foreach ($this->SpecLines as $specIndex => $specRow) {
+                if ($specRow['artNo'] == $articleNumberOrId && $specRow['unitAmountWithoutVat'] == $unitAmountWithoutVat) {
+                    $duplicateArticle = true;
+                    $this->SpecLines[$specIndex]['quantity'] += $quantity;
+                }
             }
         }
         if (!$duplicateArticle || !$this->bookPaymentValidation) {
