@@ -1538,6 +1538,23 @@ class resursBankTest extends TestCase
     }
 
     /**
+     * @param $govid
+     * @throws ResursException
+     */
+    public function getPreparedSimplifiedPayment($govId) {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
+        $this->unitSetup();
+        $customerData = $this->getHappyCustomerData();
+        $this->TEST->ECOM->setBillingByGetAddress($customerData);
+        $this->TEST->ECOM->setCustomer($govId, '0808080808', '0707070707', 'test@test.com', 'NATURAL');
+        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+        $this->TEST->ECOM->setMetaData('metaKeyTestTime', time());
+        $this->TEST->ECOM->setMetaData('metaKeyTestMicroTime', microtime(true));
+    }
+
+    /**
      * @test
      *
      * @param string $govId
@@ -1547,11 +1564,7 @@ class resursBankTest extends TestCase
      */
     public function generateSimpleSimplifiedInvoiceQuantityOrder($govId = '198305147715', $staticProductPrice = false)
     {
-        if ($this->getTimeoutDetected()) {
-            return;
-        }
-        $this->unitSetup();
-        $customerData = $this->getHappyCustomerData();
+        $this->getPreparedSimplifiedPayment($govId);
         $this->TEST->ECOM->addOrderLine(
             'PR01',
             'PR01',
@@ -1588,11 +1601,7 @@ class resursBankTest extends TestCase
             'ORDER_LINE',
             100
         );
-        $this->TEST->ECOM->setBillingByGetAddress($customerData);
-        $this->TEST->ECOM->setCustomer($govId, '0808080808', '0707070707', 'test@test.com', 'NATURAL');
-        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
-        $this->TEST->ECOM->setMetaData('metaKeyTestTime', time());
-        $this->TEST->ECOM->setMetaData('metaKeyTestMicroTime', microtime(true));
+
         $response = $this->TEST->ECOM->createPayment($this->getMethodId());
 
         return $response;
@@ -2808,17 +2817,24 @@ class resursBankTest extends TestCase
     }
 
     /**
+     * @test
      * Specials temporary.
      * @throws Exception
      */
     public function afterShopOverride() {
-        $bookSigned = true;
-        $isFinalized = true;
+        $bookSigned = false;
+        $isFinalized = false;
         $paymentid = '20220228084152-2309149789';
         $this->unitSetup();
         $this->TEST->ECOM->setGetPaymentValidation(false);
+        $this->TEST->ECOM->setBookPaymentValidation(false);
         if (!$bookSigned) {
-            $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true, 10);
+            //$payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true, 10);
+            $this->getPreparedSimplifiedPayment('8305147715');
+            $this->TEST->ECOM->addOrderLine('Product Row Identical', 'Product Row Identical', 100, 25, 'st');
+            $this->TEST->ECOM->addOrderLine('Product Row Identical', 'Product Row Identical', 100, 25, 'st');
+            $this->TEST->ECOM->addOrderLine('Product Row Identical', 'Product Row Identical', 150, 25, 'st');
+            $payment = $this->TEST->ECOM->createPayment($this->getMethodId());
             print_r($payment);
             $paymentid = isset($payment->paymentId) ? $payment->paymentId : null;
         } else {
