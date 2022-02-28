@@ -2817,7 +2817,6 @@ class resursBankTest extends TestCase
     }
 
     /**
-     * @test
      * Specials temporary.
      * @throws Exception
      */
@@ -2833,6 +2832,9 @@ class resursBankTest extends TestCase
             $this->getPreparedSimplifiedPayment('8305147715');
             $this->TEST->ECOM->addOrderLine('Product Row Identical', 'Product Row Identical', 100, 25, 'st');
             $this->TEST->ECOM->addOrderLine('Product Row Identical', 'Product Row Identical', 100, 25, 'st');
+            $this->TEST->ECOM->addOrderLine('Product Row Identical', 'Product Row Identical', 100, 25, 'st');
+            $this->TEST->ECOM->addOrderLine('Bundled Stuff', 'Product Row Identical', 0, 0, 'st');
+            $this->TEST->ECOM->addOrderLine('Product Row Identical', 'Product Row Identical', 150, 25, 'st');
             $this->TEST->ECOM->addOrderLine('Product Row Identical', 'Product Row Identical', 150, 25, 'st');
             $payment = $this->TEST->ECOM->createPayment($this->getMethodId());
             print_r($payment);
