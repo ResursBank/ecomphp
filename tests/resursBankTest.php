@@ -2853,7 +2853,7 @@ class resursBankTest extends TestCase
             $this->TEST->ECOM->addOrderLine('Product Row Identical', 'Product Row Identical', 150, 25, 'st');
             $methods = $this->TEST->ECOM->getPaymentMethods();
             $hasMethod = false;
-            $wantedMethod = 'INVOICE2';
+            $wantedMethod = 'INVOICE';
             $wantedMethodInstantSigned = true;
             foreach ($methods as $method) {
                 if ($method->id === $wantedMethod) {
@@ -2868,6 +2868,7 @@ class resursBankTest extends TestCase
             $payment = $this->TEST->ECOM->createPayment($wantedMethod);
             $paymentid = isset($payment->paymentId) ? $payment->paymentId : null;
             if ($wantedMethod && $wantedMethodInstantSigned) {
+                echo "bookSignedPayment: $paymentid\n";
                 $this->TEST->ECOM->bookSignedPayment($paymentid);
             }
             print_r($payment);
