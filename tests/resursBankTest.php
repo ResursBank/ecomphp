@@ -133,6 +133,16 @@ class resursBankTest extends TestCase
             $this->password = $this->passwordMP;
         }
 
+        if ($this->hasEnv()) {
+            $envUser = getenv('MERCHANT_PORTAL_CREDENTIALS');
+            $envPass = getenv('MERCHANT_PORTAL_PASSWORD');
+            if (!empty($envPass) && !empty($envUser)) {
+                $this->username = $envUser;
+                $this->password = $envPass;
+            }
+        }
+
+
         $this->TEST = new RESURS_TEST_BRIDGE($this->username, $this->password);
 
         // From 1.3.40 NETCURL is always 6.1+, so all soap based tests will run in cached mode.
@@ -612,7 +622,7 @@ class resursBankTest extends TestCase
             $this->unitSetup();
         }
         $return = null;
-        $this->getPaymentMethods(false, $requireNoInit);
+        $methodList = $this->getPaymentMethods(false, $requireNoInit);
         $prePop = $this->TEST->share('paymentMethods');
         $methodGroup = array_pop($prePop);
         foreach ($methodGroup as $curMethod) {
@@ -2841,9 +2851,26 @@ class resursBankTest extends TestCase
             $this->TEST->ECOM->addOrderLine('Bundled Stuff', 'Product Row Identical', 0, 0, 'st');
             $this->TEST->ECOM->addOrderLine('Product Row Identical', 'Product Row Identical', 150, 25, 'st');
             $this->TEST->ECOM->addOrderLine('Product Row Identical', 'Product Row Identical', 150, 25, 'st');
-            $payment = $this->TEST->ECOM->createPayment($this->getMethodId());
-            print_r($payment);
+            $methods = $this->TEST->ECOM->getPaymentMethods();
+            $hasMethod = false;
+            $wantedMethod = 'INVOICE2';
+            $wantedMethodInstantSigned = true;
+            foreach ($methods as $method) {
+                if ($method->id === $wantedMethod) {
+                    $hasMethod = true;
+                    break;
+                }
+            }
+            if (!$hasMethod) {
+                static::markTestSkipped('Has not the proper method.');
+                return;
+            }
+            $payment = $this->TEST->ECOM->createPayment($wantedMethod);
             $paymentid = isset($payment->paymentId) ? $payment->paymentId : null;
+            if ($wantedMethod && $wantedMethodInstantSigned) {
+                $this->TEST->ECOM->bookSignedPayment($paymentid);
+            }
+            print_r($payment);
         } else {
             if (!$isFinalized) {
                 echo "Book Signed!\n";
