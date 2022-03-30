@@ -2453,7 +2453,11 @@ class resursBankTest extends TestCase
         );
     }
 
-    /*public function getTranslationSwedish()
+    /**
+     * @throws Exception
+     * @test
+     */
+    public function getTranslationSwedish()
     {
         $helper = new Translation();
         $helper->setLanguage('sv');
@@ -2462,7 +2466,8 @@ class resursBankTest extends TestCase
         $validationForEmptyGovId = $helper->getPhrase('forEmpty', ['validation', 'govId']);
         $pspPhraseList = $helper->getPhrase('pspCard', ['paymentMethods']);
         $pspTrustly = $helper->getPhraseByMethod('pspTrustly');
-        $partPaymentInfo = $helper->getMethodInfo('partPayment');
+        $partPaymentInfo1 = $helper->getMethodInfo('partPayment');
+        $partPaymentInfo2 = $helper->getMethodInfo('partPayment', 2);
         $methods = $helper->getMethodsByPhrases();
         static::assertTrue(
             count($languageContent) &&
@@ -2470,10 +2475,11 @@ class resursBankTest extends TestCase
             $validationForEmptyGovId === 'Ange personnummer' &&
             is_array($pspPhraseList) &&
             is_array($pspTrustly) &&
-            $partPaymentInfo === 'Välj hur du vill dela upp ditt köp när fakturan kommer' &&
+            $partPaymentInfo1 === 'Betala i din takt' &&
+            $partPaymentInfo2 === 'Välj hur du vill dela upp ditt köp när fakturan kommer' &&
             count($methods) > 1
         );
-    }*/
+    }
 
     /**
      * @test
