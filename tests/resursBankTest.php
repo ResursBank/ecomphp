@@ -2833,6 +2833,7 @@ class resursBankTest extends TestCase
 
     /**
      * Specials temporary.
+     * @test
      * @throws Exception
      */
     public function afterShopOverride() {
@@ -2844,7 +2845,8 @@ class resursBankTest extends TestCase
         $this->TEST->ECOM->setBookPaymentValidation(false);
         if (!$bookSigned) {
             //$payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true, 10);
-            $this->getPreparedSimplifiedPayment('8305147715');
+            //$this->getPreparedSimplifiedPayment('8305147715');
+            $this->getPreparedSimplifiedPayment('8001010001');
             $this->TEST->ECOM->addOrderLine('Product Row Identical', 'Product Row Identical', 100, 25, 'st');
             $this->TEST->ECOM->addOrderLine('Product Row Identical', 'Product Row Identical', 100, 25, 'st');
             $this->TEST->ECOM->addOrderLine('Product Row Identical', 'Product Row Identical', 100, 25, 'st');
@@ -2853,7 +2855,7 @@ class resursBankTest extends TestCase
             $this->TEST->ECOM->addOrderLine('Product Row Identical', 'Product Row Identical', 150, 25, 'st');
             $methods = $this->TEST->ECOM->getPaymentMethods();
             $hasMethod = false;
-            $wantedMethod = 'INVOICE';
+            $wantedMethod = 'INVOICE2';
             $wantedMethodInstantSigned = true;
             foreach ($methods as $method) {
                 if ($method->id === $wantedMethod) {
