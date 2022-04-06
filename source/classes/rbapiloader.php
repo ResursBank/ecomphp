@@ -1291,7 +1291,8 @@ class ResursBank
         try {
             $this->getRegisteredEventCallback(Callback::BOOKED);
             $result = true;
-        } catch (Exception $ignoreMyException) {
+        } catch (Exception $requestException) {
+            $this->timeoutControl($requestException);
             $result = false;
         }
 
