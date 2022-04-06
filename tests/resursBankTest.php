@@ -2453,7 +2453,11 @@ class resursBankTest extends TestCase
         );
     }
 
-    /*public function getTranslationSwedish()
+    /**
+     * @throws Exception
+     * @test
+     */
+    public function getTranslationSwedish()
     {
         $helper = new Translation();
         $helper->setLanguage('sv');
@@ -2462,7 +2466,9 @@ class resursBankTest extends TestCase
         $validationForEmptyGovId = $helper->getPhrase('forEmpty', ['validation', 'govId']);
         $pspPhraseList = $helper->getPhrase('pspCard', ['paymentMethods']);
         $pspTrustly = $helper->getPhraseByMethod('pspTrustly');
-        $partPaymentInfo = $helper->getMethodInfo('partPayment');
+        $pspCard = $helper->getPhraseByMethod('pspCard');
+        $partPaymentInfo1 = $helper->getMethodInfo('partPayment');
+        $partPaymentInfo2 = $helper->getMethodInfo('partPayment', 2);
         $methods = $helper->getMethodsByPhrases();
         static::assertTrue(
             count($languageContent) &&
@@ -2470,10 +2476,12 @@ class resursBankTest extends TestCase
             $validationForEmptyGovId === 'Ange personnummer' &&
             is_array($pspPhraseList) &&
             is_array($pspTrustly) &&
-            $partPaymentInfo === 'Välj hur du vill dela upp ditt köp när fakturan kommer' &&
+            $partPaymentInfo1 === 'Betala i din takt' &&
+            $partPaymentInfo2 === 'Välj hur du vill dela upp ditt köp när fakturan kommer' &&
+            $pspCard['textInfo'] === 'Betala ditt köp med ditt VISA eller Mastercard. Efter att du bekräftat ditt köp genom att klicka på "Genomför köp" i kassan kommer du få ange dina kortuppgifter för att slutföra betalningen. Transaktionen sker via certifierad betalväxel och med SSL-kryptering vilket innebär att ingen obehörig kan se dina uppgifter. Inga kortuppgifter hanteras eller sparas av Resurs Bank. Vi accepterar inte kort som är utfärdade av en bank utanför norden.' &&
             count($methods) > 1
         );
-    }*/
+    }
 
     /**
      * @test
