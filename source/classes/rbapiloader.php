@@ -53,7 +53,6 @@ use Resursbank\Ecommerce\Types\CheckoutType;
 use Resursbank\Ecommerce\Types\Country;
 use Resursbank\Ecommerce\Types\OrderStatus;
 use Resursbank\Ecommerce\Types\OrderStatusCode;
-use ResursBank\Service\WordPress;
 use ResursException;
 use stdClass;
 use TorneLIB\Config\Flag;
