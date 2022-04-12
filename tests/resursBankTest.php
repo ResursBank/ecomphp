@@ -313,6 +313,7 @@ class resursBankTest extends TestCase
             static::markTestSkipped('SimpleXMLElement missing');
         }
 
+        $this->TEST->ECOM->setWsdlCache(false);
         $this->TEST->ECOM->getAddress($this->flowHappyCustomer);
 
         /** @var NetWrapper $lastCurlHandle */
