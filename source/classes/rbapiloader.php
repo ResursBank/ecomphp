@@ -2987,6 +2987,77 @@ class ResursBank
     }
 
     /**
+     * @param $key
+     * @param $customerType
+     * @return array
+     */
+    public function getSpecificTypeFields($key, $customerType) {
+        $return = [
+            'NATURAL' => [
+                'INVOICE' => [
+                    'government_id',
+                    'phone',
+                    'mobile',
+                    'email',
+                ],
+                'CARD' => [
+                    'government_id',
+                ],
+                'DEBIT_CARD' => [
+                    'government_id',
+                ],
+                'CREDIT_CARD' => [
+                    'government_id',
+                ],
+                'REVOLVING_CREDIT' => [
+                    'government_id',
+                    'mobile',
+                    'email',
+                ],
+                'PART_PAYMENT' => [
+                    'government_id',
+                    'phone',
+                    'mobile',
+                    'email',
+                ],
+                'undefined' => [
+                    'government_id',
+                    'phone',
+                    'mobile',
+                    'email',
+                ],
+            ],
+            'LEGAL' => [
+                'COMPINVOICE' => [
+                    'applicant_government_id',
+                    'applicant_telephone_number',
+                    'applicant_mobile_number',
+                    'applicant_email_address',
+                    'applicant_full_name',
+                    'contact_government_id',
+                ],
+                'INVOICE' => [
+                    'applicant_government_id',
+                    'applicant_telephone_number',
+                    'applicant_mobile_number',
+                    'applicant_email_address',
+                    'applicant_full_name',
+                    'contact_government_id',
+                ],
+                'undefined' => [
+                    'phone',
+                    'mobile',
+                    'email',
+                ],
+            ],
+        ];
+
+        $return = $return[$customerType][$key] ?? $return[$customerType]['undefined'];
+
+        return $return;
+    }
+
+    /**
      * Speak with webservices
      *
      * @param string $serviceName
