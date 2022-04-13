@@ -85,7 +85,7 @@ if (!defined('ECOMPHP_MODIFY_DATE')) {
 /**
  * Class ResursBank
  * @package Resursbank\RBEcomPHP
- * @version 1.3.78
+ * @version 1.3.79
  */
 class ResursBank
 {
@@ -2990,6 +2990,7 @@ class ResursBank
      * @param $key
      * @param $customerType
      * @return array
+     * @since 1.3.79
      */
     public function getSpecificTypeFields($key, $customerType) {
         $return = [
@@ -3052,6 +3053,7 @@ class ResursBank
             ],
         ];
 
+        // Running lower than PHP 7.0? Then this will fail.
         $return = $return[$customerType][$key] ?? $return[$customerType]['undefined'];
 
         return $return;
