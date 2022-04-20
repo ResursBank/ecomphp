@@ -735,7 +735,6 @@ class resursBankTest extends TestCase
     }
 
     /**
-     * @test
      * @throws Exception
      */
     public function getPaymentCached()
