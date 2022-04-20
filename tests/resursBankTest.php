@@ -2485,7 +2485,7 @@ class resursBankTest extends TestCase
     }
 
     /**
-     * @test
+     * Only run this when necessary.
      * @throws Exception
      */
     public function getTranslationByEcom()
