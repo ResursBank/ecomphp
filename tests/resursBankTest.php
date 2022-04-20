@@ -2842,7 +2842,6 @@ class resursBankTest extends TestCase
 
     /**
      * Specials temporary.
-     * @test
      * @throws Exception
      */
     public function afterShopOverride() {
