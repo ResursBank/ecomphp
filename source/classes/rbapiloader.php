@@ -85,7 +85,7 @@ if (!defined('ECOMPHP_MODIFY_DATE')) {
 /**
  * Class ResursBank
  * @package Resursbank\RBEcomPHP
- * @version 1.3.80
+ * @version 1.3.81
  */
 class ResursBank
 {
@@ -3131,6 +3131,28 @@ class ResursBank
         }
 
         return $return;
+    }
+
+    /**
+     * @param $type
+     * @return bool
+     * @since 1.3.81
+     */
+    public function isInternalMethod($type)
+    {
+        // In case of further types, they should be added here.
+        return $type !== 'PAYMENT_PROVIDER';
+    }
+
+    /**
+     * @param $specificType
+     * @param $type
+     * @return bool
+     * @since 1.3.81
+     */
+    public function isPspCard($specificType, $type)
+    {
+        return !$this->isInternalMethod($type) && strpos(strtolower($specificType), 'card') !== false;
     }
 
     /**
