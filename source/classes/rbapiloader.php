@@ -3134,12 +3134,18 @@ class ResursBank
     }
 
     /**
-     * @param $type
+     * Check whether payment method is of type Resurs Bank or if it belongs to a payment provider.
+     * @param $type If unsure, use the entire method.
      * @return bool
      * @since 1.3.81
      */
     public function isInternalMethod($type)
     {
+        // If the payment method object is set, split up properly.
+        if (is_object($type) && isset($type->type)) {
+            $type = $type->type;
+        }
+
         // In case of further types, they should be added here.
         return $type !== 'PAYMENT_PROVIDER';
     }
@@ -3152,7 +3158,12 @@ class ResursBank
      */
     public function isPspCard($specificType, $type)
     {
-        return !$this->isInternalMethod($type) && strpos(strtolower($specificType), 'card') !== false;
+        // If the payment method object is set, split up properly.
+        if (is_object($specificType) && isset($specificType->specificType, $specificType->type)) {
+            $type = $specificType->type;
+            $specificType = $specificType->specificType;
+        }
+        return !$this->isInternalMethod($type) && preg_match('/^card|card$/i', $specificType);
     }
 
     /**
