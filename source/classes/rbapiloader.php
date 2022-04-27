@@ -3167,8 +3167,8 @@ class ResursBank
     }
 
     /**
-     * @param $specificType
-     * @param $type
+     * @param mixed $specificType
+     * @param string $type
      * @return bool
      * @since 1.3.83
      */
