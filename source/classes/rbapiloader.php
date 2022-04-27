@@ -4100,6 +4100,8 @@ class ResursBank
 
     /**
      * Like getCostOfPurchaseHtml but for priceInfo instead (which is located in legalInfoLinks in getPaymentMethods).
+     * Function is built to both be capable to show information instantly on screen within a page with self built
+     * elements or, show the information based on a link/iframe so CSS won't be required.
      *
      * On multiple methods, the iframe is used by default! If fetch is false and no iframe is requested, this method
      * will instead return the URL directly to the requested.
