@@ -49,7 +49,6 @@ use TorneLIB\Model\Type\RequestMethod;
 use TorneLIB\Module\Config\WrapperConfig;
 use TorneLIB\Module\Network\NetWrapper;
 use TorneLIB\Module\Network\Wrappers\CurlWrapper;
-use TorneLIB\Module\Network\Wrappers\SoapClientWrapper;
 use TorneLIB\Utils\Generic;
 use TorneLIB\Utils\Memory;
 use function count;
@@ -313,6 +312,7 @@ class resursBankTest extends TestCase
             static::markTestSkipped('SimpleXMLElement missing');
         }
 
+        $this->TEST->ECOM->setWsdlCache(false);
         $this->TEST->ECOM->getAddress($this->flowHappyCustomer);
 
         /** @var NetWrapper $lastCurlHandle */
@@ -686,15 +686,44 @@ class resursBankTest extends TestCase
         $this->unitSetup();
         $this->TEST->ECOM->setWsdlCache(false);
         $paymentMethods = $this->TEST->ECOM->getPaymentMethods();
-        /**
-         * @var $handle SoapClientWrapper
-         */
+
+        $pspCards = [];
+        $internal = [];
+        $external = [];
+        foreach ($paymentMethods as $method) {
+            if ($this->TEST->ECOM->isPspCard($method, null)) {
+                $pspCards[] = $method;
+            }
+            if ($this->TEST->ECOM->isInternalMethod($method)) {
+                $internal[] = $method;
+            } else {
+                $external[] = $method;
+            }
+        }
+
+        // Assertions belongs to very specific methods, meaning if we do not use an AU2XX account, this test
+        // can be skipped.
+        if (count($paymentMethods) > 3) {
+            static::assertTrue(
+                count($paymentMethods) > 1 &&
+                count($pspCards) >= 2 &&
+                count($internal) >= 6 &&
+                count($external) >= 3
+            );
+        } else {
+            if (count($paymentMethods)>1) {
+                static::markTestSkipped(
+                    sprintf('Not enough payment methods (%d) to run full test.', count($paymentMethods))
+                );
+            } else {
+                static::fail('No payment methods found.');
+            }
+        }
+
         /*$handle = $this->TEST->ECOM->getCurlHandle();
         $headers = $handle->getLastRequestHeaders();
         $request = $handle->getLastRequest();
         $fullRequest = $headers . $request;*/
-
-        static::assertTrue(count($paymentMethods) > 1);
     }
 
     /**
@@ -734,7 +763,6 @@ class resursBankTest extends TestCase
     }
 
     /**
-     * @test
      * @throws Exception
      */
     public function getPaymentCached()
@@ -1552,7 +1580,8 @@ class resursBankTest extends TestCase
      * @param $govid
      * @throws ResursException
      */
-    public function getPreparedSimplifiedPayment($govId) {
+    public function getPreparedSimplifiedPayment($govId)
+    {
         if ($this->getTimeoutDetected()) {
             return;
         }
@@ -1861,8 +1890,8 @@ class resursBankTest extends TestCase
     }
 
     /**
+     * isDebitable may fail when wrong account are used and bookSignedPayment is necessary to run.
      * @throws Exception
-     * @test
      */
     public function isDebitable()
     {
@@ -1871,6 +1900,8 @@ class resursBankTest extends TestCase
         }
         $this->unitSetup();
         $payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true);
+        sleep(3);
+        print_r($payment);
         static::assertTrue($this->TEST->ECOM->canDebit($payment->paymentId));
     }
 
@@ -2484,7 +2515,7 @@ class resursBankTest extends TestCase
     }
 
     /**
-     * @test
+     * Only run this when necessary.
      * @throws Exception
      */
     public function getTranslationByEcom()
@@ -2843,7 +2874,8 @@ class resursBankTest extends TestCase
      * Specials temporary.
      * @throws Exception
      */
-    public function afterShopOverride() {
+    public function afterShopOverride()
+    {
         $bookSigned = false;
         $isFinalized = false;
         $paymentid = '20220228084152-2309149789';
@@ -2852,7 +2884,8 @@ class resursBankTest extends TestCase
         $this->TEST->ECOM->setBookPaymentValidation(false);
         if (!$bookSigned) {
             //$payment = $this->generateSimpleSimplifiedInvoiceQuantityOrder('8305147715', true, 10);
-            $this->getPreparedSimplifiedPayment('8305147715');
+            //$this->getPreparedSimplifiedPayment('8305147715');
+            $this->getPreparedSimplifiedPayment('8001010001');
             $this->TEST->ECOM->addOrderLine('Product Row Identical', 'Product Row Identical', 100, 25, 'st');
             $this->TEST->ECOM->addOrderLine('Product Row Identical', 'Product Row Identical', 100, 25, 'st');
             $this->TEST->ECOM->addOrderLine('Product Row Identical', 'Product Row Identical', 100, 25, 'st');
@@ -2861,7 +2894,7 @@ class resursBankTest extends TestCase
             $this->TEST->ECOM->addOrderLine('Product Row Identical', 'Product Row Identical', 150, 25, 'st');
             $methods = $this->TEST->ECOM->getPaymentMethods();
             $hasMethod = false;
-            $wantedMethod = 'INVOICE';
+            $wantedMethod = 'INVOICE2';
             $wantedMethodInstantSigned = true;
             foreach ($methods as $method) {
                 if ($method->id === $wantedMethod) {
@@ -2893,7 +2926,7 @@ class resursBankTest extends TestCase
                 try {
                     $this->TEST->ECOM->finalizePayment($paymentid);
                 } catch (Exception $e) {
-                    echo "Error: " . $e->getMessage() ."\n";
+                    echo "Error: " . $e->getMessage() . "\n";
                 }
                 sleep(2);
                 echo "DONE!\n";
@@ -3112,7 +3145,7 @@ class resursBankTest extends TestCase
                 $databaseEmulatedToken->getAccessToken(),
                 $databaseEmulatedToken->getTokenType(),
                 $databaseEmulatedToken->getExpire(),
-                time()-86400
+                time() - 86400
             );
 
         $stores = $currentMerchant->getStores();

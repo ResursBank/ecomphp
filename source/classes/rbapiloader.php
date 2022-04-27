@@ -85,7 +85,7 @@ if (!defined('ECOMPHP_MODIFY_DATE')) {
 /**
  * Class ResursBank
  * @package Resursbank\RBEcomPHP
- * @version 1.3.77
+ * @version 1.3.81
  */
 class ResursBank
 {
@@ -1291,7 +1291,8 @@ class ResursBank
         try {
             $this->getRegisteredEventCallback(Callback::BOOKED);
             $result = true;
-        } catch (Exception $ignoreMyException) {
+        } catch (Exception $requestException) {
+            $this->timeoutControl($requestException);
             $result = false;
         }
 
@@ -2986,6 +2987,17 @@ class ResursBank
     }
 
     /**
+     * @param $methodSpecificTypeKey
+     * @param $customerType
+     * @return array
+     * @since 1.3.79
+     * @deprecated Discovered that getSimplifiedRequiredFields is already in place.
+     */
+    public function getSpecificTypeFields($methodSpecificTypeKey, $customerType) {
+        return $this->getSimplifiedRequiredFields($methodSpecificTypeKey, $customerType);
+    }
+
+    /**
      * Speak with webservices
      *
      * @param string $serviceName
@@ -3119,6 +3131,39 @@ class ResursBank
         }
 
         return $return;
+    }
+
+    /**
+     * Check whether payment method is of type Resurs Bank or if it belongs to a payment provider.
+     * @param $type If unsure, use the entire method.
+     * @return bool
+     * @since 1.3.81
+     */
+    public function isInternalMethod($type)
+    {
+        // If the payment method object is set, split up properly.
+        if (is_object($type) && isset($type->type)) {
+            $type = $type->type;
+        }
+
+        // In case of further types, they should be added here.
+        return $type !== 'PAYMENT_PROVIDER';
+    }
+
+    /**
+     * @param $specificType
+     * @param $type
+     * @return bool
+     * @since 1.3.81
+     */
+    public function isPspCard($specificType, $type)
+    {
+        // If the payment method object is set, split up properly.
+        if (is_object($specificType) && isset($specificType->specificType, $specificType->type)) {
+            $type = $specificType->type;
+            $specificType = $specificType->specificType;
+        }
+        return !$this->isInternalMethod($type) && preg_match('/^card|card$/i', $specificType);
     }
 
     /**
@@ -4088,6 +4133,8 @@ class ResursBank
 
     /**
      * Like getCostOfPurchaseHtml but for priceInfo instead (which is located in legalInfoLinks in getPaymentMethods).
+     * Function is built to both be capable to show information instantly on screen within a page with self built
+     * elements or, show the information based on a link/iframe so CSS won't be required.
      *
      * On multiple methods, the iframe is used by default! If fetch is false and no iframe is requested, this method
      * will instead return the URL directly to the requested.
@@ -4219,38 +4266,21 @@ class ResursBank
     }
 
     /**
-     * @param $key
+     * @param string $methodSpecificType
      * @param string $customerType
-     * @return mixed
-     */
-    public function getSimplifiedRequiredFields($key, $customerType = 'NATURAL')
-    {
-        $fields = $this->getSimplifiedFieldArray($customerType);
-
-        return !empty($key) && isset($fields[$key]) ? $fields[$key] : $fields['undefined'];
-    }
-
-    /**
-     * @param $customerType
-     * @param null $paymentMethod
      * @return array
+     * @noinspection ParameterDefaultValueIsNotNullInspection
+     * @since Good old times.
      */
-    private function getSimplifiedFieldArray($customerType)
+    public function getSimplifiedRequiredFields($methodSpecificType, $customerType = 'NATURAL')
     {
-        $fields = [
+        $return = [
             'NATURAL' => [
                 'INVOICE' => [
                     'government_id',
                     'phone',
                     'mobile',
                     'email',
-                ],
-                'INVOICE_LEGAL' => [
-                    'government_id',
-                    'phone',
-                    'mobile',
-                    'email',
-                    'government_id_contact',
                 ],
                 'CARD' => [
                     'government_id',
@@ -4280,24 +4310,24 @@ class ResursBank
                 ],
             ],
             'LEGAL' => [
+                'INVOICE' => [
+                    'applicant_government_id',
+                    'applicant_telephone_number',
+                    'applicant_mobile_number',
+                    'applicant_email_address',
+                    'applicant_full_name',
+                    'contact_government_id',
+                ],
                 'undefined' => [
-                    'applicant-government-id',
-                    'applicant-telephone-number',
-                    'applicant-mobile-number',
-                    'applicant-email-address',
-                    'applicant-full-name',
-                    'contact-government-id',
+                    'phone',
+                    'mobile',
+                    'email',
                 ],
             ],
         ];
 
-        switch ($customerType) {
-            case 'LEGAL';
-                $return = $fields['LEGAL'];
-                break;
-            default:
-                $return = $fields['NATURAL'];
-        }
+        // Running lower than PHP 7.0? Then this will fail.
+        $return = $return[$customerType][$methodSpecificType] ?? $return[$customerType]['undefined'];
 
         return $return;
     }
