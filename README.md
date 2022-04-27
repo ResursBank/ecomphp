@@ -4,6 +4,10 @@ Resurs EComPHP Gateway for Resurs Bank shop flows, with functionality enough to 
 
 As EComPHP is continuously developed, you should take a look at our bitbucket repo to keep this information updated. It can be found at https://bitbucket.org/resursbankplugins/resurs-ecomphp
 
+## Why are there big jumps in the version numbering?
+
+From time to time, we create unofficial internal hotfixes for which bypasses the regular task creation. We should really consider adding those updates to tasks (by reviewing commits), but sometimes it's also very much about spellchecking and docblock adjustments. They are rarely connected to tasks. The gaps are filled in with "- x.x.x" where the dash stands for "up to this version, those changes has been made". 
+
 ## Regular requirements, dependencies and information
 
 * EComPHP 1.3 was written for PHP 5.6, but there's no longer any guarantee for it to work in legacy systems. Make sure to upgrade.
