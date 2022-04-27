@@ -85,7 +85,7 @@ if (!defined('ECOMPHP_MODIFY_DATE')) {
 /**
  * Class ResursBank
  * @package Resursbank\RBEcomPHP
- * @version 1.3.80
+ * @version 1.3.81
  */
 class ResursBank
 {
@@ -3131,6 +3131,39 @@ class ResursBank
         }
 
         return $return;
+    }
+
+    /**
+     * Check whether payment method is of type Resurs Bank or if it belongs to a payment provider.
+     * @param $type If unsure, use the entire method.
+     * @return bool
+     * @since 1.3.81
+     */
+    public function isInternalMethod($type)
+    {
+        // If the payment method object is set, split up properly.
+        if (is_object($type) && isset($type->type)) {
+            $type = $type->type;
+        }
+
+        // In case of further types, they should be added here.
+        return $type !== 'PAYMENT_PROVIDER';
+    }
+
+    /**
+     * @param $specificType
+     * @param $type
+     * @return bool
+     * @since 1.3.81
+     */
+    public function isPspCard($specificType, $type)
+    {
+        // If the payment method object is set, split up properly.
+        if (is_object($specificType) && isset($specificType->specificType, $specificType->type)) {
+            $type = $specificType->type;
+            $specificType = $specificType->specificType;
+        }
+        return !$this->isInternalMethod($type) && preg_match('/^card|card$/i', $specificType);
     }
 
     /**
