@@ -166,8 +166,12 @@ class Translation
                 if (is_array($useLanguageArray) &&
                     (isset($useLanguageArray[$keyString]) || isset($useLanguageArray[$keyStringVariant]))
                 ) {
-                    $return = isset($useLanguageArray[$keyString]) ? $useLanguageArray[$keyString] :
-                        isset($useLanguageArray[$keyStringVariant]) ? $useLanguageArray[$keyStringVariant] : '';
+                    // Either one of these should be returned since it has landed here properly.
+                    if (isset($useLanguageArray[$keyString])) {
+                        $return = $useLanguageArray[$keyString];
+                    } elseif (isset($useLanguageArray[$keyStringVariant])) {
+                        $return = $useLanguageArray[$keyStringVariant];
+                    }
                     break;
                 }
                 foreach ($translationItem as $translationCategory => $translationCategoryItem) {
