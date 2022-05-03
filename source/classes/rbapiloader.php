@@ -74,7 +74,7 @@ if (!defined('ECOMPHP_VERSION')) {
     define('ECOMPHP_VERSION', (new Generic())->getVersionByAny(__FILE__, 3, ResursBank::class));
 }
 if (!defined('ECOMPHP_MODIFY_DATE')) {
-    define('ECOMPHP_MODIFY_DATE', '20220228');
+    define('ECOMPHP_MODIFY_DATE', '20220403');
 }
 
 /**
@@ -4311,6 +4311,14 @@ class ResursBank
             ],
             'LEGAL' => [
                 'INVOICE' => [
+                    'applicant_government_id',
+                    'applicant_telephone_number',
+                    'applicant_mobile_number',
+                    'applicant_email_address',
+                    'applicant_full_name',
+                    'contact_government_id',
+                ],
+                'COMPINVOICE' => [
                     'applicant_government_id',
                     'applicant_telephone_number',
                     'applicant_mobile_number',
