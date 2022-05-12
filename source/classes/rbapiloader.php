@@ -85,7 +85,7 @@ if (!defined('ECOMPHP_MODIFY_DATE')) {
 /**
  * Class ResursBank
  * @package Resursbank\RBEcomPHP
- * @version 1.3.83
+ * @version 1.3.84
  */
 class ResursBank
 {
@@ -3179,6 +3179,21 @@ class ResursBank
             $specificType = $specificType->specificType;
         }
         return $type === 'PAYMENT_PROVIDER' && $specificType === 'INTERNET';
+    }
+
+    /**
+     * @param mixed $specificType
+     * @param string $type
+     * @return bool
+     * @since 1.3.83
+     */
+    public function isSwish($specificType, $type) {
+        // If the payment method object is set, split up properly.
+        if (is_object($specificType) && isset($specificType->specificType, $specificType->type)) {
+            $type = $specificType->type;
+            $specificType = $specificType->specificType;
+        }
+        return $type === 'PAYMENT_PROVIDER' && $specificType === 'SWISH';
     }
 
     /**

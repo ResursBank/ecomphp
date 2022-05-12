@@ -711,7 +711,7 @@ class resursBankTest extends TestCase
                 count($external) >= 3
             );
         } else {
-            if (count($paymentMethods)>1) {
+            if (count($paymentMethods) > 1) {
                 static::markTestSkipped(
                     sprintf('Not enough payment methods (%d) to run full test.', count($paymentMethods))
                 );
