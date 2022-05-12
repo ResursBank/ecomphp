@@ -3182,6 +3182,21 @@ class ResursBank
     }
 
     /**
+     * @param mixed $specificType
+     * @param string $type
+     * @return bool
+     * @since 1.3.84
+     */
+    public function isSwish($specificType, $type) {
+        // If the payment method object is set, split up properly.
+        if (is_object($specificType) && isset($specificType->specificType, $specificType->type)) {
+            $type = $specificType->type;
+            $specificType = $specificType->specificType;
+        }
+        return $type === 'PAYMENT_PROVIDER' && $specificType === 'SWISH';
+    }
+
+    /**
      * List payment methods
      *
      * Retrieves detailed information on the payment methods available to the representative. Parameters (customerType,
