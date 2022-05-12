@@ -3185,7 +3185,7 @@ class ResursBank
      * @param mixed $specificType
      * @param string $type
      * @return bool
-     * @since 1.3.83
+     * @since 1.3.84
      */
     public function isSwish($specificType, $type) {
         // If the payment method object is set, split up properly.
