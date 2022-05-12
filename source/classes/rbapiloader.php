@@ -85,7 +85,7 @@ if (!defined('ECOMPHP_MODIFY_DATE')) {
 /**
  * Class ResursBank
  * @package Resursbank\RBEcomPHP
- * @version 1.3.84
+ * @version 1.3.85
  */
 class ResursBank
 {
@@ -3185,7 +3185,7 @@ class ResursBank
      * @param mixed $specificType
      * @param string $type
      * @return bool
-     * @since 1.3.84
+     * @since 1.3.85
      */
     public function isSwish($specificType, $type) {
         // If the payment method object is set, split up properly.
