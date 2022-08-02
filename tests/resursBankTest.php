@@ -3198,6 +3198,7 @@ class resursBankTest extends TestCase
                 $id = $method->getId();
                 $description = $method->getDescription();
                 $max = $method->getMaxPurchaseLimit();
+                $actions = $method->getSupportedActions();
             }
 
             static::assertTrue(
@@ -3205,6 +3206,7 @@ class resursBankTest extends TestCase
                 count((array)$paymentMethodsList) > 0 &&
                 !empty($id) &&
                 !empty($description) &&
+                count($actions) &&
                 $max > 0
             );
         } catch (Exception $e) {

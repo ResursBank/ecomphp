@@ -87,10 +87,12 @@ class MerchantApi extends MerchantApiConnector
         $return = '';
         $storeList = $this->getStores();
 
-        foreach ($storeList as $store) {
-            if ((int)$store->nationalStoreId === (int)$idNum || $store->id === $idNum) {
-                $return = $store->id;
-                break;
+        if (is_array($storeList)) {
+            foreach ($storeList as $store) {
+                if ((int)$store->nationalStoreId === (int)$idNum || $store->id === $idNum) {
+                    $return = $store->id;
+                    break;
+                }
             }
         }
 
@@ -107,6 +109,7 @@ class MerchantApi extends MerchantApiConnector
      */
     public function getStores(): array
     {
-        return (array)$this->getMerchantRequest('stores')->content;
+        $storesArray = $this->getMerchantRequest('stores');
+        return (array)$storesArray->content;
     }
 }
