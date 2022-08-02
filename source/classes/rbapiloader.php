@@ -4037,6 +4037,8 @@ class ResursBank
     }
 
     /**
+     * Rest based request for getPayment. Stopped use it from 1.3.45, but is not set to deprecated.
+     *
      * @param string $paymentId
      * @return stdClass
      * @throws ResursException
@@ -4044,7 +4046,6 @@ class ResursBank
      * @since 1.3.13
      * @since 1.1.40
      * @since 1.0.40
-     * @deprecated Since 1.3.45, use the auto selective method (getPayment) instead.
      */
     public function getPaymentByRest($paymentId = '')
     {
