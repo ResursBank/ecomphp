@@ -198,6 +198,7 @@ class resursBankTest extends TestCase
         try {
             $methods = $this->TEST->getCredentialControl();
         } catch (Exception $e) {
+            $methods = [];
             $this->markTimeout($e);
         }
 
@@ -1544,6 +1545,11 @@ class resursBankTest extends TestCase
             $this->TEST->ECOM->finalizePayment($paymentId);
         } catch (Exception $e) {
             $this->bailOut($e);
+        }
+
+        if (!isset($paymentId)) {
+            static::markTestSkipped('$paymentId was never set.');
+            return;
         }
 
         $wantedResult = $this->getPaymentStatusQuantity(

@@ -113,7 +113,6 @@ class MerchantApi extends MerchantApiConnector
      */
     public function getStores(): array
     {
-        $storesArray = $this->getMerchantRequest('stores');
-        return (array)$storesArray->content;
+        return (array)$this->getMerchantRequest('stores')->content;
     }
 }
