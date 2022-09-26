@@ -6189,7 +6189,7 @@ class ResursBank
             try {
                 $errorValidatePayment = $this->getPayment($paymentId);
                 $return = [
-                    'paymentId' => $paymentId,,
+                    'paymentId' => $paymentId,
                     'bookPaymentStatus' => $errorValidatePayment->status,
                     'signingUrl' => '',
                     'approvedAmount' => $errorValidatePayment->limit,
