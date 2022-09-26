@@ -6185,6 +6185,7 @@ class ResursBank
         try {
             $return = $this->postService('bookSignedPayment', ['paymentId' => $paymentId]);
         } catch (Exception $e) {
+            // ECOMPHP-453
             // Protective layer for false sign-failures from Resurs. This kind of exceptions may occur on some
             // payments where there is a delay between the booking customer and the final booked signing.
             // This is more common on SWISH payments where the signing occurs several hours after the
