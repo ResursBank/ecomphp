@@ -5259,8 +5259,8 @@ class ResursBank
             $cardInfo = isset($this->Payload['card']) ? $this->Payload['card'] : [];
             if ((isset($cardInfo['cardNumber']) && empty($cardInfo['cardNumber'])) || !isset($cardInfo['cardNumber'])) {
                 if ((isset($cardInfo['amount']) && empty($cardInfo['amount'])) || !isset($cardInfo['amount'])) {
-                    // Adding the exact total amount as we do not rule of exchange rates. For example, adding 500
-                    // extra to the total amount in sweden will work, but will on the other hand be devastating for
+                    // Adding the exact total amount, as we do not rule of exchange rates. For example, adding 500
+                    // extra to the total amount in Sweden will work, but will on the other hand be devastating for
                     // countries using euro.
                     $this->Payload['card']['amount'] = $this->Payload['orderData']['totalAmount'];
                 }
@@ -6182,7 +6182,37 @@ class ResursBank
      */
     public function bookSignedPayment($paymentId = '')
     {
-        return $this->postService('bookSignedPayment', ['paymentId' => $paymentId]);
+        try {
+            $return = $this->postService('bookSignedPayment', ['paymentId' => $paymentId]);
+        } catch (Exception $e) {
+            // ECOMPHP-453
+            // Protective layer for false sign-failures from Resurs. This kind of exceptions may occur on some
+            // payments where there is a delay between the booking customer and the final booked signing.
+            // This is more common on SWISH payments where the signing occurs several hours after the
+            // planned order placement, where sessions times, the payment is still valid but Resurs - during
+            // bookSign - can no longer find the valid order.
+            try {
+                $this->timeoutControl($e);
+
+                // Note: We can not handle timeout checks in this section as it may break the rest of the flow.
+
+                $errorValidatePayment = $this->getPayment($paymentId);
+                $useStatus = $errorValidatePayment->frozen || $errorValidatePayment->fraud ? 'FROZEN' : 'BOOKED';
+                if ($this->canCredit($errorValidatePayment) && $this->getIsDebited()) {
+                    $useStatus = 'FINALIZED';
+                }
+                $return = new stdClass();
+                $return->paymentId = $paymentId;
+                $return->bookPaymentStatus = $useStatus;
+                $return->signingUrl = null;
+                $return->approvedAmount = $errorValidatePayment->limit;
+                $return->customer= isset($errorValidatePayment->customer) ? $errorValidatePayment->customer : null;
+            } catch (Exception $getPaymentException) {
+                throw $e;
+            }
+        }
+
+        return $return;
     }
 
     /**
