@@ -6192,6 +6192,8 @@ class ResursBank
             // planned order placement, where sessions times, the payment is still valid but Resurs - during
             // bookSign - can no longer find the valid order.
             try {
+                $this->timeoutControl($e);
+
                 // Note: We can not handle timeout checks in this section as it may break the rest of the flow.
 
                 $errorValidatePayment = $this->getPayment($paymentId);
