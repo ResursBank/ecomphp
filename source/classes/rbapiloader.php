@@ -6188,6 +6188,7 @@ class ResursBank
     /**
      * @return string
      * @throws Exception
+     * @noinspection PhpDeprecationInspection
      */
     public function getOrderLineHash()
     {
