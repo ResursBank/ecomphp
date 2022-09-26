@@ -6185,13 +6185,14 @@ class ResursBank
         try {
             $return = $this->postService('bookSignedPayment', ['paymentId' => $paymentId]);
         } catch (Exception $e) {
-            $this->handlePostErrors($e);
+            // We can not handle timeout checks in this section as it may break the rest of the flow.
             try {
                 $errorValidatePayment = $this->getPayment($paymentId);
+                $useStatus = $errorValidatePayment->frozen || $errorValidatePayment->fraud ? 'FROZEN' : 'BOOKED';
                 $return = [
                     'paymentId' => $paymentId,
-                    'bookPaymentStatus' => $errorValidatePayment->status,
-                    'signingUrl' => '',
+                    'bookPaymentStatus' => $useStatus,
+                    'signingUrl' => null,
                     'approvedAmount' => $errorValidatePayment->limit,
                     'customer' => isset($errorValidatePayment->customer) ? $errorValidatePayment->customer: null
                 ];
