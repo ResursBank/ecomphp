@@ -32,9 +32,6 @@ use Exception;
 use PHPUnit\Framework\TestCase;
 use ReflectionException;
 use RESURS_EXCEPTIONS;
-use Resursbank\Ecommerce\Service\Merchant\MerchantApi;
-use Resursbank\Ecommerce\Service\Merchant\Model\Method;
-use Resursbank\Ecommerce\Service\Merchant\ResursToken;
 use Resursbank\Ecommerce\Service\Translation;
 use Resursbank\Ecommerce\Types\Callback;
 use Resursbank\Ecommerce\Types\OrderStatus;
@@ -74,12 +71,6 @@ class resursBankTest extends TestCase
      * @var bool
      */
     protected $useMerchant = true;
-
-    /**
-     * Bearer token "storage". Using this as the database.
-     * @var string
-     */
-    protected $merchantBearerToken = '';
 
     // Defaults.
     private $username = 'ecomphpPipelineTest';
@@ -154,35 +145,31 @@ class resursBankTest extends TestCase
     }
 
     /**
-     * Check if the initial test has failed due timeouts. This checker has only effect on the pipelines.
-     *
-     * @return bool
+     * Has environment file? Used for protecting unique merchant API secrets/tokens.
+     * If exists, read it and generate env()-data.
      */
-    private function getTimeoutDetected()
+    private function hasEnv()
     {
-        $timeoutDetected = Flag::getFlag('TIMEOUT_DETECTED');
-        if ($timeoutDetected) {
-            $this->skipTimeoutTest();
+        $return = false;
+        if (file_exists(__DIR__ . '/.env')) {
+            $return = true;
+            $lines = file(__DIR__ . '/.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            foreach ($lines as $line) {
+                if (strpos(trim($line), '#') === 0) {
+                    continue;
+                }
+                [$name, $value] = explode('=', $line, 2);
+                $name = trim($name);
+                $value = trim($value);
+                if (!array_key_exists($name, $_SERVER) && !array_key_exists($name, $_ENV)) {
+                    putenv(sprintf('%s=%s', $name, $value));
+                    $_ENV[$name] = $value;
+                    $_SERVER[$name] = $value;
+                }
+            }
         }
-        return $timeoutDetected;
-    }
 
-    /**
-     * Just mark the test incomplete on timeouts.
-     */
-    private function skipTimeoutTest()
-    {
-        static::fail('API timeouts detected. We will probably not be able to complete this test suite.');
-    }
-
-    /**
-     * @param $e
-     */
-    private function markTimeout($e)
-    {
-        if ($e->getCode() === 28 || $e->getCode() === Constants::LIB_NETCURL_SOAP_TIMEOUT) {
-            Flag::setFlag('TIMEOUT_DETECTED', true);
-        }
+        return $return;
     }
 
     /**
@@ -207,6 +194,38 @@ class resursBankTest extends TestCase
         }
 
         static::assertTrue((count($methods) > 0));
+    }
+
+    /**
+     * @param $e
+     */
+    private function markTimeout($e)
+    {
+        if ($e->getCode() === 28 || $e->getCode() === Constants::LIB_NETCURL_SOAP_TIMEOUT) {
+            Flag::setFlag('TIMEOUT_DETECTED', true);
+        }
+    }
+
+    /**
+     * Check if the initial test has failed due timeouts. This checker has only effect on the pipelines.
+     *
+     * @return bool
+     */
+    private function getTimeoutDetected()
+    {
+        $timeoutDetected = Flag::getFlag('TIMEOUT_DETECTED');
+        if ($timeoutDetected) {
+            $this->skipTimeoutTest();
+        }
+        return $timeoutDetected;
+    }
+
+    /**
+     * Just mark the test incomplete on timeouts.
+     */
+    private function skipTimeoutTest()
+    {
+        static::fail('API timeouts detected. We will probably not be able to complete this test suite.');
     }
 
     /**
@@ -327,14 +346,31 @@ class resursBankTest extends TestCase
 
     /**
      * @test
-     * @testdox Direct test - Test adding order lines via the library and extract correct data
+     * @testdox Direct test - Basic getAddressTest with caching
+     *
+     * @param bool $noAssert
+     *
+     * @return array|mixed|null
+     * @throws Exception
+     * @noinspection ParameterDefaultValueIsNotNullInspection
      */
-    public function addOrderLine()
+    public function getAddress($noAssert = false)
     {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
+
         $this->unitSetup();
-        $this->TEST->ECOM->addOrderLine('Product-1337', 'One simple orderline', 800, 25);
-        $orderLines = $this->TEST->ECOM->getOrderLines();
-        static::assertTrue(count($orderLines) > 0 && $orderLines[0]['artNo'] == 'Product-1337');
+        $happyCustomer = $this->TEST->ECOM->getAddress($this->flowHappyCustomer);
+        $this->TEST->share('happyCustomer', $happyCustomer, false);
+        if (!$noAssert) {
+            // Call to undefined function mb_strpos() with assertContains in PHP 7.3
+            static::assertTrue(
+                preg_match('/' . $this->flowHappyCustomerName . '/i', $happyCustomer->fullName) ? true : false
+            );
+        }
+
+        return $happyCustomer;
     }
 
     /**
@@ -354,6 +390,18 @@ class resursBankTest extends TestCase
         $metaKey = $this->TEST->ECOM->getMetaData(null, true, true);
 
         static::assertTrue(count($meta['payloadMetaData']) > 0 && count($metaKey['payloadMetaData']));
+    }
+
+    /**
+     * @test
+     * @testdox Direct test - Test adding order lines via the library and extract correct data
+     */
+    public function addOrderLine()
+    {
+        $this->unitSetup();
+        $this->TEST->ECOM->addOrderLine('Product-1337', 'One simple orderline', 800, 25);
+        $orderLines = $this->TEST->ECOM->getOrderLines();
+        static::assertTrue(count($orderLines) > 0 && $orderLines[0]['artNo'] == 'Product-1337');
     }
 
     /**
@@ -543,35 +591,6 @@ class resursBankTest extends TestCase
         }
 
         return null;
-    }
-
-    /**
-     * @test
-     * @testdox Direct test - Basic getAddressTest with caching
-     *
-     * @param bool $noAssert
-     *
-     * @return array|mixed|null
-     * @throws Exception
-     * @noinspection ParameterDefaultValueIsNotNullInspection
-     */
-    public function getAddress($noAssert = false)
-    {
-        if ($this->getTimeoutDetected()) {
-            return;
-        }
-
-        $this->unitSetup();
-        $happyCustomer = $this->TEST->ECOM->getAddress($this->flowHappyCustomer);
-        $this->TEST->share('happyCustomer', $happyCustomer, false);
-        if (!$noAssert) {
-            // Call to undefined function mb_strpos() with assertContains in PHP 7.3
-            static::assertTrue(
-                preg_match('/' . $this->flowHappyCustomerName . '/i', $happyCustomer->fullName) ? true : false
-            );
-        }
-
-        return $happyCustomer;
     }
 
     /**
@@ -1210,82 +1229,19 @@ class resursBankTest extends TestCase
 
     /**
      * @test
-     * @noinspection PhpUnitTestsInspection
-     */
-    public function returnCodes()
-    {
-        if ($this->getTimeoutDetected()) {
-            return;
-        }
-        $this->unitSetup();
-
-        static::assertTrue(
-            $this->TEST->ECOM->getOrderStatusStringByReturnCode(
-                OrderStatus::CREDITED
-            ) === 'credit'
-        );
-
-        OrderStatusCode::setReturnString(
-            OrderStatus::CREDITED,
-            'avbruten'
-        );
-
-        static::assertTrue(
-            $this->TEST->ECOM->getOrderStatusStringByReturnCode(
-                OrderStatus::CREDITED
-            ) === 'avbruten'
-        );
-
-        OrderStatusCode::setReturnString(
-            [
-                OrderStatus::ANNULLED => 'annullerad',
-            ]
-        );
-
-        static::assertTrue(
-            $this->TEST->ECOM->getOrderStatusStringByReturnCode(
-                RESURS_PAYMENT_STATUS_RETURNCODES::ANNULLED
-            ) === 'annullerad'
-        );
-    }
-
-    /**
-     * @test
      * @throws Exception
      */
-    public function unregisterCallbacksViaRest()
+    public function getCallbacksByRest()
     {
         if ($this->getTimeoutDetected()) {
             return;
         }
-        if (!$this->allowVersion()) {
-            static::markTestSkipped(
-                sprintf(
-                    'Special test limited to one PHP version (%s) detected. ' .
-                    'This is the wrong version (%s), so it is being skipped.',
-                    isset($_ENV['standalone_ecom']) ? $_ENV['standalone_ecom'] : 'Detection failed',
-                    PHP_VERSION
-                )
-            );
-            return;
-        }
-
         $this->setRegisterCallback(true);
-
-        try {
-            $this->TEST->ECOM->unregisterEventCallback(255, true);
-        } catch (Exception $e) {
-            $this->bailOut($e);
-        }
-        $callbacks = $this->TEST->ECOM->getRegisteredEventCallback(255);
-        if (is_array($callbacks) && count($callbacks)) {
-            static::fail(
-                'unregisterCallbacks is currently not working for MP accounts. If this test runs with such ' .
-                'credential, this failure is natural.'
-            );
-        } else {
-            static::assertTrue((is_array($callbacks) && !count($callbacks)));
-        }
+        $start = microtime(true);
+        $callbackList = $this->TEST->ECOM->getCallBacksByRest(true);
+        $end = microtime(true);
+        $diff = $end - $start;
+        static::assertGreaterThan(1, count($callbackList), 'Time diff is ' . $diff);
     }
 
     /**
@@ -1397,6 +1353,86 @@ class resursBankTest extends TestCase
 
         if (!$noAssert) {
             static::assertSame($cbCount, 5);
+        }
+    }
+
+    /**
+     * @test
+     * @noinspection PhpUnitTestsInspection
+     */
+    public function returnCodes()
+    {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
+        $this->unitSetup();
+
+        static::assertTrue(
+            $this->TEST->ECOM->getOrderStatusStringByReturnCode(
+                OrderStatus::CREDITED
+            ) === 'credit'
+        );
+
+        OrderStatusCode::setReturnString(
+            OrderStatus::CREDITED,
+            'avbruten'
+        );
+
+        static::assertTrue(
+            $this->TEST->ECOM->getOrderStatusStringByReturnCode(
+                OrderStatus::CREDITED
+            ) === 'avbruten'
+        );
+
+        OrderStatusCode::setReturnString(
+            [
+                OrderStatus::ANNULLED => 'annullerad',
+            ]
+        );
+
+        static::assertTrue(
+            $this->TEST->ECOM->getOrderStatusStringByReturnCode(
+                RESURS_PAYMENT_STATUS_RETURNCODES::ANNULLED
+            ) === 'annullerad'
+        );
+    }
+
+    /**
+     * @test
+     * @throws Exception
+     */
+    public function unregisterCallbacksViaRest()
+    {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
+        if (!$this->allowVersion()) {
+            static::markTestSkipped(
+                sprintf(
+                    'Special test limited to one PHP version (%s) detected. ' .
+                    'This is the wrong version (%s), so it is being skipped.',
+                    isset($_ENV['standalone_ecom']) ? $_ENV['standalone_ecom'] : 'Detection failed',
+                    PHP_VERSION
+                )
+            );
+            return;
+        }
+
+        $this->setRegisterCallback(true);
+
+        try {
+            $this->TEST->ECOM->unregisterEventCallback(255, true);
+        } catch (Exception $e) {
+            $this->bailOut($e);
+        }
+        $callbacks = $this->TEST->ECOM->getRegisteredEventCallback(255);
+        if (is_array($callbacks) && count($callbacks)) {
+            static::fail(
+                'unregisterCallbacks is currently not working for MP accounts. If this test runs with such ' .
+                'credential, this failure is natural.'
+            );
+        } else {
+            static::assertTrue((is_array($callbacks) && !count($callbacks)));
         }
     }
 
@@ -1583,24 +1619,6 @@ class resursBankTest extends TestCase
     }
 
     /**
-     * @param $govid
-     * @throws ResursException
-     */
-    public function getPreparedSimplifiedPayment($govId)
-    {
-        if ($this->getTimeoutDetected()) {
-            return;
-        }
-        $this->unitSetup();
-        $customerData = $this->getHappyCustomerData();
-        $this->TEST->ECOM->setBillingByGetAddress($customerData);
-        $this->TEST->ECOM->setCustomer($govId, '0808080808', '0707070707', 'test@test.com', 'NATURAL');
-        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
-        $this->TEST->ECOM->setMetaData('metaKeyTestTime', time());
-        $this->TEST->ECOM->setMetaData('metaKeyTestMicroTime', microtime(true));
-    }
-
-    /**
      * @test
      *
      * @param string $govId
@@ -1651,6 +1669,24 @@ class resursBankTest extends TestCase
         $response = $this->TEST->ECOM->createPayment($this->getMethodId());
 
         return $response;
+    }
+
+    /**
+     * @param $govid
+     * @throws ResursException
+     */
+    public function getPreparedSimplifiedPayment($govId)
+    {
+        if ($this->getTimeoutDetected()) {
+            return;
+        }
+        $this->unitSetup();
+        $customerData = $this->getHappyCustomerData();
+        $this->TEST->ECOM->setBillingByGetAddress($customerData);
+        $this->TEST->ECOM->setCustomer($govId, '0808080808', '0707070707', 'test@test.com', 'NATURAL');
+        $this->TEST->ECOM->setSigning($this->signUrl . '&success=true', $this->signUrl . '&success=false', false);
+        $this->TEST->ECOM->setMetaData('metaKeyTestTime', time());
+        $this->TEST->ECOM->setMetaData('metaKeyTestMicroTime', microtime(true));
     }
 
     /**
@@ -1910,7 +1946,6 @@ class resursBankTest extends TestCase
         print_r($payment);
         static::assertTrue($this->TEST->ECOM->canDebit($payment->paymentId));
     }
-
 
     /**
      * @test
@@ -2582,23 +2617,6 @@ class resursBankTest extends TestCase
      * @test
      * @throws Exception
      */
-    public function getCallbacksByRest()
-    {
-        if ($this->getTimeoutDetected()) {
-            return;
-        }
-        $this->setRegisterCallback(true);
-        $start = microtime(true);
-        $callbackList = $this->TEST->ECOM->getCallBacksByRest(true);
-        $end = microtime(true);
-        $diff = $end - $start;
-        static::assertGreaterThan(1, count($callbackList), 'Time diff is ' . $diff);
-    }
-
-    /**
-     * @test
-     * @throws Exception
-     */
     public function getCallbacksByRestFailover()
     {
         if ($this->getTimeoutDetected()) {
@@ -3005,163 +3023,6 @@ class resursBankTest extends TestCase
     /**
      * @test
      */
-    public function badToken()
-    {
-        if (!$this->hasEnv()) {
-            static::markTestSkipped('Merchant API is not ready for testing.');
-            return;
-        }
-
-        try {
-            $ma = new MerchantApi();
-            $ma->setBearer('invalidToken');
-            $ma->getStores();
-        } catch (Exception $e) {
-            static::assertTrue($e->getCode() === 4001 || $e->getCode() === 401);
-        }
-    }
-
-    /**
-     * @throws ExceptionHandler
-     * @test
-     */
-    public function badRenewToken()
-    {
-        if (!$this->hasEnv()) {
-            static::markTestSkipped('Merchant API is not ready for testing.');
-            return;
-        }
-        $ma = new MerchantApi();
-        $ma
-            ->setClientId(getenv('CLIENT_ID'))
-            ->setClientSecret(getenv('CLIENT_SECRET'))
-            ->setScope(getenv('SCOPE'))
-            ->setGrantType(getenv('GRANT_TYPE'));
-        $ma->setBearer('expiredToken');
-        $stores = $ma->getStores();
-        static::assertTrue(count($stores) > 0);
-    }
-
-    /**
-     * @return ResursToken|void
-     * @throws Exception
-     */
-    private function getNewToken()
-    {
-        if (!$this->hasEnv()) {
-            static::markTestSkipped('Merchant API is not ready for testing.');
-            return;
-        }
-        $merchantApiDatabaseEmulator = new MerchantApi();
-        $merchantApiDatabaseEmulator
-            ->setClientId(getenv('CLIENT_ID'))
-            ->setClientSecret(getenv('CLIENT_SECRET'))
-            ->setScope(getenv('SCOPE'))
-            ->setGrantType(getenv('GRANT_TYPE'));
-
-        return $merchantApiDatabaseEmulator->getToken();
-    }
-
-    /**
-     * @test
-     */
-    public function merchantUseExistingToken()
-    {
-        if (!$this->hasEnv()) {
-            static::markTestSkipped('Merchant API is not ready for testing.');
-            return;
-        }
-
-        // Since we do not have a database handler for the MerchantAPI in Ecom tests, we will render a valid
-        // token for this test before we start.
-        $databaseEmulatedToken = $this->getNewToken();
-
-        /**
-         * For this part, we generate a new MerchantAPI connection that is supposed to act as it was a live
-         * connection.
-         * @var MerchantApi $currentMerchant
-         */
-        $currentMerchant = new MerchantApi();
-
-        // Instead of using the user + secret at this point, we put the token that we already have from the
-        // datastore (above). In this case, this token is not expired. Take not here, that if you run with this variant
-        // you will become the responsible part to keep your token renewed.
-        $currentMerchant->setStoredToken(
-            $databaseEmulatedToken->getAccessToken(),
-            $databaseEmulatedToken->getTokenType(),
-            $databaseEmulatedToken->getExpire(),
-            $databaseEmulatedToken->getTokenRegisterTime()
-        );
-        $stores = $currentMerchant->getStores();
-
-        static::assertTrue(count($stores) > 0);
-    }
-
-    /**
-     * @test
-     * @throws ExceptionHandler
-     */
-    public function combinedTokination()
-    {
-        // Initialize test with the token, that we have "stored" in a database.
-        $databaseEmulatedToken = $this->getNewToken();
-
-        /**
-         * Out live connector.
-         * @var MerchantApi $currentMerchant
-         */
-        $currentMerchant = new MerchantApi();
-        $currentMerchant
-            ->setClientId(getenv('CLIENT_ID'))
-            ->setClientSecret(getenv('CLIENT_SECRET'))
-            ->setScope(getenv('SCOPE'))
-            ->setGrantType(getenv('GRANT_TYPE'))
-            ->setStoredToken(
-                $databaseEmulatedToken->getAccessToken(),
-                $databaseEmulatedToken->getTokenType(),
-                $databaseEmulatedToken->getExpire(),
-                $databaseEmulatedToken->getTokenRegisterTime()
-            );
-
-        $stores = $currentMerchant->getStores();
-
-        static::assertTrue(count($stores) > 0);
-    }
-
-    /**
-     * @test
-     * @throws ExceptionHandler
-     */
-    public function combinedTokenFailure()
-    {
-        // Initialize test with the token, that we have "stored" in a database.
-        $databaseEmulatedToken = $this->getNewToken();
-
-        /**
-         * Out live connector.
-         * @var MerchantApi $currentMerchant
-         */
-        $currentMerchant = new MerchantApi();
-        $currentMerchant
-            ->setClientId(getenv('CLIENT_ID'))
-            ->setClientSecret(getenv('CLIENT_SECRET'))
-            ->setScope(getenv('SCOPE'))
-            ->setGrantType(getenv('GRANT_TYPE'))
-            ->setStoredToken(
-                $databaseEmulatedToken->getAccessToken(),
-                $databaseEmulatedToken->getTokenType(),
-                $databaseEmulatedToken->getExpire(),
-                time() - 86400
-            );
-
-        $stores = $currentMerchant->getStores();
-
-        static::assertTrue(count($stores) > 0);
-    }
-
-    /**
-     * @test
-     */
     public function requiredFieldsSimplified()
     {
         $this->unitSetup();
@@ -3171,114 +3032,16 @@ class resursBankTest extends TestCase
 
     /**
      * @test
+     * @testdox Clean up special test data from share file
      */
-    public function getMerchantStoresAndMethods()
+    public function finalTest()
     {
         if ($this->getTimeoutDetected()) {
-            return;
-        }
-        if (!$this->hasEnv()) {
-            static::markTestSkipped('Merchant API is not ready for testing.');
             return;
         }
         $this->unitSetup();
-
-        try {
-            $merchant = $this->setMerchantToken();
-            $merchant->setBearer($this->merchantBearerToken);
-
-            // Test API call for stores.
-            $storeList = $merchant->getStores();
-            // Prepare store id at init to avoid reusing it in all calls being made in the system.
-            // If store id is used on each method call, that store id will have higher priority than the one
-            // that was set for internal use.
-            $merchant->setStoreId(90102);
-            $storeUuid = $merchant->getStoreByIdNum(90102);
-            // Fetching payment methods requires either the numeric store id or the long UUID. Both are accepted
-            // by ecom.
-            $paymentMethods = $merchant->getPaymentMethods($storeUuid);
-            $paymentMethodsList = $paymentMethods->getList();
-
-            /** @var Method $method */
-            foreach ($paymentMethodsList as $method) {
-                $id = $method->getId();
-                $description = $method->getDescription();
-                $max = $method->getMaxPurchaseLimit();
-                $actions = $method->getSupportedActions();
-            }
-
-            static::assertTrue(
-                count($storeList) > 0 &&
-                count((array)$paymentMethodsList) > 0 &&
-                !empty($id) &&
-                !empty($description) &&
-                count($actions) &&
-                $max > 0
-            );
-        } catch (Exception $e) {
-            static::markTestSkipped(
-                sprintf(
-                    'Non dependent MAPI Error (%s): %s',
-                    $e->getCode(),
-                    $e->getMessage()
-                )
-            );
-        }
-    }
-
-    /**
-     * @test
-     */
-    public function setMerchantToken()
-    {
-        if ($this->getTimeoutDetected()) {
-            return;
-        }
-        if (!$this->hasEnv()) {
-            static::markTestSkipped('Merchant API is not ready for testing.');
-            return;
-        }
-        $merchant = new MerchantApi();
-        $merchant
-            ->setClientId(getenv('CLIENT_ID'))
-            ->setClientSecret(getenv('CLIENT_SECRET'))
-            ->setScope(getenv('SCOPE'))
-            ->setGrantType(getenv('GRANT_TYPE'));
-
-        $this->merchantBearerToken = $merchant->getToken()->getAccessToken();
-
-        static::assertTrue(strlen($merchant->getToken()->getAccessToken()) > 100);
-
-        return $merchant;
-    }
-
-
-    /**
-     * Has environment file? Used for protecting unique merchant API secrets/tokens.
-     * If exists, read it and generate env()-data.
-     */
-    private function hasEnv()
-    {
-        $return = false;
-        if (file_exists(__DIR__ . '/.env')) {
-            $return = true;
-            $lines = file(__DIR__ . '/.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-            foreach ($lines as $line) {
-                if (strpos(trim($line), '#') === 0) {
-                    continue;
-                }
-                [$name, $value] = explode('=', $line, 2);
-                $name = trim($name);
-                $value = trim($value);
-                if (!array_key_exists($name, $_SERVER) && !array_key_exists($name, $_ENV)) {
-                    putenv(sprintf('%s=%s', $name, $value));
-                    $_ENV[$name] = $value;
-                    $_SERVER[$name] = $value;
-                }
-            }
-        }
-
-        return $return;
+        $this->TEST->ECOM->resetInvoiceNumber();
+        static::assertTrue($this->TEST->unshare('thisKey'));
     }
 
     /**
@@ -3301,19 +3064,5 @@ class resursBankTest extends TestCase
         }
 
         return null;
-    }
-
-    /**
-     * @test
-     * @testdox Clean up special test data from share file
-     */
-    public function finalTest()
-    {
-        if ($this->getTimeoutDetected()) {
-            return;
-        }
-        $this->unitSetup();
-        $this->TEST->ECOM->resetInvoiceNumber();
-        static::assertTrue($this->TEST->unshare('thisKey'));
     }
 }
