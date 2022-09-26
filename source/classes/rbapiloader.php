@@ -6189,13 +6189,12 @@ class ResursBank
             try {
                 $errorValidatePayment = $this->getPayment($paymentId);
                 $useStatus = $errorValidatePayment->frozen || $errorValidatePayment->fraud ? 'FROZEN' : 'BOOKED';
-                $return = [
-                    'paymentId' => $paymentId,
-                    'bookPaymentStatus' => $useStatus,
-                    'signingUrl' => null,
-                    'approvedAmount' => $errorValidatePayment->limit,
-                    'customer' => isset($errorValidatePayment->customer) ? $errorValidatePayment->customer: null
-                ];
+                $return = new stdClass();
+                $return->paymentId = $paymentId;
+                $return->bookPaymentStatus = $useStatus;
+                $return->signingUrl = null;
+                $return->approvedAmount = $errorValidatePayment->limit;
+                $return->customer= isset($errorValidatePayment->customer) ? $errorValidatePayment->customer : null;
             } catch (Exception $getPaymentException) {
                 throw $e;
             }
