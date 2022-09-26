@@ -5259,8 +5259,8 @@ class ResursBank
             $cardInfo = isset($this->Payload['card']) ? $this->Payload['card'] : [];
             if ((isset($cardInfo['cardNumber']) && empty($cardInfo['cardNumber'])) || !isset($cardInfo['cardNumber'])) {
                 if ((isset($cardInfo['amount']) && empty($cardInfo['amount'])) || !isset($cardInfo['amount'])) {
-                    // Adding the exact total amount as we do not rule of exchange rates. For example, adding 500
-                    // extra to the total amount in sweden will work, but will on the other hand be devastating for
+                    // Adding the exact total amount, as we do not rule of exchange rates. For example, adding 500
+                    // extra to the total amount in Sweden will work, but will on the other hand be devastating for
                     // countries using euro.
                     $this->Payload['card']['amount'] = $this->Payload['orderData']['totalAmount'];
                 }
@@ -6182,7 +6182,25 @@ class ResursBank
      */
     public function bookSignedPayment($paymentId = '')
     {
-        return $this->postService('bookSignedPayment', ['paymentId' => $paymentId]);
+        try {
+            $return = $this->postService('bookSignedPayment', ['paymentId' => $paymentId]);
+        } catch (Exception $e) {
+            $this->handlePostErrors($e);
+            try {
+                $errorValidatePayment = $this->getPayment($paymentId);
+                $return = [
+                    'paymentId' => $paymentId,,
+                    'bookPaymentStatus' => $errorValidatePayment->status,
+                    'signingUrl' => '',
+                    'approvedAmount' => $errorValidatePayment->limit,
+                    'customer' => isset($errorValidatePayment->customer) ? $errorValidatePayment->customer: null
+                ];
+            } catch (Exception $getPaymentException) {
+                throw $e;
+            }
+        }
+
+        return $return;
     }
 
     /**
