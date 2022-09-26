@@ -6189,6 +6189,9 @@ class ResursBank
             try {
                 $errorValidatePayment = $this->getPayment($paymentId);
                 $useStatus = $errorValidatePayment->frozen || $errorValidatePayment->fraud ? 'FROZEN' : 'BOOKED';
+                if ($this->canCredit($errorValidatePayment) && $this->getIsDebited()) {
+                    $useStatus = 'FINALIZED';
+                }
                 $return = new stdClass();
                 $return->paymentId = $paymentId;
                 $return->bookPaymentStatus = $useStatus;
