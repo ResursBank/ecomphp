@@ -6664,12 +6664,16 @@ class ResursBank
      */
     public function setCountryByCountryCode($countryCodeString = '')
     {
-        if (strtolower($countryCodeString) === 'dk') {
-            $this->setCountry(Country::DK);
-        } elseif (strtolower($countryCodeString) === 'no') {
-            $this->setCountry(Country::NO);
-        } elseif (strtolower($countryCodeString) === 'fi') {
-            $this->setCountry(Country::FI);
+        if (!empty($countryCodeString)) {
+            if (strtolower($countryCodeString) === 'dk') {
+                $this->setCountry(Country::DK);
+            } elseif (strtolower($countryCodeString) === 'no') {
+                $this->setCountry(Country::NO);
+            } elseif (strtolower($countryCodeString) === 'fi') {
+                $this->setCountry(Country::FI);
+            } else {
+                $this->setCountry(Country::SE);
+            }
         } else {
             $this->setCountry(Country::SE);
         }
