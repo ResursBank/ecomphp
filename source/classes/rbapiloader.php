@@ -960,7 +960,7 @@ class ResursBank
                 } elseif (defined('HTTP_PROXY')) {
                     $this->CURL->setProxy(HTTP_PROXY, defined('HTTP_PROXY_TYPE') ? HTTP_PROXY_TYPE : 0);
                     $hasProxy = true;
-                } elseif (isset($_SERVER['HTTP_PROXY'])) {
+                } elseif (isset($_SERVER['HTTP_PROXY']) && !empty($_SERVER['HTTP_PROXY'])) {
                     $this->CURL->setProxy(
                         $_SERVER['HTTP_PROXY'],
                         isset($_SERVER['HTTP_PROXY_TYPE']) ? $_SERVER['HTTP_PROXY_TYPE'] : 0
