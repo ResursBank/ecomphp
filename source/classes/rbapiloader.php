@@ -85,7 +85,7 @@ if (!defined('ECOMPHP_MODIFY_DATE')) {
 /**
  * Class ResursBank
  * @package Resursbank\RBEcomPHP
- * @version 1.3.88
+ * @version 1.3.89
  */
 class ResursBank
 {
@@ -950,8 +950,9 @@ class ResursBank
     private function prepareProxy($curlProxyAddr = '', $curlProxyType = '')
     {
         $hasProxy = false;
+        $skipProxy = isset($_SERVER['SKIP_PROXY']) || isset($_SERVER['skip_proxy']);
 
-        if (!isset($_SERVER['SKIP_PROXY'])) {
+        if (!$skipProxy) {
             // Make sure we don't use the wrapper before it is set.
             if (!empty($this->CURL)) {
                 if (!empty($curlProxyAddr) && !empty($curlProxyType)) {
