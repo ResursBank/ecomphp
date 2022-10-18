@@ -951,7 +951,7 @@ class ResursBank
     {
         $hasProxy = false;
 
-        if (!isset($_SERVER['PROXY_SKIP'])) {
+        if (!isset($_SERVER['SKIP_PROXY'])) {
             // Make sure we don't use the wrapper before it is set.
             if (!empty($this->CURL)) {
                 if (!empty($curlProxyAddr) && !empty($curlProxyType)) {
