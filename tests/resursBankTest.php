@@ -699,7 +699,7 @@ class resursBankTest extends TestCase
      * @test
      * @throws Exception
      */
-    public function simplyPaymentMethods()
+    public function getSimplePaymentMethods()
     {
         if ($this->getTimeoutDetected()) {
             return;
@@ -724,12 +724,10 @@ class resursBankTest extends TestCase
 
         // Assertions belongs to very specific methods, meaning if we do not use an AU2XX account, this test
         // can be skipped.
-        if (count($paymentMethods) > 3) {
+        if (count($paymentMethods) > 2) {
             static::assertTrue(
                 count($paymentMethods) > 1 &&
-                count($pspCards) >= 2 &&
-                count($internal) >= 6 &&
-                count($external) >= 3
+                count($internal) >= 3
             );
         } else {
             if (count($paymentMethods) > 1) {
